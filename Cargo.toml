@@ -1,0 +1,8 @@
+[package]
+name = "sacn"
+version = "0.1.0"
+authors = ["Lukas Schmierer <lukas.schmierer@lschmierer.de>"]
+
+[dependencies]
+net2 = "*"
+uuid = "*"
