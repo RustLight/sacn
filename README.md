@@ -9,6 +9,14 @@ Currently only the sending part is implemented.
 
 ## Usage
 
+Add to `Cargo.toml`:
+
+```toml
+[dependencies]
+
+sacn = "0.1"
+```
+
 Create a DmxSource and start sending DMX data to an universe.
 
 ```rust
