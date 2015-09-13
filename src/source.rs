@@ -288,6 +288,9 @@ mod test {
         let (amt, _) = recv_socket.recv_from(&mut recv_buf).unwrap();
 
         assert_eq!(&packet[..], &recv_buf[0 .. amt]);
+
+        drop(source);
+        drop(recv_socket);
     }
 
     #[test]
@@ -306,5 +309,8 @@ mod test {
             recv_socket.recv_from(&mut recv_buf).unwrap();
             assert_eq!(recv_buf[112], 0b0100_0000)
         }
+
+        drop(source);
+        drop(recv_socket);
     }
 }
