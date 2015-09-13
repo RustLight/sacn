@@ -1,6 +1,8 @@
 # Rust sACN implementation
 [![Build Status](https://travis-ci.org/lschmierer/sacn.svg)](https://travis-ci.org/lschmierer/sacn)
 
+[Documentation](http://lschmierer.github.io/sacn/)
+
 This is an implementation of the Streaming ACN (ANSI E1.31) network protocol.
 
 Currently only the sending part is implemented.

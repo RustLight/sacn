@@ -1,3 +1,4 @@
+#![doc(html_root_url = "http://lschmierer.github.io/sacn/")]
 //! Implementation of sACN network protocol.
 //!
 //! This crate implements the Streaming ACN (sACN) network protocol
