@@ -289,4 +289,22 @@ mod test {
 
         assert_eq!(&packet[..], &recv_buf[0 .. amt]);
     }
+
+    #[test]
+    fn test_terminate_stream() {
+        let source = DmxSource::new("Source").unwrap();
+        source.set_multicast_loop(true).unwrap();
+
+        let recv_socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:5568").unwrap();
+        recv_socket.join_multicast_v4(
+            &Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
+
+        let mut recv_buf = [0; 1024];
+
+        source.terminate_stream(1).unwrap();
+        for _ in 0..2 {
+            recv_socket.recv_from(&mut recv_buf).unwrap();
+            assert_eq!(recv_buf[112], 0b0100_0000)
+        }
+    }
 }
