@@ -5,7 +5,7 @@ version = "0.1.0"
 authors = ["Lukas Schmierer <lukas.schmierer@lschmierer.de>"]
 documentation = "http://lschmierer.github.io/sacn/"
 repository = "https://github.com/lschmierer/sacn"
-license = "Apache-2.0"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 net2 = "*"
