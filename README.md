@@ -6,7 +6,7 @@
 
 This is an implementation of the Streaming ACN (ANSI E1.31) network protocol.
 
-Currently only the sending part is implemented.
+Currently only the sending DMX data is implemented.
 
 ## Usage
 
@@ -15,10 +15,10 @@ Add to `Cargo.toml`:
 ```toml
 [dependencies]
 
-sacn = "0.1"
+sacn = "0.1.1"
 ```
 
-Create a DmxSource and start sending DMX data to an universe.
+Create a DmxSource and start sending DMX data to a universe.
 
 ```rust
 extern crate sacn;
