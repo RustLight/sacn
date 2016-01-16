@@ -129,7 +129,7 @@ mod test {
     use std::iter;
 
     #[test]
-    #[rustfmt_skip]
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     fn test_pack_acn() {
         let cid = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
         let universe = 1;

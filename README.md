@@ -1,5 +1,6 @@
 # Rust sACN implementation
 [![Build Status](https://travis-ci.org/lschmierer/sacn.svg)](https://travis-ci.org/lschmierer/sacn)
+[![Crates.io](http://meritbadge.herokuapp.com/sacn)](https://crates.io/crates/sacn)
 
 [Documentation](http://lschmierer.github.io/sacn/)
 
