@@ -1,3 +1,10 @@
+// Copyright 2016 sacn Developers
+//
+// Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
+// http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
+// http://opensource.org/licenses/MIT>, at your option. This file may not be
+// copied, modified, or distributed except according to those terms.
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{Result, Error, ErrorKind};
@@ -10,7 +17,7 @@ use packet;
 fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
         return Err(Error::new(ErrorKind::InvalidInput,
-                              "universe is limited to the range 1 to 63999"))
+                              "universe is limited to the range 1 to 63999"));
     }
     let high_byte = (universe >> 8) & 0xff;
     let low_byte = universe & 0xff;
@@ -81,18 +88,23 @@ impl DmxSource {
     /// Sends DMX data to specified universe with specified priority.
     pub fn send_with_priority(&self, universe: u16, data: &[u8], priority: u8) -> Result<()> {
         if priority > 200 {
-            return Err(Error::new(ErrorKind::InvalidInput, "priority must be <= 200"))
+            return Err(Error::new(ErrorKind::InvalidInput, "priority must be <= 200"));
         }
         let ip = try!(universe_to_ip(universe));
         let mut sequence = match self.sequences.borrow().get(&universe) {
             Some(s) => s.clone(),
-            None => 0
+            None => 0,
         };
 
-        let sacn_packet = try!(packet::pack_acn(&self.cid, universe, &*self.name,
-                                                priority, sequence,
-                                                self.preview_data, false,
-                                                self.start_code, data));
+        let sacn_packet = try!(packet::pack_acn(&self.cid,
+                                                universe,
+                                                &*self.name,
+                                                priority,
+                                                sequence,
+                                                self.preview_data,
+                                                false,
+                                                self.start_code,
+                                                data));
         try!(self.socket.send_to(&sacn_packet, &*ip));
 
         if sequence == 255 {
@@ -112,13 +124,19 @@ impl DmxSource {
         let ip = try!(universe_to_ip(universe));
         let mut sequence = match self.sequences.borrow_mut().remove(&universe) {
             Some(s) => s,
-            None => 0
+            None => 0,
         };
 
         for _ in 0..3 {
-            let sacn_packet = try!(packet::pack_acn(&self.cid, universe, &*self.name,
-                                                    200, sequence, false, true,
-                                                    0, &[]));
+            let sacn_packet = try!(packet::pack_acn(&self.cid,
+                                                    universe,
+                                                    &*self.name,
+                                                    200,
+                                                    sequence,
+                                                    false,
+                                                    true,
+                                                    0,
+                                                    &[]));
             try!(self.socket.send_to(&sacn_packet, &*ip));
 
             if sequence == 255 {
@@ -131,7 +149,7 @@ impl DmxSource {
     }
 
     /// Returns the ACN CID device identifier of the DmxSource.
-    pub fn cid(&self) -> &[u8; 16]{
+    pub fn cid(&self) -> &[u8; 16] {
         &self.cid
     }
 
@@ -197,11 +215,12 @@ impl DmxSource {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::iter::repeat;
+    use std::iter;
     use std::net::Ipv4Addr;
     use net2::{UdpBuilder, UdpSocketExt};
 
     #[test]
+    #[rustfmt_skip]
     fn test_dmx_source() {
         let cid = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
         let universe = 1;
@@ -211,7 +230,7 @@ mod test {
         let preview_data = false;
         let start_code = 0;
         let mut dmx_data: Vec<u8> = Vec::new();
-        dmx_data.extend(repeat(100).take(255));
+        dmx_data.extend(iter::repeat(100).take(255));
 
         // Root Layer
         let mut packet = Vec::new();
@@ -236,10 +255,13 @@ mod test {
         // Vector
         packet.extend("\x00\x00\x00\x02".bytes());
         // Source Name
-        let source_name = source_name.to_string()
-            + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0"
-            + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0"
-            + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0";
+        let source_name = source_name.to_string() +
+                          "\0\0\0\0\0\0\0\0\0\0" +
+                          "\0\0\0\0\0\0\0\0\0\0" +
+                          "\0\0\0\0\0\0\0\0\0\0" +
+                          "\0\0\0\0\0\0\0\0\0\0" +
+                          "\0\0\0\0\0\0\0\0\0\0" +
+                          "\0\0\0\0";
         assert_eq!(source_name.len(), 64);
         packet.extend(source_name.bytes());
         // Priority
@@ -279,15 +301,15 @@ mod test {
         source.set_multicast_loop(true).unwrap();
 
         let recv_socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:5568").unwrap();
-        recv_socket.join_multicast_v4(
-            &Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
+        recv_socket.join_multicast_v4(&Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0))
+                   .unwrap();
 
         let mut recv_buf = [0; 1024];
 
         source.send_with_priority(universe, &dmx_data, priority).unwrap();
         let (amt, _) = recv_socket.recv_from(&mut recv_buf).unwrap();
 
-        assert_eq!(&packet[..], &recv_buf[0 .. amt]);
+        assert_eq!(&packet[..], &recv_buf[0..amt]);
 
         drop(source);
         drop(recv_socket);
@@ -299,8 +321,8 @@ mod test {
         source.set_multicast_loop(true).unwrap();
 
         let recv_socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:5568").unwrap();
-        recv_socket.join_multicast_v4(
-            &Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
+        recv_socket.join_multicast_v4(&Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0))
+                   .unwrap();
 
         let mut recv_buf = [0; 1024];
 

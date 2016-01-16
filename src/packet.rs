@@ -1,3 +1,10 @@
+// Copyright 2016 sacn Developers
+//
+// Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
+// http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
+// http://opensource.org/licenses/MIT>, at your option. This file may not be
+// copied, modified, or distributed except according to those terms.
+
 use std::io::{Result, Error, ErrorKind};
 use std::iter::repeat;
 
@@ -10,7 +17,7 @@ fn length_as_low12(length: u16) -> [u8; 2] {
 fn pack_dmp_layer(start_code: u8, dmx_data: &[u8]) -> Result<Vec<u8>> {
     if dmx_data.len() > 512 {
         return Err(Error::new(ErrorKind::InvalidData,
-                              "max 512 channels per universe allowed"))
+                              "max 512 channels per universe allowed"));
     }
     let mut packet = Vec::with_capacity(11 + dmx_data.len());
     // Flags and Length
@@ -34,10 +41,14 @@ fn pack_dmp_layer(start_code: u8, dmx_data: &[u8]) -> Result<Vec<u8>> {
     Ok(packet)
 }
 
-fn pack_framing_layer(universe: u16, source_name: &str,
-                      priority: u8, sequence: u8,
-                      preview_data: bool, stream_terminated: bool,
-                      dmp_packet: &[u8]) -> Result<Vec<u8>> {
+fn pack_framing_layer(universe: u16,
+                      source_name: &str,
+                      priority: u8,
+                      sequence: u8,
+                      preview_data: bool,
+                      stream_terminated: bool,
+                      dmp_packet: &[u8])
+                      -> Result<Vec<u8>> {
     let mut packet = Vec::with_capacity(77 + dmp_packet.len());
     // Flags and Length
     packet.extend(length_as_low12(77 + (dmp_packet.len() as u16)).iter());
@@ -54,14 +65,14 @@ fn pack_framing_layer(universe: u16, source_name: &str,
     packet.push(sequence);
     // Options
     packet.push(if preview_data && stream_terminated {
-            0b1100_0000
-        } else if preview_data {
-            0b1000_0000
-        } else if stream_terminated {
-            0b0100_0000
-        } else {
-            0
-        });
+        0b1100_0000
+    } else if preview_data {
+        0b1000_0000
+    } else if stream_terminated {
+        0b0100_0000
+    } else {
+        0
+    });
     // Universe
     packet.push((universe >> 8) as u8);
     packet.push(universe as u8);
@@ -91,13 +102,23 @@ fn pack_acn_root_layer(cid: &[u8; 16], framing_packet: &[u8]) -> Result<Vec<u8>>
     Ok(packet)
 }
 
-pub fn pack_acn(cid: &[u8; 16], universe: u16, source_name: &str, priority: u8,
-                sequence: u8, preview_data: bool, stream_terminated: bool,
-                start_code: u8, dmx_data: &[u8]) -> Result<Vec<u8>> {
+pub fn pack_acn(cid: &[u8; 16],
+                universe: u16,
+                source_name: &str,
+                priority: u8,
+                sequence: u8,
+                preview_data: bool,
+                stream_terminated: bool,
+                start_code: u8,
+                dmx_data: &[u8])
+                -> Result<Vec<u8>> {
     let dmp_packet = try!(pack_dmp_layer(start_code, dmx_data));
-    let framing_packet = try!(pack_framing_layer(universe, source_name,
-                                                 priority, sequence,
-                                                 preview_data, stream_terminated,
+    let framing_packet = try!(pack_framing_layer(universe,
+                                                 source_name,
+                                                 priority,
+                                                 sequence,
+                                                 preview_data,
+                                                 stream_terminated,
                                                  &dmp_packet));
     Ok(try!(pack_acn_root_layer(cid, &framing_packet)))
 }
@@ -105,9 +126,10 @@ pub fn pack_acn(cid: &[u8; 16], universe: u16, source_name: &str, priority: u8,
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::iter::repeat;
+    use std::iter;
 
     #[test]
+    #[rustfmt_skip]
     fn test_pack_acn() {
         let cid = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
         let universe = 1;
@@ -118,7 +140,7 @@ mod test {
         let stream_terminated = true;
         let start_code = 0;
         let mut dmx_data: Vec<u8> = Vec::new();
-        dmx_data.extend(repeat(100).take(255));
+        dmx_data.extend(iter::repeat(100).take(255));
 
         // Root Layer
         let mut packet = Vec::new();
@@ -143,10 +165,14 @@ mod test {
         // Vector
         packet.extend("\x00\x00\x00\x02".bytes());
         // Source Name
-        let source_name = source_name.to_string()
-            + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0"
-            + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0\0\0\0\0\0\0"
-            + "\0\0\0\0\0\0\0\0\0\0" + "\0\0\0\0";
+        let source_name = source_name.to_string() +
+                          "\0\0\0\0\0\0\0\0\0\0" +
+                          "\0\0\0\0\0\0\0\0\0\0" +
+                          "\0\0\0\0\0\0\0\0\0\0" +
+                          "\0\0\0\0\0\0\0\0\0\0" +
+                          "\0\0\0\0\0\0\0\0\0\0" +
+                          "\0\0\0\0";
+
         assert_eq!(source_name.len(), 64);
         packet.extend(source_name.bytes());
         // Priority
@@ -180,8 +206,16 @@ mod test {
         packet.push(start_code);
         packet.extend(&dmx_data);
 
-        assert_eq!(packet, pack_acn(&cid, universe, &source_name, priority, sequence,
-                                    preview_data, stream_terminated,
-                                    start_code, &dmx_data).unwrap());
+        assert_eq!(packet,
+                   pack_acn(&cid,
+                            universe,
+                            &source_name,
+                            priority,
+                            sequence,
+                            preview_data,
+                            stream_terminated,
+                            start_code,
+                            &dmx_data)
+                       .unwrap());
     }
 }
