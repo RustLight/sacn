@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{Result, Error, ErrorKind};
 use std::net::UdpSocket;
-use net2::{UdpBuilder, UdpSocketExt};
+use net2::UdpBuilder;
 use uuid::Uuid;
 
 use packet;
@@ -217,7 +217,7 @@ mod test {
     use super::*;
     use std::iter;
     use std::net::Ipv4Addr;
-    use net2::{UdpBuilder, UdpSocketExt};
+    use net2::UdpBuilder;
 
     #[test]
     #[cfg_attr(rustfmt, rustfmt_skip)]
