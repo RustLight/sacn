@@ -24,6 +24,15 @@ fn universe_to_ip(universe: u16) -> Result<String> {
     Ok(format!("239.255.{}.{}:5568", high_byte, low_byte))
 }
 
+fn create_cid() -> [u8; 16] {
+    let uuid = Uuid::new_v4();
+    let mut cid = [0u8; 16];
+    for (&x, p) in uuid.as_bytes().iter().zip(cid.iter_mut()) {
+        *p = x;
+    }
+    cid
+}
+
 /// A DMX over sACN sender.
 ///
 /// DmxSource is used for sending sACN packets over ethernet.
@@ -54,21 +63,25 @@ pub struct DmxSource {
 impl DmxSource {
     /// Constructs a new DmxSource with DMX START code set to 0.
     pub fn new(name: &str) -> Result<DmxSource> {
-        let cid = {
-            let uuid = Uuid::new_v4();
-            let mut cid = [0u8; 16];
-            for (&x, p) in uuid.as_bytes().iter().zip(cid.iter_mut()) {
-                *p = x;
-            }
-            cid
-        };
+        let cid = create_cid();
         DmxSource::with_cid(name, &cid)
+    }
+    /// Consturcts a new DmxSource with binding to the supplied ip and a DMX START code set to 0.
+    pub fn with_ip(name: &str, ip: &str) -> Result<DmxSource> {
+        let cid = create_cid();
+        DmxSource::with_cid_ip(name, &cid, ip)
     }
 
     /// Constructs a new DmxSource with DMX START code set to 0 with specified CID.
     pub fn with_cid(name: &str, cid: &[u8; 16]) -> Result<DmxSource> {
+        let ip = "0.0.0.0";
+        DmxSource::with_cid_ip(name, &cid, &ip)
+    }
+    /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
+    pub fn with_cid_ip(name: &str, cid: &[u8; 16], ip: &str) -> Result<DmxSource> {
+        let ip_port = format!("{}:0", ip);
         let sock_builder = try!(UdpBuilder::new_v4());
-        let sock = try!(sock_builder.bind("0.0.0.0:0"));
+        let sock = try!(sock_builder.bind(&ip_port));
 
         Ok(DmxSource {
             socket: sock,
