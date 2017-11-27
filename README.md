@@ -1,4 +1,6 @@
 # Rust sACN implementation
+
+[![Join the chat at https://gitter.im/rust_sacn/Lobby](https://badges.gitter.im/rust_sacn/Lobby.svg)](https://gitter.im/rust_sacn/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/lschmierer/sacn.svg)](https://travis-ci.org/lschmierer/sacn)
 [![Crates.io](http://meritbadge.herokuapp.com/sacn)](https://crates.io/crates/sacn)
 
