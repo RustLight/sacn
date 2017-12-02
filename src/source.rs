@@ -16,8 +16,10 @@ use packet;
 
 fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
-        return Err(Error::new(ErrorKind::InvalidInput,
-                              "universe is limited to the range 1 to 63999"));
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "universe is limited to the range 1 to 63999",
+        ));
     }
     let high_byte = (universe >> 8) & 0xff;
     let low_byte = universe & 0xff;
@@ -101,7 +103,10 @@ impl DmxSource {
     /// Sends DMX data to specified universe with specified priority.
     pub fn send_with_priority(&self, universe: u16, data: &[u8], priority: u8) -> Result<()> {
         if priority > 200 {
-            return Err(Error::new(ErrorKind::InvalidInput, "priority must be <= 200"));
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "priority must be <= 200",
+            ));
         }
         let ip = try!(universe_to_ip(universe));
         let mut sequence = match self.sequences.borrow().get(&universe) {
@@ -109,15 +114,17 @@ impl DmxSource {
             None => 0,
         };
 
-        let sacn_packet = try!(packet::pack_acn(&self.cid,
-                                                universe,
-                                                &*self.name,
-                                                priority,
-                                                sequence,
-                                                self.preview_data,
-                                                false,
-                                                self.start_code,
-                                                data));
+        let sacn_packet = try!(packet::pack_acn(
+            &self.cid,
+            universe,
+            &*self.name,
+            priority,
+            sequence,
+            self.preview_data,
+            false,
+            self.start_code,
+            data,
+        ));
         try!(self.socket.send_to(&sacn_packet, &*ip));
 
         if sequence == 255 {
@@ -141,15 +148,17 @@ impl DmxSource {
         };
 
         for _ in 0..3 {
-            let sacn_packet = try!(packet::pack_acn(&self.cid,
-                                                    universe,
-                                                    &*self.name,
-                                                    200,
-                                                    sequence,
-                                                    false,
-                                                    true,
-                                                    0,
-                                                    &[]));
+            let sacn_packet = try!(packet::pack_acn(
+                &self.cid,
+                universe,
+                &*self.name,
+                200,
+                sequence,
+                false,
+                true,
+                0,
+                &[],
+            ));
             try!(self.socket.send_to(&sacn_packet, &*ip));
 
             if sequence == 255 {
@@ -334,8 +343,9 @@ mod test {
         source.set_multicast_loop(true).unwrap();
 
         let recv_socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:5568").unwrap();
-        recv_socket.join_multicast_v4(&Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0))
-                   .unwrap();
+        recv_socket
+            .join_multicast_v4(&Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0))
+            .unwrap();
 
         let mut recv_buf = [0; 1024];
 
