@@ -16,8 +16,10 @@ fn length_as_low12(length: u16) -> [u8; 2] {
 
 fn pack_dmp_layer(start_code: u8, dmx_data: &[u8]) -> Result<Vec<u8>> {
     if dmx_data.len() > 512 {
-        return Err(Error::new(ErrorKind::InvalidData,
-                              "max 512 channels per universe allowed"));
+        return Err(Error::new(
+            ErrorKind::InvalidData,
+            "max 512 channels per universe allowed",
+        ));
     }
     let mut packet = Vec::with_capacity(11 + dmx_data.len());
     // Flags and Length
@@ -41,14 +43,15 @@ fn pack_dmp_layer(start_code: u8, dmx_data: &[u8]) -> Result<Vec<u8>> {
     Ok(packet)
 }
 
-fn pack_framing_layer(universe: u16,
-                      source_name: &str,
-                      priority: u8,
-                      sequence: u8,
-                      preview_data: bool,
-                      stream_terminated: bool,
-                      dmp_packet: &[u8])
-                      -> Result<Vec<u8>> {
+fn pack_framing_layer(
+    universe: u16,
+    source_name: &str,
+    priority: u8,
+    sequence: u8,
+    preview_data: bool,
+    stream_terminated: bool,
+    dmp_packet: &[u8],
+) -> Result<Vec<u8>> {
     let mut packet = Vec::with_capacity(77 + dmp_packet.len());
     // Flags and Length
     packet.extend(length_as_low12(77 + (dmp_packet.len() as u16)).iter());
@@ -102,24 +105,27 @@ fn pack_acn_root_layer(cid: &[u8; 16], framing_packet: &[u8]) -> Result<Vec<u8>>
     Ok(packet)
 }
 
-pub fn pack_acn(cid: &[u8; 16],
-                universe: u16,
-                source_name: &str,
-                priority: u8,
-                sequence: u8,
-                preview_data: bool,
-                stream_terminated: bool,
-                start_code: u8,
-                dmx_data: &[u8])
-                -> Result<Vec<u8>> {
+pub fn pack_acn(
+    cid: &[u8; 16],
+    universe: u16,
+    source_name: &str,
+    priority: u8,
+    sequence: u8,
+    preview_data: bool,
+    stream_terminated: bool,
+    start_code: u8,
+    dmx_data: &[u8],
+) -> Result<Vec<u8>> {
     let dmp_packet = try!(pack_dmp_layer(start_code, dmx_data));
-    let framing_packet = try!(pack_framing_layer(universe,
-                                                 source_name,
-                                                 priority,
-                                                 sequence,
-                                                 preview_data,
-                                                 stream_terminated,
-                                                 &dmp_packet));
+    let framing_packet = try!(pack_framing_layer(
+        universe,
+        source_name,
+        priority,
+        sequence,
+        preview_data,
+        stream_terminated,
+        &dmp_packet,
+    ));
     Ok(try!(pack_acn_root_layer(cid, &framing_packet)))
 }
 
