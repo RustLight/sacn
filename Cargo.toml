@@ -3,7 +3,7 @@ name = "sacn"
 description = "Rust sACN implementation."
 version = "0.1.1"
 authors = ["Lukas Schmierer <lukas.schmierer@lschmierer.de>"]
-documentation = "http://lschmierer.github.io/sacn/"
+documentation = "https://docs.rs/sacn/"
 repository = "https://github.com/lschmierer/sacn"
 license = "MIT OR Apache-2.0"
 
