@@ -1,7 +1,7 @@
 [package]
 name = "sacn"
 description = "Rust sACN implementation."
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Lukas Schmierer <lukas.schmierer@lschmierer.de>"]
 documentation = "https://docs.rs/sacn/"
 repository = "https://github.com/lschmierer/sacn"
