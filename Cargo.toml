@@ -8,5 +8,5 @@ repository = "https://github.com/lschmierer/sacn"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-net2 = "0.2"
-uuid = "0.1"
+net2 = "0.2.31"
+uuid = { version = "0.5.1", features = ["v4"] }
