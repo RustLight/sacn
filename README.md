@@ -2,9 +2,9 @@
 
 [![Join the chat at https://gitter.im/rust_sacn/Lobby](https://badges.gitter.im/rust_sacn/Lobby.svg)](https://gitter.im/rust_sacn/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/lschmierer/sacn.svg)](https://travis-ci.org/lschmierer/sacn)
-[![Crates.io](http://meritbadge.herokuapp.com/sacn)](https://crates.io/crates/sacn)
+[![Crates.io](https://img.shields.io/crates/v/sacn.svg)](https://crates.io/crates/sacn)
 
-[Documentation](http://lschmierer.github.io/sacn/)
+[Documentation](https://docs.rs/sacn/)
 
 This is an implementation of the Streaming ACN (ANSI E1.31) network protocol.
 
