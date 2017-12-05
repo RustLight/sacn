@@ -17,10 +17,10 @@ pub trait Protocol {
     /// Returns the number of bytes the packet would occupy when packed.
     fn len(&self) -> usize;
 
+    #[cfg(feature = "std")]
     /// Packs the packet into the given vector.
     ///
     /// Grows the vector `buf` if necessary.
-    #[cfg(feature = "std")]
     fn pack_vec(&self, buf: &mut Vec<u8>) {
         buf.clear();
         buf.reserve_exact(self.len());
