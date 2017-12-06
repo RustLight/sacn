@@ -36,7 +36,7 @@ pub trait Protocol {
 
 /// Root layer protocol of the Architecture for Control Networks (ACN) protocol.
 pub struct AcnRootLayerProtocol<'a> {
-    pub pdu: E131RootLayerPdu<'a>,
+    pub pdu: E131RootLayer<'a>,
 }
 
 impl<'a> Protocol for AcnRootLayerProtocol<'a> {
@@ -58,16 +58,16 @@ impl<'a> Protocol for AcnRootLayerProtocol<'a> {
 }
 
 /// Root layer protocol data unit.
-pub struct E131RootLayerPdu<'a> {
+pub struct E131RootLayer<'a> {
     pub cid: Uuid,
-    pub data: E131RootLayerPduData<'a>,
+    pub data: E131RootLayerData<'a>,
 }
 
-impl<'a> Protocol for E131RootLayerPdu<'a> {
+impl<'a> Protocol for E131RootLayer<'a> {
     fn len(&self) -> usize {
         22 +
             match self.data {
-                E131RootLayerPduData::DataPacket(ref data) => data.len(),
+                E131RootLayerData::DataPacket(ref data) => data.len(),
             }
     }
 
@@ -80,18 +80,18 @@ impl<'a> Protocol for E131RootLayerPdu<'a> {
         // Vector
         match self.data {
             // VECTOR_ROOT_E131_DATA
-            E131RootLayerPduData::DataPacket(_) => BigEndian::write_u32(&mut buf[2..6], 0x00000004),
+            E131RootLayerData::DataPacket(_) => BigEndian::write_u32(&mut buf[2..6], 0x00000004),
         }
         // CID
         buf[6..22].copy_from_slice(self.cid.as_bytes());
         // Data
         match self.data {
-            E131RootLayerPduData::DataPacket(ref data) => data.pack(&mut buf[22..]),
+            E131RootLayerData::DataPacket(ref data) => data.pack(&mut buf[22..]),
         }
     }
 }
 
-pub enum E131RootLayerPduData<'a> {
+pub enum E131RootLayerData<'a> {
     DataPacket(E131DataPacketFramingLayer<'a>),
 }
 
@@ -292,9 +292,9 @@ mod test {
     #[test]
     fn test_pack_data_packet() {
         let packet = AcnRootLayerProtocol {
-            pdu: E131RootLayerPdu {
+            pdu: E131RootLayer {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
-                data: E131RootLayerPduData::DataPacket(E131DataPacketFramingLayer {
+                data: E131RootLayerData::DataPacket(E131DataPacketFramingLayer {
                     source_name: ArrayString::from("Source_A").unwrap(),
                     priority: 100,
                     synchronization_address: 7962,
