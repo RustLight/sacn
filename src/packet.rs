@@ -17,10 +17,10 @@ pub trait Protocol {
     /// Returns the number of bytes the packet would occupy when packed.
     fn len(&self) -> usize;
 
-    #[cfg(feature = "std")]
     /// Packs the packet into the given vector.
     ///
     /// Grows the vector `buf` if necessary.
+    #[cfg(feature = "std")]
     fn pack_vec(&self, buf: &mut Vec<u8>) {
         buf.clear();
         buf.reserve_exact(self.len());
@@ -58,7 +58,7 @@ impl<'a> Protocol for AcnRootLayerProtocol<'a> {
     }
 }
 
-/// Root layer protocol data unit.
+/// Root layer protocol data unit (PDU).
 #[derive(Debug, Clone)]
 pub struct E131RootLayer<'a> {
     pub cid: Uuid,
@@ -106,6 +106,7 @@ impl<'a> Protocol for E131RootLayer<'a> {
     }
 }
 
+/// Payload of the Root Layer PDU.
 #[derive(Debug, Clone)]
 pub enum E131RootLayerData<'a> {
     DataPacket(DataPacketFramingLayer<'a>),
@@ -113,6 +114,7 @@ pub enum E131RootLayerData<'a> {
     UniverseDiscoveryPacket(UniverseDiscoveryPacketFramingLayer<'a>),
 }
 
+/// Framing layer PDU for sACN data packets.
 #[derive(Debug, Clone)]
 pub struct DataPacketFramingLayer<'a> {
     pub source_name: ArrayString<[u8; 64]>,
@@ -171,6 +173,8 @@ impl<'a> Protocol for DataPacketFramingLayer<'a> {
 }
 
 /// Device Management Protocol PDU with SET PROPERTY vector.
+///
+/// Used for sACN data packets.
 #[derive(Debug, Clone)]
 pub struct DataPacketDmpLayer<'a> {
     pub property_values: &'a [u8],
@@ -208,6 +212,7 @@ impl<'a> Protocol for DataPacketDmpLayer<'a> {
     }
 }
 
+/// sACN synchronization packet PDU.
 #[derive(Debug, Clone)]
 pub struct SynchronizationPacketFramingLayer {
     pub sequence_number: u8,
@@ -237,6 +242,7 @@ impl Protocol for SynchronizationPacketFramingLayer {
     }
 }
 
+// Framing layer PDU for sACN universe discovery packets.
 #[derive(Debug, Clone)]
 pub struct UniverseDiscoveryPacketFramingLayer<'a> {
     pub source_name: ArrayString<[u8; 64]>,
@@ -267,6 +273,7 @@ impl<'a> Protocol for UniverseDiscoveryPacketFramingLayer<'a> {
     }
 }
 
+/// Universe discovery layer PDU.
 #[derive(Debug, Clone)]
 pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
     pub page: u8,
