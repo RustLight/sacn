@@ -35,6 +35,7 @@ pub trait Protocol {
 }
 
 /// Root layer protocol of the Architecture for Control Networks (ACN) protocol.
+#[derive(Debug, Clone)]
 pub struct AcnRootLayerProtocol<'a> {
     pub pdu: E131RootLayer<'a>,
 }
@@ -58,6 +59,7 @@ impl<'a> Protocol for AcnRootLayerProtocol<'a> {
 }
 
 /// Root layer protocol data unit.
+#[derive(Debug, Clone)]
 pub struct E131RootLayer<'a> {
     pub cid: Uuid,
     pub data: E131RootLayerData<'a>,
@@ -68,6 +70,7 @@ impl<'a> Protocol for E131RootLayer<'a> {
         22 +
             match self.data {
                 E131RootLayerData::DataPacket(ref data) => data.len(),
+                E131RootLayerData::SynchronizationPacket(ref data) => data.len(),
             }
     }
 
@@ -75,26 +78,38 @@ impl<'a> Protocol for E131RootLayer<'a> {
         assert!(buf.len() >= self.len(), "buffer not large enough");
         // Length
         BigEndian::write_u16(&mut buf[0..2], self.len() as u16);
+        buf[0] &= 0x0f;
         // Flags
         buf[0] |= 0x70;
         // Vector
         match self.data {
             // VECTOR_ROOT_E131_DATA
-            E131RootLayerData::DataPacket(_) => BigEndian::write_u32(&mut buf[2..6], 0x00000004),
+            #[cfg_attr(rustfmt, rustfmt_skip)]
+            E131RootLayerData::DataPacket(_) => {
+                BigEndian::write_u32(&mut buf[2..6], 0x00000004)
+            }
+            // VECTOR_ROOT_E131_EXTENDED
+            E131RootLayerData::SynchronizationPacket(_) => {
+                BigEndian::write_u32(&mut buf[2..6], 0x00000008)
+            }
         }
         // CID
         buf[6..22].copy_from_slice(self.cid.as_bytes());
         // Data
         match self.data {
             E131RootLayerData::DataPacket(ref data) => data.pack(&mut buf[22..]),
+            E131RootLayerData::SynchronizationPacket(ref data) => data.pack(&mut buf[22..]),
         }
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum E131RootLayerData<'a> {
     DataPacket(E131DataPacketFramingLayer<'a>),
+    SynchronizationPacket(E131SynchronizationPacketFramingLayer),
 }
 
+#[derive(Debug, Clone)]
 pub struct E131DataPacketFramingLayer<'a> {
     pub source_name: ArrayString<[u8; 64]>,
     pub priority: u8,
@@ -116,6 +131,7 @@ impl<'a> Protocol for E131DataPacketFramingLayer<'a> {
         assert!(buf.len() >= self.len(), "buffer not large enough");
         // Length
         BigEndian::write_u16(&mut buf[0..2], self.len() as u16);
+        buf[0] &= 0x0f;
         // Flags
         buf[0] |= 0x70;
         // Vector VECTOR_E131_DATA_PACKET
@@ -151,6 +167,7 @@ impl<'a> Protocol for E131DataPacketFramingLayer<'a> {
 }
 
 /// Device Management Protocol PDU with SET PROPERTY vector.
+#[derive(Debug, Clone)]
 pub struct E131DataPacketDmpLayer<'a> {
     pub property_values: &'a [u8],
 }
@@ -169,6 +186,7 @@ impl<'a> Protocol for E131DataPacketDmpLayer<'a> {
         assert!(buf.len() >= self.len(), "buffer not large enough");
         // Length
         BigEndian::write_u16(&mut buf[0..2], self.len() as u16);
+        buf[0] &= 0x0f;
         // Flags
         buf[0] |= 0x70;
         // Vector VECTOR_DMP_SET_PROPERTY
@@ -183,10 +201,35 @@ impl<'a> Protocol for E131DataPacketDmpLayer<'a> {
         BigEndian::write_u16(&mut buf[8..10], self.property_values.len() as u16);
         // Property values
         buf[10..10 + self.property_values.len()].copy_from_slice(self.property_values);
-        // fill with zeros
-        let remaining = buf.len() - (10 + self.property_values.len());
-        assert_eq!(remaining, 0);
-        zeros(&mut buf[10 + self.property_values.len()..], remaining);
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct E131SynchronizationPacketFramingLayer {
+    pub sequence_number: u8,
+    pub synchronization_address: u16,
+}
+
+impl Protocol for E131SynchronizationPacketFramingLayer {
+    fn len(&self) -> usize {
+        11
+    }
+
+    fn pack(&self, buf: &mut [u8]) {
+        assert!(buf.len() >= self.len(), "buffer not large enough");
+        // Length
+        BigEndian::write_u16(&mut buf[0..2], self.len() as u16);
+        buf[0] &= 0x0f;
+        // Flags
+        buf[0] |= 0x70;
+        // Vector VECTOR_E131_EXTENDED_SYNCHRONIZATION
+        BigEndian::write_u32(&mut buf[2..6], 0x00000001);
+        // Sequence Number
+        buf[6] = self.sequence_number;
+        // Synchronization Address
+        BigEndian::write_u16(&mut buf[7..9], self.synchronization_address);
+        // Reserved
+        zeros(&mut buf[9..11], 2);
     }
 }
 
@@ -212,7 +255,7 @@ mod test {
         0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00,
         0x00, 0x00,
         // Flags and Length Protocol
-        0x72, 0x6e, // 0x7d in E1-31-2016 sample packet (which is probably wrong)
+        0x72, 0x6e, // 0x7d in E1-31-2016 sample packet (which is wrong)
         // Vector
         0x00, 0x00, 0x00, 0x04,
         // CID
@@ -220,7 +263,7 @@ mod test {
         0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
         // E1.31 Framing Layer
         // Flags and Length
-        0x72, 0x58, // 0x57 in E1-31-2016 sample packet (which is probably wrong)
+        0x72, 0x58, // 0x57 in E1-31-2016 sample packet (which is wrong)
         // Vector
         0x00, 0x00, 0x00, 0x02,
         // Source Name
@@ -243,7 +286,7 @@ mod test {
         0, 1,
         // DMP Layer
         // Flags and Length
-        0x72, 0x0b, // 0x0d in E1-31-2016 sample packet (which is probably wrong)
+        0x72, 0x0b, // 0x0d in E1-31-2016 sample packet (which is wrong)
         // Vector
         0x02,
         // Address and Data Type
@@ -289,6 +332,36 @@ mod test {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ];
 
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    const TEST_SYNCHRONIZATION_PACKET: &[u8] = &[
+        // Root Layer
+        // Preamble Size
+        0x00, 0x10,
+        // Post-amble Size
+        0x00, 0x00,
+        // ACN Packet Identifier
+        0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00,
+        0x00, 0x00,
+        // Flags and Length Protocol
+        0x70, 0x21, // 0x30 in E1-31-2016 sample packet (which is wrong)
+        // Vector
+        0x00, 0x00, 0x00, 0x08,
+        // CID
+        0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2,
+        0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
+        // E1.31 Framing Layer
+        // Flags and Length
+        0x70, 0x0b, // 0x0a in E1-31-2016 sample packet (which is wrong)
+        // Vector
+        0x00, 0x00, 0x00, 0x01,
+        // Sequence Number
+        0x65, // 367 % 0xff
+        // Synchronization Address
+        0x1F, 0x1A, // 7962
+        // Reserved
+        0, 0,
+    ];
+
     #[test]
     fn test_pack_data_packet() {
         let packet = AcnRootLayerProtocol {
@@ -308,12 +381,33 @@ mod test {
             },
         };
 
-        assert_eq!(TEST_DATA_PACKET.len(), 638);
         assert_eq!(packet.len(), TEST_DATA_PACKET.len());
 
         let mut buf = [0; 638];
         packet.pack(&mut buf);
 
         assert_eq!(&buf[..], TEST_DATA_PACKET);
+    }
+
+    #[test]
+    fn test_pack_synchronization_packet() {
+        let packet = AcnRootLayerProtocol {
+            pdu: E131RootLayer {
+                cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
+                data: E131RootLayerData::SynchronizationPacket(
+                    E131SynchronizationPacketFramingLayer {
+                        sequence_number: 0x65,
+                        synchronization_address: 7962,
+                    },
+                ),
+            },
+        };
+
+        assert_eq!(packet.len(), TEST_SYNCHRONIZATION_PACKET.len());
+
+        let mut buf = [0; 49];
+        packet.pack(&mut buf);
+
+        assert_eq!(&buf[..], TEST_SYNCHRONIZATION_PACKET);
     }
 }
