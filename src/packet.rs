@@ -81,7 +81,14 @@ impl<'a> Protocol<'a> for AcnRootLayerProtocol<'a> {
     }
 
     fn len(&self) -> usize {
-        16 + self.pdu.len()
+        // Preamble Size
+        2 +
+        // Post-amble Size
+        2 +
+        // ACN Packet Identifier
+        12 +
+        // PDU block
+        self.pdu.len()
     }
 }
 
@@ -158,12 +165,18 @@ impl<'a> Protocol<'a> for E131RootLayer<'a> {
     }
 
     fn len(&self) -> usize {
-        22 +
-            match self.data {
-                E131RootLayerData::DataPacket(ref data) => data.len(),
-                E131RootLayerData::SynchronizationPacket(ref data) => data.len(),
-                E131RootLayerData::UniverseDiscoveryPacket(ref data) => data.len(),
-            }
+        // Length and Flags
+        2 +
+        // Vector
+        4 +
+        // CID
+        16 +
+        // Data
+        match self.data {
+            E131RootLayerData::DataPacket(ref data) => data.len(),
+            E131RootLayerData::SynchronizationPacket(ref data) =>     data.len(),
+            E131RootLayerData::UniverseDiscoveryPacket(ref data) => data.len(),
+        }
     }
 }
 
@@ -270,7 +283,24 @@ impl<'a> Protocol<'a> for DataPacketFramingLayer<'a> {
     }
 
     fn len(&self) -> usize {
-        77 + self.data.len()
+        // Length and Flags
+        2 +
+        // Vector
+        4 +
+        // Source Name
+        64 +
+        // Priority
+        1 +
+        // Synchronization Address
+        2 +
+        // Sequence Number
+        1 +
+        // Options
+        1 +
+        // Universe
+        2 +
+        // Data
+        self.data.len()
     }
 }
 
@@ -343,7 +373,21 @@ impl<'a> Protocol<'a> for DataPacketDmpLayer<'a> {
             self.property_values.len() <= 513,
             "max 512 data slots + DMX START Code allowed"
         );
-        10 + self.property_values.len()
+
+        // Length and Flags
+        2 +
+        // Vector
+        1 +
+        // Address and Data Type
+        1 +
+        // First Property Address
+        2 +
+        // Address Increment
+        2 +
+        // Property value count
+        2 +
+        // Property values
+        self.property_values.len()
     }
 }
 
@@ -377,7 +421,16 @@ impl<'a> Protocol<'a> for SynchronizationPacketFramingLayer {
     }
 
     fn len(&self) -> usize {
-        11
+        // Length and Flags
+        2 +
+        // Vector
+        4 +
+        // Sequence Number
+        1 +
+        // Synchronization Address
+        2 +
+        // Reserved
+        2
     }
 }
 
@@ -412,7 +465,16 @@ impl<'a> Protocol<'a> for UniverseDiscoveryPacketFramingLayer<'a> {
     }
 
     fn len(&self) -> usize {
-        74 + self.data.len()
+        // Length and Flags
+        2 +
+        // Vector
+        4 +
+        // Source Name
+        64 +
+        // Reserved
+        4 +
+        // Data
+        self.data.len()
     }
 }
 
@@ -465,7 +527,17 @@ impl<'a> Protocol<'a> for UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
             self.universes.len() <= 512,
             "max 512 universes per page allowed"
         );
-        8 + self.universes.len() * 2
+
+        // Length and Flags
+        2 +
+        // Vector
+        4 +
+        // Page
+        1 +
+        // Last Page
+        1 +
+        // Universes
+        self.universes.len() * 2
     }
 }
 
