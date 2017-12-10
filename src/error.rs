@@ -18,8 +18,10 @@ use uuid::ParseError as UUidParseError;
 pub enum ParseError<'a> {
     Uuid(UUidParseError),
     Utf8(Utf8Error),
+    PduInvalidLength(usize),
+    PduInvalidFlags(u8),
     PduVectorNotSupported(u32),
-    InvalidData(&'a str),
+    OtherInvalidData(&'a str),
 }
 
 impl<'a> fmt::Display for ParseError<'a> {
@@ -27,8 +29,10 @@ impl<'a> fmt::Display for ParseError<'a> {
         match *self {
             ParseError::Uuid(ref err) => write!(f, "UUID parsing error: {}", err),
             ParseError::Utf8(ref err) => write!(f, "UTF8 error: {}", err),
-            ParseError::PduVectorNotSupported(v) => write!(f, "Vector {} not supported", v),
-            ParseError::InvalidData(ref msg) => write!(f, "Invalid data: {}", msg),
+            ParseError::PduInvalidLength(len) => write!(f, "Length {} is invalid", len),
+            ParseError::PduInvalidFlags(flags) => write!(f, "Flags {} are invalid", flags),
+            ParseError::PduVectorNotSupported(vec) => write!(f, "Vector {} not supported", vec),
+            ParseError::OtherInvalidData(ref msg) => write!(f, "Invalid data: {}", msg),
         }
     }
 }
@@ -39,8 +43,10 @@ impl<'a> Error for ParseError<'a> {
         match *self {
             ParseError::Uuid(ref err) => err.description(),
             ParseError::Utf8(ref err) => err.description(),
+            ParseError::PduInvalidLength(_) => "PDU invalid length",
+            ParseError::PduInvalidFlags(_) => "PDU invalid flags",
             ParseError::PduVectorNotSupported(_) => "PDU vector not supported",
-            ParseError::InvalidData(ref msg) => msg,
+            ParseError::OtherInvalidData(ref msg) => msg,
         }
     }
 
@@ -48,8 +54,10 @@ impl<'a> Error for ParseError<'a> {
         match *self {
             ParseError::Uuid(ref err) => Some(err),
             ParseError::Utf8(ref err) => Some(err),
+            ParseError::PduInvalidLength(_) => None,
+            ParseError::PduInvalidFlags(_) => None,
             ParseError::PduVectorNotSupported(_) => None,
-            ParseError::InvalidData(_) => None,
+            ParseError::OtherInvalidData(_) => None,
         }
     }
 }
