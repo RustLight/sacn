@@ -117,11 +117,19 @@ impl<'a> Protocol<'a> for E131RootLayer<'a> {
             0x00000008 => {
                 SynchronizationPacketFramingLayer::parse(&buf[22..length])
                     .map(|data| E131RootLayerData::SynchronizationPacket(data))
-                    .or(
-                        UniverseDiscoveryPacketFramingLayer::parse(&buf[22..length])
-                            .map(|data| E131RootLayerData::UniverseDiscoveryPacket(data)),
-                    )
-                    .map_err(|_| ParseError::InvalidData("invalid PDU data"))?
+                    .or_else(|err| match err {
+                        ParseError::PduVectorNotSupported(_) => Ok(
+                            UniverseDiscoveryPacketFramingLayer::parse(&buf[22..length])
+                                .map(|data| E131RootLayerData::UniverseDiscoveryPacket(data))?,
+                        ),
+                        _ => Err(err),
+                    })
+                    .or_else(|err| match err {
+                        ParseError::PduVectorNotSupported(_) => Err(ParseError::InvalidData(
+                            "invalid PDU data",
+                        )),
+                        _ => Err(err),
+                    })?
             }
             v => return Err(ParseError::PduVectorNotSupported(v as u32)),
         };
@@ -174,7 +182,7 @@ impl<'a> Protocol<'a> for E131RootLayer<'a> {
         // Data
         match self.data {
             E131RootLayerData::DataPacket(ref data) => data.len(),
-            E131RootLayerData::SynchronizationPacket(ref data) =>     data.len(),
+            E131RootLayerData::SynchronizationPacket(ref data) => data.len(),
             E131RootLayerData::UniverseDiscoveryPacket(ref data) => data.len(),
         }
     }
@@ -320,10 +328,12 @@ impl<'a> Protocol<'a> for DataPacketDmpLayer<'a> {
         if buf[0] & 0xf0 != 0x70 {
             return Err(ParseError::InvalidData("invalid Flags"));
         }
-        // Vector VECTOR_DMP_SET_PROPERTY
-        if buf[2] != 0x02 {
-            return Err(ParseError::InvalidData("invalid Vector"));
-        }
+        // Vector
+        match buf[2] {
+            // VECTOR_DMP_SET_PROPERTY
+            0x02 => (),
+            v => return Err(ParseError::PduVectorNotSupported(v as u32)),
+        };
         // Address and Data Type
         if buf[3] != 0xa1 {
             return Err(ParseError::InvalidData("invalid Address and Data Type"));
@@ -399,8 +409,35 @@ pub struct SynchronizationPacketFramingLayer {
 }
 
 impl<'a> Protocol<'a> for SynchronizationPacketFramingLayer {
-    fn parse(_: &[u8]) -> Result<SynchronizationPacketFramingLayer, ParseError> {
-        unimplemented!();
+    fn parse(buf: &[u8]) -> Result<SynchronizationPacketFramingLayer, ParseError> {
+        println!("SynchronizationPacketFramingLayer");
+        // Length
+        if NetworkEndian::read_u16(&buf[0..2]) << 4 >> 4 != 11 {
+            return Err(ParseError::InvalidData("invalid Length"));
+        }
+        // Flags
+        if buf[0] & 0xf0 != 0x70 {
+            return Err(ParseError::InvalidData("invalid Flags"));
+        }
+        // Vector
+        match NetworkEndian::read_u32(&buf[2..6]) {
+            // VECTOR_E131_EXTENDED_SYNCHRONIZATION
+            0x00000001 => (),
+            v => return Err(ParseError::PduVectorNotSupported(v as u32)),
+        };
+        // Sequence Number
+        let sequence_number = buf[6];
+        // Synchronization Address
+        let synchronization_address = NetworkEndian::read_u16(&buf[7..9]);
+        // Reserved
+        if buf[9..11] != [0, 0] {
+            return Err(ParseError::InvalidData("invalid Reserved"));
+        }
+
+        Ok(SynchronizationPacketFramingLayer {
+            sequence_number: sequence_number,
+            synchronization_address: synchronization_address,
+        })
     }
 
     fn pack(&self, buf: &mut [u8]) {
@@ -777,6 +814,10 @@ mod test {
         packet.pack(&mut buf);
 
         assert_eq!(&buf[..], TEST_SYNCHRONIZATION_PACKET);
+        assert_eq!(
+            AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET).unwrap(),
+            packet
+        );
     }
 
     #[test]
