@@ -19,6 +19,7 @@
 extern crate core;
 
 extern crate byteorder;
+extern crate arrayvec;
 extern crate uuid;
 //extern crate net2;
 
