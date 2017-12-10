@@ -8,18 +8,22 @@
 //! Implementation of sACN network protocol.
 //!
 //! This crate implements the Streaming ACN (sACN) network protocol
-//! as specified in ANSI E1.31.
-//! sACN is a subset of the ACN protocol (ANSI E1.17).
+//! as specified in ANSI E1.31-2016.
+//! Streaming ACN is built on top of and is compatible with the ACN
+//! protocol suite (ANSI E1.17-2015).
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![doc(html_root_url = "https://docs.rs/sacn/")]
 
+#[cfg(feature = "std")]
+extern crate core;
+
 extern crate byteorder;
 extern crate uuid;
-extern crate arrayvec;
 //extern crate net2;
 
 //pub use self::source::DmxSource;
 
 //mod source;
+pub mod error;
 pub mod packet;
