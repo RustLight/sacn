@@ -106,6 +106,16 @@ impl<'a> Protocol<'a> for E131RootLayer<'a> {
             0x00000004 => E131RootLayerData::DataPacket(
                 DataPacketFramingLayer::parse(&buf[22..length])?,
             ),
+            // VECTOR_ROOT_E131_EXTENDED
+            0x00000008 => {
+                SynchronizationPacketFramingLayer::parse(&buf[22..length])
+                    .map(|data| E131RootLayerData::SynchronizationPacket(data))
+                    .or(
+                        UniverseDiscoveryPacketFramingLayer::parse(&buf[22..length])
+                            .map(|data| E131RootLayerData::UniverseDiscoveryPacket(data)),
+                    )
+                    .map_err(|_| ParseError::InvalidData("invalid PDU data"))?
+            }
             v => return Err(ParseError::PduVectorNotSupported(v as u32)),
         };
         // CID
@@ -647,7 +657,7 @@ mod test {
     ];
 
     #[test]
-    fn test_pack_data_packet() {
+    fn test_data_packet() {
         let packet = AcnRootLayerProtocol {
             pdu: E131RootLayer {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
@@ -678,7 +688,7 @@ mod test {
     }
 
     #[test]
-    fn test_pack_synchronization_packet() {
+    fn test_synchronization_packet() {
         let packet = AcnRootLayerProtocol {
             pdu: E131RootLayer {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
@@ -698,7 +708,7 @@ mod test {
     }
 
     #[test]
-    fn test_pack_universe_discovery_packet() {
+    fn test_universe_discovery_packet() {
         let packet = AcnRootLayerProtocol {
             pdu: E131RootLayer {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
