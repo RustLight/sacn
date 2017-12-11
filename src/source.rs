@@ -9,10 +9,13 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{Result, Error, ErrorKind};
 use std::net::UdpSocket;
+
 use net2::UdpBuilder;
+use arrayvec::ArrayString;
 use uuid::Uuid;
 
-use packet;
+use packet::{Protocol, AcnRootLayerProtocol, E131RootLayer, E131RootLayerData,
+             DataPacketFramingLayer, DataPacketDmpLayer, DataPacketDmpLayerPropertyValues};
 
 fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
@@ -24,15 +27,6 @@ fn universe_to_ip(universe: u16) -> Result<String> {
     let high_byte = (universe >> 8) & 0xff;
     let low_byte = universe & 0xff;
     Ok(format!("239.255.{}.{}:5568", high_byte, low_byte))
-}
-
-fn create_cid() -> [u8; 16] {
-    let uuid = Uuid::new_v4();
-    let mut cid = [0u8; 16];
-    for (&x, p) in uuid.as_bytes().iter().zip(cid.iter_mut()) {
-        *p = x;
-    }
-    cid
 }
 
 /// A DMX over sACN sender.
@@ -55,7 +49,7 @@ fn create_cid() -> [u8; 16] {
 #[derive(Debug)]
 pub struct DmxSource {
     socket: UdpSocket,
-    cid: [u8; 16],
+    cid: Uuid,
     name: String,
     preview_data: bool,
     start_code: u8,
@@ -65,22 +59,22 @@ pub struct DmxSource {
 impl DmxSource {
     /// Constructs a new DmxSource with DMX START code set to 0.
     pub fn new(name: &str) -> Result<DmxSource> {
-        let cid = create_cid();
-        DmxSource::with_cid(name, &cid)
+        let cid = Uuid::new_v4();
+        DmxSource::with_cid(name, cid)
     }
     /// Consturcts a new DmxSource with binding to the supplied ip and a DMX START code set to 0.
     pub fn with_ip(name: &str, ip: &str) -> Result<DmxSource> {
-        let cid = create_cid();
-        DmxSource::with_cid_ip(name, &cid, ip)
+        let cid = Uuid::new_v4();
+        DmxSource::with_cid_ip(name, cid, ip)
     }
 
     /// Constructs a new DmxSource with DMX START code set to 0 with specified CID.
-    pub fn with_cid(name: &str, cid: &[u8; 16]) -> Result<DmxSource> {
+    pub fn with_cid(name: &str, cid: Uuid) -> Result<DmxSource> {
         let ip = "0.0.0.0";
-        DmxSource::with_cid_ip(name, &cid, &ip)
+        DmxSource::with_cid_ip(name, cid, &ip)
     }
     /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
-    pub fn with_cid_ip(name: &str, cid: &[u8; 16], ip: &str) -> Result<DmxSource> {
+    pub fn with_cid_ip(name: &str, cid: Uuid, ip: &str) -> Result<DmxSource> {
         let ip_port = format!("{}:0", ip);
         let sock_builder = try!(UdpBuilder::new_v4());
         let sock = try!(sock_builder.bind(&ip_port));
@@ -114,18 +108,28 @@ impl DmxSource {
             None => 0,
         };
 
-        let sacn_packet = try!(packet::pack_acn(
-            &self.cid,
-            universe,
-            &*self.name,
-            priority,
-            sequence,
-            self.preview_data,
-            false,
-            self.start_code,
-            data,
-        ));
-        try!(self.socket.send_to(&sacn_packet, &*ip));
+        let packet = AcnRootLayerProtocol {
+            pdu: E131RootLayer {
+                cid: self.cid,
+                data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
+                    source_name: ArrayString::from(&self.name).unwrap(),
+                    priority: priority,
+                    synchronization_address: 0,
+                    sequence_number: sequence,
+                    preview_data: self.preview_data,
+                    stream_terminated: false,
+                    force_synchronization: false,
+                    universe: universe,
+                    data: DataPacketDmpLayer {
+                        property_values: DataPacketDmpLayerPropertyValues {
+                            start_code: self.start_code,
+                            dmx_data: data.to_vec(),
+                        },
+                    },
+                }),
+            },
+        };
+        try!(self.socket.send_to(&packet.pack_alloc(), &*ip));
 
         if sequence == 255 {
             sequence = 0;
@@ -148,18 +152,28 @@ impl DmxSource {
         };
 
         for _ in 0..3 {
-            let sacn_packet = try!(packet::pack_acn(
-                &self.cid,
-                universe,
-                &*self.name,
-                200,
-                sequence,
-                false,
-                true,
-                0,
-                &[],
-            ));
-            try!(self.socket.send_to(&sacn_packet, &*ip));
+            let packet = AcnRootLayerProtocol {
+                pdu: E131RootLayer {
+                    cid: self.cid,
+                    data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
+                        source_name: ArrayString::from(&self.name).unwrap(),
+                        priority: 100,
+                        synchronization_address: 0,
+                        sequence_number: sequence,
+                        preview_data: self.preview_data,
+                        stream_terminated: true,
+                        force_synchronization: false,
+                        universe: universe,
+                        data: DataPacketDmpLayer {
+                            property_values: DataPacketDmpLayerPropertyValues {
+                                start_code: self.start_code,
+                                dmx_data: vec![],
+                            },
+                        },
+                    }),
+                },
+            };
+            try!(self.socket.send_to(&packet.pack_alloc(), &*ip));
 
             if sequence == 255 {
                 sequence = 0;
@@ -171,14 +185,13 @@ impl DmxSource {
     }
 
     /// Returns the ACN CID device identifier of the DmxSource.
-    pub fn cid(&self) -> &[u8; 16] {
+    pub fn cid(&self) -> &Uuid {
         &self.cid
     }
 
     /// Sets the ACN CID device identifier.
-    pub fn set_cid(&mut self, cid: [u8; 16]) -> Result<()> {
+    pub fn set_cid(&mut self, cid: Uuid) {
         self.cid = cid;
-        Ok(())
     }
 
     /// Returns the ACN source name.
@@ -317,7 +330,7 @@ mod test {
         packet.push(start_code);
         packet.extend(&dmx_data);
 
-        let mut source = DmxSource::with_cid(&source_name, &cid).unwrap();
+        let mut source = DmxSource::with_cid(&source_name, Uuid::from_bytes(&cid).unwrap()).unwrap();
         source.set_preview_mode(preview_data);
         source.set_start_code(start_code);
         source.set_multicast_loop(true).unwrap();
@@ -349,7 +362,13 @@ mod test {
         source.terminate_stream(1).unwrap();
         for _ in 0..2 {
             recv_socket.recv_from(&mut recv_buf).unwrap();
-            assert_eq!(recv_buf[112], 0b0100_0000)
+            assert_eq!(
+                match AcnRootLayerProtocol::parse(&recv_buf).unwrap().pdu.data {
+                    E131RootLayerData::DataPacket(data) => data.stream_terminated,
+                    _ => panic!(),
+                },
+                true
+            )
         }
     }
 }

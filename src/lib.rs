@@ -21,10 +21,13 @@ extern crate core;
 extern crate byteorder;
 extern crate arrayvec;
 extern crate uuid;
-//extern crate net2;
+#[cfg(feature = "std")]
+extern crate net2;
 
-//pub use self::source::DmxSource;
+#[cfg(feature = "std")]
+pub use self::source::DmxSource;
 
-//mod source;
+#[cfg(feature = "std")]
+mod source;
 pub mod error;
 pub mod packet;

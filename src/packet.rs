@@ -19,6 +19,20 @@ use error::ParseError;
 
 /// Trait to represent an ACN root layer protocol or nested protocol data units (PDUs).
 pub trait Protocol: Sized {
+    /// Returns the parsed packet from the given buffer `buf`.
+    ///
+    /// # Panics
+    /// Panics if the packet can not be parsed.
+    fn parse(buf: &[u8]) -> Result<Self, ParseError>;
+
+    /// Packs the packet into heap allocated memory.
+    #[cfg(feature = "std")]
+    fn pack_alloc(&self) -> Vec<u8> {
+        let mut buf = Vec::with_capacity(self.len());
+        self.pack_vec(&mut buf);
+        buf
+    }
+
     /// Packs the packet into the given vector.
     ///
     /// Grows the vector `buf` if necessary.
@@ -26,14 +40,11 @@ pub trait Protocol: Sized {
     fn pack_vec(&self, buf: &mut Vec<u8>) {
         buf.clear();
         buf.reserve_exact(self.len());
+        unsafe {
+            buf.set_len(self.len());
+        }
         self.pack(buf)
     }
-
-    /// Returns the parsed packet from the given buffer `buf`.
-    ///
-    /// # Panics
-    /// Panics if the packet can not be parsed.
-    fn parse(buf: &[u8]) -> Result<Self, ParseError>;
 
     /// Packs the packet into the given slice `buf`.
     ///
