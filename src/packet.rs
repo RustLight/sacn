@@ -10,7 +10,9 @@ use core::str;
 use std::vec::Vec;
 
 use byteorder::{ByteOrder, NetworkEndian};
-use arrayvec::{ArrayVec, ArrayString};
+#[cfg(not(feature = "std"))]
+use arrayvec::ArrayVec;
+use arrayvec::ArrayString;
 use uuid::Uuid;
 
 use error::ParseError;
@@ -331,6 +333,9 @@ pub struct DataPacketDmpLayer {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataPacketDmpLayerPropertyValues {
     pub start_code: u8,
+    #[cfg(feature = "std")]
+    pub dmx_data: Vec<u8>,
+    #[cfg(not(feature = "std"))]
     pub dmx_data: ArrayVec<[u8; 512]>,
 }
 
@@ -370,11 +375,14 @@ impl<'a> Protocol for DataPacketDmpLayer {
             return Err(ParseError::OtherInvalidData("invalid Property value count"));
         }
         // Property values
+        let property_values_dmx_data_len = length - 11;
         let mut property_values = DataPacketDmpLayerPropertyValues {
             start_code: buf[10],
+            #[cfg(feature = "std")]
+            dmx_data: Vec::with_capacity(property_values_dmx_data_len),
+            #[cfg(not(feature = "std"))]
             dmx_data: ArrayVec::new(),
         };
-        let property_values_dmx_data_len = length - 11;
         unsafe {
             property_values.dmx_data.set_len(
                 property_values_dmx_data_len,
@@ -577,6 +585,9 @@ impl Protocol for UniverseDiscoveryPacketFramingLayer {
 pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer {
     pub page: u8,
     pub last_page: u8,
+    #[cfg(feature = "std")]
+    pub universes: Vec<u16>,
+    #[cfg(not(feature = "std"))]
     pub universes: ArrayVec<[u16; 512]>,
 }
 
@@ -600,8 +611,11 @@ impl Protocol for UniverseDiscoveryPacketUniverseDiscoveryLayer {
         // Last Page
         let last_page = buf[7];
         // Universes
-        let mut universes = ArrayVec::new();
         let universes_len = (length - 8) / 2;
+        #[cfg(feature = "std")]
+        let mut universes = Vec::with_capacity(universes_len);
+        #[cfg(not(feature = "std"))]
+        let mut universes = ArrayVec::new();
         unsafe {
             universes.set_len(universes_len);
         }
@@ -855,6 +869,19 @@ mod test {
 
     #[test]
     fn test_data_packet() {
+        #[cfg(feature = "std")]
+        let dmx_data = {
+            let mut dmx_data = vec![0; 512];
+            dmx_data.copy_from_slice(&TEST_DATA_PACKET[126..638]);
+            dmx_data
+        };
+        #[cfg(not(feature = "std"))]
+        let dmx_data = {
+            let mut dmx_data = [0; 512];
+            dmx_data.copy_from_slice(&TEST_DATA_PACKET[126..638]);
+            ArrayVec::from(dmx_data)
+        };
+
         let packet = AcnRootLayerProtocol {
             pdu: E131RootLayer {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
@@ -870,11 +897,7 @@ mod test {
                     data: DataPacketDmpLayer {
                         property_values: DataPacketDmpLayerPropertyValues {
                             start_code: 0,
-                            dmx_data: {
-                                let mut dmx_data = [0; 512];
-                                dmx_data.copy_from_slice(&TEST_DATA_PACKET[126..638]);
-                                ArrayVec::from(dmx_data)
-                            },
+                            dmx_data: dmx_data,
                         },
                     },
                 }),
@@ -929,6 +952,9 @@ mod test {
                             page: 1,
                             last_page: 2,
                             universes: {
+                                #[cfg(feature = "std")]
+                                let mut universes = Vec::new();
+                                #[cfg(not(feature = "std"))]
                                 let mut universes = ArrayVec::new();
                                 universes.push(3);
                                 universes.push(4);
