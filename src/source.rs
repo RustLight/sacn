@@ -273,7 +273,7 @@ mod test {
         packet.extend("\x00\x10".bytes());
         // Post-amble Size
         packet.extend("\x00\x00".bytes());
-        // ACN Packet Identifie
+        // ACN Packet Identifier
         packet.extend("\x41\x53\x43\x2d\x45\x31\x2e\x31\x37\x00\x00\x00".bytes());
         // Flags and Length (22 + 343)
         packet.push(0b01110001);
