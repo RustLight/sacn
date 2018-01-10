@@ -1,4 +1,4 @@
-// Copyright 2016 sacn Developers
+// Copyright 2017 sacn Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
@@ -8,15 +8,26 @@
 //! Implementation of sACN network protocol.
 //!
 //! This crate implements the Streaming ACN (sACN) network protocol
-//! as specified in ANSI E1.31.
-//! sACN is a subset of the ACN protocol (ANSI E1.17).
+//! as specified in ANSI E1.31-2016.
+//! Streaming ACN is built on top of and is compatible with the ACN
+//! protocol suite (ANSI E1.17-2015).
 
-#![doc(html_root_url = "http://lschmierer.github.io/sacn/")]
+#![cfg_attr(not(feature = "std"), no_std)]
+#![doc(html_root_url = "https://docs.rs/sacn/")]
 
-extern crate net2;
+#[cfg(feature = "std")]
+extern crate core;
+
+extern crate byteorder;
+extern crate arrayvec;
 extern crate uuid;
+#[cfg(feature = "std")]
+extern crate net2;
 
+#[cfg(feature = "std")]
 pub use self::source::DmxSource;
 
+#[cfg(feature = "std")]
 mod source;
-mod packet;
+pub mod error;
+pub mod packet;

@@ -8,5 +8,17 @@ repository = "https://github.com/lschmierer/sacn"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-net2 = "0.2.31"
+byteorder = { version = "1.2.1", features = [] }
+arrayvec = { version = "0.4.6", features = [] }
 uuid = { version = "0.5.1", features = ["v4"] }
+net2 = "0.2.31"
+
+[target.'cfg(feature = "std")'.dependencies]
+uuid = { version = "0.5.1", features = ["use_std", "v4"] }
+
+[features]
+default = ["std"]
+std = []
+
+[badges]
+travis-ci = { repository = "lschmierer/sacn" }
