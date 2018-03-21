@@ -76,22 +76,25 @@ impl<'a> From<Utf8Error> for ParseError<'a> {
 
 /// Errors for packing of sACN network packets.
 #[derive(Debug)]
-pub enum PackError {
+pub enum PackError<'a> {
+    InvalidData(&'a str),
     BufferNotLargeEnough,
 }
 
-impl fmt::Display for PackError {
+impl<'a> fmt::Display for PackError<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            PackError::InvalidData(ref msg) => write!(f, "Invalid data: {}", msg),
             PackError::BufferNotLargeEnough => write!(f, "Supplied buffer is not large enough"),
         }
     }
 }
 
 #[cfg(feature = "std")]
-impl Error for PackError {
+impl<'a> Error for PackError<'a> {
     fn description(&self) -> &str {
         match *self {
+            PackError::InvalidData(ref msg) => msg,
             PackError::BufferNotLargeEnough => "Supplied buffer is not large enough",
         }
     }
