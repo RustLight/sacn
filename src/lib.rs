@@ -18,11 +18,11 @@
 #[cfg(feature = "std")]
 extern crate core;
 
-extern crate byteorder;
 extern crate arrayvec;
-extern crate uuid;
+extern crate byteorder;
 #[cfg(feature = "std")]
 extern crate net2;
+extern crate uuid;
 
 #[cfg(feature = "std")]
 pub use self::source::DmxSource;
