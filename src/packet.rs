@@ -973,16 +973,15 @@ mod test {
             },
         };
 
-        assert_eq!(packet.len(), TEST_DATA_PACKET.len());
-
-        let mut buf = [0; 638];
-        packet.pack(&mut buf).unwrap();
-
-        assert_eq!(&buf[..], TEST_DATA_PACKET);
         assert_eq!(
             AcnRootLayerProtocol::parse(&TEST_DATA_PACKET).unwrap(),
             packet
         );
+
+        let mut buf = [0; 638];
+        packet.pack(&mut buf).unwrap();
+
+        assert_eq!(&buf[..packet.len()], TEST_DATA_PACKET);
     }
 
     #[test]
@@ -997,16 +996,15 @@ mod test {
             },
         };
 
-        assert_eq!(packet.len(), TEST_SYNCHRONIZATION_PACKET.len());
-
-        let mut buf = [0; 49];
-        packet.pack(&mut buf).unwrap();
-
-        assert_eq!(&buf[..], TEST_SYNCHRONIZATION_PACKET);
         assert_eq!(
             AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET).unwrap(),
             packet
         );
+
+        let mut buf = [0; 49];
+        packet.pack(&mut buf).unwrap();
+
+        assert_eq!(&buf[..packet.len()], TEST_SYNCHRONIZATION_PACKET);
     }
 
     #[test]
@@ -1036,37 +1034,14 @@ mod test {
             },
         };
 
-        assert_eq!(packet.len(), TEST_UNIVERSE_DISCOVERY_PACKET.len());
-
-        let mut buf = [0; 126];
-        packet.pack(&mut buf).unwrap();
-
-        assert_eq!(
-            UniverseDiscoveryPacketFramingLayer::parse(&TEST_UNIVERSE_DISCOVERY_PACKET[38..])
-                .unwrap(),
-            UniverseDiscoveryPacketFramingLayer {
-                source_name: ArrayString::from("Source_A").unwrap(),
-                data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
-                    page: 1,
-                    last_page: 2,
-                    universes: {
-                        #[cfg(feature = "std")]
-                        let mut universes = Vec::new();
-                        #[cfg(not(feature = "std"))]
-                        let mut universes = ArrayVec::new();
-                        universes.push(3);
-                        universes.push(4);
-                        universes.push(5);
-                        universes
-                    },
-                },
-            },
-        );
-
-        assert_eq!(&buf[..], TEST_UNIVERSE_DISCOVERY_PACKET);
         assert_eq!(
             AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET).unwrap(),
             packet
         );
+
+        let mut buf = [0; 126];
+        packet.pack(&mut buf).unwrap();
+
+        assert_eq!(&buf[..packet.len()], TEST_UNIVERSE_DISCOVERY_PACKET);
     }
 }
