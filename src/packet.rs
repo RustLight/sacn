@@ -92,7 +92,7 @@ pub struct AcnRootLayerProtocol {
     pub pdu: E131RootLayer,
 }
 
-impl<'a> Protocol for AcnRootLayerProtocol {
+impl Protocol for AcnRootLayerProtocol {
     fn parse(buf: &[u8]) -> Result<AcnRootLayerProtocol, ParseError> {
         // Preamble Size
         if NetworkEndian::read_u16(&buf[0..2]) != 0x0010 {
@@ -400,7 +400,7 @@ pub struct DataPacketDmpLayerPropertyValues {
     #[cfg(not(feature = "std"))] pub dmx_data: ArrayVec<[u8; 512]>,
 }
 
-impl<'a> Protocol for DataPacketDmpLayer {
+impl Protocol for DataPacketDmpLayer {
     fn parse(buf: &[u8]) -> Result<DataPacketDmpLayer, ParseError> {
         // Length and Vector
         let PduInfo { length, vector } = pdu_info(&buf, 1)?;
@@ -515,7 +515,7 @@ pub struct SynchronizationPacketFramingLayer {
     pub synchronization_address: u16,
 }
 
-impl<'a> Protocol for SynchronizationPacketFramingLayer {
+impl Protocol for SynchronizationPacketFramingLayer {
     fn parse(buf: &[u8]) -> Result<SynchronizationPacketFramingLayer, ParseError> {
         // Length and Vector
         let PduInfo { length: _, vector } = pdu_info(&buf, 4)?;
