@@ -11,11 +11,10 @@ use std::io::{Error, ErrorKind, Result};
 use std::net::UdpSocket;
 
 use net2::UdpBuilder;
-use arrayvec::ArrayString;
 use uuid::Uuid;
 
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketDmpLayerPropertyValues,
-             DataPacketFramingLayer, E131RootLayer, E131RootLayerData, Protocol};
+             DataPacketFramingLayer, E131RootLayer, E131RootLayerData};
 
 fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
@@ -112,7 +111,7 @@ impl DmxSource {
             pdu: E131RootLayer {
                 cid: self.cid,
                 data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-                    source_name: ArrayString::from(&self.name).unwrap(),
+                    source_name: &self.name,
                     priority: priority,
                     synchronization_address: 0,
                     sequence_number: sequence,
@@ -123,7 +122,7 @@ impl DmxSource {
                     data: DataPacketDmpLayer {
                         property_values: DataPacketDmpLayerPropertyValues {
                             start_code: self.start_code,
-                            dmx_data: data.to_vec(),
+                            dmx_data: data,
                         },
                     },
                 }),
@@ -156,7 +155,7 @@ impl DmxSource {
                 pdu: E131RootLayer {
                     cid: self.cid,
                     data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-                        source_name: ArrayString::from(&self.name).unwrap(),
+                        source_name: &self.name,
                         priority: 100,
                         synchronization_address: 0,
                         sequence_number: sequence,
@@ -167,7 +166,7 @@ impl DmxSource {
                         data: DataPacketDmpLayer {
                             property_values: DataPacketDmpLayerPropertyValues {
                                 start_code: self.start_code,
-                                dmx_data: vec![],
+                                dmx_data: &[],
                             },
                         },
                     }),

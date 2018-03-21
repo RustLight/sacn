@@ -18,7 +18,6 @@
 #[cfg(feature = "std")]
 extern crate core;
 
-extern crate arrayvec;
 extern crate byteorder;
 #[cfg(feature = "std")]
 extern crate net2;
