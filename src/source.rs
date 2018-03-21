@@ -129,7 +129,7 @@ impl DmxSource {
                 }),
             },
         };
-        try!(self.socket.send_to(&packet.pack_alloc(), &*ip));
+        try!(self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip));
 
         if sequence == 255 {
             sequence = 0;
@@ -173,7 +173,7 @@ impl DmxSource {
                     }),
                 },
             };
-            try!(self.socket.send_to(&packet.pack_alloc(), &*ip));
+            try!(self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip));
 
             if sequence == 255 {
                 sequence = 0;

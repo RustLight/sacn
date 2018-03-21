@@ -15,7 +15,7 @@ use arrayvec::ArrayVec;
 use arrayvec::ArrayString;
 use uuid::Uuid;
 
-use error::ParseError;
+use error::{PackError, ParseError};
 
 struct PduInfo {
     length: usize,
@@ -57,17 +57,17 @@ pub trait Protocol: Sized {
 
     /// Packs the packet into heap allocated memory.
     #[cfg(feature = "std")]
-    fn pack_alloc(&self) -> Vec<u8> {
+    fn pack_alloc(&self) -> Result<Vec<u8>, PackError> {
         let mut buf = Vec::with_capacity(self.len());
-        self.pack_vec(&mut buf);
-        buf
+        self.pack_vec(&mut buf)?;
+        Ok(buf)
     }
 
     /// Packs the packet into the given vector.
     ///
     /// Grows the vector `buf` if necessary.
     #[cfg(feature = "std")]
-    fn pack_vec(&self, buf: &mut Vec<u8>) {
+    fn pack_vec(&self, buf: &mut Vec<u8>) -> Result<(), PackError> {
         buf.clear();
         buf.reserve_exact(self.len());
         unsafe {
@@ -80,7 +80,7 @@ pub trait Protocol: Sized {
     ///
     /// # Panics
     /// Panics if the given slice is not large enough.
-    fn pack(&self, buf: &mut [u8]);
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError>;
 
     /// Returns the number of bytes the packet would occupy when packed.
     fn len(&self) -> usize;
@@ -96,17 +96,15 @@ impl<'a> Protocol for AcnRootLayerProtocol {
     fn parse(buf: &[u8]) -> Result<AcnRootLayerProtocol, ParseError> {
         // Preamble Size
         if NetworkEndian::read_u16(&buf[0..2]) != 0x0010 {
-            return Err(ParseError::OtherInvalidData("invalid Preamble Size"));
+            return Err(ParseError::InvalidData("invalid Preamble Size"));
         }
         // Post-amble Size
         if NetworkEndian::read_u16(&buf[2..4]) != 0 {
-            return Err(ParseError::OtherInvalidData("invalid Post-amble Size"));
+            return Err(ParseError::InvalidData("invalid Post-amble Size"));
         }
         // ACN Packet Identifier
         if &buf[4..16] != b"ASC-E1.17\x00\x00\x00" {
-            return Err(ParseError::OtherInvalidData(
-                "invalid ACN packet indentifier",
-            ));
+            return Err(ParseError::InvalidData("invalid ACN packet indentifier"));
         }
         // PDU block
         Ok(AcnRootLayerProtocol {
@@ -114,16 +112,22 @@ impl<'a> Protocol for AcnRootLayerProtocol {
         })
     }
 
-    fn pack(&self, buf: &mut [u8]) {
-        assert!(buf.len() >= self.len(), "buffer not large enough");
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if buf.len() < self.len() {
+            return Err(PackError::BufferNotLargeEnough);
+        }
+
         // Preamble Size
         NetworkEndian::write_u16(&mut buf[0..2], 0x0010);
+
         // Post-amble Size
         zeros(&mut buf[2..4], 2);
+
         // ACN Packet Identifier
         buf[4..16].copy_from_slice(b"ASC-E1.17\x00\x00\x00");
+
         // PDU block
-        self.pdu.pack(&mut buf[16..])
+        Ok(self.pdu.pack(&mut buf[16..])?)
     }
 
     fn len(&self) -> usize {
@@ -193,8 +197,10 @@ impl Protocol for E131RootLayer {
         })
     }
 
-    fn pack(&self, buf: &mut [u8]) {
-        assert!(buf.len() >= self.len(), "buffer not large enough");
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if buf.len() < self.len() {
+            return Err(PackError::BufferNotLargeEnough);
+        }
 
         // Flags and Length
         let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
@@ -216,9 +222,9 @@ impl Protocol for E131RootLayer {
 
         // Data
         match self.data {
-            E131RootLayerData::DataPacket(ref data) => data.pack(&mut buf[22..]),
-            E131RootLayerData::SynchronizationPacket(ref data) => data.pack(&mut buf[22..]),
-            E131RootLayerData::UniverseDiscoveryPacket(ref data) => data.pack(&mut buf[22..]),
+            E131RootLayerData::DataPacket(ref data) => Ok(data.pack(&mut buf[22..])?),
+            E131RootLayerData::SynchronizationPacket(ref data) => Ok(data.pack(&mut buf[22..])?),
+            E131RootLayerData::UniverseDiscoveryPacket(ref data) => Ok(data.pack(&mut buf[22..])?),
         }
     }
 
@@ -306,8 +312,10 @@ impl Protocol for DataPacketFramingLayer {
         })
     }
 
-    fn pack(&self, buf: &mut [u8]) {
-        assert!(buf.len() >= self.len(), "buffer not large enough");
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if buf.len() < self.len() {
+            return Err(PackError::BufferNotLargeEnough);
+        }
 
         // Flags and Length
         let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
@@ -351,7 +359,7 @@ impl Protocol for DataPacketFramingLayer {
         NetworkEndian::write_u16(&mut buf[75..77], self.universe);
 
         // Data
-        self.data.pack(&mut buf[77..])
+        Ok(self.data.pack(&mut buf[77..])?)
     }
 
     fn len(&self) -> usize {
@@ -402,26 +410,22 @@ impl<'a> Protocol for DataPacketDmpLayer {
 
         // Address and Data Type
         if buf[3] != 0xa1 {
-            return Err(ParseError::OtherInvalidData(
-                "invalid Address and Data Type",
-            ));
+            return Err(ParseError::InvalidData("invalid Address and Data Type"));
         }
 
         // First Property Address
         if NetworkEndian::read_u16(&buf[4..6]) != 0 {
-            return Err(ParseError::OtherInvalidData(
-                "invalid First Property Address",
-            ));
+            return Err(ParseError::InvalidData("invalid First Property Address"));
         }
 
         // Address Increment
         if NetworkEndian::read_u16(&buf[6..8]) != 0x0001 {
-            return Err(ParseError::OtherInvalidData("invalid Address Increment"));
+            return Err(ParseError::InvalidData("invalid Address Increment"));
         }
 
         // Property value count
         if NetworkEndian::read_u16(&buf[8..10]) as usize + 10 != length {
-            return Err(ParseError::OtherInvalidData("invalid Property value count"));
+            return Err(ParseError::InvalidData("invalid Property value count"));
         }
 
         // Property values
@@ -445,8 +449,10 @@ impl<'a> Protocol for DataPacketDmpLayer {
         })
     }
 
-    fn pack(&self, buf: &mut [u8]) {
-        assert!(buf.len() >= self.len(), "buffer not large enough");
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if buf.len() < self.len() {
+            return Err(PackError::BufferNotLargeEnough);
+        }
 
         // Flags and Length
         let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
@@ -473,6 +479,8 @@ impl<'a> Protocol for DataPacketDmpLayer {
         buf[10] = self.property_values.start_code;
         buf[11..11 + self.property_values.dmx_data.len()]
             .copy_from_slice(&self.property_values.dmx_data);
+
+        Ok(())
     }
 
     fn len(&self) -> usize {
@@ -523,7 +531,7 @@ impl<'a> Protocol for SynchronizationPacketFramingLayer {
 
         // Reserved
         if buf[9..11] != [0, 0] {
-            return Err(ParseError::OtherInvalidData("invalid Reserved"));
+            return Err(ParseError::InvalidData("invalid Reserved"));
         }
 
         Ok(SynchronizationPacketFramingLayer {
@@ -532,8 +540,10 @@ impl<'a> Protocol for SynchronizationPacketFramingLayer {
         })
     }
 
-    fn pack(&self, buf: &mut [u8]) {
-        assert!(buf.len() >= self.len(), "buffer not large enough");
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if buf.len() < self.len() {
+            return Err(PackError::BufferNotLargeEnough);
+        }
 
         // Flags and Length
         let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
@@ -550,6 +560,8 @@ impl<'a> Protocol for SynchronizationPacketFramingLayer {
 
         // Reserved
         zeros(&mut buf[9..11], 2);
+
+        Ok(())
     }
 
     fn len(&self) -> usize {
@@ -588,7 +600,7 @@ impl Protocol for UniverseDiscoveryPacketFramingLayer {
 
         // Reserved
         if buf[70..74] != [0, 0, 0, 0] {
-            return Err(ParseError::OtherInvalidData("invalid Reserved"));
+            return Err(ParseError::InvalidData("invalid Reserved"));
         }
 
         // Data
@@ -600,8 +612,10 @@ impl Protocol for UniverseDiscoveryPacketFramingLayer {
         })
     }
 
-    fn pack(&self, buf: &mut [u8]) {
-        assert!(buf.len() >= self.len(), "buffer not large enough");
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if buf.len() < self.len() {
+            return Err(PackError::BufferNotLargeEnough);
+        }
 
         // Flags and Length
         let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
@@ -618,7 +632,7 @@ impl Protocol for UniverseDiscoveryPacketFramingLayer {
         zeros(&mut buf[70..74], 4);
 
         // Data
-        self.data.pack(&mut buf[74..])
+        Ok(self.data.pack(&mut buf[74..])?)
     }
 
     fn len(&self) -> usize {
@@ -678,8 +692,10 @@ impl Protocol for UniverseDiscoveryPacketUniverseDiscoveryLayer {
         })
     }
 
-    fn pack(&self, buf: &mut [u8]) {
-        assert!(buf.len() >= self.len(), "buffer not large enough");
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if buf.len() < self.len() {
+            return Err(PackError::BufferNotLargeEnough);
+        }
 
         // Flags and Length
         let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
@@ -709,7 +725,9 @@ impl Protocol for UniverseDiscoveryPacketUniverseDiscoveryLayer {
         NetworkEndian::write_u16_into(
             &self.universes[..self.universes.len()],
             &mut buf[8..8 + self.universes.len() * 2],
-        )
+        );
+
+        Ok(())
     }
 
     fn len(&self) -> usize {
@@ -958,7 +976,7 @@ mod test {
         assert_eq!(packet.len(), TEST_DATA_PACKET.len());
 
         let mut buf = [0; 638];
-        packet.pack(&mut buf);
+        packet.pack(&mut buf).unwrap();
 
         assert_eq!(&buf[..], TEST_DATA_PACKET);
         assert_eq!(
@@ -982,7 +1000,7 @@ mod test {
         assert_eq!(packet.len(), TEST_SYNCHRONIZATION_PACKET.len());
 
         let mut buf = [0; 49];
-        packet.pack(&mut buf);
+        packet.pack(&mut buf).unwrap();
 
         assert_eq!(&buf[..], TEST_SYNCHRONIZATION_PACKET);
         assert_eq!(
@@ -1021,7 +1039,7 @@ mod test {
         assert_eq!(packet.len(), TEST_UNIVERSE_DISCOVERY_PACKET.len());
 
         let mut buf = [0; 126];
-        packet.pack(&mut buf);
+        packet.pack(&mut buf).unwrap();
 
         assert_eq!(
             UniverseDiscoveryPacketFramingLayer::parse(&TEST_UNIVERSE_DISCOVERY_PACKET[38..])
