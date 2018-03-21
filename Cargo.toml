@@ -13,6 +13,9 @@ arrayvec = { version = "0.4.7", features = [] }
 uuid = { version = "0.6.2", features = ["v4"] }
 net2 = "0.2.31"
 
+[target.'cfg(feature = "std")'.dependencies]
+uuid = { version = "0.6.2", features = ["use_std", "v4"] }
+
 [features]
 default = ["std"]
 std = []
