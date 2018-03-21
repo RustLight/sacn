@@ -7,15 +7,15 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::io::{Result, Error, ErrorKind};
+use std::io::{Error, ErrorKind, Result};
 use std::net::UdpSocket;
 
 use net2::UdpBuilder;
 use arrayvec::ArrayString;
 use uuid::Uuid;
 
-use packet::{Protocol, AcnRootLayerProtocol, E131RootLayer, E131RootLayerData,
-             DataPacketFramingLayer, DataPacketDmpLayer, DataPacketDmpLayerPropertyValues};
+use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketDmpLayerPropertyValues,
+             DataPacketFramingLayer, E131RootLayer, E131RootLayerData, Protocol};
 
 fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {

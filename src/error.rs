@@ -18,10 +18,11 @@ use uuid::ParseError as UUidParseError;
 pub enum ParseError<'a> {
     Uuid(UUidParseError),
     Utf8(Utf8Error),
-    PduInvalidLength(usize),
     PduInvalidFlags(u8),
-    PduVectorNotSupported(u32),
+    PduInvalidLength(usize),
+    PduInvalidVector(u32),
     OtherInvalidData(&'a str),
+    NotEnoughData,
 }
 
 impl<'a> fmt::Display for ParseError<'a> {
@@ -29,10 +30,11 @@ impl<'a> fmt::Display for ParseError<'a> {
         match *self {
             ParseError::Uuid(ref err) => write!(f, "UUID parsing error: {}", err),
             ParseError::Utf8(ref err) => write!(f, "UTF8 error: {}", err),
+            ParseError::PduInvalidFlags(flags) => write!(f, "Flags {:#b} are invalid", flags),
             ParseError::PduInvalidLength(len) => write!(f, "Length {} is invalid", len),
-            ParseError::PduInvalidFlags(flags) => write!(f, "Flags {} are invalid", flags),
-            ParseError::PduVectorNotSupported(vec) => write!(f, "Vector {} not supported", vec),
+            ParseError::PduInvalidVector(vec) => write!(f, "Vector {:#x} not supported", vec),
             ParseError::OtherInvalidData(ref msg) => write!(f, "Invalid data: {}", msg),
+            ParseError::NotEnoughData => write!(f, "Not enough data supplied"),
         }
     }
 }
@@ -43,10 +45,11 @@ impl<'a> Error for ParseError<'a> {
         match *self {
             ParseError::Uuid(ref err) => err.description(),
             ParseError::Utf8(ref err) => err.description(),
-            ParseError::PduInvalidLength(_) => "PDU invalid length",
             ParseError::PduInvalidFlags(_) => "PDU invalid flags",
-            ParseError::PduVectorNotSupported(_) => "PDU vector not supported",
+            ParseError::PduInvalidLength(_) => "PDU invalid length",
+            ParseError::PduInvalidVector(_) => "PDU vector not supported",
             ParseError::OtherInvalidData(ref msg) => msg,
+            ParseError::NotEnoughData => "Not enough data supplied",
         }
     }
 
@@ -54,10 +57,7 @@ impl<'a> Error for ParseError<'a> {
         match *self {
             ParseError::Uuid(ref err) => Some(err),
             ParseError::Utf8(ref err) => Some(err),
-            ParseError::PduInvalidLength(_) => None,
-            ParseError::PduInvalidFlags(_) => None,
-            ParseError::PduVectorNotSupported(_) => None,
-            ParseError::OtherInvalidData(_) => None,
+            _ => None,
         }
     }
 }
