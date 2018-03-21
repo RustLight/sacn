@@ -13,7 +13,7 @@ use std::error::Error;
 
 use uuid::ParseError as UUidParseError;
 
-/// Error for parsing of sACN network packets.
+/// Errors for parsing of sACN network packets.
 #[derive(Debug)]
 pub enum ParseError<'a> {
     Uuid(UUidParseError),
@@ -21,7 +21,7 @@ pub enum ParseError<'a> {
     PduInvalidFlags(u8),
     PduInvalidLength(usize),
     PduInvalidVector(u32),
-    OtherInvalidData(&'a str),
+    InvalidData(&'a str),
     NotEnoughData,
 }
 
@@ -33,7 +33,7 @@ impl<'a> fmt::Display for ParseError<'a> {
             ParseError::PduInvalidFlags(flags) => write!(f, "Flags {:#b} are invalid", flags),
             ParseError::PduInvalidLength(len) => write!(f, "Length {} is invalid", len),
             ParseError::PduInvalidVector(vec) => write!(f, "Vector {:#x} not supported", vec),
-            ParseError::OtherInvalidData(ref msg) => write!(f, "Invalid data: {}", msg),
+            ParseError::InvalidData(ref msg) => write!(f, "Invalid data: {}", msg),
             ParseError::NotEnoughData => write!(f, "Not enough data supplied"),
         }
     }
@@ -48,7 +48,7 @@ impl<'a> Error for ParseError<'a> {
             ParseError::PduInvalidFlags(_) => "PDU invalid flags",
             ParseError::PduInvalidLength(_) => "PDU invalid length",
             ParseError::PduInvalidVector(_) => "PDU vector not supported",
-            ParseError::OtherInvalidData(ref msg) => msg,
+            ParseError::InvalidData(ref msg) => msg,
             ParseError::NotEnoughData => "Not enough data supplied",
         }
     }
@@ -71,5 +71,34 @@ impl<'a> From<UUidParseError> for ParseError<'a> {
 impl<'a> From<Utf8Error> for ParseError<'a> {
     fn from(err: Utf8Error) -> ParseError<'a> {
         ParseError::Utf8(err)
+    }
+}
+
+/// Errors for packing of sACN network packets.
+#[derive(Debug)]
+pub enum PackError {
+    BufferNotLargeEnough,
+}
+
+impl fmt::Display for PackError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            PackError::BufferNotLargeEnough => write!(f, "Supplied buffer is not large enough"),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl Error for PackError {
+    fn description(&self) -> &str {
+        match *self {
+            PackError::BufferNotLargeEnough => "Supplied buffer is not large enough",
+        }
+    }
+
+    fn cause(&self) -> Option<&Error> {
+        match *self {
+            _ => None,
+        }
     }
 }
