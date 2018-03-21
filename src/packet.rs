@@ -579,6 +579,14 @@ enum UniversesData<'a> {
     Unpacked(&'a [u16]),
 }
 
+impl<'a, B: ?Sized + AsRef<[u16]>> From<&'a B> for Universes<'a> {
+    fn from(buf: &'a B) -> Self {
+        Universes {
+            data: UniversesData::Unpacked(buf.as_ref()),
+        }
+    }
+}
+
 impl<'a> Universes<'a> {
     pub fn iter(&self) -> UniversesIter {
         UniversesIter {
@@ -633,14 +641,6 @@ impl<'a> Universes<'a> {
         match self.data {
             UniversesData::Packed(data) => data.len() / 2,
             UniversesData::Unpacked(data) => data.len(),
-        }
-    }
-}
-
-impl<'a> From<&'a [u16]> for Universes<'a> {
-    fn from(buf: &'a [u16]) -> Self {
-        Universes {
-            data: UniversesData::Unpacked(buf),
         }
     }
 }
@@ -1069,7 +1069,7 @@ mod test {
                         data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
                             page: 1,
                             last_page: 2,
-                            universes: Universes::from(&[3, 4, 5][..]),
+                            universes: Universes::from(&[3, 4, 5]),
                         },
                     },
                 ),
