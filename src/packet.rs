@@ -447,6 +447,8 @@ pub struct DataPacketDmpLayer<'a> {
     /// DMX data property values.
     pub property_values: DataPacketDmpLayerPropertyValues<'a>,
 }
+
+/// Property values carrying the actual DMX data.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataPacketDmpLayerPropertyValues<'a> {
     /// DMX start code.
@@ -645,7 +647,7 @@ impl<'a> Pdu<'a> for SynchronizationPacketFramingLayer {
 
 const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x00000002;
 
-// Framing layer PDU for sACN universe discovery packets.
+/// Framing layer PDU for sACN universe discovery packets.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UniverseDiscoveryPacketFramingLayer<'a> {
     /// Name of the source.
