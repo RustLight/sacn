@@ -15,6 +15,93 @@ use uuid::Uuid;
 
 use error::{PackError, ParseError};
 
+/// Root layer protocol of the Architecture for Control Networks (ACN) protocol.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AcnRootLayerProtocol<'a> {
+    /// The PDU this packet carries.
+    pub pdu: E131RootLayer<'a>,
+}
+
+impl<'a> AcnRootLayerProtocol<'a> {
+    /// Parse the packet from the given buffer.
+    pub fn parse(buf: &'a [u8]) -> Result<AcnRootLayerProtocol<'a>, ParseError> {
+        // Preamble Size
+        if NetworkEndian::read_u16(&buf[0..2]) != 0x0010 {
+            return Err(ParseError::InvalidData("invalid Preamble Size"));
+        }
+
+        // Post-amble Size
+        if NetworkEndian::read_u16(&buf[2..4]) != 0 {
+            return Err(ParseError::InvalidData("invalid Post-amble Size"));
+        }
+
+        // ACN Packet Identifier
+        if &buf[4..16] != b"ASC-E1.17\x00\x00\x00" {
+            return Err(ParseError::InvalidData("invalid ACN packet indentifier"));
+        }
+
+        // PDU block
+        Ok(AcnRootLayerProtocol {
+            pdu: E131RootLayer::parse(&buf[16..])?,
+        })
+    }
+
+    /// Packs the packet into heap allocated memory.
+    #[cfg(feature = "std")]
+    pub fn pack_alloc(&self) -> Result<Vec<u8>, PackError> {
+        let mut buf = Vec::with_capacity(self.len());
+        self.pack_vec(&mut buf)?;
+        Ok(buf)
+    }
+
+    /// Packs the packet into the given vector.
+    ///
+    /// Grows the vector `buf` if necessary.
+    #[cfg(feature = "std")]
+    pub fn pack_vec(&self, buf: &mut Vec<u8>) -> Result<(), PackError> {
+        buf.clear();
+        buf.reserve_exact(self.len());
+        unsafe {
+            buf.set_len(self.len());
+        }
+        self.pack(buf)
+    }
+
+    /// Packs the packet into the givven buffer.
+    pub fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if buf.len() < self.len() {
+            return Err(PackError::BufferNotLargeEnough);
+        }
+
+        // Preamble Size
+        NetworkEndian::write_u16(&mut buf[0..2], 0x0010);
+
+        // Post-amble Size
+        zeros(&mut buf[2..4], 2);
+
+        // ACN Packet Identifier
+        buf[4..16].copy_from_slice(b"ASC-E1.17\x00\x00\x00");
+
+        // PDU block
+        Ok(self.pdu.pack(&mut buf[16..])?)
+    }
+
+    /// The length of the packet when packed.
+    pub fn len(&self) -> usize {
+        // Preamble Size
+        2 +
+
+        // Post-amble Size
+        2 +
+
+        // ACN Packet Identifier
+        12 +
+
+        // PDU block
+        self.pdu.len()
+    }
+}
+
 struct PduInfo {
     length: usize,
     vector: u32,
@@ -45,98 +132,30 @@ fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo, ParseError> {
     })
 }
 
-/// Root layer protocol of the Architecture for Control Networks (ACN) protocol.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AcnRootLayerProtocol<'a> {
-    pub pdu: E131RootLayer<'a>,
+#[inline]
+fn parse_source_name(buf: &[u8]) -> Result<&str, ParseError> {
+    let mut source_name_len = buf.len();
+    for i in 0..buf.len() {
+        if buf[i] == 0 {
+            source_name_len = i;
+            break;
+        }
+    }
+    Ok(str::from_utf8(&buf[..source_name_len])?)
 }
 
-impl<'a> AcnRootLayerProtocol<'a> {
-    pub fn parse(buf: &'a [u8]) -> Result<AcnRootLayerProtocol<'a>, ParseError> {
-        // Preamble Size
-        if NetworkEndian::read_u16(&buf[0..2]) != 0x0010 {
-            return Err(ParseError::InvalidData("invalid Preamble Size"));
-        }
-        // Post-amble Size
-        if NetworkEndian::read_u16(&buf[2..4]) != 0 {
-            return Err(ParseError::InvalidData("invalid Post-amble Size"));
-        }
-        // ACN Packet Identifier
-        if &buf[4..16] != b"ASC-E1.17\x00\x00\x00" {
-            return Err(ParseError::InvalidData("invalid ACN packet indentifier"));
-        }
-        // PDU block
-        Ok(AcnRootLayerProtocol {
-            pdu: E131RootLayer::parse(&buf[16..])?,
-        })
-    }
-
-    /// Packs the packet into heap allocated memory.
-    #[cfg(feature = "std")]
-    pub fn pack_alloc(&self) -> Result<Vec<u8>, PackError> {
-        let mut buf = Vec::with_capacity(self.len());
-        self.pack_vec(&mut buf)?;
-        Ok(buf)
-    }
-
-    /// Packs the packet into the given vector.
-    ///
-    /// Grows the vector `buf` if necessary.
-    #[cfg(feature = "std")]
-    pub fn pack_vec(&self, buf: &mut Vec<u8>) -> Result<(), PackError> {
-        buf.clear();
-        buf.reserve_exact(self.len());
-        unsafe {
-            buf.set_len(self.len());
-        }
-        self.pack(buf)
-    }
-
-    pub fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
-        if buf.len() < self.len() {
-            return Err(PackError::BufferNotLargeEnough);
-        }
-
-        // Preamble Size
-        NetworkEndian::write_u16(&mut buf[0..2], 0x0010);
-
-        // Post-amble Size
-        zeros(&mut buf[2..4], 2);
-
-        // ACN Packet Identifier
-        buf[4..16].copy_from_slice(b"ASC-E1.17\x00\x00\x00");
-
-        // PDU block
-        Ok(self.pdu.pack(&mut buf[16..])?)
-    }
-
-    pub fn len(&self) -> usize {
-        // Preamble Size
-        2 +
-        // Post-amble Size
-        2 +
-        // ACN Packet Identifier
-        12 +
-        // PDU block
-        self.pdu.len()
+#[inline]
+fn zeros(buf: &mut [u8], n: usize) {
+    for i in 0..n {
+        buf[i] = 0;
     }
 }
 
-/// Trait to represent an ACN root layer protocol or nested protocol data units (PDUs).
-trait Protocol<'a>: Sized {
-    /// Returns the parsed packet from the given buffer `buf`.
-    ///
-    /// # Panics
-    /// Panics if the packet can not be parsed.
+trait Pdu<'a>: Sized {
     fn parse(buf: &'a [u8]) -> Result<Self, ParseError>;
 
-    /// Packs the packet into the given slice `buf`.
-    ///
-    /// # Panics
-    /// Panics if the given slice is not large enough.
     fn pack(&self, buf: &mut [u8]) -> Result<(), PackError>;
 
-    /// Returns the number of bytes the packet would occupy when packed.
     fn len(&self) -> usize;
 }
 
@@ -146,19 +165,27 @@ const VECTOR_ROOT_E131_EXTENDED: u32 = 0x00000008;
 /// Root layer protocol data unit (PDU).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct E131RootLayer<'a> {
+    /// Sender UUID.
     pub cid: Uuid,
+
+    /// Data carried by the Root Layer PDU.
     pub data: E131RootLayerData<'a>,
 }
 
 /// Payload of the Root Layer PDU.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum E131RootLayerData<'a> {
+    /// DMX data packet.
     DataPacket(DataPacketFramingLayer<'a>),
+
+    /// Synchronization packet.
     SynchronizationPacket(SynchronizationPacketFramingLayer),
+
+    /// Universe discovery packet.
     UniverseDiscoveryPacket(UniverseDiscoveryPacketFramingLayer<'a>),
 }
 
-impl<'a> Protocol<'a> for E131RootLayer<'a> {
+impl<'a> Pdu<'a> for E131RootLayer<'a> {
     fn parse(buf: &'a [u8]) -> Result<E131RootLayer<'a>, ParseError> {
         // Length and Vector
         let PduInfo { length, vector } = pdu_info(&buf, 4)?;
@@ -237,10 +264,13 @@ impl<'a> Protocol<'a> for E131RootLayer<'a> {
     fn len(&self) -> usize {
         // Length and Flags
         2 +
+
         // Vector
         4 +
+
         // CID
         16 +
+
         // Data
         match self.data {
             E131RootLayerData::DataPacket(ref data) => data.len(),
@@ -255,18 +285,35 @@ const VECTOR_E131_DATA_PACKET: u32 = 0x00000002;
 /// Framing layer PDU for sACN data packets.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataPacketFramingLayer<'a> {
+    /// The name of the source.
     pub source_name: &'a str,
+
+    /// Priority of this data packet.
     pub priority: u8,
+
+    /// Synchronization adress.
     pub synchronization_address: u16,
+
+    /// The sequence number of this packet.
     pub sequence_number: u8,
+
+    /// If this packets data is preview data.
     pub preview_data: bool,
+
+    /// If transmission on this universe is terminated.
     pub stream_terminated: bool,
+
+    /// Force synchronization if no synchronization packets are received.
     pub force_synchronization: bool,
+
+    /// The universe DMX data is transmitted for.
     pub universe: u16,
+
+    /// DMP layer containing the DMX data.
     pub data: DataPacketDmpLayer<'a>,
 }
 
-impl<'a> Protocol<'a> for DataPacketFramingLayer<'a> {
+impl<'a> Pdu<'a> for DataPacketFramingLayer<'a> {
     fn parse(buf: &'a [u8]) -> Result<DataPacketFramingLayer, ParseError> {
         // Length and Vector
         let PduInfo { length, vector } = pdu_info(&buf, 4)?;
@@ -363,20 +410,28 @@ impl<'a> Protocol<'a> for DataPacketFramingLayer<'a> {
     fn len(&self) -> usize {
         // Length and Flags
         2 +
+
         // Vector
         4 +
+
         // Source Name
         64 +
+
         // Priority
         1 +
+
         // Synchronization Address
         2 +
+
         // Sequence Number
         1 +
+
         // Options
         1 +
+
         // Universe
         2 +
+
         // Data
         self.data.len()
     }
@@ -389,15 +444,19 @@ const VECTOR_DMP_SET_PROPERTY: u8 = 0x02;
 /// Used for sACN data packets.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataPacketDmpLayer<'a> {
+    /// DMX data property values.
     pub property_values: DataPacketDmpLayerPropertyValues<'a>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataPacketDmpLayerPropertyValues<'a> {
+    /// DMX start code.
     pub start_code: u8,
+
+    /// The DMX data.
     pub dmx_data: &'a [u8],
 }
 
-impl<'a> Protocol<'a> for DataPacketDmpLayer<'a> {
+impl<'a> Pdu<'a> for DataPacketDmpLayer<'a> {
     fn parse(buf: &'a [u8]) -> Result<DataPacketDmpLayer, ParseError> {
         // Length and Vector
         let PduInfo { length, vector } = pdu_info(&buf, 1)?;
@@ -428,6 +487,10 @@ impl<'a> Protocol<'a> for DataPacketDmpLayer<'a> {
         // Property values
         let property_values_start_code = buf[10];
         let property_values_dmx_data = &buf[11..length];
+        if property_values_dmx_data.len() > 512 {
+            return Err(ParseError::InvalidData("only 512 universes allowed"));
+        }
+
         let property_values = DataPacketDmpLayerPropertyValues {
             start_code: property_values_start_code,
             dmx_data: property_values_dmx_data,
@@ -439,6 +502,10 @@ impl<'a> Protocol<'a> for DataPacketDmpLayer<'a> {
     }
 
     fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if self.property_values.dmx_data.len() > 512 {
+            return Err(PackError::InvalidData("only 512 DMX values allowed"));
+        }
+
         if buf.len() < self.len() {
             return Err(PackError::BufferNotLargeEnough);
         }
@@ -464,6 +531,7 @@ impl<'a> Protocol<'a> for DataPacketDmpLayer<'a> {
             &mut buf[8..10],
             self.property_values.dmx_data.len() as u16 + 1,
         );
+
         // Property values
         buf[10] = self.property_values.start_code;
         buf[11..11 + self.property_values.dmx_data.len()]
@@ -473,295 +541,26 @@ impl<'a> Protocol<'a> for DataPacketDmpLayer<'a> {
     }
 
     fn len(&self) -> usize {
-        assert!(
-            self.property_values.dmx_data.len() <= 512,
-            "max 512 DMX data slots"
-        );
-
         // Length and Flags
         2 +
+
         // Vector
         1 +
+
         // Address and Data Type
         1 +
+
         // First Property Address
         2 +
+
         // Address Increment
         2 +
+
         // Property value count
         2 +
+
         // Property values
         1 + self.property_values.dmx_data.len()
-    }
-}
-
-const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x00000002;
-
-// Framing layer PDU for sACN universe discovery packets.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UniverseDiscoveryPacketFramingLayer<'a> {
-    pub source_name: &'a str,
-    pub data: UniverseDiscoveryPacketUniverseDiscoveryLayer<'a>,
-}
-
-impl<'a> Protocol<'a> for UniverseDiscoveryPacketFramingLayer<'a> {
-    fn parse(buf: &'a [u8]) -> Result<UniverseDiscoveryPacketFramingLayer<'a>, ParseError> {
-        // Length and Vector
-        let PduInfo { length, vector } = pdu_info(&buf, 4)?;
-        if vector != VECTOR_E131_EXTENDED_DISCOVERY {
-            return Err(ParseError::PduInvalidVector(vector));
-        }
-
-        // Source Name
-        let source_name = parse_source_name(&buf[6..70])?;
-
-        // Reserved
-        if buf[70..74] != [0, 0, 0, 0] {
-            return Err(ParseError::InvalidData("invalid Reserved"));
-        }
-
-        // Data
-        let data = UniverseDiscoveryPacketUniverseDiscoveryLayer::parse(&buf[74..length])?;
-
-        Ok(UniverseDiscoveryPacketFramingLayer {
-            source_name: source_name,
-            data: data,
-        })
-    }
-
-    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
-        if buf.len() < self.len() {
-            return Err(PackError::BufferNotLargeEnough);
-        }
-
-        // Flags and Length
-        let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
-        NetworkEndian::write_u16(&mut buf[0..2], flags_and_length);
-
-        // Vector
-        NetworkEndian::write_u32(&mut buf[2..6], VECTOR_E131_EXTENDED_DISCOVERY);
-
-        // Source Name
-        zeros(&mut buf[6..70], 64);
-        buf[6..6 + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
-
-        // Reserved
-        zeros(&mut buf[70..74], 4);
-
-        // Data
-        Ok(self.data.pack(&mut buf[74..])?)
-    }
-
-    fn len(&self) -> usize {
-        // Length and Flags
-        2 +
-        // Vector
-        4 +
-        // Source Name
-        64 +
-        // Reserved
-        4 +
-        // Data
-        self.data.len()
-    }
-}
-
-const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x00000001;
-
-#[derive(Debug, Clone)]
-pub struct Universes<'a> {
-    data: UniversesData<'a>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum UniversesData<'a> {
-    Packed(&'a [u8]),
-    Unpacked(&'a [u16]),
-}
-
-impl<'a, B: ?Sized + AsRef<[u16]>> From<&'a B> for Universes<'a> {
-    fn from(buf: &'a B) -> Self {
-        Universes {
-            data: UniversesData::Unpacked(buf.as_ref()),
-        }
-    }
-}
-
-impl<'a> Universes<'a> {
-    pub fn iter(&self) -> UniversesIter {
-        UniversesIter {
-            data: self.data.clone(),
-            index: 0,
-        }
-    }
-
-    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
-        if !self.unique() {
-            return Err(PackError::InvalidData("Universes are not unique"));
-        }
-        if !self.sorted() {
-            return Err(PackError::InvalidData("Universes are not sorted"));
-        }
-
-        match self.data {
-            UniversesData::Packed(data) => buf[..self.len() * 2].copy_from_slice(data),
-            UniversesData::Unpacked(_) => for (index, universe) in self.iter().enumerate() {
-                NetworkEndian::write_u16(&mut buf[index * 2..], universe);
-            },
-        }
-
-        Ok(())
-    }
-
-    pub fn unique(&self) -> bool {
-        let mut last_universe = 0;
-        for universe in self.iter() {
-            if universe == last_universe {
-                return false;
-            } else {
-                last_universe = universe;
-            }
-        }
-        true
-    }
-
-    pub fn sorted(&self) -> bool {
-        let mut current_universe = 0;
-        for universe in self.iter() {
-            if universe < current_universe {
-                return false;
-            } else {
-                current_universe = universe;
-            }
-        }
-        true
-    }
-
-    pub fn len(&self) -> usize {
-        match self.data {
-            UniversesData::Packed(data) => data.len() / 2,
-            UniversesData::Unpacked(data) => data.len(),
-        }
-    }
-}
-
-impl<'a> PartialEq for Universes<'a> {
-    fn eq(&self, other: &Universes) -> bool {
-        self.iter().eq(other.iter())
-    }
-}
-
-impl<'a> Eq for Universes<'a> {}
-
-pub struct UniversesIter<'a> {
-    data: UniversesData<'a>,
-    index: usize,
-}
-
-impl<'a> Iterator for UniversesIter<'a> {
-    type Item = u16;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.data {
-            UniversesData::Packed(data) => {
-                if self.index < data.len() / 2 {
-                    let universe = NetworkEndian::read_u16(&data[self.index * 2..]);
-                    self.index += 1;
-                    Some(universe)
-                } else {
-                    None
-                }
-            }
-            UniversesData::Unpacked(data) => {
-                if self.index < data.len() {
-                    let universe = data[self.index];
-                    self.index += 1;
-                    Some(universe)
-                } else {
-                    None
-                }
-            }
-        }
-    }
-}
-
-/// Universe discovery layer PDU.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
-    pub page: u8,
-    pub last_page: u8,
-    pub universes: Universes<'a>,
-}
-
-impl<'a> Protocol<'a> for UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
-    fn parse(
-        buf: &'a [u8],
-    ) -> Result<UniverseDiscoveryPacketUniverseDiscoveryLayer<'a>, ParseError> {
-        // Length and Vector
-        let PduInfo { length, vector } = pdu_info(&buf, 4)?;
-        if vector != VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST {
-            return Err(ParseError::PduInvalidVector(vector));
-        }
-
-        // Page
-        let page = buf[6];
-
-        // Last Page
-        let last_page = buf[7];
-
-        // Universes
-        let universes = Universes {
-            data: UniversesData::Packed(&buf[8..length]),
-        };
-
-        Ok(UniverseDiscoveryPacketUniverseDiscoveryLayer {
-            page: page,
-            last_page: last_page,
-            universes: universes,
-        })
-    }
-
-    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
-        if buf.len() < self.len() {
-            return Err(PackError::BufferNotLargeEnough);
-        }
-
-        // Flags and Length
-        let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
-        NetworkEndian::write_u16(&mut buf[0..2], flags_and_length);
-
-        // Vector
-        NetworkEndian::write_u32(&mut buf[2..6], VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST);
-
-        // Page
-        buf[6] = self.page;
-
-        // Last Page
-        buf[7] = self.last_page;
-
-        // Universes
-        self.universes
-            .pack(&mut buf[8..8 + self.universes.len() * 2])?;
-
-        Ok(())
-    }
-
-    fn len(&self) -> usize {
-        assert!(
-            self.universes.len() <= 512,
-            "max 512 universes per page allowed"
-        );
-
-        // Length and Flags
-        2 +
-        // Vector
-        4 +
-        // Page
-        1 +
-        // Last Page
-        1 +
-        // Universes
-        self.universes.len() * 2
     }
 }
 
@@ -770,11 +569,14 @@ const VECTOR_E131_EXTENDED_SYNCHRONIZATION: u32 = 0x00000001;
 /// sACN synchronization packet PDU.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SynchronizationPacketFramingLayer {
+    /// The sequence number of the packet.
     pub sequence_number: u8,
+
+    /// The address to synchronize.
     pub synchronization_address: u16,
 }
 
-impl<'a> Protocol<'a> for SynchronizationPacketFramingLayer {
+impl<'a> Pdu<'a> for SynchronizationPacketFramingLayer {
     fn parse(buf: &'a [u8]) -> Result<SynchronizationPacketFramingLayer, ParseError> {
         // Length and Vector
         let PduInfo { length: _, vector } = pdu_info(&buf, 4)?;
@@ -826,33 +628,318 @@ impl<'a> Protocol<'a> for SynchronizationPacketFramingLayer {
     fn len(&self) -> usize {
         // Length and Flags
         2 +
+
         // Vector
         4 +
+
         // Sequence Number
         1 +
+
         // Synchronization Address
         2 +
+
         // Reserved
         2
     }
 }
 
-#[inline]
-fn parse_source_name(buf: &[u8]) -> Result<&str, ParseError> {
-    let mut source_name_len = buf.len();
-    for i in 0..buf.len() {
-        if buf[i] == 0 {
-            source_name_len = i;
-            break;
-        }
-    }
-    Ok(str::from_utf8(&buf[..source_name_len])?)
+const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x00000002;
+
+// Framing layer PDU for sACN universe discovery packets.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UniverseDiscoveryPacketFramingLayer<'a> {
+    /// Name of the source.
+    pub source_name: &'a str,
+
+    /// Universe dicovery layer.
+    pub data: UniverseDiscoveryPacketUniverseDiscoveryLayer<'a>,
 }
 
-#[inline]
-fn zeros(buf: &mut [u8], n: usize) {
-    for i in 0..n {
-        buf[i] = 0;
+impl<'a> Pdu<'a> for UniverseDiscoveryPacketFramingLayer<'a> {
+    fn parse(buf: &'a [u8]) -> Result<UniverseDiscoveryPacketFramingLayer<'a>, ParseError> {
+        // Length and Vector
+        let PduInfo { length, vector } = pdu_info(&buf, 4)?;
+        if vector != VECTOR_E131_EXTENDED_DISCOVERY {
+            return Err(ParseError::PduInvalidVector(vector));
+        }
+
+        // Source Name
+        let source_name = parse_source_name(&buf[6..70])?;
+
+        // Reserved
+        if buf[70..74] != [0, 0, 0, 0] {
+            return Err(ParseError::InvalidData("invalid Reserved"));
+        }
+
+        // Data
+        let data = UniverseDiscoveryPacketUniverseDiscoveryLayer::parse(&buf[74..length])?;
+
+        Ok(UniverseDiscoveryPacketFramingLayer {
+            source_name: source_name,
+            data: data,
+        })
+    }
+
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if buf.len() < self.len() {
+            return Err(PackError::BufferNotLargeEnough);
+        }
+
+        // Flags and Length
+        let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
+        NetworkEndian::write_u16(&mut buf[0..2], flags_and_length);
+
+        // Vector
+        NetworkEndian::write_u32(&mut buf[2..6], VECTOR_E131_EXTENDED_DISCOVERY);
+
+        // Source Name
+        zeros(&mut buf[6..70], 64);
+        buf[6..6 + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
+
+        // Reserved
+        zeros(&mut buf[70..74], 4);
+
+        // Data
+        Ok(self.data.pack(&mut buf[74..])?)
+    }
+
+    fn len(&self) -> usize {
+        // Length and Flags
+        2 +
+
+        // Vector
+        4 +
+
+        // Source Name
+        64 +
+
+        // Reserved
+        4 +
+
+        // Data
+        self.data.len()
+    }
+}
+
+const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x00000001;
+
+/// List of universes.
+///
+/// Use `From` trait to create from a list of `u16` integers.
+/// The universes must not contain duplicates and must be sorted from
+/// low to high.
+#[derive(Debug, Clone)]
+pub struct Universes<'a> {
+    data: UniversesData<'a>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum UniversesData<'a> {
+    Packed(&'a [u8]),
+    Unpacked(&'a [u16]),
+}
+
+impl<'a, B: ?Sized + AsRef<[u16]>> From<&'a B> for Universes<'a> {
+    fn from(buf: &'a B) -> Self {
+        Universes {
+            data: UniversesData::Unpacked(buf.as_ref()),
+        }
+    }
+}
+
+impl<'a> Universes<'a> {
+    /// Create an Iterator over the contained universes.
+    pub fn iter(&self) -> UniversesIter {
+        UniversesIter {
+            data: self.data.clone(),
+            index: 0,
+        }
+    }
+
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if !self.unique() {
+            return Err(PackError::InvalidData("Universes are not unique"));
+        }
+
+        if !self.sorted() {
+            return Err(PackError::InvalidData("Universes are not sorted"));
+        }
+
+        match self.data {
+            UniversesData::Packed(data) => buf[..self.len() * 2].copy_from_slice(data),
+            UniversesData::Unpacked(_) => for (index, universe) in self.iter().enumerate() {
+                NetworkEndian::write_u16(&mut buf[index * 2..], universe);
+            },
+        }
+
+        Ok(())
+    }
+
+    fn unique(&self) -> bool {
+        let mut last_universe = 0;
+        for universe in self.iter() {
+            if universe == last_universe {
+                return false;
+            } else {
+                last_universe = universe;
+            }
+        }
+        true
+    }
+
+    fn sorted(&self) -> bool {
+        let mut current_universe = 0;
+        for universe in self.iter() {
+            if universe < current_universe {
+                return false;
+            } else {
+                current_universe = universe;
+            }
+        }
+        true
+    }
+
+    /// The length of the universe list.
+    pub fn len(&self) -> usize {
+        match self.data {
+            UniversesData::Packed(data) => data.len() / 2,
+            UniversesData::Unpacked(data) => data.len(),
+        }
+    }
+}
+
+impl<'a> PartialEq for Universes<'a> {
+    fn eq(&self, other: &Universes) -> bool {
+        self.iter().eq(other.iter())
+    }
+}
+
+impl<'a> Eq for Universes<'a> {}
+
+/// Iterator yielding each universe.
+///
+/// If received form the network, `u16`s are read from an internal `u8` buffer.
+pub struct UniversesIter<'a> {
+    data: UniversesData<'a>,
+    index: usize,
+}
+
+impl<'a> Iterator for UniversesIter<'a> {
+    type Item = u16;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.data {
+            UniversesData::Packed(data) => {
+                if self.index < data.len() / 2 {
+                    let universe = NetworkEndian::read_u16(&data[self.index * 2..]);
+                    self.index += 1;
+                    Some(universe)
+                } else {
+                    None
+                }
+            }
+            UniversesData::Unpacked(data) => {
+                if self.index < data.len() {
+                    let universe = data[self.index];
+                    self.index += 1;
+                    Some(universe)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
+/// Universe discovery layer PDU.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
+    /// Current page of the dicovery packet.
+    pub page: u8,
+
+    /// The number of the final page.
+    pub last_page: u8,
+
+    /// List of universes.
+    pub universes: Universes<'a>,
+}
+
+impl<'a> Pdu<'a> for UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
+    fn parse(
+        buf: &'a [u8],
+    ) -> Result<UniverseDiscoveryPacketUniverseDiscoveryLayer<'a>, ParseError> {
+        // Length and Vector
+        let PduInfo { length, vector } = pdu_info(&buf, 4)?;
+        if vector != VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST {
+            return Err(ParseError::PduInvalidVector(vector));
+        }
+
+        // Page
+        let page = buf[6];
+
+        // Last Page
+        let last_page = buf[7];
+
+        // Universes
+        let universe_buf = &buf[8..length];
+        if universe_buf.len() > 512 * 2 {
+            return Err(ParseError::InvalidData("only 512 universes allowed"));
+        }
+        let universes = Universes {
+            data: UniversesData::Packed(universe_buf),
+        };
+
+        Ok(UniverseDiscoveryPacketUniverseDiscoveryLayer {
+            page: page,
+            last_page: last_page,
+            universes: universes,
+        })
+    }
+
+    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+        if self.universes.len() > 512 {
+            return Err(PackError::InvalidData("only 512 universes allowed"));
+        }
+
+        if buf.len() < self.len() {
+            return Err(PackError::BufferNotLargeEnough);
+        }
+
+        // Flags and Length
+        let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
+        NetworkEndian::write_u16(&mut buf[0..2], flags_and_length);
+
+        // Vector
+        NetworkEndian::write_u32(&mut buf[2..6], VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST);
+
+        // Page
+        buf[6] = self.page;
+
+        // Last Page
+        buf[7] = self.last_page;
+
+        // Universes
+        self.universes
+            .pack(&mut buf[8..8 + self.universes.len() * 2])?;
+
+        Ok(())
+    }
+
+    fn len(&self) -> usize {
+        // Length and Flags
+        2 +
+
+        // Vector
+        4 +
+
+        // Page
+        1 +
+
+        // Last Page
+        1 +
+
+        // Universes
+        self.universes.len() * 2
     }
 }
 
@@ -1059,6 +1146,29 @@ mod test {
     }
 
     #[test]
+    fn test_synchronization_packet() {
+        let packet = AcnRootLayerProtocol {
+            pdu: E131RootLayer {
+                cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
+                data: E131RootLayerData::SynchronizationPacket(SynchronizationPacketFramingLayer {
+                    sequence_number: 0x65,
+                    synchronization_address: 7962,
+                }),
+            },
+        };
+
+        assert_eq!(
+            AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET).unwrap(),
+            packet
+        );
+
+        let mut buf = [0; 49];
+        packet.pack(&mut buf).unwrap();
+
+        assert_eq!(&buf[..packet.len()], TEST_SYNCHRONIZATION_PACKET);
+    }
+
+    #[test]
     fn test_universe_discovery_packet() {
         let packet = AcnRootLayerProtocol {
             pdu: E131RootLayer {
@@ -1085,28 +1195,5 @@ mod test {
         packet.pack(&mut buf).unwrap();
 
         assert_eq!(&buf[..packet.len()], TEST_UNIVERSE_DISCOVERY_PACKET);
-    }
-
-    #[test]
-    fn test_synchronization_packet() {
-        let packet = AcnRootLayerProtocol {
-            pdu: E131RootLayer {
-                cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
-                data: E131RootLayerData::SynchronizationPacket(SynchronizationPacketFramingLayer {
-                    sequence_number: 0x65,
-                    synchronization_address: 7962,
-                }),
-            },
-        };
-
-        assert_eq!(
-            AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET).unwrap(),
-            packet
-        );
-
-        let mut buf = [0; 49];
-        packet.pack(&mut buf).unwrap();
-
-        assert_eq!(&buf[..packet.len()], TEST_SYNCHRONIZATION_PACKET);
     }
 }
