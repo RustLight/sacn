@@ -1,9 +1,11 @@
-// Copyright 2017 sacn Developers
+// Copyright 2018 sacn Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
+
+//! Errors used through the sacn crate.
 
 use core::str::Utf8Error;
 use core::fmt;
@@ -16,12 +18,25 @@ use uuid::ParseError as UUidParseError;
 /// Errors for parsing of sACN network packets.
 #[derive(Debug)]
 pub enum ParseError<'a> {
+    /// Error parsing the received UUID.
     Uuid(UUidParseError),
+
+    /// Error parsing received UTF8 string.
     Utf8(Utf8Error),
+
+    /// Received PDU flags are invalid.
     PduInvalidFlags(u8),
+
+    /// Received PDU length is invalid.
     PduInvalidLength(usize),
+
+    /// Received PDU vector is invalid.
     PduInvalidVector(u32),
+
+    /// Other invalid data received.
     InvalidData(&'a str),
+
+    /// Buffer does not contain enough data.
     NotEnoughData,
 }
 
@@ -77,7 +92,10 @@ impl<'a> From<Utf8Error> for ParseError<'a> {
 /// Errors for packing of sACN network packets.
 #[derive(Debug)]
 pub enum PackError<'a> {
+    /// Packet contains invalid data.
     InvalidData(&'a str),
+
+    /// Supplied buffer is not large enough.
     BufferNotLargeEnough,
 }
 

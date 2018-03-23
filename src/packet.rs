@@ -1,9 +1,53 @@
-// Copyright 2017 sacn Developers
+// Copyright 2018 sacn Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
+
+//! Parsing of sacn network packets.
+//!
+//! The packets live within the scope of the ACN protocol suite.
+//!
+//! # Examples
+//!
+//! ```
+//! # extern crate uuid;
+//! # extern crate sacn;
+//! # use uuid::Uuid;
+//! # use sacn::packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, DataPacketFramingLayer, DataPacketDmpLayer, DataPacketDmpLayerPropertyValues};
+//! # fn main() {
+//! let packet = AcnRootLayerProtocol {
+//!     pdu: E131RootLayer {
+//!         cid: Uuid::new_v4(),
+//!         data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
+//!             source_name: "Source_A",
+//!             priority: 100,
+//!             synchronization_address: 7962,
+//!             sequence_number: 154,
+//!             preview_data: false,
+//!             stream_terminated: false,
+//!             force_synchronization: false,
+//!             universe: 1,
+//!             data: DataPacketDmpLayer {
+//!                 property_values: DataPacketDmpLayerPropertyValues {
+//!                     start_code: 0,
+//!                     dmx_data: &[1, 2, 3],
+//!                 },
+//!             },
+//!         }),
+//!     },
+//! };
+//!
+//! let mut buf = [0; 638];
+//! packet.pack(&mut buf).unwrap();
+//!
+//! assert_eq!(
+//!     AcnRootLayerProtocol::parse(&buf).unwrap(),
+//!     packet
+//! );
+//! # }
+//! ```
 
 use core::iter::Iterator;
 use core::str;

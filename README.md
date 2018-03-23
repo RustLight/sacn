@@ -10,6 +10,9 @@ This is an implementation of the Streaming ACN (ANSI E1.31) network protocol.
 
 Currently only the sending DMX data is implemented.
 
+Parsing of the sACN network packets is allocation free and can work in `no_std`
+environments.
+
 ## Usage
 
 Add to `Cargo.toml`:
@@ -17,7 +20,7 @@ Add to `Cargo.toml`:
 ```toml
 [dependencies]
 
-sacn = "0.1.1"
+sacn = "0.4.0"
 ```
 
 Create a DmxSource and start sending DMX data to a universe.
