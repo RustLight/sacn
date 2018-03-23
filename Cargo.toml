@@ -9,12 +9,11 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 byteorder = { version = "1.2.1", features = [] }
-arrayvec = { version = "0.4.6", features = [] }
-uuid = { version = "0.5.1", features = ["v4"] }
+uuid = { version = "0.6.2", features = ["v4"] }
 net2 = "0.2.31"
 
 [target.'cfg(feature = "std")'.dependencies]
-uuid = { version = "0.5.1", features = ["use_std", "v4"] }
+uuid = { version = "0.6.2", features = ["use_std", "v4"] }
 
 [features]
 default = ["std"]
