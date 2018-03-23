@@ -20,7 +20,7 @@ Add to `Cargo.toml`:
 ```toml
 [dependencies]
 
-sacn = "0.4.2"
+sacn = "0.4.3"
 ```
 
 Create a DmxSource and start sending DMX data to a universe.
