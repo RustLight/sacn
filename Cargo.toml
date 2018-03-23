@@ -15,6 +15,9 @@ net2 = "0.2.31"
 [target.'cfg(feature = "std")'.dependencies]
 uuid = { version = "0.6.2", features = ["use_std", "v4"] }
 
+[target.'cfg(not(feature = "std"))'.dependencies]
+uuid = { version = "0.6.2", features = ["v4"] }
+
 [features]
 default = ["std"]
 std = []
