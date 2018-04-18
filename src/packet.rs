@@ -1157,7 +1157,7 @@ mod test {
     ];
 
     #[test]
-    fn test_data_packet() {
+    fn data_packet() {
         let packet = AcnRootLayerProtocol {
             pdu: E131RootLayer {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
@@ -1192,7 +1192,7 @@ mod test {
     }
 
     #[test]
-    fn test_synchronization_packet() {
+    fn synchronization_packet() {
         let packet = AcnRootLayerProtocol {
             pdu: E131RootLayer {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
@@ -1215,7 +1215,7 @@ mod test {
     }
 
     #[test]
-    fn test_universe_discovery_packet() {
+    fn universe_discovery_packet() {
         let packet = AcnRootLayerProtocol {
             pdu: E131RootLayer {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
