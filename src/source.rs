@@ -13,8 +13,8 @@ use std::net::UdpSocket;
 use net2::UdpBuilder;
 use uuid::Uuid;
 
-use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketDmpLayerPropertyValues,
-             DataPacketFramingLayer, E131RootLayer, E131RootLayerData};
+use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, E131RootLayer,
+             E131RootLayerData};
 
 fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
@@ -111,7 +111,7 @@ impl DmxSource {
             pdu: E131RootLayer {
                 cid: self.cid,
                 data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-                    source_name: &self.name,
+                    source_name: self.name.clone(),
                     priority: priority,
                     synchronization_address: 0,
                     sequence_number: sequence,
@@ -120,9 +120,11 @@ impl DmxSource {
                     force_synchronization: false,
                     universe: universe,
                     data: DataPacketDmpLayer {
-                        property_values: DataPacketDmpLayerPropertyValues {
-                            start_code: self.start_code,
-                            dmx_data: data,
+                        property_values: {
+                            let mut property_values = Vec::with_capacity(data.len() + 1);
+                            property_values.push(self.start_code());
+                            property_values.extend(data);
+                            property_values
                         },
                     },
                 }),
@@ -155,7 +157,7 @@ impl DmxSource {
                 pdu: E131RootLayer {
                     cid: self.cid,
                     data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-                        source_name: &self.name,
+                        source_name: self.name.clone(),
                         priority: 100,
                         synchronization_address: 0,
                         sequence_number: sequence,
@@ -164,10 +166,7 @@ impl DmxSource {
                         force_synchronization: false,
                         universe: universe,
                         data: DataPacketDmpLayer {
-                            property_values: DataPacketDmpLayerPropertyValues {
-                                start_code: self.start_code,
-                                dmx_data: &[],
-                            },
+                            property_values: vec![self.start_code],
                         },
                     }),
                 },
