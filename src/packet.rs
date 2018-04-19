@@ -12,16 +12,21 @@
 //! # Examples
 //!
 //! ```
+//! # extern crate arrayvec;
 //! # extern crate uuid;
 //! # extern crate sacn;
+//! # use arrayvec::{ArrayString, ArrayVec};
 //! # use uuid::Uuid;
-//! # use sacn::packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, DataPacketFramingLayer, DataPacketDmpLayer, DataPacketDmpLayerPropertyValues};
+//! # use sacn::packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, DataPacketFramingLayer, DataPacketDmpLayer};
 //! # fn main() {
 //! let packet = AcnRootLayerProtocol {
 //!     pdu: E131RootLayer {
 //!         cid: Uuid::new_v4(),
 //!         data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-//!             source_name: "Source_A",
+//!             #[cfg(feature = "std")]
+//!             source_name: "Source_A".into(),
+//!             #[cfg(not(feature = "std"))]
+//!             source_name: ArrayString::from("Source_A").unwrap(),
 //!             priority: 100,
 //!             synchronization_address: 7962,
 //!             sequence_number: 154,
@@ -30,9 +35,16 @@
 //!             force_synchronization: false,
 //!             universe: 1,
 //!             data: DataPacketDmpLayer {
-//!                 property_values: DataPacketDmpLayerPropertyValues {
-//!                     start_code: 0,
-//!                     dmx_data: &[1, 2, 3],
+//!                 #[cfg(feature = "std")]
+//!                 property_values: vec![0, 1, 2, 3],
+//!                 #[cfg(not(feature = "std"))]
+//!                 property_values: {
+//!                     let mut property_values = ArrayVec::new();
+//!                     property_values.push(0);
+//!                     property_values.push(1);
+//!                     property_values.push(2);
+//!                     property_values.push(3);
+//!                     property_values
 //!                 },
 //!             },
 //!         }),
@@ -49,26 +61,46 @@
 //! # }
 //! ```
 
-use core::iter::Iterator;
 use core::str;
 #[cfg(feature = "std")]
 use std::vec::Vec;
 
 use byteorder::{ByteOrder, NetworkEndian};
+#[cfg(not(feature = "std"))]
+use arrayvec::{ArrayString, ArrayVec};
 use uuid::Uuid;
 
 use error::{PackError, ParseError};
 
-/// Root layer protocol of the Architecture for Control Networks (ACN) protocol.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AcnRootLayerProtocol<'a> {
-    /// The PDU this packet carries.
-    pub pdu: E131RootLayer<'a>,
+#[inline]
+fn zeros(buf: &mut [u8], n: usize) {
+    for i in 0..n {
+        buf[i] = 0;
+    }
 }
 
-impl<'a> AcnRootLayerProtocol<'a> {
+#[inline]
+fn parse_c_str(buf: &[u8]) -> Result<&str, ParseError> {
+    let mut source_name_len = buf.len();
+    for i in 0..buf.len() {
+        if buf[i] == 0 {
+            source_name_len = i;
+            break;
+        }
+    }
+    Ok(str::from_utf8(&buf[..source_name_len])?)
+}
+
+/// Root layer protocol of the Architecture for Control Networks (ACN) protocol.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AcnRootLayerProtocol {
+    /// The PDU this packet carries.
+    pub pdu: E131RootLayer,
+}
+
+impl AcnRootLayerProtocol {
     /// Parse the packet from the given buffer.
-    pub fn parse(buf: &'a [u8]) -> Result<AcnRootLayerProtocol<'a>, ParseError> {
+    pub fn parse(buf: &[u8]) -> Result<AcnRootLayerProtocol, ParseError> {
         // Preamble Size
         if NetworkEndian::read_u16(&buf[0..2]) != 0x0010 {
             return Err(ParseError::InvalidData("invalid Preamble Size"));
@@ -134,13 +166,10 @@ impl<'a> AcnRootLayerProtocol<'a> {
     pub fn len(&self) -> usize {
         // Preamble Size
         2 +
-
         // Post-amble Size
         2 +
-
         // ACN Packet Identifier
         12 +
-
         // PDU block
         self.pdu.len()
     }
@@ -176,27 +205,8 @@ fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo, ParseError> {
     })
 }
 
-#[inline]
-fn parse_source_name(buf: &[u8]) -> Result<&str, ParseError> {
-    let mut source_name_len = buf.len();
-    for i in 0..buf.len() {
-        if buf[i] == 0 {
-            source_name_len = i;
-            break;
-        }
-    }
-    Ok(str::from_utf8(&buf[..source_name_len])?)
-}
-
-#[inline]
-fn zeros(buf: &mut [u8], n: usize) {
-    for i in 0..n {
-        buf[i] = 0;
-    }
-}
-
-trait Pdu<'a>: Sized {
-    fn parse(buf: &'a [u8]) -> Result<Self, ParseError>;
+trait Pdu: Sized {
+    fn parse(buf: &[u8]) -> Result<Self, ParseError>;
 
     fn pack(&self, buf: &mut [u8]) -> Result<(), PackError>;
 
@@ -208,29 +218,29 @@ const VECTOR_ROOT_E131_EXTENDED: u32 = 0x00000008;
 
 /// Root layer protocol data unit (PDU).
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct E131RootLayer<'a> {
+pub struct E131RootLayer {
     /// Sender UUID.
     pub cid: Uuid,
 
     /// Data carried by the Root Layer PDU.
-    pub data: E131RootLayerData<'a>,
+    pub data: E131RootLayerData,
 }
 
 /// Payload of the Root Layer PDU.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum E131RootLayerData<'a> {
+pub enum E131RootLayerData {
     /// DMX data packet.
-    DataPacket(DataPacketFramingLayer<'a>),
+    DataPacket(DataPacketFramingLayer),
 
     /// Synchronization packet.
     SynchronizationPacket(SynchronizationPacketFramingLayer),
 
     /// Universe discovery packet.
-    UniverseDiscoveryPacket(UniverseDiscoveryPacketFramingLayer<'a>),
+    UniverseDiscoveryPacket(UniverseDiscoveryPacketFramingLayer),
 }
 
-impl<'a> Pdu<'a> for E131RootLayer<'a> {
-    fn parse(buf: &'a [u8]) -> Result<E131RootLayer<'a>, ParseError> {
+impl Pdu for E131RootLayer {
+    fn parse(buf: &[u8]) -> Result<E131RootLayer, ParseError> {
         // Length and Vector
         let PduInfo { length, vector } = pdu_info(&buf, 4)?;
         if vector != VECTOR_ROOT_E131_DATA && vector != VECTOR_ROOT_E131_EXTENDED {
@@ -308,13 +318,10 @@ impl<'a> Pdu<'a> for E131RootLayer<'a> {
     fn len(&self) -> usize {
         // Length and Flags
         2 +
-
         // Vector
         4 +
-
         // CID
         16 +
-
         // Data
         match self.data {
             E131RootLayerData::DataPacket(ref data) => data.len(),
@@ -328,9 +335,12 @@ const VECTOR_E131_DATA_PACKET: u32 = 0x00000002;
 
 /// Framing layer PDU for sACN data packets.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DataPacketFramingLayer<'a> {
+pub struct DataPacketFramingLayer {
     /// The name of the source.
-    pub source_name: &'a str,
+    #[cfg(feature = "std")]
+    pub source_name: String,
+    #[cfg(not(feature = "std"))]
+    pub source_name: ArrayString<[u8; 64]>,
 
     /// Priority of this data packet.
     pub priority: u8,
@@ -354,11 +364,11 @@ pub struct DataPacketFramingLayer<'a> {
     pub universe: u16,
 
     /// DMP layer containing the DMX data.
-    pub data: DataPacketDmpLayer<'a>,
+    pub data: DataPacketDmpLayer,
 }
 
-impl<'a> Pdu<'a> for DataPacketFramingLayer<'a> {
-    fn parse(buf: &'a [u8]) -> Result<DataPacketFramingLayer, ParseError> {
+impl Pdu for DataPacketFramingLayer {
+    fn parse(buf: &[u8]) -> Result<DataPacketFramingLayer, ParseError> {
         // Length and Vector
         let PduInfo { length, vector } = pdu_info(&buf, 4)?;
         if vector != VECTOR_E131_DATA_PACKET {
@@ -366,7 +376,10 @@ impl<'a> Pdu<'a> for DataPacketFramingLayer<'a> {
         }
 
         // Source Name
-        let source_name = parse_source_name(&buf[6..70])?;
+        #[cfg(feature = "std")]
+        let source_name = String::from(parse_c_str(&buf[6..70])?);
+        #[cfg(not(feature = "std"))]
+        let source_name = ArrayString::from(parse_c_str(&buf[6..70])?).unwrap();
 
         // Priority
         let priority = buf[70];
@@ -454,28 +467,20 @@ impl<'a> Pdu<'a> for DataPacketFramingLayer<'a> {
     fn len(&self) -> usize {
         // Length and Flags
         2 +
-
         // Vector
         4 +
-
         // Source Name
         64 +
-
         // Priority
         1 +
-
         // Synchronization Address
         2 +
-
         // Sequence Number
         1 +
-
         // Options
         1 +
-
         // Universe
         2 +
-
         // Data
         self.data.len()
     }
@@ -487,23 +492,16 @@ const VECTOR_DMP_SET_PROPERTY: u8 = 0x02;
 ///
 /// Used for sACN data packets.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DataPacketDmpLayer<'a> {
-    /// DMX data property values.
-    pub property_values: DataPacketDmpLayerPropertyValues<'a>,
+pub struct DataPacketDmpLayer {
+    /// DMX data property values (DMX start coder + 512 slots).
+    #[cfg(feature = "std")]
+    pub property_values: Vec<u8>,
+    #[cfg(not(feature = "std"))]
+    pub property_values: ArrayVec<[u8; 768]>,
 }
 
-/// Property values carrying the actual DMX data.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DataPacketDmpLayerPropertyValues<'a> {
-    /// DMX start code.
-    pub start_code: u8,
-
-    /// The DMX data.
-    pub dmx_data: &'a [u8],
-}
-
-impl<'a> Pdu<'a> for DataPacketDmpLayer<'a> {
-    fn parse(buf: &'a [u8]) -> Result<DataPacketDmpLayer, ParseError> {
+impl Pdu for DataPacketDmpLayer {
+    fn parse(buf: &[u8]) -> Result<DataPacketDmpLayer, ParseError> {
         // Length and Vector
         let PduInfo { length, vector } = pdu_info(&buf, 1)?;
         if vector != VECTOR_DMP_SET_PROPERTY as u32 {
@@ -531,16 +529,20 @@ impl<'a> Pdu<'a> for DataPacketDmpLayer<'a> {
         }
 
         // Property values
-        let property_values_start_code = buf[10];
-        let property_values_dmx_data = &buf[11..length];
-        if property_values_dmx_data.len() > 512 {
-            return Err(ParseError::InvalidData("only 512 universes allowed"));
+        let property_values_length = length - 10;
+        if property_values_length > 513 {
+            return Err(ParseError::InvalidData("only 512 DMX slots allowed"));
         }
 
-        let property_values = DataPacketDmpLayerPropertyValues {
-            start_code: property_values_start_code,
-            dmx_data: property_values_dmx_data,
-        };
+        #[cfg(feature = "std")]
+        let mut property_values = Vec::with_capacity(property_values_length);
+        #[cfg(not(feature = "std"))]
+        let mut property_values = ArrayVec::new();
+
+        unsafe {
+            property_values.set_len(property_values_length);
+        }
+        property_values[..property_values_length].copy_from_slice(&buf[10..length]);
 
         Ok(DataPacketDmpLayer {
             property_values: property_values,
@@ -548,7 +550,7 @@ impl<'a> Pdu<'a> for DataPacketDmpLayer<'a> {
     }
 
     fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
-        if self.property_values.dmx_data.len() > 512 {
+        if self.property_values.len() > 513 {
             return Err(PackError::InvalidData("only 512 DMX values allowed"));
         }
 
@@ -573,15 +575,10 @@ impl<'a> Pdu<'a> for DataPacketDmpLayer<'a> {
         NetworkEndian::write_u16(&mut buf[6..8], 0x0001);
 
         // Property value count
-        NetworkEndian::write_u16(
-            &mut buf[8..10],
-            self.property_values.dmx_data.len() as u16 + 1,
-        );
+        NetworkEndian::write_u16(&mut buf[8..10], self.property_values.len() as u16);
 
         // Property values
-        buf[10] = self.property_values.start_code;
-        buf[11..11 + self.property_values.dmx_data.len()]
-            .copy_from_slice(&self.property_values.dmx_data);
+        buf[10..10 + self.property_values.len()].copy_from_slice(&self.property_values);
 
         Ok(())
     }
@@ -589,24 +586,18 @@ impl<'a> Pdu<'a> for DataPacketDmpLayer<'a> {
     fn len(&self) -> usize {
         // Length and Flags
         2 +
-
         // Vector
         1 +
-
         // Address and Data Type
         1 +
-
         // First Property Address
         2 +
-
         // Address Increment
         2 +
-
         // Property value count
         2 +
-
         // Property values
-        1 + self.property_values.dmx_data.len()
+        self.property_values.len()
     }
 }
 
@@ -622,8 +613,8 @@ pub struct SynchronizationPacketFramingLayer {
     pub synchronization_address: u16,
 }
 
-impl<'a> Pdu<'a> for SynchronizationPacketFramingLayer {
-    fn parse(buf: &'a [u8]) -> Result<SynchronizationPacketFramingLayer, ParseError> {
+impl Pdu for SynchronizationPacketFramingLayer {
+    fn parse(buf: &[u8]) -> Result<SynchronizationPacketFramingLayer, ParseError> {
         // Length and Vector
         let PduInfo { length: _, vector } = pdu_info(&buf, 4)?;
         if vector != VECTOR_E131_EXTENDED_SYNCHRONIZATION {
@@ -674,16 +665,12 @@ impl<'a> Pdu<'a> for SynchronizationPacketFramingLayer {
     fn len(&self) -> usize {
         // Length and Flags
         2 +
-
         // Vector
         4 +
-
         // Sequence Number
         1 +
-
         // Synchronization Address
         2 +
-
         // Reserved
         2
     }
@@ -693,16 +680,19 @@ const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x00000002;
 
 /// Framing layer PDU for sACN universe discovery packets.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UniverseDiscoveryPacketFramingLayer<'a> {
+pub struct UniverseDiscoveryPacketFramingLayer {
     /// Name of the source.
-    pub source_name: &'a str,
+    #[cfg(feature = "std")]
+    pub source_name: String,
+    #[cfg(not(feature = "std"))]
+    pub source_name: ArrayString<[u8; 64]>,
 
     /// Universe dicovery layer.
-    pub data: UniverseDiscoveryPacketUniverseDiscoveryLayer<'a>,
+    pub data: UniverseDiscoveryPacketUniverseDiscoveryLayer,
 }
 
-impl<'a> Pdu<'a> for UniverseDiscoveryPacketFramingLayer<'a> {
-    fn parse(buf: &'a [u8]) -> Result<UniverseDiscoveryPacketFramingLayer<'a>, ParseError> {
+impl Pdu for UniverseDiscoveryPacketFramingLayer {
+    fn parse(buf: &[u8]) -> Result<UniverseDiscoveryPacketFramingLayer, ParseError> {
         // Length and Vector
         let PduInfo { length, vector } = pdu_info(&buf, 4)?;
         if vector != VECTOR_E131_EXTENDED_DISCOVERY {
@@ -710,7 +700,10 @@ impl<'a> Pdu<'a> for UniverseDiscoveryPacketFramingLayer<'a> {
         }
 
         // Source Name
-        let source_name = parse_source_name(&buf[6..70])?;
+        #[cfg(feature = "std")]
+        let source_name = String::from(parse_c_str(&buf[6..70])?);
+        #[cfg(not(feature = "std"))]
+        let source_name = ArrayString::from(parse_c_str(&buf[6..70])?).unwrap();
 
         // Reserved
         if buf[70..74] != [0, 0, 0, 0] {
@@ -752,16 +745,12 @@ impl<'a> Pdu<'a> for UniverseDiscoveryPacketFramingLayer<'a> {
     fn len(&self) -> usize {
         // Length and Flags
         2 +
-
         // Vector
         4 +
-
         // Source Name
         64 +
-
         // Reserved
         4 +
-
         // Data
         self.data.len()
     }
@@ -769,137 +758,9 @@ impl<'a> Pdu<'a> for UniverseDiscoveryPacketFramingLayer<'a> {
 
 const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x00000001;
 
-/// List of universes.
-///
-/// Use `From` trait to create from a list of `u16` integers.
-/// The universes must not contain duplicates and must be sorted from
-/// low to high.
-#[derive(Debug, Clone)]
-pub struct Universes<'a> {
-    data: UniversesData<'a>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum UniversesData<'a> {
-    Packed(&'a [u8]),
-    Unpacked(&'a [u16]),
-}
-
-impl<'a, B: ?Sized + AsRef<[u16]>> From<&'a B> for Universes<'a> {
-    fn from(buf: &'a B) -> Self {
-        Universes {
-            data: UniversesData::Unpacked(buf.as_ref()),
-        }
-    }
-}
-
-impl<'a> Universes<'a> {
-    /// Create an Iterator over the contained universes.
-    pub fn iter(&self) -> UniversesIter {
-        UniversesIter {
-            data: self.data.clone(),
-            index: 0,
-        }
-    }
-
-    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
-        if !self.unique() {
-            return Err(PackError::InvalidData("Universes are not unique"));
-        }
-
-        if !self.sorted() {
-            return Err(PackError::InvalidData("Universes are not sorted"));
-        }
-
-        match self.data {
-            UniversesData::Packed(data) => buf[..self.len() * 2].copy_from_slice(data),
-            UniversesData::Unpacked(_) => for (index, universe) in self.iter().enumerate() {
-                NetworkEndian::write_u16(&mut buf[index * 2..], universe);
-            },
-        }
-
-        Ok(())
-    }
-
-    fn unique(&self) -> bool {
-        let mut last_universe = 0;
-        for universe in self.iter() {
-            if universe == last_universe {
-                return false;
-            } else {
-                last_universe = universe;
-            }
-        }
-        true
-    }
-
-    fn sorted(&self) -> bool {
-        let mut current_universe = 0;
-        for universe in self.iter() {
-            if universe < current_universe {
-                return false;
-            } else {
-                current_universe = universe;
-            }
-        }
-        true
-    }
-
-    /// The length of the universe list.
-    pub fn len(&self) -> usize {
-        match self.data {
-            UniversesData::Packed(data) => data.len() / 2,
-            UniversesData::Unpacked(data) => data.len(),
-        }
-    }
-}
-
-impl<'a> PartialEq for Universes<'a> {
-    fn eq(&self, other: &Universes) -> bool {
-        self.iter().eq(other.iter())
-    }
-}
-
-impl<'a> Eq for Universes<'a> {}
-
-/// Iterator yielding each universe.
-///
-/// If received form the network, `u16`s are read from an internal `u8` buffer.
-pub struct UniversesIter<'a> {
-    data: UniversesData<'a>,
-    index: usize,
-}
-
-impl<'a> Iterator for UniversesIter<'a> {
-    type Item = u16;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.data {
-            UniversesData::Packed(data) => {
-                if self.index < data.len() / 2 {
-                    let universe = NetworkEndian::read_u16(&data[self.index * 2..]);
-                    self.index += 1;
-                    Some(universe)
-                } else {
-                    None
-                }
-            }
-            UniversesData::Unpacked(data) => {
-                if self.index < data.len() {
-                    let universe = data[self.index];
-                    self.index += 1;
-                    Some(universe)
-                } else {
-                    None
-                }
-            }
-        }
-    }
-}
-
 /// Universe discovery layer PDU.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
+pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer {
     /// Current page of the dicovery packet.
     pub page: u8,
 
@@ -907,13 +768,14 @@ pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
     pub last_page: u8,
 
     /// List of universes.
-    pub universes: Universes<'a>,
+    #[cfg(feature = "std")]
+    pub universes: Vec<u16>,
+    #[cfg(not(feature = "std"))]
+    pub universes: ArrayVec<[u16; 512]>,
 }
 
-impl<'a> Pdu<'a> for UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
-    fn parse(
-        buf: &'a [u8],
-    ) -> Result<UniverseDiscoveryPacketUniverseDiscoveryLayer<'a>, ParseError> {
+impl Pdu for UniverseDiscoveryPacketUniverseDiscoveryLayer {
+    fn parse(buf: &[u8]) -> Result<UniverseDiscoveryPacketUniverseDiscoveryLayer, ParseError> {
         // Length and Vector
         let PduInfo { length, vector } = pdu_info(&buf, 4)?;
         if vector != VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST {
@@ -927,13 +789,15 @@ impl<'a> Pdu<'a> for UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
         let last_page = buf[7];
 
         // Universes
-        let universe_buf = &buf[8..length];
-        if universe_buf.len() > 512 * 2 {
-            return Err(ParseError::InvalidData("only 512 universes allowed"));
+        let universes_length = (length - 8) / 2;
+        #[cfg(feature = "std")]
+        let mut universes = Vec::with_capacity(universes_length);
+        #[cfg(not(feature = "std"))]
+        let mut universes = ArrayVec::new();
+        unsafe {
+            universes.set_len(universes_length);
         }
-        let universes = Universes {
-            data: UniversesData::Packed(universe_buf),
-        };
+        NetworkEndian::read_u16_into(&buf[8..length], &mut universes[..universes_length]);
 
         Ok(UniverseDiscoveryPacketUniverseDiscoveryLayer {
             page: page,
@@ -965,8 +829,18 @@ impl<'a> Pdu<'a> for UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
         buf[7] = self.last_page;
 
         // Universes
-        self.universes
-            .pack(&mut buf[8..8 + self.universes.len() * 2])?;
+        for i in 1..self.universes.len() {
+            if self.universes[i] == self.universes[i - 1] {
+                return Err(PackError::InvalidData("Universes are not unique"));
+            }
+            if self.universes[i] <= self.universes[i - 1] {
+                return Err(PackError::InvalidData("Universes are not sorted"));
+            }
+        }
+        NetworkEndian::write_u16_into(
+            &self.universes[..self.universes.len()],
+            &mut buf[8..8 + self.universes.len() * 2],
+        );
 
         Ok(())
     }
@@ -974,16 +848,12 @@ impl<'a> Pdu<'a> for UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
     fn len(&self) -> usize {
         // Length and Flags
         2 +
-
         // Vector
         4 +
-
         // Page
         1 +
-
         // Last Page
         1 +
-
         // Universes
         self.universes.len() * 2
     }
@@ -1162,7 +1032,10 @@ mod test {
             pdu: E131RootLayer {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
                 data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-                    source_name: "Source_A",
+                    #[cfg(feature = "std")]
+                    source_name: "Source_A".into(),
+                    #[cfg(not(feature = "std"))]
+                    source_name: ArrayString::from("Source_A").unwrap(),
                     priority: 100,
                     synchronization_address: 7962,
                     sequence_number: 154,
@@ -1171,9 +1044,16 @@ mod test {
                     force_synchronization: false,
                     universe: 1,
                     data: DataPacketDmpLayer {
-                        property_values: DataPacketDmpLayerPropertyValues {
-                            start_code: 0,
-                            dmx_data: &TEST_DATA_PACKET[126..638],
+                        #[cfg(feature = "std")]
+                        property_values: TEST_DATA_PACKET[125..638].into(),
+                        #[cfg(not(feature = "std"))]
+                        property_values: {
+                            let mut property_values = ArrayVec::new();
+                            unsafe {
+                                property_values.set_len(513);
+                            }
+                            property_values[..513].copy_from_slice(&TEST_DATA_PACKET[125..638]);
+                            property_values
                         },
                     },
                 }),
@@ -1221,11 +1101,23 @@ mod test {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
                 data: E131RootLayerData::UniverseDiscoveryPacket(
                     UniverseDiscoveryPacketFramingLayer {
-                        source_name: "Source_A",
+                        #[cfg(feature = "std")]
+                        source_name: "Source_A".into(),
+                        #[cfg(not(feature = "std"))]
+                        source_name: ArrayString::from("Source_A").unwrap(),
                         data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
                             page: 1,
                             last_page: 2,
-                            universes: Universes::from(&[3, 4, 5]),
+                            #[cfg(feature = "std")]
+                            universes: vec![3, 4, 5],
+                            #[cfg(not(feature = "std"))]
+                            universes: {
+                                let mut universes = ArrayVec::new();
+                                universes.push(3);
+                                universes.push(4);
+                                universes.push(5);
+                                universes
+                            },
                         },
                     },
                 ),

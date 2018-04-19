@@ -18,15 +18,17 @@
 #[cfg(feature = "std")]
 extern crate core;
 
+#[cfg(not(feature = "std"))]
+extern crate arrayvec;
 extern crate byteorder;
 #[cfg(feature = "std")]
 extern crate net2;
 extern crate uuid;
 
-#[cfg(feature = "std")]
-pub use self::source::DmxSource;
+//#[cfg(feature = "std")]
+//pub use self::source::DmxSource;
 
-#[cfg(feature = "std")]
-mod source;
+//#[cfg(feature = "std")]
+//mod source;
 pub mod error;
 pub mod packet;
