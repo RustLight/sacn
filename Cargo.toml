@@ -10,18 +10,19 @@ repository = "https://github.com/lschmierer/sacn"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-byteorder = { version = "1.2.1", features = [] }
-net2 = "0.2.31"
+byteorder = { version = "1.2.2", features = [] }
+net2 = { version = "0.2.31", optional = true }
 
 [target.'cfg(feature = "std")'.dependencies]
-uuid = { version = "0.6.2", features = ["use_std", "v4"] }
+uuid = { version = "0.6.3", features = ["use_std", "v4"] }
 
 [target.'cfg(not(feature = "std"))'.dependencies]
-uuid = { version = "0.6.2", features = ["v4"] }
+uuid = { version = "0.6.3", features = ["v4"] }
+arrayvec = "0.4.7"
 
 [features]
 default = ["std"]
-std = []
+std = ["net2"]
 
 [badges]
 travis-ci = { repository = "lschmierer/sacn" }
