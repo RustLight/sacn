@@ -48,8 +48,8 @@
 //! # }}
 //! ```
 
-use core::str;
 use core::hash::{self, Hash};
+use core::str;
 #[cfg(feature = "std")]
 use std::borrow::Cow;
 #[cfg(feature = "std")]
@@ -64,21 +64,21 @@ use error::{PackError, ParseError};
 
 #[inline]
 fn zeros(buf: &mut [u8], n: usize) {
-    for i in 0..n {
-        buf[i] = 0;
+    for b in buf.iter_mut().take(n) {
+        *b = 0;
     }
 }
 
 #[inline]
 fn parse_c_str(buf: &[u8]) -> Result<&str, ParseError> {
-    let mut source_name_len = buf.len();
-    for i in 0..buf.len() {
-        if buf[i] == 0 {
-            source_name_len = i;
+    let mut source_name_length = buf.len();
+    for (i, b) in buf.iter().enumerate() {
+        if *b == 0 {
+            source_name_length = i;
             break;
         }
     }
-    Ok(str::from_utf8(&buf[..source_name_len])?)
+    Ok(str::from_utf8(&buf[..source_name_length])?)
 }
 
 macro_rules! impl_acn_root_layer_protocol {
@@ -210,8 +210,8 @@ trait Pdu: Sized {
     fn len(&self) -> usize;
 }
 
-const VECTOR_ROOT_E131_DATA: u32 = 0x00000004;
-const VECTOR_ROOT_E131_EXTENDED: u32 = 0x00000008;
+const VECTOR_ROOT_E131_DATA: u32 = 0x0000_0004;
+const VECTOR_ROOT_E131_EXTENDED: u32 = 0x0000_0008;
 
 macro_rules! impl_e131_root_layer {
     ( $( $lt:tt )* ) => {
@@ -256,12 +256,9 @@ macro_rules! impl_e131_root_layer {
                     }
                     VECTOR_ROOT_E131_EXTENDED => {
                         let data_buf = &buf[22..length];
-                        let PduInfo {
-                            length: _,
-                            vector: data_vector,
-                        } = pdu_info(&data_buf, 4)?;
+                        let PduInfo { vector, .. } = pdu_info(&data_buf, 4)?;
 
-                        match data_vector {
+                        match vector {
                             VECTOR_E131_EXTENDED_SYNCHRONIZATION => {
                                 E131RootLayerData::SynchronizationPacket(
                                     SynchronizationPacketFramingLayer::parse(data_buf)?,
@@ -338,7 +335,7 @@ impl_e131_root_layer!(<'a>);
 #[cfg(not(feature = "std"))]
 impl_e131_root_layer!();
 
-const VECTOR_E131_DATA_PACKET: u32 = 0x00000002;
+const VECTOR_E131_DATA_PACKET: u32 = 0x0000_0002;
 
 macro_rules! impl_data_packet_framing_layer {
     ( $( $lt:tt )* ) => {
@@ -397,9 +394,9 @@ macro_rules! impl_data_packet_framing_layer {
                 let sequence_number = buf[73];
 
                 // Options
-                let preview_data = buf[74] & 0b01000000 != 0;
-                let stream_terminated = buf[74] & 0b00100000 != 0;
-                let force_synchronization = buf[74] & 0b00010000 != 0;
+                let preview_data = buf[74] & 0b0100_0000 != 0;
+                let stream_terminated = buf[74] & 0b0010_0000 != 0;
+                let force_synchronization = buf[74] & 0b0001_0000 != 0;
 
                 // Universe
                 let universe = NetworkEndian::read_u16(&buf[75..77]);
@@ -453,17 +450,17 @@ macro_rules! impl_data_packet_framing_layer {
 
                 // Preview Data
                 if self.preview_data {
-                    buf[74] = 0b01000000
+                    buf[74] = 0b0100_0000
                 }
 
                 // Stream Terminated
                 if self.stream_terminated {
-                    buf[74] |= 0b00100000
+                    buf[74] |= 0b0010_0000
                 }
 
                 // Force Synchronization
                 if self.force_synchronization {
-                    buf[74] |= 0b00010000
+                    buf[74] |= 0b0001_0000
                 }
 
                 // Universe
@@ -557,7 +554,7 @@ macro_rules! impl_data_packet_dmp_layer {
             fn parse(buf: &[u8]) -> Result<DataPacketDmpLayer$( $lt )*, ParseError> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 1)?;
-                if vector != VECTOR_DMP_SET_PROPERTY as u32 {
+                if vector != u32::from(VECTOR_DMP_SET_PROPERTY) {
                     return Err(ParseError::PduInvalidVector(vector));
                 }
 
@@ -689,7 +686,7 @@ impl_data_packet_dmp_layer!(<'a>);
 #[cfg(not(feature = "std"))]
 impl_data_packet_dmp_layer!();
 
-const VECTOR_E131_EXTENDED_SYNCHRONIZATION: u32 = 0x00000001;
+const VECTOR_E131_EXTENDED_SYNCHRONIZATION: u32 = 0x0000_0001;
 
 /// sACN synchronization packet PDU.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
@@ -704,7 +701,7 @@ pub struct SynchronizationPacketFramingLayer {
 impl Pdu for SynchronizationPacketFramingLayer {
     fn parse(buf: &[u8]) -> Result<SynchronizationPacketFramingLayer, ParseError> {
         // Length and Vector
-        let PduInfo { length: _, vector } = pdu_info(&buf, 4)?;
+        let PduInfo { vector, .. } = pdu_info(&buf, 4)?;
         if vector != VECTOR_E131_EXTENDED_SYNCHRONIZATION {
             return Err(ParseError::PduInvalidVector(vector));
         }
@@ -764,7 +761,7 @@ impl Pdu for SynchronizationPacketFramingLayer {
     }
 }
 
-const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x00000002;
+const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x0000_0002;
 
 macro_rules! impl_universe_discovery_packet_framing_layer {
     ( $( $lt:tt )* ) => {
@@ -874,7 +871,7 @@ impl_universe_discovery_packet_framing_layer!(<'a>);
 #[cfg(not(feature = "std"))]
 impl_universe_discovery_packet_framing_layer!();
 
-const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x00000001;
+const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x0000_0001;
 
 macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
     ( $( $lt:tt )* ) => {
