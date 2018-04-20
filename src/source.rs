@@ -111,7 +111,7 @@ impl DmxSource {
             pdu: E131RootLayer {
                 cid: self.cid,
                 data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-                    source_name: self.name.clone(),
+                    source_name: self.name.as_str().into(),
                     priority: priority,
                     synchronization_address: 0,
                     sequence_number: sequence,
@@ -124,7 +124,7 @@ impl DmxSource {
                             let mut property_values = Vec::with_capacity(data.len() + 1);
                             property_values.push(self.start_code());
                             property_values.extend(data);
-                            property_values
+                            property_values.into()
                         },
                     },
                 }),
@@ -157,7 +157,7 @@ impl DmxSource {
                 pdu: E131RootLayer {
                     cid: self.cid,
                     data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-                        source_name: self.name.clone(),
+                        source_name: self.name.as_str().into(),
                         priority: 100,
                         synchronization_address: 0,
                         sequence_number: sequence,
@@ -166,7 +166,7 @@ impl DmxSource {
                         force_synchronization: false,
                         universe: universe,
                         data: DataPacketDmpLayer {
-                            property_values: vec![self.start_code],
+                            property_values: vec![self.start_code].into(),
                         },
                     }),
                 },
