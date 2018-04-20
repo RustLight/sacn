@@ -75,12 +75,12 @@ impl DmxSource {
     /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: &str) -> Result<DmxSource> {
         let ip_port = format!("{}:0", ip);
-        let sock_builder = try!(UdpBuilder::new_v4());
-        let sock = try!(sock_builder.bind(&ip_port));
+        let socket_builder = try!(UdpBuilder::new_v4());
+        let socket = try!(socket_builder.bind(&ip_port));
 
         Ok(DmxSource {
-            socket: sock,
-            cid: cid.clone(),
+            socket,
+            cid,
             name: name.to_string(),
             preview_data: false,
             start_code: 0,
@@ -103,7 +103,7 @@ impl DmxSource {
         }
         let ip = try!(universe_to_ip(universe));
         let mut sequence = match self.sequences.borrow().get(&universe) {
-            Some(s) => s.clone(),
+            Some(s) => *s,
             None => 0,
         };
 
@@ -112,13 +112,13 @@ impl DmxSource {
                 cid: self.cid,
                 data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
                     source_name: self.name.as_str().into(),
-                    priority: priority,
+                    priority,
                     synchronization_address: 0,
                     sequence_number: sequence,
                     preview_data: self.preview_data,
                     stream_terminated: false,
                     force_synchronization: false,
-                    universe: universe,
+                    universe,
                     data: DataPacketDmpLayer {
                         property_values: {
                             let mut property_values = Vec::with_capacity(data.len() + 1);
@@ -164,7 +164,7 @@ impl DmxSource {
                         preview_data: self.preview_data,
                         stream_terminated: true,
                         force_synchronization: false,
-                        universe: universe,
+                        universe,
                         data: DataPacketDmpLayer {
                             property_values: vec![self.start_code].into(),
                         },
