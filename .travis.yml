@@ -7,5 +7,5 @@ sudo: false
 script:
   - cargo build --verbose --all
   - cargo test --verbose --all
-  - test $TRAVIS_RUST_VERSION = "nightly" && cargo build --verbose --all --no-default-features
-  - test $TRAVIS_RUST_VERSION = "nightly" && cargo test --verbose --all --no-default-features
+  - test $TRAVIS_RUST_VERSION = "nightly" && cargo build --verbose --all --no-default-features --features unstable
+  - test $TRAVIS_RUST_VERSION = "nightly" && cargo test --verbose --all --no-default-features --features unstable
