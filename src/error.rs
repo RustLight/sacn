@@ -7,8 +7,8 @@
 
 //! Errors used through the sacn crate.
 
-use core::str::Utf8Error;
 use core::fmt;
+use core::str::Utf8Error;
 
 #[cfg(feature = "std")]
 use std::error;

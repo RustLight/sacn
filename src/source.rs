@@ -248,9 +248,9 @@ impl DmxSource {
 #[cfg(test)]
 mod test {
     use super::*;
+    use net2::UdpBuilder;
     use std::iter;
     use std::net::Ipv4Addr;
-    use net2::UdpBuilder;
 
     #[test]
     #[cfg_attr(rustfmt, rustfmt_skip)]

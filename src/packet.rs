@@ -49,10 +49,11 @@
 //! ```
 
 use core::str;
-#[cfg(feature = "std")]
-use std::vec::Vec;
+use core::hash::{self, Hash};
 #[cfg(feature = "std")]
 use std::borrow::Cow;
+#[cfg(feature = "std")]
+use std::vec::Vec;
 
 use byteorder::{ByteOrder, NetworkEndian};
 #[cfg(not(feature = "std"))]
@@ -83,7 +84,7 @@ fn parse_c_str(buf: &[u8]) -> Result<&str, ParseError> {
 macro_rules! impl_acn_root_layer_protocol {
     ( $( $lt:tt )* ) => {
         /// Root layer protocol of the Architecture for Control Networks (ACN) protocol.
-        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[derive(Clone, Eq, PartialEq, Hash, Debug)]
         pub struct AcnRootLayerProtocol$( $lt )* {
             /// The PDU this packet carries.
             pub pdu: E131RootLayer$( $lt )*,
@@ -198,10 +199,7 @@ fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo, ParseError> {
     // Vector
     let vector = NetworkEndian::read_uint(&buf[2..], vector_length) as u32;
 
-    Ok(PduInfo {
-        length: length,
-        vector: vector,
-    })
+    Ok(PduInfo { length, vector })
 }
 
 trait Pdu: Sized {
@@ -218,7 +216,7 @@ const VECTOR_ROOT_E131_EXTENDED: u32 = 0x00000008;
 macro_rules! impl_e131_root_layer {
     ( $( $lt:tt )* ) => {
         /// Payload of the Root Layer PDU.
-        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[derive(Clone, Eq, PartialEq, Hash, Debug)]
         pub enum E131RootLayerData$( $lt )* {
             /// DMX data packet.
             DataPacket(DataPacketFramingLayer$( $lt )*),
@@ -231,7 +229,7 @@ macro_rules! impl_e131_root_layer {
         }
 
         /// Root layer protocol data unit (PDU).
-        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[derive(Clone, Eq, PartialEq, Hash, Debug)]
         pub struct E131RootLayer$( $lt )* {
             /// Sender UUID.
             pub cid: Uuid,
@@ -280,8 +278,8 @@ macro_rules! impl_e131_root_layer {
                 };
 
                 Ok(E131RootLayer {
-                    cid: cid,
-                    data: data,
+                    cid,
+                    data,
                 })
             }
 
@@ -345,7 +343,7 @@ const VECTOR_E131_DATA_PACKET: u32 = 0x00000002;
 macro_rules! impl_data_packet_framing_layer {
     ( $( $lt:tt )* ) => {
         /// Framing layer PDU for sACN data packets.
-        #[derive(Debug, PartialEq, Eq)]
+        #[derive(Eq, PartialEq, Debug)]
         pub struct DataPacketFramingLayer$( $lt )* {
             /// The name of the source.
             #[cfg(feature = "std")]
@@ -413,15 +411,15 @@ macro_rules! impl_data_packet_framing_layer {
                     #[cfg(feature = "std")]
                     source_name: source_name.into(),
                     #[cfg(not(feature = "std"))]
-                    source_name: source_name,
-                    priority: priority,
-                    synchronization_address: synchronization_address,
-                    sequence_number: sequence_number,
-                    preview_data: preview_data,
-                    stream_terminated: stream_terminated,
-                    force_synchronization: force_synchronization,
-                    universe: universe,
-                    data: data,
+                    source_name,
+                    priority,
+                    synchronization_address,
+                    sequence_number,
+                    preview_data,
+                    stream_terminated,
+                    force_synchronization,
+                    universe,
+                    data,
                 })
             }
 
@@ -515,6 +513,21 @@ macro_rules! impl_data_packet_framing_layer {
                 }
             }
         }
+
+        impl$( $lt )* Hash for DataPacketFramingLayer$( $lt )* {
+            #[inline]
+            fn hash<H: hash::Hasher>(&self, state: &mut H) {
+                (&*self.source_name).hash(state);
+                self.priority.hash(state);
+                self.synchronization_address.hash(state);
+                self.sequence_number.hash(state);
+                self.preview_data.hash(state);
+                self.stream_terminated.hash(state);
+                self.force_synchronization.hash(state);
+                self.universe.hash(state);
+                self.data.hash(state);
+            }
+        }
     };
 }
 
@@ -531,7 +544,7 @@ macro_rules! impl_data_packet_dmp_layer {
         /// Device Management Protocol PDU with SET PROPERTY vector.
         ///
         /// Used for sACN data packets.
-        #[derive(Debug, PartialEq, Eq)]
+        #[derive(Eq, PartialEq, Debug)]
         pub struct DataPacketDmpLayer$( $lt )* {
             /// DMX data property values (DMX start coder + 512 slots).
             #[cfg(feature = "std")]
@@ -588,7 +601,7 @@ macro_rules! impl_data_packet_dmp_layer {
                     #[cfg(feature = "std")]
                     property_values: property_values.into(),
                     #[cfg(not(feature = "std"))]
-                    property_values: property_values,
+                    property_values,
                 })
             }
 
@@ -660,6 +673,13 @@ macro_rules! impl_data_packet_dmp_layer {
                 }
             }
         }
+
+        impl$( $lt )* Hash for DataPacketDmpLayer$( $lt )* {
+            #[inline]
+            fn hash<H: hash::Hasher>(&self, state: &mut H) {
+                (&*self.property_values).hash(state);
+            }
+        }
     };
 }
 
@@ -672,7 +692,7 @@ impl_data_packet_dmp_layer!();
 const VECTOR_E131_EXTENDED_SYNCHRONIZATION: u32 = 0x00000001;
 
 /// sACN synchronization packet PDU.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct SynchronizationPacketFramingLayer {
     /// The sequence number of the packet.
     pub sequence_number: u8,
@@ -701,8 +721,8 @@ impl Pdu for SynchronizationPacketFramingLayer {
         }
 
         Ok(SynchronizationPacketFramingLayer {
-            sequence_number: sequence_number,
-            synchronization_address: synchronization_address,
+            sequence_number,
+            synchronization_address,
         })
     }
 
@@ -749,7 +769,7 @@ const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x00000002;
 macro_rules! impl_universe_discovery_packet_framing_layer {
     ( $( $lt:tt )* ) => {
         /// Framing layer PDU for sACN universe discovery packets.
-        #[derive(Debug, PartialEq, Eq)]
+        #[derive(Eq, PartialEq, Debug)]
         pub struct UniverseDiscoveryPacketFramingLayer$( $lt )* {
             /// Name of the source.
             #[cfg(feature = "std")]
@@ -784,8 +804,8 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                     #[cfg(feature = "std")]
                     source_name: source_name.into(),
                     #[cfg(not(feature = "std"))]
-                    source_name: source_name,
-                    data: data,
+                    source_name,
+                    data,
                 })
             }
 
@@ -837,6 +857,14 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                 }
             }
         }
+
+        impl$( $lt )* Hash for UniverseDiscoveryPacketFramingLayer$( $lt )* {
+            #[inline]
+            fn hash<H: hash::Hasher>(&self, state: &mut H) {
+                (&*self.source_name).hash(state);
+                self.data.hash(state);
+            }
+        }
     };
 }
 
@@ -851,7 +879,7 @@ const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x00000001;
 macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
     ( $( $lt:tt )* ) => {
         /// Universe discovery layer PDU.
-        #[derive(Debug, PartialEq, Eq)]
+        #[derive(Eq, PartialEq, Debug)]
         pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )* {
             /// Current page of the dicovery packet.
             pub page: u8,
@@ -895,12 +923,12 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 NetworkEndian::read_u16_into(&buf[8..length], &mut universes[..universes_length]);
 
                 Ok(UniverseDiscoveryPacketUniverseDiscoveryLayer {
-                    page: page,
-                    last_page: last_page,
+                    page,
+                    last_page,
                     #[cfg(feature = "std")]
                     universes: universes.into(),
                     #[cfg(not(feature = "std"))]
-                    universes: universes,
+                    universes,
                 })
             }
 
@@ -971,6 +999,15 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                         universes
                     },
                 }
+            }
+        }
+
+        impl$( $lt )* Hash for UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )* {
+            #[inline]
+            fn hash<H: hash::Hasher>(&self, state: &mut H) {
+                self.page.hash(state);
+                self.last_page.hash(state);
+                (&*self.universes).hash(state);
             }
         }
     };
