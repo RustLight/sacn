@@ -5,17 +5,7 @@ rust:
   - nightly
 sudo: false
 script:
-  - cargo build --verbose --all --no-default-features
-  - cargo test --verbose --all --no-default-features
-  - cargo build --verbose --all --no-default-features --features std
-  - cargo test --verbose --all --no-default-features --features std
-matrix:
-  exclude:
-  - rust: stable
-    script: cargo build --verbose --all --no-default-features
-  - rust: stable
-    script: cargo test --verbose --all --no-default-features
-  - rust: beta
-    script: cargo build --verbose --all --no-default-features
-  - rust: beta
-    script: cargo test --verbose --all --no-default-features
+  - cargo build --verbose --all
+  - cargo test --verbose --all
+  - test $TRAVIS_RUST_VERSION = "nightly" && cargo build --verbose --all --no-default-features
+  - test $TRAVIS_RUST_VERSION = "nightly" && cargo test --verbose --all --no-default-features
