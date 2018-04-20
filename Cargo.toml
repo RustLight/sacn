@@ -18,7 +18,7 @@ uuid = { version = "0.6.3", features = ["use_std", "v4"] }
 
 [target.'cfg(not(feature = "std"))'.dependencies]
 uuid = { version = "0.6.3", features = ["v4"] }
-arrayvec = "0.4.7"
+heapless = "0.2.7"
 
 [features]
 default = ["std"]

@@ -12,21 +12,18 @@
 //! # Examples
 //!
 //! ```
-//! # extern crate arrayvec;
 //! # extern crate uuid;
 //! # extern crate sacn;
-//! # use arrayvec::{ArrayString, ArrayVec};
 //! # use uuid::Uuid;
 //! # use sacn::packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, DataPacketFramingLayer, DataPacketDmpLayer};
 //! # fn main() {
+//! #[cfg(feature = "std")]
+//! # {
 //! let packet = AcnRootLayerProtocol {
 //!     pdu: E131RootLayer {
 //!         cid: Uuid::new_v4(),
 //!         data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-//!             #[cfg(feature = "std")]
 //!             source_name: "Source_A".into(),
-//!             #[cfg(not(feature = "std"))]
-//!             source_name: ArrayString::from("Source_A").unwrap(),
 //!             priority: 100,
 //!             synchronization_address: 7962,
 //!             sequence_number: 154,
@@ -35,17 +32,7 @@
 //!             force_synchronization: false,
 //!             universe: 1,
 //!             data: DataPacketDmpLayer {
-//!                 #[cfg(feature = "std")]
 //!                 property_values: vec![0, 1, 2, 3],
-//!                 #[cfg(not(feature = "std"))]
-//!                 property_values: {
-//!                     let mut property_values = ArrayVec::new();
-//!                     property_values.push(0);
-//!                     property_values.push(1);
-//!                     property_values.push(2);
-//!                     property_values.push(3);
-//!                     property_values
-//!                 },
 //!             },
 //!         }),
 //!     },
@@ -58,7 +45,7 @@
 //!     AcnRootLayerProtocol::parse(&buf).unwrap(),
 //!     packet
 //! );
-//! # }
+//! # }}
 //! ```
 
 use core::str;
@@ -67,7 +54,7 @@ use std::vec::Vec;
 
 use byteorder::{ByteOrder, NetworkEndian};
 #[cfg(not(feature = "std"))]
-use arrayvec::{ArrayString, ArrayVec};
+use heapless::{String, Vec};
 use uuid::Uuid;
 
 use error::{PackError, ParseError};
@@ -334,13 +321,13 @@ impl Pdu for E131RootLayer {
 const VECTOR_E131_DATA_PACKET: u32 = 0x00000002;
 
 /// Framing layer PDU for sACN data packets.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DataPacketFramingLayer {
     /// The name of the source.
     #[cfg(feature = "std")]
     pub source_name: String,
     #[cfg(not(feature = "std"))]
-    pub source_name: ArrayString<[u8; 64]>,
+    pub source_name: String<[u8; 64]>,
 
     /// Priority of this data packet.
     pub priority: u8,
@@ -376,10 +363,7 @@ impl Pdu for DataPacketFramingLayer {
         }
 
         // Source Name
-        #[cfg(feature = "std")]
         let source_name = String::from(parse_c_str(&buf[6..70])?);
-        #[cfg(not(feature = "std"))]
-        let source_name = ArrayString::from(parse_c_str(&buf[6..70])?).unwrap();
 
         // Priority
         let priority = buf[70];
@@ -486,18 +470,34 @@ impl Pdu for DataPacketFramingLayer {
     }
 }
 
+impl Clone for DataPacketFramingLayer {
+    fn clone(&self) -> Self {
+        DataPacketFramingLayer {
+            source_name: self.source_name.as_str().into(),
+            priority: self.priority,
+            synchronization_address: self.synchronization_address,
+            sequence_number: self.sequence_number,
+            preview_data: self.preview_data,
+            stream_terminated: self.stream_terminated,
+            force_synchronization: self.force_synchronization,
+            universe: self.universe,
+            data: self.data.clone(),
+        }
+    }
+}
+
 const VECTOR_DMP_SET_PROPERTY: u8 = 0x02;
 
 /// Device Management Protocol PDU with SET PROPERTY vector.
 ///
 /// Used for sACN data packets.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DataPacketDmpLayer {
     /// DMX data property values (DMX start coder + 512 slots).
     #[cfg(feature = "std")]
     pub property_values: Vec<u8>,
     #[cfg(not(feature = "std"))]
-    pub property_values: ArrayVec<[u8; 768]>,
+    pub property_values: Vec<u8, [u8; 513]>,
 }
 
 impl Pdu for DataPacketDmpLayer {
@@ -537,12 +537,12 @@ impl Pdu for DataPacketDmpLayer {
         #[cfg(feature = "std")]
         let mut property_values = Vec::with_capacity(property_values_length);
         #[cfg(not(feature = "std"))]
-        let mut property_values = ArrayVec::new();
+        let mut property_values = Vec::new();
 
-        unsafe {
-            property_values.set_len(property_values_length);
-        }
-        property_values[..property_values_length].copy_from_slice(&buf[10..length]);
+        #[cfg(feature = "std")]
+        property_values.extend_from_slice(&buf[10..length]);
+        #[cfg(not(feature = "std"))]
+        property_values.extend_from_slice(&buf[10..length]).unwrap();
 
         Ok(DataPacketDmpLayer {
             property_values: property_values,
@@ -598,6 +598,23 @@ impl Pdu for DataPacketDmpLayer {
         2 +
         // Property values
         self.property_values.len()
+    }
+}
+
+impl Clone for DataPacketDmpLayer {
+    fn clone(&self) -> Self {
+        DataPacketDmpLayer {
+            #[cfg(feature = "std")]
+            property_values: self.property_values.clone(),
+            #[cfg(not(feature = "std"))]
+            property_values: {
+                let mut property_values = Vec::new();
+                property_values
+                    .extend_from_slice(&self.property_values)
+                    .unwrap();
+                property_values
+            },
+        }
     }
 }
 
@@ -679,13 +696,13 @@ impl Pdu for SynchronizationPacketFramingLayer {
 const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x00000002;
 
 /// Framing layer PDU for sACN universe discovery packets.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct UniverseDiscoveryPacketFramingLayer {
     /// Name of the source.
     #[cfg(feature = "std")]
     pub source_name: String,
     #[cfg(not(feature = "std"))]
-    pub source_name: ArrayString<[u8; 64]>,
+    pub source_name: String<[u8; 64]>,
 
     /// Universe dicovery layer.
     pub data: UniverseDiscoveryPacketUniverseDiscoveryLayer,
@@ -700,10 +717,7 @@ impl Pdu for UniverseDiscoveryPacketFramingLayer {
         }
 
         // Source Name
-        #[cfg(feature = "std")]
         let source_name = String::from(parse_c_str(&buf[6..70])?);
-        #[cfg(not(feature = "std"))]
-        let source_name = ArrayString::from(parse_c_str(&buf[6..70])?).unwrap();
 
         // Reserved
         if buf[70..74] != [0, 0, 0, 0] {
@@ -756,10 +770,19 @@ impl Pdu for UniverseDiscoveryPacketFramingLayer {
     }
 }
 
+impl Clone for UniverseDiscoveryPacketFramingLayer {
+    fn clone(&self) -> Self {
+        UniverseDiscoveryPacketFramingLayer {
+            source_name: self.source_name.as_str().into(),
+            data: self.data.clone(),
+        }
+    }
+}
+
 const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x00000001;
 
 /// Universe discovery layer PDU.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer {
     /// Current page of the dicovery packet.
     pub page: u8,
@@ -771,7 +794,7 @@ pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer {
     #[cfg(feature = "std")]
     pub universes: Vec<u16>,
     #[cfg(not(feature = "std"))]
-    pub universes: ArrayVec<[u16; 512]>,
+    pub universes: Vec<u16, [u16; 512]>,
 }
 
 impl Pdu for UniverseDiscoveryPacketUniverseDiscoveryLayer {
@@ -793,10 +816,13 @@ impl Pdu for UniverseDiscoveryPacketUniverseDiscoveryLayer {
         #[cfg(feature = "std")]
         let mut universes = Vec::with_capacity(universes_length);
         #[cfg(not(feature = "std"))]
-        let mut universes = ArrayVec::new();
-        unsafe {
-            universes.set_len(universes_length);
-        }
+        let mut universes = Vec::new();
+
+        #[cfg(feature = "std")]
+        universes.resize(universes_length, 0);
+        #[cfg(not(feature = "std"))]
+        universes.resize(universes_length, 0).unwrap();
+
         NetworkEndian::read_u16_into(&buf[8..length], &mut universes[..universes_length]);
 
         Ok(UniverseDiscoveryPacketUniverseDiscoveryLayer {
@@ -856,6 +882,23 @@ impl Pdu for UniverseDiscoveryPacketUniverseDiscoveryLayer {
         1 +
         // Universes
         self.universes.len() * 2
+    }
+}
+
+impl Clone for UniverseDiscoveryPacketUniverseDiscoveryLayer {
+    fn clone(&self) -> Self {
+        UniverseDiscoveryPacketUniverseDiscoveryLayer {
+            page: self.page,
+            last_page: self.last_page,
+            #[cfg(feature = "std")]
+            universes: self.universes.clone(),
+            #[cfg(not(feature = "std"))]
+            universes: {
+                let mut universes = Vec::new();
+                universes.extend_from_slice(&self.universes[..]).unwrap();
+                universes
+            },
+        }
     }
 }
 
@@ -1032,10 +1075,7 @@ mod test {
             pdu: E131RootLayer {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
                 data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-                    #[cfg(feature = "std")]
                     source_name: "Source_A".into(),
-                    #[cfg(not(feature = "std"))]
-                    source_name: ArrayString::from("Source_A").unwrap(),
                     priority: 100,
                     synchronization_address: 7962,
                     sequence_number: 154,
@@ -1048,11 +1088,10 @@ mod test {
                         property_values: TEST_DATA_PACKET[125..638].into(),
                         #[cfg(not(feature = "std"))]
                         property_values: {
-                            let mut property_values = ArrayVec::new();
-                            unsafe {
-                                property_values.set_len(513);
-                            }
-                            property_values[..513].copy_from_slice(&TEST_DATA_PACKET[125..638]);
+                            let mut property_values = Vec::new();
+                            property_values
+                                .extend_from_slice(&TEST_DATA_PACKET[125..638])
+                                .unwrap();
                             property_values
                         },
                     },
@@ -1101,10 +1140,7 @@ mod test {
                 cid: Uuid::from_bytes(&TEST_DATA_PACKET[22..38]).unwrap(),
                 data: E131RootLayerData::UniverseDiscoveryPacket(
                     UniverseDiscoveryPacketFramingLayer {
-                        #[cfg(feature = "std")]
                         source_name: "Source_A".into(),
-                        #[cfg(not(feature = "std"))]
-                        source_name: ArrayString::from("Source_A").unwrap(),
                         data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
                             page: 1,
                             last_page: 2,
@@ -1112,10 +1148,8 @@ mod test {
                             universes: vec![3, 4, 5],
                             #[cfg(not(feature = "std"))]
                             universes: {
-                                let mut universes = ArrayVec::new();
-                                universes.push(3);
-                                universes.push(4);
-                                universes.push(5);
+                                let mut universes = Vec::new();
+                                universes.extend_from_slice(&[3, 4, 5]).unwrap();
                                 universes
                             },
                         },
