@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (MiKTeX 2.9.6840 64-bit) (preloaded format=pdflatex 2018.11.14)  17 SEP 2019 14:44
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (MiKTeX 2.9.6840 64-bit) (preloaded format=pdflatex 2018.11.14)  17 SEP 2019 15:38
 entering extended mode
 **./DOER.tex
 (DOER.tex
@@ -654,9 +654,9 @@ LaTeX Font Info:    Font shape `T1/futs/bx/n' in size <12> not available
 {C:/Users/paul/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}]
 [2]
 LaTeX Font Info:    Font shape `T1/futs/bx/n' in size <24.88> not available
-(Font)              Font shape `T1/futs/b/n' tried instead on input line 35.
+(Font)              Font shape `T1/futs/b/n' tried instead on input line 52.
 
-Overfull \hbox (22.43349pt too wide) in paragraph at lines 43--44
+Overfull \hbox (22.43349pt too wide) in paragraph at lines 60--61
 []\T1/futs/m/n/12 https://www.element14.com/community/groups/open-source-hardwa
 re/blog/2017/08/24/dmx-
  []
@@ -665,10 +665,10 @@ re/blog/2017/08/24/dmx-
 
 ] (DOER.aux) ) 
 Here is how much of TeX's memory you used:
- 3840 strings out of 492970
- 52988 string characters out of 3127037
- 117394 words of memory out of 3000000
- 7625 multiletter control sequences out of 15000+200000
+ 3842 strings out of 492970
+ 53007 string characters out of 3127037
+ 115400 words of memory out of 3000000
+ 7627 multiletter control sequences out of 15000+200000
  63806 words of font info for 62 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
  41i,6n,25p,1504b,198s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -676,7 +676,7 @@ Here is how much of TeX's memory you used:
 base/8r.enc}<C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/adobe/
 utopia/putb8a.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/
 adobe/utopia/putr8a.pfb>
-Output written on DOER.pdf (3 pages, 43826 bytes).
+Output written on DOER.pdf (3 pages, 43427 bytes).
 PDF statistics:
  21 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
