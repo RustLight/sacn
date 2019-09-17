@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (MiKTeX 2.9.6840 64-bit) (preloaded format=pdflatex 2018.11.14)  17 SEP 2019 10:02
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (MiKTeX 2.9.6840 64-bit) (preloaded format=pdflatex 2018.11.14)  17 SEP 2019 14:34
 entering extended mode
 **./DOER.tex
 (DOER.tex
@@ -645,25 +645,44 @@ LaTeX Font Info:    Font shape `U/futm/m/n' will be
 (Font)              scaled to size 7.35999pt on input line 12.
 LaTeX Font Info:    Font shape `T1/futs/bx/n' in size <17.28> not available
 (Font)              Font shape `T1/futs/b/n' tried instead on input line 13.
- [1
 
-{C:/Users/paul/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}]
-(DOER.aux) ) 
+Underfull \hbox (badness 10000) in paragraph at lines 14--15
+
+ []
+
+LaTeX Font Info:    Font shape `T1/futs/bx/n' in size <14.4> not available
+(Font)              Font shape `T1/futs/b/n' tried instead on input line 16.
+LaTeX Font Info:    Font shape `T1/futs/bx/n' in size <12> not available
+(Font)              Font shape `T1/futs/b/n' tried instead on input line 17.
+[1
+
+{C:/Users/paul/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}] [2]
+LaTeX Font Info:    Font shape `T1/futs/bx/n' in size <24.88> not available
+(Font)              Font shape `T1/futs/b/n' tried instead on input line 32.
+
+Overfull \hbox (22.43349pt too wide) in paragraph at lines 40--41
+[]\T1/futs/m/n/12 https://www.element14.com/community/groups/open-source-hardwa
+re/blog/2017/08/24/dmx-
+ []
+
+[3
+
+] (DOER.aux) ) 
 Here is how much of TeX's memory you used:
- 3822 strings out of 492970
- 52751 string characters out of 3127037
- 116379 words of memory out of 3000000
- 7613 multiletter control sequences out of 15000+200000
- 45994 words of font info for 52 fonts, out of 3000000 for 9000
+ 3839 strings out of 492970
+ 52980 string characters out of 3127037
+ 117391 words of memory out of 3000000
+ 7624 multiletter control sequences out of 15000+200000
+ 63806 words of font info for 62 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 41i,6n,25p,273b,198s stack positions out of 5000i,500n,10000p,200000b,50000s
-{C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/enc/dvips/ba
-se/8r.enc}<C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/adobe/ut
-opia/putb8a.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/ad
-obe/utopia/putr8a.pfb>
-Output written on DOER.pdf (1 page, 34141 bytes).
+ 41i,6n,25p,1504b,198s stack positions out of 5000i,500n,10000p,200000b,50000s
+{C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/enc/dvips/
+base/8r.enc}<C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/adobe/
+utopia/putb8a.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/
+adobe/utopia/putr8a.pfb>
+Output written on DOER.pdf (3 pages, 42628 bytes).
 PDF statistics:
- 15 PDF objects out of 1000 (max. 8388607)
+ 21 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
