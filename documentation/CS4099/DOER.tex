@@ -30,19 +30,18 @@ One solution to solve some of the problems with DMX is to send it using UDP over
 Rust \cite{RUST_LANG} is a language designed to be used for writing fast, memory efficient systems code. It has relatively low overhead and because it doesn't require the additional overhead of a garbage collector it is perfect for usage in embedded or high performance systems. This makes it an ideal language for usage with sACN as responding quickly to control events is vital to a lighting system (imagine a sound effect goes off but the lighting doesn't until a second later). 
 
 \section*{Objectives}
-Objectives
-This is a list of clearly defined, measurable goals you
-intend to achieve by the end of your project. This could
-include any software artefacts you intend to submit in
-the end, results of an evaluation (for surveys or research
-algorithms), etc. Your performance will be measured
-against these objectives.
-Typically, you will list about 3-5 primary objectives
-which are necessary for a project to be deemed
-successful, and further 3 or so secondary objectives
-which allow a successful project to be extended in an
-interesting direction. Occasionally, tertiary objectives
-may also be listed, but these are comparatively rare.
+\paragraph*{Primary Objectives}
+\begin{list}{}{}
+	\item 1. Learn rust
+	\item 2. Test the existing implementation to verify its correctness.
+	\item 3. Expand the existing implementation to allow receiving sACN, universe synchronisation and universe discovery.
+\end{list}
+
+\paragraph*{Secondary Objectives}
+\begin{list}{}{}
+	\item 1. Analyse the performance of this protocol implementation verses other implementations in different languages with regards to speed.
+	\item 2. Analyse the performance of this protocol in various implementations verses another protocol such as ArtNet \cite{ArtNet}.
+\end{list}
 
 \section*{Ethics}
 This project has no ethical considerations that require notification in this section.
@@ -63,44 +62,9 @@ For testing the protocol and verifying it works with real world devices this pro
 	https://github.com/hhromic/libe131 (17/09/2019)
 	\bibitem{RUST_LANG}
 	https://www.rust-lang.org/ (17/09/2019)
+	\bibitem{ArtNet}
+	http://artisticlicence.com/WebSiteMaster/User\%20Guides/art-net.pdf (17/09/2019)
+	
 	
 \end{thebibliography}
-	
-	
-
-Ethics
-Here you should discuss any ethical considerations
-pertaining to your project. Start with the selfassessment form from the Student Handbook (Ethics
-section). If you can answer “No” to all questions on the
-self-assessment form, this section of the DOER
-document will be brief and state that there are no ethical
-considerations.
-If you are planning to work with people (especially
-children), animals, sensitive private data, or if there are
-other considerations, you should discuss them here, and
-explain how you went about obtaining necessary
-approval (any Ethics applications).
-The self-assessment form and any other relevant
-documents (if applicable) should be scanned and
-uploaded to the “Ethics” slot on MMS.
-1
-2017/18
-Resources
-This is a list of any special resources your project will
-need: hardware, software, licenses, access to
-infrastructure (e.g. compute servers), drones, etc. Think
-ahead, but be realistic -- the School will not be able to
-fulfill all requests.
-Most projects can be completed using standard school
-equipment, in which case this section will contain only a
-short statement confirming this.
-You and your supervisor will have to agree on everything in the DOER document.
-Typically, the process looks like this:
-1. Schedule a meeting with the supervisor to flesh out the description,
-objectives, and any needed resources,
-2. Write this all up in a word processor, following the structure presented
-above,
-3. Make sure both you and the supervisor agree about the contents (via email
-or in person),
-4. Submit the DOER to MMS.
 \end{document}
