@@ -1,0 +1,6 @@
+Sites that have been used, unless otherwise stated these sites were used but large blocks of unmodified code were not taken (e.g. the 
+site showed how to do something and this was used to do the thing but it wasn't a direct copy and was adapted to the situation).
+
+https://doc.rust-lang.org/book/ 
+
+https://stackoverflow.com/questions/45519176/how-do-i-use-or-import-a-local-rust-file
