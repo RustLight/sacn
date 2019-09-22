@@ -15,6 +15,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![doc(html_root_url = "https://docs.rs/sacn/")]
 
+extern crate socket2;
+
 #[cfg(feature = "std")]
 extern crate core;
 
