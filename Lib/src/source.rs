@@ -16,7 +16,7 @@ use uuid::Uuid;
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, E131RootLayer,
              E131RootLayerData};
 
-fn universe_to_ip(universe: u16) -> Result<String> {
+pub fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
         return Err(Error::new(
             ErrorKind::InvalidInput,

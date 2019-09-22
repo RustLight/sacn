@@ -15,8 +15,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![doc(html_root_url = "https://docs.rs/sacn/")]
 
-extern crate socket2;
-
 #[cfg(feature = "std")]
 extern crate core;
 
@@ -34,3 +32,8 @@ pub mod error;
 pub mod packet;
 #[cfg(feature = "std")]
 mod source;
+
+#[macro_use]
+extern crate lazy_static;
+extern crate socket2;
+mod recieve;
