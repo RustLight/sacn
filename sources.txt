@@ -2,5 +2,9 @@ Sites that have been used, unless otherwise stated these sites were used but lar
 site showed how to do something and this was used to do the thing but it wasn't a direct copy and was adapted to the situation).
 
 https://doc.rust-lang.org/book/ 
+https://doc.rust-lang.org/rust-by-example/
 
 https://stackoverflow.com/questions/45519176/how-do-i-use-or-import-a-local-rust-file
+
+ANSI Documents downloaded from
+https://tsp.esta.org/tsp/documents/published_docs.php (22/09/2019)
