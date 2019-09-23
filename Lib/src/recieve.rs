@@ -39,6 +39,7 @@ fn new_socket(addr: &SocketAddr) -> io::Result<Socket> {
 pub fn join_multicast(addr: SocketAddr) -> io::Result<Socket> {
     let ip_addr = addr.ip();
     let socket = new_socket(&addr)?;
+    println!("RCV socket: {:#?}", socket);
 
     match ip_addr {
         IpAddr::V4(ref mdns_v4) => {
@@ -57,8 +58,11 @@ pub fn join_multicast(addr: SocketAddr) -> io::Result<Socket> {
 
 #[cfg(windows)]
 fn bind_multicast(socket: &Socket, addr: &SocketAddr) -> io::Result<()>{
+    println!("Windows binding multicast... ADDR: {}", addr);
     let addr = match *addr {
-        SocketAddr::V4(addr) => SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), addr.port()),
+        SocketAddr::V4(addr) => {
+            SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), addr.port())
+        }
         SocketAddr::V6(addr) => {
             SocketAddr::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).into(), addr.port())
         }
