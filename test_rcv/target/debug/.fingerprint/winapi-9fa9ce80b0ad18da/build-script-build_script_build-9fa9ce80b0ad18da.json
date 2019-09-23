@@ -1,0 +1,1 @@
+{"rustc":6271272977485306041,"features":"[\"handleapi\", \"minwindef\", \"ntsecapi\", \"profileapi\", \"winnt\", \"winsock2\", \"ws2def\", \"ws2ipdef\", \"ws2tcpip\"]","target":10088282520713642473,"profile":9935990280773120926,"path":11224715822654675049,"deps":[],"local":[{"Precalculated":"0.3.8"}],"rustflags":[],"metadata":16266002775178098827}

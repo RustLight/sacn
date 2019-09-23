@@ -1,0 +1,1 @@
+{"rustc":6271272977485306041,"features":"[\"reuseport\"]","target":406089587815932100,"profile":9935990280773120926,"path":5711051162350489247,"deps":[["winapi v0.3.8","winapi",14726622065622768927]],"local":[{"Precalculated":"0.3.11"}],"rustflags":[],"metadata":4369977487368567522}
