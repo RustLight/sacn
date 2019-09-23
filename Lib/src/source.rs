@@ -81,7 +81,7 @@ impl DmxSource {
         // // https://doc.rust-lang.org/std/net/struct.UdpSocket.html 23/09/2019
         // socket.set_multicast_loop_v4(true).expect("Failed to set multicast loop v4!");
         // https://doc.rust-lang.org/std/net/struct.UdpSocket.html 23/09/2019
-        // socket.set_multicast_ttl_v4(42).expect("Failed to set multicast TTL");
+        socket.set_multicast_ttl_v4(42).expect("Failed to set multicast TTL");
 
         Ok(DmxSource {
             socket,
