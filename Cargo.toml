@@ -1,0 +1,2 @@
+[workspace]
+members = ["Lib", "testRcv", "testSend"]
