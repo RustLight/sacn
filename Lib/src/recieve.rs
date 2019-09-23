@@ -18,6 +18,8 @@ use std::io;
 use std::time::Duration;
 use std::io::{Error, ErrorKind};
 
+use std::ptr;
+
 pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; // As defined in ANSI E1.31-2018
 
 /// Value of the highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
@@ -65,7 +67,7 @@ impl DmxReciever {
         )
     }
 
-    fn recv_blocking(&self, pktBuf: &mut AcnRootLayerProtocol) -> Result<usize, Error>{
+    pub fn recv_blocking(&self, pktBuf: &mut AcnRootLayerProtocol) -> Result<usize, Error>{
         let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
         println!("Listening");
 
@@ -75,7 +77,17 @@ impl DmxReciever {
 
         match AcnRootLayerProtocol::parse(data) {
             Ok(pkt) => {
-                *pktBuf = pkt;
+                // unsafe {
+                //     ptr::copy(&pkt, pktBuf, pkt.len());
+                // }
+                // *pktBuf = pkt;
+
+                // TODO 
+                // FIXME
+
+                // The current problem is getting this packet out of here. 
+                // Could have an inversion of control and use a callback?
+                
                 Ok(len)
             }
             Err(err) => {
