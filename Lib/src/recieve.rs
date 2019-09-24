@@ -8,18 +8,186 @@
 // - Simultaneous Ipv4 or Ipv6 support (Ipv6 preferred as newer and going to become more standard?)
 // - Support for Windows and Unix
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use socket2::{Socket, Domain, Protocol, Type, SockAddr};
+
+use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, E131RootLayer,
+             E131RootLayerData};
 
 use std::io;
 use std::time::Duration;
+use std::io::{Error, ErrorKind};
+
+use std::ptr;
 
 pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; // As defined in ANSI E1.31-2018
 
-// TODO create a universe to IP version to return the values as an len 4 array with each one being a byte to use below to replace magic constant.
+/// Value of the highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
+pub const E131_MULTICAST_IPV4_HIGHEST_BYTE: u8 = 239;
 
-lazy_static! {
-    pub static ref IPV4: IpAddr = Ipv4Addr::new(239, 255, 0, 1).into();
+/// Value of the second highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
+pub const E131_MULTICAST_IPV4_SECOND_BYTE: u8 = 255;
+
+/// The maximum universe number that can be used with the E1.31 protocol as specified in section 9.1.1 of ANSI E1.31-2018.
+pub const E131_MAX_MULTICAST_UNIVERSE: u16 = 63999;
+
+/// The lowest / minimum universe number that can be used with the E1.31 protocol as specified in section 9.1.1 of ANSI E1.31-2018.
+pub const E131_MIN_MULTICAST_UNIVERSE: u16 = 1;
+
+/// The default size of the buffer used to recieve E1.31 packets.
+/// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
+pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
+
+pub struct DmxReciever{
+    universe: u16,
+    socket: UdpSocket
+}
+
+impl DmxReciever {
+    /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
+    /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
+    pub fn listen_universe(universe: u16) -> Result<DmxReciever, Error> {
+        let ipv4AddrSegments = universe_to_ipv4_arr(universe)?;
+        let multicastAddr: IpAddr = Ipv4Addr::new(ipv4AddrSegments[0], ipv4AddrSegments[1], ipv4AddrSegments[2], ipv4AddrSegments[3]).into();
+        let socket = (join_multicast(SocketAddr::new(multicastAddr, ACN_SDT_MULTICAST_PORT))?).into_udp_socket();
+
+        Ok(DmxReciever::new(socket, universe)?)
+    }
+
+    pub fn set_recv_timeout(&self, duration: Option<Duration>) -> Result<(), Error> {
+        self.socket.set_read_timeout(duration)
+    }
+
+    fn new (socket: UdpSocket, universe: u16) -> Result<DmxReciever, Error> {
+        Ok(
+            DmxReciever {
+                universe,
+                socket
+            }
+        )
+    }
+
+    pub fn recv_blocking(&self, pktBuf: &mut AcnRootLayerProtocol) -> Result<usize, Error>{
+        let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
+        println!("Listening");
+
+        let (len, remote_addr) = self.socket.recv_from(&mut buf)?;
+        let data = &buf[..len];
+        println!("Data recieved");
+
+        match AcnRootLayerProtocol::parse(data) {
+            Ok(pkt) => {
+                // unsafe {
+                //     ptr::copy(&pkt, pktBuf, pkt.len());
+                // }
+                // *pktBuf = pkt;
+
+                // TODO 
+                // FIXME
+
+                // The current problem is getting this packet out of here. 
+                // Could have an inversion of control and use a callback?
+                
+                Ok(len)
+            }
+            Err(err) => {
+                Err(Error::new(ErrorKind::Other, err))
+            }
+        }
+
+        // AcnRootLayerProtocol::parse(data)
+
+        // match self.socket.recv_from(&mut buf) {
+        //     Ok (len, remote_addr) => {
+        //         let data = &buf[..len];
+        //         println!("Data recieved");
+        //         // AcnRootLayerProtocol::parse(data)
+        //         match AcnRootLayerProtocol::parse(data) {
+        //             Ok(pkt) => {
+        //                 Ok(pkt)
+        //             }
+        //             Err(err) => {
+        //                 Err(err)
+        //             }
+        //         }
+        //     }
+        //     Err (err) => {
+        //         Err(err)
+        //     }
+        // }
+
+        
+    }
+
+}
+
+/// Converts given universe number in range 1 - 63999 inclusive into an u8 array of length 4 with the first byte being
+/// the highest byte in the multicast IP for that universe, the second byte being the second highest and so on.
+/// 
+/// Converstion done as specified in section 9.3.1 of ANSI E1.31-2018
+///
+/// Returns as a Result with the OK value being the array and the Err value being an Error.
+fn universe_to_ipv4_arr(universe: u16) -> Result<[u8;4], Error>{
+    if universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "universe is limited to the range 1 to 63999",
+        ));
+    }
+    let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
+    let low_byte: u8 = (universe & 0xff) as u8;
+
+    Ok([E131_MULTICAST_IPV4_HIGHEST_BYTE, E131_MULTICAST_IPV4_SECOND_BYTE, high_byte, low_byte])
+}
+
+#[test]
+fn test_universe_to_ip_array_lowest_byte_normal(){
+    let val: u16 = 119;
+    let res = universe_to_ipv4_arr(val).unwrap();
+    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
+    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
+    assert!(res[2] == ((val / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
+    assert!(res[3] == ((val % 256) as u8)); // val % 256 = value in lowest byte.  
+}
+
+#[test]
+fn test_universe_to_ip_array_both_bytes_normal(){
+    let val: u16 = 300;
+    let res = universe_to_ipv4_arr(val).unwrap();
+    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
+    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
+    assert!(res[2] == ((val / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
+    assert!(res[3] == ((val % 256) as u8)); // val % 256 = value in lowest byte.  
+}
+
+#[test]
+fn test_universe_to_ip_array_limit_high(){
+    let res = universe_to_ipv4_arr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
+    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
+    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
+    assert!(res[2] == ((E131_MAX_MULTICAST_UNIVERSE / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
+    assert!(res[3] == ((E131_MAX_MULTICAST_UNIVERSE % 256) as u8)); // val % 256 = value in lowest byte. 
+}
+
+#[test]
+fn test_universe_to_ip_array_limit_low(){
+    let res = universe_to_ipv4_arr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
+    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
+    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
+    assert!(res[2] == ((E131_MIN_MULTICAST_UNIVERSE / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
+    assert!(res[3] == ((E131_MIN_MULTICAST_UNIVERSE % 256) as u8)); // val % 256 = value in lowest byte. 
+}
+
+#[test]
+#[should_panic]
+fn test_universe_to_ip_array_out_range_low(){
+    let res = universe_to_ipv4_arr(0).unwrap();
+}
+
+#[test]
+#[should_panic]
+fn test_universe_to_ip_array_out_range_high(){
+    let res = universe_to_ipv4_arr(E131_MAX_MULTICAST_UNIVERSE + 1).unwrap();
 }
 
 fn new_socket(addr: &SocketAddr) -> io::Result<Socket> {
@@ -31,12 +199,10 @@ fn new_socket(addr: &SocketAddr) -> io::Result<Socket> {
 
     let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
 
-    // socket.set_read_timeout(Some(Duration::from_millis(1000)))?; 
-
     Ok(socket)
 }
 
-pub fn join_multicast(addr: SocketAddr) -> io::Result<Socket> {
+fn join_multicast(addr: SocketAddr) -> io::Result<Socket> {
     let ip_addr = addr.ip();
     let socket = new_socket(&addr)?;
     println!("RCV socket: {:#?}", socket);
@@ -74,11 +240,4 @@ fn bind_multicast(socket: &Socket, addr: &SocketAddr) -> io::Result<()>{
 #[cfg(unix)]
 fn bind_multicast(socket: &Socket, addr: &SocketAddr) -> io::Result<()> {
     socket.bind(&SockAddr::from(addr))?;
-}
-
-// In code tests
-
-#[test]
-fn test_ipv4_multicast_range(){
-    assert!(IPV4.is_multicast());
 }
