@@ -1,10 +1,16 @@
 Sites that have been used, unless otherwise stated these sites were used but large blocks of unmodified code were not taken (e.g. the 
 site showed how to do something and this was used to do the thing but it wasn't a direct copy and was adapted to the situation).
 
-https://doc.rust-lang.org/book/ 
+https://doc.rust-lang.org/book/
+https://doc.rust-lang.org/cargo/
 https://doc.rust-lang.org/rust-by-example/
 
+Some syntax for code found from
+September 2019:
 https://stackoverflow.com/questions/45519176/how-do-i-use-or-import-a-local-rust-file
+https://users.rust-lang.org/t/returning-an-empty-array-from-a-function/26217 
+https://stackoverflow.com/questions/26469715/how-do-i-write-a-rust-unit-test-that-ensures-that-a-panic-has-occurred
+
 
 ANSI Documents downloaded from
 https://tsp.esta.org/tsp/documents/published_docs.php (22/09/2019)
