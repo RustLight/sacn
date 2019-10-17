@@ -34,10 +34,6 @@ pub const E131_MAX_MULTICAST_UNIVERSE: u16 = 63999;
 /// The lowest / minimum universe number that can be used with the E1.31 protocol as specified in section 9.1.1 of ANSI E1.31-2018.
 pub const E131_MIN_MULTICAST_UNIVERSE: u16 = 1;
 
-/// The default size of the buffer used to recieve E1.31 packets.
-/// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
-pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
-
 pub struct DmxReciever{
     universe: u16,
     socket: UdpSocket
@@ -67,16 +63,20 @@ impl DmxReciever {
         )
     }
 
-    pub fn recv_blocking(&self, pktBuf: &mut AcnRootLayerProtocol) -> Result<usize, Error>{
-        let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
+    pub fn recv_blocking<'a>(&self, buf: &'a mut [u8]) -> Result<AcnRootLayerProtocol<'a>, Error>{
+        // let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
         println!("Listening");
 
-        let (len, remote_addr) = self.socket.recv_from(&mut buf)?;
+        let (len, remote_addr) = self.socket.recv_from(buf)?;
         let data = &buf[..len];
         println!("Data recieved");
 
         match AcnRootLayerProtocol::parse(data) {
             Ok(pkt) => {
+                Ok(pkt)
+                // *pktBuf = pkt.clone();
+                
+
                 // unsafe {
                 //     ptr::copy(&pkt, pktBuf, pkt.len());
                 // }
@@ -87,8 +87,10 @@ impl DmxReciever {
 
                 // The current problem is getting this packet out of here. 
                 // Could have an inversion of control and use a callback?
+
+                // Pass in the function to run on reciept of a packet.
                 
-                Ok(len)
+                // Ok(len)
             }
             Err(err) => {
                 Err(Error::new(ErrorKind::Other, err))
