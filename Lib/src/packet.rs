@@ -233,7 +233,6 @@ macro_rules! impl_e131_root_layer {
         pub struct E131RootLayer$( $lt )* {
             /// Sender UUID.
             pub cid: Uuid,
-
             /// Data carried by the Root Layer PDU.
             pub data: E131RootLayerData$( $lt )*,
         }
@@ -689,7 +688,7 @@ impl_data_packet_dmp_layer!();
 const VECTOR_E131_EXTENDED_SYNCHRONIZATION: u32 = 0x0000_0001;
 
 /// sACN synchronization packet PDU.
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Copy)]
 pub struct SynchronizationPacketFramingLayer {
     /// The sequence number of the packet.
     pub sequence_number: u8,
