@@ -211,7 +211,7 @@ fn join_multicast(addr: SocketAddr) -> io::Result<Socket> {
 
     match ip_addr {
         IpAddr::V4(ref mdns_v4) => {
-            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0))?;
+            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0))?; // Needs to be set to the IP of the interface/network which the multicast packets are sent on (unless only 1 network)
         }
         IpAddr::V6(ref mdns_v6) => {
             socket.join_multicast_v6(mdns_v6, 0)?;
