@@ -9,12 +9,14 @@ fn main() {
 
     let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
 
-    match reciever.recv_blocking(&mut buf) {
-        Ok (pkt) => {
-            println!("Packet recieved: {:?}", pkt);
-        }
-        Err (err) => {
-            println!("Error recieving packet: {:?}", err);
+    while (true) {
+        match reciever.recv_blocking(&mut buf) {
+            Ok (pkt) => {
+                println!("Packet recieved: {:?}", pkt);
+            }
+            Err (err) => {
+                println!("Error recieving packet: {:?}", err);
+            }
         }
     }
     
