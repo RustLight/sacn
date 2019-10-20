@@ -7,8 +7,9 @@ use std::{thread, time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 fn main() {
-    let dmx_source = DmxSource::with_ip("Controller", "192.168.1.6").unwrap();
-    // let dmx_source = DmxSource::with_ip("Controller", "10.0.0.1").unwrap();
+    // let dmx_source = DmxSource::with_ip("Controller", "192.168.1.3").unwrap();
+    let dmx_source = DmxSource::with_ip("Controller", "10.0.0.10").unwrap();
+    // let dmx_source = DmxSource::with_ip("Controller", "10.1.1.10").unwrap();
 
     dmx_source.terminate_stream(1);
 
