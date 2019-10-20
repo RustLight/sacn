@@ -62,6 +62,8 @@ use uuid::Uuid;
 
 use error::{PackError, ParseError};
 
+pub const UNIVERSE_CHANNEL_CAPACITY: usize = 512;
+
 #[inline]
 fn zeros(buf: &mut [u8], n: usize) {
     for b in buf.iter_mut().take(n) {

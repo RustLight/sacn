@@ -14,7 +14,7 @@ use net2::UdpBuilder;
 use uuid::Uuid;
 
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, E131RootLayer,
-             E131RootLayerData};
+             E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY};
 
 pub fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
@@ -96,6 +96,25 @@ impl DmxSource {
     /// Sends DMX data to specified universe.
     pub fn send(&self, universe: u16, data: &[u8]) -> Result<()> {
         self.send_with_priority(universe, data, 100)
+    }
+
+    pub fn send_across_universe(&self, universes: &[u16], data: &[u8]) -> Result<()> {
+        let mut requiredUniverses = (data.len() / UNIVERSE_CHANNEL_CAPACITY);
+        if (data.len() % UNIVERSE_CHANNEL_CAPACITY > 0){ // Make sure that there is enough universes
+            requiredUniverses = requiredUniverses + 1;
+        }
+
+        if (universes.len() < requiredUniverses){
+            return Err(Error::new(ErrorKind::InvalidInput, "Must provide enough universes to send on"));
+        }
+
+        if (data.len() <= UNIVERSE_CHANNEL_CAPACITY){
+            // All fits within 1 universe so therefore send the data normally.
+            self.send_with_priority(universes[0], data, 100)
+        } else {
+            return Err(Error::new(ErrorKind::Other, "Not implemented universe sync sending yet!"));
+        }
+
     }
 
     /// Sends DMX data to specified universe with specified priority.
