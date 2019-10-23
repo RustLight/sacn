@@ -9,16 +9,13 @@
 // - Support for Windows and Unix
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
-use socket2::{Socket, Domain, Protocol, Type, SockAddr};
+use socket2::{Socket, Domain, Protocol, Type};
 
-use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, E131RootLayer,
-             E131RootLayerData};
+use packet::{AcnRootLayerProtocol};
 
 use std::io;
 use std::time::Duration;
 use std::io::{Error, ErrorKind};
-
-use std::ptr;
 
 pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; // As defined in ANSI E1.31-2018
 
@@ -47,9 +44,9 @@ impl DmxReciever {
     /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
     /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
     pub fn listen_universe(universe: u16) -> Result<DmxReciever, Error> {
-        let ipv4AddrSegments = universe_to_ipv4_arr(universe)?;
-        let multicastAddr: IpAddr = Ipv4Addr::new(ipv4AddrSegments[0], ipv4AddrSegments[1], ipv4AddrSegments[2], ipv4AddrSegments[3]).into();
-        let socket = (join_multicast(SocketAddr::new(multicastAddr, ACN_SDT_MULTICAST_PORT))?).into_udp_socket();
+        let ipv4_addr_segments = universe_to_ipv4_arr(universe)?;
+        let multicast_addr: IpAddr = Ipv4Addr::new(ipv4_addr_segments[0], ipv4_addr_segments[1], ipv4_addr_segments[2], ipv4_addr_segments[3]).into();
+        let socket = (join_multicast(SocketAddr::new(multicast_addr, ACN_SDT_MULTICAST_PORT))?).into_udp_socket();
 
         Ok(DmxReciever::new(socket, universe)?)
     }
@@ -58,13 +55,17 @@ impl DmxReciever {
         self.socket.set_read_timeout(duration)
     }
 
-    fn new (socket: UdpSocket, universe: u16) -> Result<DmxReciever, Error> {
+    pub fn new (socket: UdpSocket, universe: u16) -> Result<DmxReciever, Error> {
         Ok(
             DmxReciever {
                 universe,
                 socket
             }
         )
+    }
+
+    pub fn get_universe(&self) -> u16 {
+        return self.universe;
     }
 
     // pub fn recv_blocking(&self) -> Result<Box<AcnRootLayerProtocol>, Error> {
@@ -88,7 +89,7 @@ impl DmxReciever {
     pub fn recv_blocking<'a>(&self, buf: &'a mut [u8]) -> Result<AcnRootLayerProtocol<'a>, Error>{
         println!("Listening");
 
-        let (len, remote_addr) = self.socket.recv_from(buf)?;
+        let (len, _remote_addr) = self.socket.recv_from(buf)?;
         let data = &buf[..len];
         println!("Data recieved");
 

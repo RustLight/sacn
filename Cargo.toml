@@ -1,2 +1,2 @@
 [workspace]
-members = ["Lib", "testRcv", "testSend"]
+members = ["Lib", "test_rcv", "test_send"]

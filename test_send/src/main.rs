@@ -1,10 +1,7 @@
-#[macro_use]
 extern crate lazy_static;
 extern crate sacn;
 use sacn::DmxSource;
 use std::{thread, time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
-
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 fn main() {
     let dmx_source = DmxSource::new("Controller").unwrap();
@@ -13,7 +10,7 @@ fn main() {
 
     let priority = 100;
 
-    let testDataSingleUniverse = [
+    let test_data_single_universe = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -47,7 +44,7 @@ fn main() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     ];
 
-    let testDataMultipleUniverses = [
+    let test_data_multiple_universes = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -94,7 +91,7 @@ fn main() {
     ];
 
     loop {
-        match dmx_source.send_across_universe(&[1, 2], &testDataMultipleUniverses, priority){
+        match dmx_source.send_across_universe(&[1, 2], &test_data_multiple_universes, priority){
             Ok(_) => {
                 println!("Sent Across Universes Success");
             }
@@ -114,5 +111,5 @@ fn main() {
     // }
     
 
-    dmx_source.terminate_stream(1);
+    // dmx_source.terminate_stream(1);
 }

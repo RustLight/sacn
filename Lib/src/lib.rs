@@ -33,7 +33,6 @@ pub mod packet;
 #[cfg(feature = "std")]
 mod source;
 
-#[macro_use]
 extern crate lazy_static;
 extern crate socket2;
 pub mod recieve;

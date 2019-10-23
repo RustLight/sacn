@@ -1,5 +1,5 @@
 [package]
-name = "testSend"
+name = "test_send"
 version = "0.1.0"
 authors = ["Paul <pl59@st-andrews.ac.uk>"]
 edition = "2018"
