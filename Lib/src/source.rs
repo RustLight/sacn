@@ -106,37 +106,36 @@ impl DmxSource {
            return Err(Error::new(ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
         }
 
-        let mut requiredUniverses = (data.len() / UNIVERSE_CHANNEL_CAPACITY);
-        if (data.len() % UNIVERSE_CHANNEL_CAPACITY > 0){ // Make sure that there is enough universes
-            requiredUniverses = requiredUniverses + 1;
+        let mut required_universes = data.len() / UNIVERSE_CHANNEL_CAPACITY;
+        if data.len() % UNIVERSE_CHANNEL_CAPACITY > 0{ // Make sure that there is enough universes
+            required_universes = required_universes + 1;
         }
 
-        if (universes.len() < requiredUniverses){
+        if universes.len() < required_universes{
             return Err(Error::new(ErrorKind::InvalidInput, "Must provide enough universes to send on"));
         }
 
-        if (requiredUniverses <= 1){
+        if required_universes <= 1 {
             // All fits within 1 universe so therefore send the data normally.
             self.send_with_priority(universes[0], data, 100)
         } else {
-            let syncAddr = DEFAULT_SYNC_UNIVERSE;
-            for i in 0 .. (requiredUniverses - 1) {
-                let startIndex = (i * UNIVERSE_CHANNEL_CAPACITY);
+            let sync_addr = DEFAULT_SYNC_UNIVERSE;
+            for i in 0 .. (required_universes - 1) {
+                let start_index = i * UNIVERSE_CHANNEL_CAPACITY;
                 // Safety check to make sure that the end index doesn't exceed the data length
-                let endIndex = cmp::min((((i + 1) * UNIVERSE_CHANNEL_CAPACITY) - 1), data.len());
+                let end_index = cmp::min(((i + 1) * UNIVERSE_CHANNEL_CAPACITY) - 1, data.len());
                 self.send_detailed(universes[i], 
-                &data[startIndex .. endIndex], 
+                &data[start_index .. end_index], 
                 priority, 
-                syncAddr);
+                sync_addr)?;
             }
             
-            self.send_sync_packet(syncAddr);
-            // return Err(Error::new(ErrorKind::Other, "Not implemented universe sync sending yet!"));
+            self.send_sync_packet(sync_addr)?;
             Ok(())
         }
     }
 
-    pub fn send_detailed(&self, universe: u16, data: &[u8], priority: u8, syncAddress: u16) -> Result<()> {
+    pub fn send_detailed(&self, universe: u16, data: &[u8], priority: u8, sync_address: u16) -> Result<()> {
         if priority > 200 {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -155,7 +154,7 @@ impl DmxSource {
                 data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
                     source_name: self.name.as_str().into(),
                     priority,
-                    synchronization_address: syncAddress,
+                    synchronization_address: sync_address,
                     sequence_number: sequence,
                     preview_data: self.preview_data,
                     stream_terminated: false,

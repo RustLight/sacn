@@ -1,5 +1,5 @@
 [package]
-name = "testRcv"
+name = "test_rcv"
 version = "0.1.0"
 authors = ["Paul <paul@lancasterzone.com>"]
 edition = "2018"
