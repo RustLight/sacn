@@ -9,11 +9,12 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
 use std::net::UdpSocket;
+use std::cmp;
 
 use net2::UdpBuilder;
 use uuid::Uuid;
 
-use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, E131RootLayer,
+use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, SynchronizationPacketFramingLayer, E131RootLayer,
              E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE, DEFAULT_SYNC_UNIVERSE};
 
 pub fn universe_to_ip(universe: u16) -> Result<String> {
@@ -101,6 +102,10 @@ impl DmxSource {
 
     /// Sends DMX data that spans multiple universes using universe synchronization. 
     pub fn send_across_universe(&self, universes: &[u16], data: &[u8], priority: u8) -> Result<()> {
+        if data.len() == 0 {
+           return Err(Error::new(ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
+        }
+
         let mut requiredUniverses = (data.len() / UNIVERSE_CHANNEL_CAPACITY);
         if (data.len() % UNIVERSE_CHANNEL_CAPACITY > 0){ // Make sure that there is enough universes
             requiredUniverses = requiredUniverses + 1;
@@ -110,23 +115,25 @@ impl DmxSource {
             return Err(Error::new(ErrorKind::InvalidInput, "Must provide enough universes to send on"));
         }
 
-        if (data.len() <= UNIVERSE_CHANNEL_CAPACITY){
+        if (requiredUniverses <= 1){
             // All fits within 1 universe so therefore send the data normally.
             self.send_with_priority(universes[0], data, 100)
         } else {
             let syncAddr = DEFAULT_SYNC_UNIVERSE;
-            for i in 0 .. requiredUniverses {
+            for i in 0 .. (requiredUniverses - 1) {
+                let startIndex = (i * UNIVERSE_CHANNEL_CAPACITY);
+                // Safety check to make sure that the end index doesn't exceed the data length
+                let endIndex = cmp::min((((i + 1) * UNIVERSE_CHANNEL_CAPACITY) - 1), data.len());
                 self.send_detailed(universes[i], 
-                data[(i * UNIVERSE_CHANNEL_CAPACITY)..(((i + 1) * UNIVERSE_CHANNEL_CAPACITY) - 1)], 
+                &data[startIndex .. endIndex], 
                 priority, 
                 syncAddr);
-                self.send
             }
+            
             self.send_sync_packet(syncAddr);
-
-            return Err(Error::new(ErrorKind::Other, "Not implemented universe sync sending yet!"));
+            // return Err(Error::new(ErrorKind::Other, "Not implemented universe sync sending yet!"));
+            Ok(())
         }
-
     }
 
     pub fn send_detailed(&self, universe: u16, data: &[u8], priority: u8, syncAddress: u16) -> Result<()> {
@@ -178,11 +185,12 @@ impl DmxSource {
 
     /// Sends DMX data to specified universe with specified priority.
     pub fn send_with_priority(&self, universe: u16, data: &[u8], priority: u8) -> Result<()> {
-        self.send_detailed(universe, data, priority, NO_SYNC_UNIVERSE);
+        self.send_detailed(universe, data, priority, NO_SYNC_UNIVERSE)
     }
 
     // Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.
-    pub fn send_sync_packet(&self, universe: u16){
+    pub fn send_sync_packet(&self, universe: u16) -> Result<()> {
+        let ip = try!(universe_to_ip(universe));
         let mut sequence = match self.sequences.borrow().get(&universe) {
             Some(s) => *s,
             None => 0,
