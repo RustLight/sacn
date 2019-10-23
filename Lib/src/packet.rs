@@ -64,6 +64,12 @@ use error::{PackError, ParseError};
 
 pub const UNIVERSE_CHANNEL_CAPACITY: usize = 512;
 
+// The synchronisation universe/address of packets which do not require synchronisation as specified in section 6.2.4.1 of ANSI E1.31-2018.
+pub const NO_SYNC_UNIVERSE: u16 = 0;
+
+// Could be anything, implementation dependent, default universe used as the syncronisation universe.
+pub const DEFAULT_SYNC_UNIVERSE: u16 = 1;
+
 #[inline]
 fn zeros(buf: &mut [u8], n: usize) {
     for b in buf.iter_mut().take(n) {

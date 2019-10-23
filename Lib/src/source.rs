@@ -14,7 +14,7 @@ use net2::UdpBuilder;
 use uuid::Uuid;
 
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, E131RootLayer,
-             E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY};
+             E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE, DEFAULT_SYNC_UNIVERSE};
 
 pub fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
@@ -94,11 +94,13 @@ impl DmxSource {
     }
 
     /// Sends DMX data to specified universe.
+    #[deprecated(note="Use send_across_universe instead")]
     pub fn send(&self, universe: u16, data: &[u8]) -> Result<()> {
         self.send_with_priority(universe, data, 100)
     }
 
-    pub fn send_across_universe(&self, universes: &[u16], data: &[u8]) -> Result<()> {
+    /// Sends DMX data that spans multiple universes using universe synchronization. 
+    pub fn send_across_universe(&self, universes: &[u16], data: &[u8], priority: u8) -> Result<()> {
         let mut requiredUniverses = (data.len() / UNIVERSE_CHANNEL_CAPACITY);
         if (data.len() % UNIVERSE_CHANNEL_CAPACITY > 0){ // Make sure that there is enough universes
             requiredUniverses = requiredUniverses + 1;
@@ -112,13 +114,22 @@ impl DmxSource {
             // All fits within 1 universe so therefore send the data normally.
             self.send_with_priority(universes[0], data, 100)
         } else {
+            let syncAddr = DEFAULT_SYNC_UNIVERSE;
+            for i in 0 .. requiredUniverses {
+                self.send_detailed(universes[i], 
+                data[(i * UNIVERSE_CHANNEL_CAPACITY)..(((i + 1) * UNIVERSE_CHANNEL_CAPACITY) - 1)], 
+                priority, 
+                syncAddr);
+                self.send
+            }
+            self.send_sync_packet(syncAddr);
+
             return Err(Error::new(ErrorKind::Other, "Not implemented universe sync sending yet!"));
         }
 
     }
 
-    /// Sends DMX data to specified universe with specified priority.
-    pub fn send_with_priority(&self, universe: u16, data: &[u8], priority: u8) -> Result<()> {
+    pub fn send_detailed(&self, universe: u16, data: &[u8], priority: u8, syncAddress: u16) -> Result<()> {
         if priority > 200 {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -137,7 +148,7 @@ impl DmxSource {
                 data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
                     source_name: self.name.as_str().into(),
                     priority,
-                    synchronization_address: 0,
+                    synchronization_address: syncAddress,
                     sequence_number: sequence,
                     preview_data: self.preview_data,
                     stream_terminated: false,
@@ -153,6 +164,38 @@ impl DmxSource {
                     },
                 }),
             },
+        };
+        try!(self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip));
+
+        if sequence == 255 {
+            sequence = 0;
+        } else {
+            sequence += 1;
+        }
+        self.sequences.borrow_mut().insert(universe, sequence);
+        Ok(())
+    }
+
+    /// Sends DMX data to specified universe with specified priority.
+    pub fn send_with_priority(&self, universe: u16, data: &[u8], priority: u8) -> Result<()> {
+        self.send_detailed(universe, data, priority, NO_SYNC_UNIVERSE);
+    }
+
+    // Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.
+    pub fn send_sync_packet(&self, universe: u16){
+        let mut sequence = match self.sequences.borrow().get(&universe) {
+            Some(s) => *s,
+            None => 0,
+        };
+
+        let packet = AcnRootLayerProtocol {
+            pdu: E131RootLayer {
+                cid: self.cid,
+                data: E131RootLayerData::SynchronizationPacket(SynchronizationPacketFramingLayer {
+                    sequence_number: sequence,
+                    synchronization_address: universe
+                })
+            }
         };
         try!(self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip));
 
