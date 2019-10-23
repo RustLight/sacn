@@ -11,6 +11,8 @@ fn main() {
 
     let wait_time = time::Duration::from_millis(500);
 
+    let priority = 100;
+
     let testDataSingleUniverse = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -92,7 +94,7 @@ fn main() {
     ];
 
     loop {
-        match dmx_source.send_across_universe(&[1, 2], &testDataMultipleUniverses){
+        match dmx_source.send_across_universe(&[1, 2], &testDataMultipleUniverses, priority){
             Ok(_) => {
                 println!("Sent Across Universes Success");
             }
