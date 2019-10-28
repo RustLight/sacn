@@ -37,7 +37,8 @@ pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
 
 pub struct DmxReciever{
     universe: u16,
-    socket: UdpSocket
+    socket: UdpSocket,
+    pktQueue: Vec::new()
 }
 
 impl DmxReciever {
@@ -67,25 +68,12 @@ impl DmxReciever {
     pub fn get_universe(&self) -> u16 {
         return self.universe;
     }
+    
+    pub fn recv_data_blocking() -> Result<Vec<(u16, Vec<u8, [u8; 513]>)>, Error>{
+        
+    }
 
-    // pub fn recv_blocking(&self) -> Result<Box<AcnRootLayerProtocol>, Error> {
-    //     println!("Listening");
-    //     let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
-
-    //     let (len, remote_addr) = self.socket.recv_from(&mut buf)?;
-    //     let data = &buf[..len];
-    //     println!("Data recieved");
-
-    //     match AcnRootLayerProtocol::parse(data) {
-    //         Ok(pkt) => {
-    //             Ok(Box::new(pkt))
-    //         }
-    //         Err(err) => {
-    //             Err(Error::new(ErrorKind::Other, err))
-    //         }
-    //     }
-    // }
-
+    // Blocks until a packet is recieved and then returns it. The packet may not be ready to transmit if it is awaiting synchronisation.
     pub fn recv_blocking<'a>(&self, buf: &'a mut [u8]) -> Result<AcnRootLayerProtocol<'a>, Error>{
         println!("Listening");
 
