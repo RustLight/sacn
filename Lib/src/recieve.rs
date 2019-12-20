@@ -11,7 +11,9 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use socket2::{Socket, Domain, Protocol, Type};
 
-use packet::{AcnRootLayerProtocol};
+use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLayerData::DataPacket, 
+    E131RootLayerData::SynchronizationPacket, E131RootLayerData::UniverseDiscoveryPacket, UniverseDiscoveryPacketFramingLayer, 
+    SynchronizationPacketFramingLayer, DataPacketFramingLayer, DataPacketDmpLayer};
 
 use std::io;
 use std::time::Duration;
@@ -35,11 +37,24 @@ pub const E131_MIN_MULTICAST_UNIVERSE: u16 = 1;
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
 pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
 
+// The synchronisation address used to indicate that there is no synchronisation required for the data packet.
+// As defined in ANSI E1.31-2018 Section 6.2.4.1
+pub const NO_SYNC_ADDR: u16 = 0;
+
+// DMX payload size in bytes (512 bytes of data + 1 byte start code).
+pub const DMX_PAYLOAD_SIZE: usize = 513;
+
+pub struct DMXData{
+    universe: u16,
+    data: DataPacketDmpLayer
+}
+
 pub struct DmxReciever{
     universe: u16,
     socket: UdpSocket,
-    pktQueue: Vec::new()
+    waitingData: Vec<DMXData>
 }
+
 
 impl DmxReciever {
     /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
@@ -57,10 +72,13 @@ impl DmxReciever {
     }
 
     pub fn new (socket: UdpSocket, universe: u16) -> Result<DmxReciever, Error> {
+        let waitingData: Vec<DMXData> = Vec::new();
+        
         Ok(
             DmxReciever {
                 universe,
-                socket
+                socket,
+                waitingData
             }
         )
     }
@@ -68,9 +86,67 @@ impl DmxReciever {
     pub fn get_universe(&self) -> u16 {
         return self.universe;
     }
-    
-    pub fn recv_data_blocking() -> Result<Vec<(u16, Vec<u8, [u8; 513]>)>, Error>{
+
+    pub fn clearWaitingData(&self){
+        self.waitingData.clear();
+    }
+
+    // Handles the given data packet for this DMX reciever.
+    // Returns the universe data if successful.
+    // If the returned Vec is empty it indicates that the data was received successfully but isn't ready to act on.
+    // Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
+    fn handleDataPacket(&self, dataPkt: DataPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+        if dataPkt.synchronization_address == NO_SYNC_ADDR {
+            self.clearWaitingData();
+            let dmxData: DMXData = DMXData {universe: dataPkt.universe, data: dataPkt.data};
+            return Ok(vec![dmxData]);
+        }
         
+        Err(Error::new(ErrorKind::Other, "Sync data packet handling not implemented"))
+    }
+        
+    // Handles the given synchronisation packet for this DMX receiver. 
+    // Returns the released / previously blocked data if successful.
+    // If the returned Vec is empty it indicates that no data was waiting.
+    // Synchronisation packets handled as described by ANSI E1.31-2018 Section 6.2.4.1
+    /* E1.31 Synchronization Packets occur on specific universes. Upon receipt, they indicate that any data advertising that universe as its Synchronization Address must be acted upon.
+        In an E1.31 Data Packet, a value of 0 in the Synchronization Address indicates that the universe data is not synchronized. If a receiver is presented with an E1.31 Data Packet 
+        containing a Synchronization Address of 0, it shall discard any data waiting to be processed and immediately act on that Data Packet. 
+        
+        If the Synchronization Address field is not 0, and the receiver is receiving an active synchronization stream for that Synchronization Address, 
+        it shall hold that E1.31 Data Packet until the arrival of the appropriate E1.31 Synchronization Packet before acting on it.
+
+*/
+    fn handleSyncPacket(&self, syncPkt: SynchronizationPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+        Err(Error::new(ErrorKind::Other, "Sync pkt handling not Implemented"))
+    }
+
+    fn handleUniverseDiscoveryPacket(&self, discoveryPkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+        Err(Error::new(ErrorKind::Other, "Universe Discovery Not Implemented"))
+    }
+    
+    // Receives data blocking until data is receieved.
+    // Universe synchronisation is handled so any data returned should be immediately acted on.
+    // This is the main method for receiving data.
+    pub fn recv_data_blocking(&self) -> Result<Vec<DMXData>, Error>{
+        // https://stackoverflow.com/questions/41081240/idiomatic-callbacks-in-rust
+
+        let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
+
+        match self.recv_blocking(&mut buf) {
+            Ok(pkt) => {
+                let pdu: E131RootLayer = pkt.pdu;
+                let data: E131RootLayerData = pdu.data;
+                match data {
+                    DataPacket(d) => self.handleDataPacket(d),
+                    SynchronizationPacket(s) => self.handleSyncPacket(s),
+                    UniverseDiscoveryPacket(u) => self.handleUniverseDiscoveryPacket(u)
+                }
+            }
+            Err(err) => {
+                Err(err)
+            }
+        }
     }
 
     // Blocks until a packet is recieved and then returns it. The packet may not be ready to transmit if it is awaiting synchronisation.
@@ -78,10 +154,8 @@ impl DmxReciever {
         println!("Listening");
 
         let (len, _remote_addr) = self.socket.recv_from(buf)?;
-        let data = &buf[..len];
-        println!("Data recieved");
 
-        match AcnRootLayerProtocol::parse(data) {
+        match AcnRootLayerProtocol::parse(buf) {
             Ok(pkt) => {
                 Ok(pkt)
             }

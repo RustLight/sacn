@@ -9,6 +9,7 @@ Primary Objectives
 3. Expand the existing implementation to allow receiving DMX through sACN. - Before ILW
 4. Expand the existing implementation to allow sending DMX with universe synchronisation. - End ILW
 5. Expand the existing implementation to allow universe discovery. - End S1
+6. Add support for options as defined in ANSI E1.31-2018 - End Jan
 
 Justification for 2. being after 3. and 4. is not sure how much will be needed for the universe synchronisation and discovery as some of it exists already.
 
