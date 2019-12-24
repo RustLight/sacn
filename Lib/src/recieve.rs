@@ -46,6 +46,7 @@ pub const DMX_PAYLOAD_SIZE: usize = 513;
 
 pub struct DMXData{
     pub universe: u16,
+    pub start_code: u8,
     pub values: Vec<u8>
 }
 
@@ -100,10 +101,17 @@ impl DmxReciever {
             self.clearWaitingData();
 
             #[cfg(feature = "std")]
-            let dmxData: DMXData = DMXData {universe: dataPkt.universe, values: dataPkt.data.property_values.into_owned()};
+            let vals: Vec<u8> = dataPkt.data.property_values.into_owned();
+            let dmxData: DMXData = DMXData {
+                universe: dataPkt.universe, 
+                start_code: vals[0],
+                values: vals[1..].to_vec()};
 
             #[cfg(not(feature = "std"))]
-            let dmxData: DMXData = DMXData {universe: dataPkt.universe, values: dataPkt.data.property_values};
+            let dmxData: DMXData = DMXData {
+                universe: dataPkt.universe, 
+                start_code: dataPkt.data.property_values[0],
+                values: dataPkt.data.property_values[1..]};
 
             return Ok(vec![dmxData]);
         }
