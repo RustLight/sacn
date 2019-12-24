@@ -46,7 +46,7 @@ pub const DMX_PAYLOAD_SIZE: usize = 513;
 
 pub struct DMXData{
     universe: u16,
-    data: DataPacketDmpLayer
+    data: Vec<u8>
 }
 
 pub struct DmxReciever{
@@ -87,7 +87,7 @@ impl DmxReciever {
         return self.universe;
     }
 
-    pub fn clearWaitingData(&self){
+    pub fn clearWaitingData(&mut self){
         self.waitingData.clear();
     }
 
@@ -95,10 +95,16 @@ impl DmxReciever {
     // Returns the universe data if successful.
     // If the returned Vec is empty it indicates that the data was received successfully but isn't ready to act on.
     // Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
-    fn handleDataPacket(&self, dataPkt: DataPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+    fn handleDataPacket(&mut self, dataPkt: DataPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
         if dataPkt.synchronization_address == NO_SYNC_ADDR {
             self.clearWaitingData();
-            let dmxData: DMXData = DMXData {universe: dataPkt.universe, data: dataPkt.data};
+
+            #[cfg(feature = "std")]
+            let dmxData: DMXData = DMXData {universe: dataPkt.universe, data: dataPkt.data.property_values.into_owned()};
+
+            #[cfg(not(feature = "std"))]
+            let dmxData: DMXData = DMXData {universe: dataPkt.universe, data: dataPkt.data.property_values};
+
             return Ok(vec![dmxData]);
         }
         
@@ -128,7 +134,7 @@ impl DmxReciever {
     // Receives data blocking until data is receieved.
     // Universe synchronisation is handled so any data returned should be immediately acted on.
     // This is the main method for receiving data.
-    pub fn recv_data_blocking(&self) -> Result<Vec<DMXData>, Error>{
+    pub fn recv_data_blocking(&mut self) -> Result<Vec<DMXData>, Error>{
         // https://stackoverflow.com/questions/41081240/idiomatic-callbacks-in-rust
 
         let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
