@@ -44,10 +44,23 @@ pub const NO_SYNC_ADDR: u16 = 0;
 // DMX payload size in bytes (512 bytes of data + 1 byte start code).
 pub const DMX_PAYLOAD_SIZE: usize = 513;
 
+#[derive(Debug)]
 pub struct DMXData{
     pub universe: u16,
     pub start_code: u8,
     pub values: Vec<u8>
+}
+
+impl Clone for DMXData {
+    fn clone(&self) -> DMXData {
+        let mut new_vals = self.values.to_vec(); // https://stackoverflow.com/questions/21369876/what-is-the-idiomatic-rust-way-to-copy-clone-a-vector-in-a-parameterized-functio (26/12/2019)
+        
+        DMXData {
+            universe: self.universe,
+            start_code: self.start_code,
+            values: new_vals
+        }
+    }
 }
 
 pub struct DmxReciever{
