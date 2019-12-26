@@ -44,6 +44,15 @@ pub const NO_SYNC_ADDR: u16 = 0;
 // DMX payload size in bytes (512 bytes of data + 1 byte start code).
 pub const DMX_PAYLOAD_SIZE: usize = 513;
 
+// By default shouldn't check for packets send over the network using unicast.
+pub const CHECK_UNICAST_DEFAULT: bool = false;
+
+// By default should check for packets sent over the network using multicast.
+pub const CHECK_MUTLICAST_DEFAULT: bool = true;
+
+// By default shouldn't check for packets sent over the network using broadcast.
+pub const CHECK_BROADCAST_DEFAULT: bool = false;
+
 #[derive(Debug)]
 pub struct DMXData{
     pub universe: u16,
@@ -63,63 +72,48 @@ impl Clone for DMXData {
     }
 }
 
+/// Used for receiving dmx or other data on a particular universe using multicast.
 pub struct DmxReciever{
     universe: u16,
-    socket: UdpSocket,
-    waitingData: Vec<DMXData>
-}
-
-pub struct SacnReceiver {
-    universe_receivers: Vec<DmxReciever>
+    socket: UdpSocket
 }
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
+pub struct SacnReceiver {
+    multicast_universe_receivers: Vec<DmxReciever>, // Receivers to receive data over multicast.
+    waitingData: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
+    next_index: usize, // Universes are polled for data in a round-robin fashion to prevent starvation. This records the next index 
+                     // to check so it can start at the next point not checked.
+    check_unicast: bool,    // If true then should attempt to process packets sent to the registered universes using unicast.
+    check_multicast: bool,  // If true then should attempt to process packets sent to the registered universes using multicast.
+    check_broadcast: bool   // If true then should attempt to process packets sent to the registered universes using broadcast.
+}
+
 impl SacnReceiver {
     /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
     pub fn listen_multicast_universes(universes: Vec<u16>) -> Result<(), Error>{
-        // TODO, migrate usage of DmxReceiver to using SacnReceiver.
         // SacnReceiver is used to handle receiving data even if it is synchronised across multiple universes.
         Err(Error::new(ErrorKind::Other, "Not Implemented"))
     }
-}
 
-
-impl DmxReciever {
-    /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
-    /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
-    pub fn listen_universe(universe: u16) -> Result<DmxReciever, Error> {
-        let ipv4_addr_segments = universe_to_ipv4_arr(universe)?;
-        let multicast_addr: IpAddr = Ipv4Addr::new(ipv4_addr_segments[0], ipv4_addr_segments[1], ipv4_addr_segments[2], ipv4_addr_segments[3]).into();
-        let socket = (join_multicast(SocketAddr::new(multicast_addr, ACN_SDT_MULTICAST_PORT))?).into_udp_socket();
-
-        Ok(DmxReciever::new(socket, universe)?)
-    }
-
-    pub fn set_recv_timeout(&self, duration: Option<Duration>) -> Result<(), Error> {
-        self.socket.set_read_timeout(duration)
-    }
-
-    pub fn new (socket: UdpSocket, universe: u16) -> Result<DmxReciever, Error> {
-        let waitingData: Vec<DMXData> = Vec::new();
-        
-        Ok(
-            DmxReciever {
-                universe,
-                socket,
-                waitingData
+    pub fn new () -> Result<SacnReceiver, Error> {
+        Ok (
+            SacnReceiver {
+                multicast_universe_receivers: Vec::new(),
+                waitingData: Vec::new(),
+                next_index: 0,
+                check_unicast: CHECK_UNICAST_DEFAULT,
+                check_multicast: CHECK_MUTLICAST_DEFAULT,
+                check_broadcast: CHECK_BROADCAST_DEFAULT
             }
         )
-    }
-
-    pub fn get_universe(&self) -> u16 {
-        return self.universe;
     }
 
     pub fn clearWaitingData(&mut self){
         self.waitingData.clear();
     }
 
-    // Handles the given data packet for this DMX reciever.
+     // Handles the given data packet for this DMX reciever.
     // Returns the universe data if successful.
     // If the returned Vec is empty it indicates that the data was received successfully but isn't ready to act on.
     // Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
@@ -165,16 +159,16 @@ impl DmxReciever {
     fn handleUniverseDiscoveryPacket(&self, discoveryPkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
         Err(Error::new(ErrorKind::Other, "Universe Discovery Not Implemented"))
     }
-    
-    // Receives data blocking until data is receieved.
-    // Universe synchronisation is handled so any data returned should be immediately acted on.
-    // This is the main method for receiving data.
-    pub fn recv_data_blocking(&mut self) -> Result<Vec<DMXData>, Error>{
-        // https://stackoverflow.com/questions/41081240/idiomatic-callbacks-in-rust
 
+    // Attempt to recieve data from any of the registered universes.
+    // This is the main method for receiving data.
+    // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
+    // is already handled.
+    // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast).
+    pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
         let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
 
-        match self.recv_blocking(&mut buf) {
+        match self.recv_data(&mut buf) {
             Ok(pkt) => {
                 let pdu: E131RootLayer = pkt.pdu;
                 let data: E131RootLayerData = pdu.data;
@@ -189,9 +183,66 @@ impl DmxReciever {
             }
         }
     }
+    
+    fn recv_data<'a>(&mut self, buf: &'a mut [u8]) -> Result<AcnRootLayerProtocol<'a>, Error> {
+        if (!(self.check_multicast) || self.multicast_universe_receivers.is_empty()){
+            // No multicast to check so just check other modes.
+            return self.recv_non_multicast(buf);
+        }
 
-    // Blocks until a packet is recieved and then returns it. The packet may not be ready to transmit if it is awaiting synchronisation.
-    pub fn recv_blocking<'a>(&self, buf: &'a mut [u8]) -> Result<AcnRootLayerProtocol<'a>, Error>{
+        for _ in 0 .. self.multicast_universe_receivers.len(){
+            if (self.next_index >= self.multicast_universe_receivers.len()){
+                self.next_index = 0;
+                match self.recv_non_multicast(buf) {
+                    Ok(data) => return Ok(data),
+                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {} // Do nothing if the error is due to no data being available. https://doc.rust-lang.org/std/net/struct.UdpSocket.html (26/12/2019)
+                    Err(e) => return Err(e)
+                }
+            }
+
+            let mur = &self.multicast_universe_receivers[self.next_index];
+            self.next_index = self.next_index + 1;
+            match mur.recv(buf) {
+                Ok(pkt) => return Ok(pkt),
+                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {} // No data for this multicast address so move on.
+                Err(e) => return Err(e)
+            }
+        }
+
+        Err(Error::new(ErrorKind::WouldBlock, "No data ready"))
+    }
+
+    // Check unicast / broadcast listeners to see if there is any data to receieve. 
+    fn recv_non_multicast<'a>(&mut self, buf: &'a mut [u8]) -> Result<AcnRootLayerProtocol<'a>, Error> {
+        Err(Error::new(ErrorKind::WouldBlock, "Unicast / broadcast receiving not implemented"))
+    }
+}
+
+impl DmxReciever {
+    /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
+    /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
+    pub fn multicast_listen_universe(universe: u16) -> Result<DmxReciever, Error> {
+        let ipv4_addr_segments = universe_to_ipv4_arr(universe)?;
+        let multicast_addr: IpAddr = Ipv4Addr::new(ipv4_addr_segments[0], ipv4_addr_segments[1], ipv4_addr_segments[2], ipv4_addr_segments[3]).into();
+        let socket = (join_multicast(SocketAddr::new(multicast_addr, ACN_SDT_MULTICAST_PORT))?).into_udp_socket();
+
+        socket.set_nonblocking(true)?;
+
+        Ok(DmxReciever::new(socket, universe)?)
+    }
+
+    pub fn new (socket: UdpSocket, universe: u16) -> Result<DmxReciever, Error> {
+        Ok(
+            DmxReciever {
+                universe,
+                socket
+            }
+        )
+    }
+
+    // Returns a packet if there is one available. The packet may not be ready to transmit if it is awaiting synchronisation.
+    // Doesn't block so may return a WouldBlock error to indicate that there was no data ready.
+    fn recv<'a>(&self, buf: &'a mut [u8]) -> Result<AcnRootLayerProtocol<'a>, Error>{
         println!("Listening");
 
         let (len, _remote_addr) = self.socket.recv_from(buf)?;
@@ -204,6 +255,10 @@ impl DmxReciever {
                 Err(Error::new(ErrorKind::Other, err))
             }
         }
+    }
+
+    pub fn get_universe(&self) -> u16 {
+        return self.universe;
     }
 }
 
@@ -224,56 +279,6 @@ fn universe_to_ipv4_arr(universe: u16) -> Result<[u8;4], Error>{
     let low_byte: u8 = (universe & 0xff) as u8;
 
     Ok([E131_MULTICAST_IPV4_HIGHEST_BYTE, E131_MULTICAST_IPV4_SECOND_BYTE, high_byte, low_byte])
-}
-
-#[test]
-fn test_universe_to_ip_array_lowest_byte_normal(){
-    let val: u16 = 119;
-    let res = universe_to_ipv4_arr(val).unwrap();
-    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
-    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
-    assert!(res[2] == ((val / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
-    assert!(res[3] == ((val % 256) as u8)); // val % 256 = value in lowest byte.  
-}
-
-#[test]
-fn test_universe_to_ip_array_both_bytes_normal(){
-    let val: u16 = 300;
-    let res = universe_to_ipv4_arr(val).unwrap();
-    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
-    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
-    assert!(res[2] == ((val / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
-    assert!(res[3] == ((val % 256) as u8)); // val % 256 = value in lowest byte.  
-}
-
-#[test]
-fn test_universe_to_ip_array_limit_high(){
-    let res = universe_to_ipv4_arr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
-    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
-    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
-    assert!(res[2] == ((E131_MAX_MULTICAST_UNIVERSE / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
-    assert!(res[3] == ((E131_MAX_MULTICAST_UNIVERSE % 256) as u8)); // val % 256 = value in lowest byte. 
-}
-
-#[test]
-fn test_universe_to_ip_array_limit_low(){
-    let res = universe_to_ipv4_arr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
-    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
-    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
-    assert!(res[2] == ((E131_MIN_MULTICAST_UNIVERSE / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
-    assert!(res[3] == ((E131_MIN_MULTICAST_UNIVERSE % 256) as u8)); // val % 256 = value in lowest byte. 
-}
-
-#[test]
-#[should_panic]
-fn test_universe_to_ip_array_out_range_low(){
-    let res = universe_to_ipv4_arr(0).unwrap();
-}
-
-#[test]
-#[should_panic]
-fn test_universe_to_ip_array_out_range_high(){
-    let res = universe_to_ipv4_arr(E131_MAX_MULTICAST_UNIVERSE + 1).unwrap();
 }
 
 fn new_socket(addr: &SocketAddr) -> io::Result<Socket> {
@@ -326,4 +331,54 @@ fn bind_multicast(socket: &Socket, addr: &SocketAddr) -> io::Result<()>{
 #[cfg(unix)]
 fn bind_multicast(socket: &Socket, addr: &SocketAddr) -> io::Result<()> {
     socket.bind(&SockAddr::from(addr))?;
+}
+
+#[test]
+fn test_universe_to_ip_array_lowest_byte_normal(){
+    let val: u16 = 119;
+    let res = universe_to_ipv4_arr(val).unwrap();
+    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
+    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
+    assert!(res[2] == ((val / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
+    assert!(res[3] == ((val % 256) as u8)); // val % 256 = value in lowest byte.  
+}
+
+#[test]
+fn test_universe_to_ip_array_both_bytes_normal(){
+    let val: u16 = 300;
+    let res = universe_to_ipv4_arr(val).unwrap();
+    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
+    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
+    assert!(res[2] == ((val / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
+    assert!(res[3] == ((val % 256) as u8)); // val % 256 = value in lowest byte.  
+}
+
+#[test]
+fn test_universe_to_ip_array_limit_high(){
+    let res = universe_to_ipv4_arr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
+    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
+    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
+    assert!(res[2] == ((E131_MAX_MULTICAST_UNIVERSE / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
+    assert!(res[3] == ((E131_MAX_MULTICAST_UNIVERSE % 256) as u8)); // val % 256 = value in lowest byte. 
+}
+
+#[test]
+fn test_universe_to_ip_array_limit_low(){
+    let res = universe_to_ipv4_arr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
+    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
+    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
+    assert!(res[2] == ((E131_MIN_MULTICAST_UNIVERSE / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
+    assert!(res[3] == ((E131_MIN_MULTICAST_UNIVERSE % 256) as u8)); // val % 256 = value in lowest byte. 
+}
+
+#[test]
+#[should_panic]
+fn test_universe_to_ip_array_out_range_low(){
+    let res = universe_to_ipv4_arr(0).unwrap();
+}
+
+#[test]
+#[should_panic]
+fn test_universe_to_ip_array_out_range_high(){
+    let res = universe_to_ipv4_arr(E131_MAX_MULTICAST_UNIVERSE + 1).unwrap();
 }
