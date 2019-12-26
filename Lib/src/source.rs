@@ -130,7 +130,7 @@ impl DmxSource {
                 sync_addr)?;
             }
             
-            self.send_sync_packet(sync_addr)?;
+            self.send_sync_packet(sync_addr)?; // A sync packet must be sent so that the receiver will act on the sent data.
             Ok(())
         }
     }

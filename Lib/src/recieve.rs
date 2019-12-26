@@ -73,12 +73,14 @@ pub struct DmxReciever{
 impl DmxReciever {
     /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
     /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
-    pub fn listen_universe(universe: u16) -> Result<DmxReciever, Error> {
-        let ipv4_addr_segments = universe_to_ipv4_arr(universe)?;
+    pub fn listen_universe(universes: Vec<u16>) -> Result<DmxReciever, Error> {
+
+        // TODO: This currently only allows listening to a single universe, allow listening to multiple.
+        let ipv4_addr_segments = universe_to_ipv4_arr(universes[0])?;
         let multicast_addr: IpAddr = Ipv4Addr::new(ipv4_addr_segments[0], ipv4_addr_segments[1], ipv4_addr_segments[2], ipv4_addr_segments[3]).into();
         let socket = (join_multicast(SocketAddr::new(multicast_addr, ACN_SDT_MULTICAST_PORT))?).into_udp_socket();
 
-        Ok(DmxReciever::new(socket, universe)?)
+        Ok(DmxReciever::new(socket, universes[0])?)
     }
 
     pub fn set_recv_timeout(&self, duration: Option<Duration>) -> Result<(), Error> {
