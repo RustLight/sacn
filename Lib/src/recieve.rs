@@ -165,57 +165,29 @@ impl SacnReceiver {
     // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
     // is already handled.
     // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast).
-    pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
-        let rcv_data = self.recv_data();
-
-        match rcv_data {
-            Ok(pkt) => {
-                let pdu: E131RootLayer = pkt.pdu;
-                let data: E131RootLayerData = pdu.data;
-                match data {
-                    DataPacket(d) => self.handleDataPacket(d),
-                    SynchronizationPacket(s) => self.handleSyncPacket(s),
-                    UniverseDiscoveryPacket(u) => self.handleUniverseDiscoveryPacket(u)
-                }
-            }
-            Err(err) => {
-                Err(err)
-            }
-        }
-    }
+    // pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
+    //     match self.recv_data() {
+    //         Ok(pkt) => {
+    //             let pdu: E131RootLayer = pkt.pdu;
+    //             let data: E131RootLayerData = pdu.data;
+    //             match data {
+    //                 DataPacket(d) => self.handleDataPacket(d),
+    //                 SynchronizationPacket(s) => self.handleSyncPacket(s),
+    //                 UniverseDiscoveryPacket(u) => self.handleUniverseDiscoveryPacket(u)
+    //             }
+    //         }
+    //         Err(err) => {
+    //             Err(err)
+    //         }
+    //     }
+    // }
     
-    fn recv_data(&mut self) -> Result<Box<AcnRootLayerProtocol>, Error> {
-        if !(self.check_multicast) || self.multicast_universe_receivers.is_empty() {
-            // No multicast to check so just check other modes.
-            return self.recv_non_multicast();
-        }
-
-        for _ in 0 .. self.multicast_universe_receivers.len(){
-            if self.next_index >= self.multicast_universe_receivers.len() {
-                self.next_index = 0;
-                match self.recv_non_multicast() {
-                    Ok(data) => return Ok(data),
-                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {} // Do nothing if the error is due to no data being available. https://doc.rust-lang.org/std/net/struct.UdpSocket.html (26/12/2019)
-                    Err(e) => return Err(e)
-                }
-            }
-
-            let mur = &self.multicast_universe_receivers[self.next_index];
-            self.next_index = self.next_index + 1;
-
-            match mur.recv() {
-                Ok(pkt) => return Ok(pkt),
-                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {} // No data for this multicast address so move on.
-                Err(e) => return Err(e)
-            }
-        }
-
+    pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
         Err(Error::new(ErrorKind::WouldBlock, "No data ready"))
-    }
 
-    // Check unicast / broadcast listeners to see if there is any data to receieve. 
-    fn recv_non_multicast(&mut self) -> Result<Box<AcnRootLayerProtocol>, Error> {
-        Err(Error::new(ErrorKind::WouldBlock, "Unicast / broadcast receiving not implemented"))
+        // TODO, this method
+        // 1. Parsing isn't done in a functional way - deciding to fundamentally modify the previously existing library to be more functional. Returned 
+        //      packet will have no references to the passed in (immutuable) buffer of data.
     }
 }
 
@@ -244,13 +216,13 @@ impl DmxReciever {
     // Returns a packet if there is one available. The packet may not be ready to transmit if it is awaiting synchronisation.
     // Doesn't block so may return a WouldBlock error to indicate that there was no data ready.
     fn recv(&self) -> Result<Box<AcnRootLayerProtocol>, Error>{
-        let mut buf: [u8; RCV_BUF_DEFAULT_SIZE];
+        let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
 
         let (len, _remote_addr) = self.socket.recv_from(&mut buf)?;
 
-        match AcnRootLayerProtocol::parse(&mut buf) {
+        match AcnRootLayerProtocol::parse(buf) {
             Ok(pkt) => {
-                Ok(Box::new(pkt))
+                Ok(pkt)
             }
             Err(err) => {
                 Err(Error::new(ErrorKind::Other, err))
