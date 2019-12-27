@@ -152,11 +152,11 @@ impl SacnReceiver {
         it shall hold that E1.31 Data Packet until the arrival of the appropriate E1.31 Synchronization Packet before acting on it.
 
 */
-    fn handleSyncPacket(&self, syncPkt: SynchronizationPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+    fn handleSyncPacket(&mut self, syncPkt: SynchronizationPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
         Err(Error::new(ErrorKind::Other, "Sync pkt handling not Implemented"))
     }
 
-    fn handleUniverseDiscoveryPacket(&self, discoveryPkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+    fn handleUniverseDiscoveryPacket(&mut self, discoveryPkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
         Err(Error::new(ErrorKind::Other, "Universe Discovery Not Implemented"))
     }
 
@@ -166,9 +166,9 @@ impl SacnReceiver {
     // is already handled.
     // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast).
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
-        let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
+        let rcv_data = self.recv_data();
 
-        match self.recv_data(&mut buf) {
+        match rcv_data {
             Ok(pkt) => {
                 let pdu: E131RootLayer = pkt.pdu;
                 let data: E131RootLayerData = pdu.data;
@@ -184,16 +184,16 @@ impl SacnReceiver {
         }
     }
     
-    fn recv_data<'a>(&mut self, buf: &'a mut [u8]) -> Result<AcnRootLayerProtocol<'a>, Error> {
-        if (!(self.check_multicast) || self.multicast_universe_receivers.is_empty()){
+    fn recv_data(&mut self) -> Result<Box<AcnRootLayerProtocol>, Error> {
+        if !(self.check_multicast) || self.multicast_universe_receivers.is_empty() {
             // No multicast to check so just check other modes.
-            return self.recv_non_multicast(buf);
+            return self.recv_non_multicast();
         }
 
         for _ in 0 .. self.multicast_universe_receivers.len(){
-            if (self.next_index >= self.multicast_universe_receivers.len()){
+            if self.next_index >= self.multicast_universe_receivers.len() {
                 self.next_index = 0;
-                match self.recv_non_multicast(buf) {
+                match self.recv_non_multicast() {
                     Ok(data) => return Ok(data),
                     Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {} // Do nothing if the error is due to no data being available. https://doc.rust-lang.org/std/net/struct.UdpSocket.html (26/12/2019)
                     Err(e) => return Err(e)
@@ -202,7 +202,8 @@ impl SacnReceiver {
 
             let mur = &self.multicast_universe_receivers[self.next_index];
             self.next_index = self.next_index + 1;
-            match mur.recv(buf) {
+
+            match mur.recv() {
                 Ok(pkt) => return Ok(pkt),
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {} // No data for this multicast address so move on.
                 Err(e) => return Err(e)
@@ -213,7 +214,7 @@ impl SacnReceiver {
     }
 
     // Check unicast / broadcast listeners to see if there is any data to receieve. 
-    fn recv_non_multicast<'a>(&mut self, buf: &'a mut [u8]) -> Result<AcnRootLayerProtocol<'a>, Error> {
+    fn recv_non_multicast(&mut self) -> Result<Box<AcnRootLayerProtocol>, Error> {
         Err(Error::new(ErrorKind::WouldBlock, "Unicast / broadcast receiving not implemented"))
     }
 }
@@ -242,14 +243,14 @@ impl DmxReciever {
 
     // Returns a packet if there is one available. The packet may not be ready to transmit if it is awaiting synchronisation.
     // Doesn't block so may return a WouldBlock error to indicate that there was no data ready.
-    fn recv<'a>(&self, buf: &'a mut [u8]) -> Result<AcnRootLayerProtocol<'a>, Error>{
-        println!("Listening");
+    fn recv(&self) -> Result<Box<AcnRootLayerProtocol>, Error>{
+        let mut buf: [u8; RCV_BUF_DEFAULT_SIZE];
 
-        let (len, _remote_addr) = self.socket.recv_from(buf)?;
+        let (len, _remote_addr) = self.socket.recv_from(&mut buf)?;
 
-        match AcnRootLayerProtocol::parse(buf) {
+        match AcnRootLayerProtocol::parse(&mut buf) {
             Ok(pkt) => {
-                Ok(pkt)
+                Ok(Box::new(pkt))
             }
             Err(err) => {
                 Err(Error::new(ErrorKind::Other, err))
