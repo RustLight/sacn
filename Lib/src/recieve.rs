@@ -8,6 +8,7 @@
 // - Simultaneous Ipv4 or Ipv6 support (Ipv6 preferred as newer and going to become more standard?)
 // - Support for Windows and Unix
 
+use net2::UdpSocketExt;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use socket2::{Socket, Domain, Protocol, Type};
 
@@ -74,16 +75,13 @@ impl Clone for DMXData {
 
 /// Used for receiving dmx or other data on a particular universe using multicast.
 pub struct DmxReciever{
-    universe: u16,
     socket: UdpSocket
 }
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
-    multicast_universe_receivers: Vec<DmxReciever>, // Receivers to receive data over multicast.
+    receiver: DmxReciever,
     waitingData: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
-    next_index: usize, // Universes are polled for data in a round-robin fashion to prevent starvation. This records the next index 
-                     // to check so it can start at the next point not checked.
     check_unicast: bool,    // If true then should attempt to process packets sent to the registered universes using unicast.
     check_multicast: bool,  // If true then should attempt to process packets sent to the registered universes using multicast.
     check_broadcast: bool   // If true then should attempt to process packets sent to the registered universes using broadcast.
@@ -91,17 +89,20 @@ pub struct SacnReceiver {
 
 impl SacnReceiver {
     /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
-    pub fn listen_multicast_universes(universes: Vec<u16>) -> Result<(), Error>{
-        // SacnReceiver is used to handle receiving data even if it is synchronised across multiple universes.
-        Err(Error::new(ErrorKind::Other, "Not Implemented"))
+    pub fn listen_multicast_universes(&self, universes: Vec<u16>) -> Result<(), Error>{
+        for u in universes {
+            self.receiver.listen_multicast_universe(u)?
+        }
+        Ok(())
     }
 
-    pub fn new () -> Result<SacnReceiver, Error> {
+    pub fn new (addr: &SocketAddr) -> Result<SacnReceiver, Error> {
         Ok (
             SacnReceiver {
-                multicast_universe_receivers: Vec::new(),
+                // multicast_universe_receivers: Vec::new(),
+                receiver: DmxReciever::new(addr)?,
                 waitingData: Vec::new(),
-                next_index: 0,
+                // next_index: 0,
                 check_unicast: CHECK_UNICAST_DEFAULT,
                 check_multicast: CHECK_MUTLICAST_DEFAULT,
                 check_broadcast: CHECK_BROADCAST_DEFAULT
@@ -184,41 +185,35 @@ impl SacnReceiver {
     
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
         Err(Error::new(ErrorKind::WouldBlock, "No data ready"))
-
-        // TODO, this method
-        // 1. Parsing isn't done in a functional way - deciding to fundamentally modify the previously existing library to be more functional. Returned 
-        //      packet will have no references to the passed in (immutuable) buffer of data.
     }
 }
 
 impl DmxReciever {
-    /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
-    /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
-    pub fn multicast_listen_universe(universe: u16) -> Result<DmxReciever, Error> {
-        let ipv4_addr_segments = universe_to_ipv4_arr(universe)?;
-        let multicast_addr: IpAddr = Ipv4Addr::new(ipv4_addr_segments[0], ipv4_addr_segments[1], ipv4_addr_segments[2], ipv4_addr_segments[3]).into();
-        let socket = (join_multicast(SocketAddr::new(multicast_addr, ACN_SDT_MULTICAST_PORT))?).into_udp_socket();
-
-        socket.set_nonblocking(true)?;
-
-        Ok(DmxReciever::new(socket, universe)?)
-    }
-
-    pub fn new (socket: UdpSocket, universe: u16) -> Result<DmxReciever, Error> {
+    // Creates a new DMX receiver on the interface specified by the given address.
+    // TODO, look at ways to refer to interfaces without using IP's.
+    pub fn new (addr: &SocketAddr) -> Result<DmxReciever, Error> {
         Ok(
             DmxReciever {
-                universe,
-                socket
+                socket: bind_socket(addr)?
             }
         )
     }
 
+    /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
+    /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
+    pub fn listen_multicast_universe(&self, universe: u16) -> Result<(), Error> {
+        let ipv4_addr_segments = universe_to_ipv4_arr(universe)?;
+        let multicast_addr: IpAddr = Ipv4Addr::new(ipv4_addr_segments[0], ipv4_addr_segments[1], ipv4_addr_segments[2], ipv4_addr_segments[3]).into();
+
+        join_multicast(&self.socket, SocketAddr::new(multicast_addr, ACN_SDT_MULTICAST_PORT))?;
+
+        Ok(())
+    }
+
     // Returns a packet if there is one available. The packet may not be ready to transmit if it is awaiting synchronisation.
     // Doesn't block so may return a WouldBlock error to indicate that there was no data ready.
-    fn recv(&self) -> Result<Box<AcnRootLayerProtocol>, Error>{
-        let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
-
-        let (len, _remote_addr) = self.socket.recv_from(&mut buf)?;
+    fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error>{
+        let (len, _remote_addr) = self.socket.recv_from(&mut buf[0..])?;
 
         match AcnRootLayerProtocol::parse(buf) {
             Ok(pkt) => {
@@ -228,10 +223,6 @@ impl DmxReciever {
                 Err(Error::new(ErrorKind::Other, err))
             }
         }
-    }
-
-    pub fn get_universe(&self) -> u16 {
-        return self.universe;
     }
 }
 
@@ -254,22 +245,21 @@ fn universe_to_ipv4_arr(universe: u16) -> Result<[u8;4], Error>{
     Ok([E131_MULTICAST_IPV4_HIGHEST_BYTE, E131_MULTICAST_IPV4_SECOND_BYTE, high_byte, low_byte])
 }
 
-fn new_socket(addr: &SocketAddr) -> io::Result<Socket> {
-    let domain = if addr.is_ipv4(){
-        Domain::ipv4()
-    } else {
-        Domain::ipv6()
-    };
+// fn new_socket(addr: &SocketAddr) -> io::Result<UdpSocket> {
+//     let domain = if addr.is_ipv4(){
+//         Domain::ipv4()
+//     } else {
+//         Domain::ipv6()
+//     };
 
-    let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
+//     let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
+//     socket.set_nonblocking(true)?;
 
-    Ok(socket)
-}
+//     Ok(socket.into_udp_socket())
+// }
 
-fn join_multicast(addr: SocketAddr) -> io::Result<Socket> {
+fn join_multicast(socket: &UdpSocket, addr: SocketAddr) -> io::Result<()> {
     let ip_addr = addr.ip();
-    let socket = new_socket(&addr)?;
-    println!("RCV socket: {:#?}", socket);
 
     match ip_addr {
         IpAddr::V4(ref mdns_v4) => {
@@ -277,17 +267,15 @@ fn join_multicast(addr: SocketAddr) -> io::Result<Socket> {
         }
         IpAddr::V6(ref mdns_v6) => {
             socket.join_multicast_v6(mdns_v6, 0)?;
-            socket.set_only_v6(true)?;
+            socket.set_only_v6(true)?; // TODO, check if this is as expected - why only v6?
         }
     };
 
-    bind_multicast(&socket, &addr)?;
-    
-    Ok(socket)
+    Ok(())
 }
 
 #[cfg(windows)]
-fn bind_multicast(socket: &Socket, addr: &SocketAddr) -> io::Result<()>{
+fn bind_socket(addr: &SocketAddr) -> io::Result<UdpSocket>{
     println!("Windows binding multicast... ADDR: {}", addr);
     let addr = match *addr {
         SocketAddr::V4(addr) => {
@@ -297,12 +285,13 @@ fn bind_multicast(socket: &Socket, addr: &SocketAddr) -> io::Result<()>{
             SocketAddr::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).into(), addr.port())
         }
     };
-    socket.bind(&socket2::SockAddr::from(addr))
+
+    UdpSocket::bind(addr)
 }
 
 
 #[cfg(unix)]
-fn bind_multicast(socket: &Socket, addr: &SocketAddr) -> io::Result<()> {
+fn bind_socket(socket: &Socket, addr: &SocketAddr) -> io::Result<()> {
     socket.bind(&SockAddr::from(addr))?;
 }
 
