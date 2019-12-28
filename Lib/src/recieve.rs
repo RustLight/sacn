@@ -74,7 +74,7 @@ impl Clone for DMXData {
 }
 
 /// Used for receiving dmx or other data on a particular universe using multicast.
-pub struct DmxReciever{
+struct DmxReciever{
     socket: UdpSocket
 }
 
@@ -82,30 +82,32 @@ pub struct DmxReciever{
 pub struct SacnReceiver {
     receiver: DmxReciever,
     waitingData: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
-    check_unicast: bool,    // If true then should attempt to process packets sent to the registered universes using unicast.
-    check_multicast: bool,  // If true then should attempt to process packets sent to the registered universes using multicast.
-    check_broadcast: bool   // If true then should attempt to process packets sent to the registered universes using broadcast.
+    universes: Vec<u16>
 }
 
 impl SacnReceiver {
+    pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
+        self.listen_multicast_universes(universes)?;
+        self.universes.extend(universes); // Added all the newly listened to universes.
+        Ok(())
+    }
+
     /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
-    pub fn listen_multicast_universes(&self, universes: Vec<u16>) -> Result<(), Error>{
+    fn listen_multicast_universes(&self, universes: &[u16]) -> Result<(), Error>{
         for u in universes {
-            self.receiver.listen_multicast_universe(u)?
+            self.receiver.listen_multicast_universe(*u)?
         }
         Ok(())
     }
 
-    pub fn new (addr: &SocketAddr) -> Result<SacnReceiver, Error> {
+    pub fn new (addr: SocketAddr) -> Result<SacnReceiver, Error> {
         Ok (
             SacnReceiver {
                 // multicast_universe_receivers: Vec::new(),
                 receiver: DmxReciever::new(addr)?,
                 waitingData: Vec::new(),
+                universes: Vec::new()
                 // next_index: 0,
-                check_unicast: CHECK_UNICAST_DEFAULT,
-                check_multicast: CHECK_MUTLICAST_DEFAULT,
-                check_broadcast: CHECK_BROADCAST_DEFAULT
             }
         )
     }
@@ -161,37 +163,39 @@ impl SacnReceiver {
         Err(Error::new(ErrorKind::Other, "Universe Discovery Not Implemented"))
     }
 
+    pub fn set_nonblocking(&mut self, is_nonblocking: bool){
+        self.receiver.set_nonblocking(is_nonblocking);
+    }
+
     // Attempt to recieve data from any of the registered universes.
     // This is the main method for receiving data.
     // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
     // is already handled.
     // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast).
-    // pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
-    //     match self.recv_data() {
-    //         Ok(pkt) => {
-    //             let pdu: E131RootLayer = pkt.pdu;
-    //             let data: E131RootLayerData = pdu.data;
-    //             match data {
-    //                 DataPacket(d) => self.handleDataPacket(d),
-    //                 SynchronizationPacket(s) => self.handleSyncPacket(s),
-    //                 UniverseDiscoveryPacket(u) => self.handleUniverseDiscoveryPacket(u)
-    //             }
-    //         }
-    //         Err(err) => {
-    //             Err(err)
-    //         }
-    //     }
-    // }
-    
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
-        Err(Error::new(ErrorKind::WouldBlock, "No data ready"))
+        let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
+
+        match self.receiver.recv(&mut buf){
+            Ok(pkt) => {
+                let pdu: E131RootLayer = pkt.pdu;
+                let data: E131RootLayerData = pdu.data;
+                match data {
+                    DataPacket(d) => self.handleDataPacket(d),
+                    SynchronizationPacket(s) => self.handleSyncPacket(s),
+                    UniverseDiscoveryPacket(u) => self.handleUniverseDiscoveryPacket(u)
+                }
+            }
+            Err(err) => {
+                Err(err)
+            }
+        }
     }
 }
 
 impl DmxReciever {
     // Creates a new DMX receiver on the interface specified by the given address.
     // TODO, look at ways to refer to interfaces without using IP's.
-    pub fn new (addr: &SocketAddr) -> Result<DmxReciever, Error> {
+    pub fn new (addr: SocketAddr) -> Result<DmxReciever, Error> {
         Ok(
             DmxReciever {
                 socket: bind_socket(addr)?
@@ -223,6 +227,10 @@ impl DmxReciever {
                 Err(Error::new(ErrorKind::Other, err))
             }
         }
+    }
+
+    pub fn set_nonblocking(&mut self, is_nonblocking: bool){
+        self.socket.set_nonblocking(is_nonblocking);
     }
 }
 
@@ -275,9 +283,9 @@ fn join_multicast(socket: &UdpSocket, addr: SocketAddr) -> io::Result<()> {
 }
 
 #[cfg(windows)]
-fn bind_socket(addr: &SocketAddr) -> io::Result<UdpSocket>{
+fn bind_socket(addr: SocketAddr) -> io::Result<UdpSocket>{
     println!("Windows binding multicast... ADDR: {}", addr);
-    let addr = match *addr {
+    let addr = match addr {
         SocketAddr::V4(addr) => {
             SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), addr.port())
         }
