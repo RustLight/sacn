@@ -5,15 +5,15 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::io::{Error};
 
 fn main() {
-    let universe: u16 = 1;
-    let mut reciever = DmxReciever::listen_universe(universe).unwrap();
+    // let universe: u16 = 1;
+    // let mut reciever = DmxReciever::listen_universe(universe).unwrap();
     
-    loop {
-        match reciever.recv_data_blocking(){
-            Ok(data) => displayData(data),
-            Err(e) => displayErr(e)
-        } 
-    }
+    // loop {
+    //     match reciever.recv_data_blocking(){
+    //         Ok(data) => displayData(data),
+    //         Err(e) => displayErr(e)
+    //     } 
+    // }
 }
 
 fn displayData(data: Vec<DMXData>){

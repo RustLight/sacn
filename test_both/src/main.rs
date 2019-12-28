@@ -7,6 +7,10 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 use std::io::Error;
 
+fn main(){
+    
+}
+
 #[test]
 fn test_send_recv_single_universe(){
     let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();

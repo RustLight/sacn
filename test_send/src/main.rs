@@ -3,6 +3,10 @@ extern crate sacn;
 use sacn::DmxSource;
 use std::{thread, time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
 
+fn main(){
+    
+}
+
 #[test]
 fn test_send_single_universe(){
     let dmx_source = DmxSource::new("Controller").unwrap();
