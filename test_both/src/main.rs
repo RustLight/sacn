@@ -1,14 +1,15 @@
 extern crate lazy_static;
 extern crate sacn;
 use sacn::{DmxSource};
-use sacn::recieve::{DmxReciever, DMXData};
+use sacn::recieve::{DMXData, SacnReceiver, ACN_SDT_MULTICAST_PORT};
 use std::{thread};
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 use std::io::Error;
+use std::net::{SocketAddr, Ipv4Addr};
 
 fn main(){
-    
+
 }
 
 #[test]
@@ -20,11 +21,18 @@ fn test_send_recv_single_universe(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = DmxReciever::listen_universe(vec![universe]).unwrap();
+        let mut dmx_recv = match SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
+            Ok(sr) => sr,
+            Err(e) => panic!("Failed to create sacn receiver!")
+        };
+
+        dmx_recv.set_nonblocking(false);
+
+        dmx_recv.listen_universes(&[universe]).unwrap();
 
         thread_tx.send(Ok(Vec::new()));
 
-        thread_tx.send(dmx_recv.recv_data_blocking());
+        thread_tx.send(dmx_recv.recv());
     });
 
     rx.recv(); // Blocks until the receiver says it is ready. 
@@ -59,11 +67,18 @@ fn test_send_recv_across_universe(){
     let thread_tx = tx.clone();
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = DmxReciever::listen_universe(vec![2, 3]).unwrap();
+        let mut dmx_recv = match SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
+            Ok(sr) => sr,
+            Err(e) => panic!("Failed to create sacn receiver!")
+        };
+
+        dmx_recv.set_nonblocking(false);
+
+        dmx_recv.listen_universes(&[2, 3]).unwrap();
 
         thread_tx.send(Ok(Vec::new())); // Signal that the receiver is ready to receive.
 
-        thread_tx.send(dmx_recv.recv_data_blocking());
+        thread_tx.send(dmx_recv.recv());
     });
 
     rx.recv(); // Blocks until the receiver says it is ready. 
