@@ -198,10 +198,11 @@ impl SacnReceiver {
         it shall hold that E1.31 Data Packet until the arrival of the appropriate E1.31 Synchronization Packet before acting on it.
 
 */
-    fn handle_sync_packet(&mut self, _sync_pkt: SynchronizationPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
-        Err(Error::new(ErrorKind::Other, "Sync pkt handling not Implemented"))
+    fn handle_sync_packet(&mut self, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+        self.rtrv_waiting_data(sync_pkt.synchronization_address)
     }
 
+    // Retrieves and removes the DMX data of all waiting data with a synchronisation address matching the one provided.
     fn rtrv_waiting_data(&mut self, sync_uni: u16) -> Result<Vec<DMXData>, Error>{
         let mut res: Vec<DMXData> = Vec::new();
 
