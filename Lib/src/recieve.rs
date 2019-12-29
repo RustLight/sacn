@@ -164,24 +164,26 @@ impl SacnReceiver {
                 sync_uni: data_pkt.synchronization_address
             };
 
-            self.store_waiting_data(&dmx_data)?;
+            self.store_waiting_data(dmx_data)?;
             
             Ok(Vec::new())
         }
     }
 
-    fn store_waiting_data(&mut self, data: &DMXData) -> Result<(), Error>{
+    /// Store given data in this receive by adding it to the waiting buffer.
+    fn store_waiting_data(&mut self, data: DMXData) -> Result<(), Error>{
         for i in 0 .. self.waiting_data.len() {
             if self.waiting_data[i].universe == data.universe && self.waiting_data[i].sync_uni == data.sync_uni { 
                 // Implementation detail: Multiple bits of data for the same universe can 
                 // be buffered at one time as long as the data is waiting for different synchronisation universes.
                 // Only if the data is for the same universe and is waiting for the same synchronisation universe is it merged.
-                self.waiting_data[i] = ((self.merge_func)(&self.waiting_data[i], data)).unwrap();
+                self.waiting_data[i] = ((self.merge_func)(&self.waiting_data[i], &data)).unwrap();
                 return Ok(())
             }
         }
 
-        Err(Error::new(ErrorKind::Other, "Not Implemented"))
+        self.waiting_data.push(data);
+        Ok(())
     }
         
     // Handles the given synchronisation packet for this DMX receiver. 
@@ -198,6 +200,24 @@ impl SacnReceiver {
 */
     fn handle_sync_packet(&mut self, _sync_pkt: SynchronizationPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
         Err(Error::new(ErrorKind::Other, "Sync pkt handling not Implemented"))
+    }
+
+    fn rtrv_waiting_data(&mut self, sync_uni: u16) -> Result<Vec<DMXData>, Error>{
+        let mut res: Vec<DMXData> = Vec::new();
+
+        let mut i: usize = 0;
+        let mut len: usize = self.waiting_data.len();
+
+        while i < len {
+            if self.waiting_data[i].sync_uni == sync_uni { 
+                res.push(self.waiting_data.remove(i));
+                len = len - 1;
+            } else {
+                i = i + 1;
+            }
+        }
+
+        Ok(res)
     }
 
     fn handle_universe_discovery_packet(&mut self, _discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
@@ -231,6 +251,113 @@ impl SacnReceiver {
             }
         }
     }
+}
+
+#[test]
+fn test_store_retrieve_waiting_data(){
+    let mut dmx_rcv = SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let sync_uni: u16 = 1;
+    let universe: u16 = 0;
+    let start_code: u8 = 0;
+    let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    let dmx_data = DMXData {
+        universe: universe,
+        start_code: start_code,
+        values: vals.clone(),
+        sync_uni: sync_uni 
+    };
+
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+
+    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
+
+    assert_eq!(res.len(), 1);
+    assert_eq!(res[0].universe, universe);
+    assert_eq!(res[0].start_code, start_code);
+    assert_eq!(res[0].sync_uni, sync_uni);
+    assert_eq!(res[0].values, vals);
+}
+
+#[test]
+fn test_store_2_retrieve_1_waiting_data(){
+    let mut dmx_rcv = SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let sync_uni: u16 = 1;
+    let universe: u16 = 0;
+    let start_code: u8 = 0;
+    let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    let dmx_data = DMXData {
+        universe: universe,
+        start_code: start_code,
+        values: vals.clone(),
+        sync_uni: sync_uni 
+    };
+
+    let dmx_data2 = DMXData {
+        universe: universe + 1,
+        start_code: start_code,
+        values: vals.clone(),
+        sync_uni: sync_uni + 1 
+    };
+
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
+
+    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
+
+    assert_eq!(res.len(), 1);
+    assert_eq!(res[0].universe, universe);
+    assert_eq!(res[0].start_code, start_code);
+    assert_eq!(res[0].sync_uni, sync_uni);
+    assert_eq!(res[0].values, vals);
+}
+
+#[test]
+fn test_store_2_retrieve_2_waiting_data(){
+    let mut dmx_rcv = SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let sync_uni: u16 = 1;
+    let universe: u16 = 0;
+    let start_code: u8 = 0;
+    let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    let dmx_data = DMXData {
+        universe: universe,
+        start_code: start_code,
+        values: vals.clone(),
+        sync_uni: sync_uni 
+    };
+
+    let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
+
+    let dmx_data2 = DMXData {
+        universe: universe + 1,
+        start_code: start_code + 1,
+        values: vals2.clone(),
+        sync_uni: sync_uni + 1 
+    };
+
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
+
+    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
+
+    assert_eq!(res.len(), 1);
+    assert_eq!(res[0].universe, universe);
+    assert_eq!(res[0].start_code, start_code);
+    assert_eq!(res[0].sync_uni, sync_uni);
+    assert_eq!(res[0].values, vals);
+
+    let res2: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni + 1).unwrap();
+
+    assert_eq!(res2.len(), 1);
+    assert_eq!(res2[0].universe, universe + 1);
+    assert_eq!(res2[0].start_code, start_code + 1);
+    assert_eq!(res2[0].sync_uni, sync_uni + 1);
+    assert_eq!(res2[0].values, vals2);
 }
 
 impl DmxReciever {
