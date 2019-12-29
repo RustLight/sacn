@@ -5,6 +5,12 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
+
+// Report note:
+// One of the problems with the existing SACN sending is how it didn't treat the payload transparently because it 
+// would add on the start code. As this is part of the DMX protocol and not the SACN protocol this was removed as it 
+// violated the extends of SACN.
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
@@ -52,7 +58,6 @@ pub struct DmxSource {
     cid: Uuid,
     name: String,
     preview_data: bool,
-    start_code: u8,
     sequences: RefCell<HashMap<u16, u8>>,
 }
 
@@ -89,7 +94,6 @@ impl DmxSource {
             cid,
             name: name.to_string(),
             preview_data: false,
-            start_code: 0,
             sequences: RefCell::new(HashMap::new()),
         })
     }
@@ -162,8 +166,7 @@ impl DmxSource {
                     universe,
                     data: DataPacketDmpLayer {
                         property_values: {
-                            let mut property_values = Vec::with_capacity(data.len() + 1);
-                            property_values.push(self.start_code());
+                            let mut property_values = Vec::with_capacity(data.len());
                             property_values.extend(data);
                             property_values.into()
                         },
@@ -219,7 +222,9 @@ impl DmxSource {
     ///
     /// Terminates a stream to a specified universe by sending three packages with
     /// Stream_Terminated flag set to 1.
-    pub fn terminate_stream(&self, universe: u16) -> Result<()> {
+    /// The start code passed in is used for the first byte of the otherwise empty data payload to indicate the 
+    /// start_code of the data.
+    pub fn terminate_stream(&self, universe: u16, start_code: u8) -> Result<()> {
         let ip = try!(universe_to_ip(universe));
         let mut sequence = match self.sequences.borrow_mut().remove(&universe) {
             Some(s) => s,
@@ -240,7 +245,7 @@ impl DmxSource {
                         force_synchronization: false,
                         universe,
                         data: DataPacketDmpLayer {
-                            property_values: vec![self.start_code].into(),
+                            property_values: vec![start_code].into(),
                         },
                     }),
                 },
@@ -288,16 +293,6 @@ impl DmxSource {
         self.preview_data = preview_mode;
     }
 
-    /// Returns the current DMX START code.
-    pub fn start_code(&self) -> u8 {
-        self.start_code
-    }
-
-    /// Sets the DMX START code.
-    pub fn set_start_code(&mut self, start_code: u8) {
-        self.start_code = start_code;
-    }
-
     /// Sets the multicast time to live.
     pub fn set_multicast_ttl(&self, multicast_ttl: u32) -> Result<()> {
         self.socket.set_multicast_ttl_v4(multicast_ttl)
@@ -335,8 +330,8 @@ mod test {
         let priority = 150;
         let sequence = 0;
         let preview_data = false;
-        let start_code = 0;
         let mut dmx_data: Vec<u8> = Vec::new();
+        dmx_data.push(0); // Start code
         dmx_data.extend(iter::repeat(100).take(255));
 
         // Root Layer
@@ -399,12 +394,10 @@ mod test {
         packet.push(0b1);
         packet.push(0b00000000);
         // Property values
-        packet.push(start_code);
         packet.extend(&dmx_data);
 
         let mut source = DmxSource::with_cid(&source_name, Uuid::from_bytes(&cid).unwrap()).unwrap();
         source.set_preview_mode(preview_data);
-        source.set_start_code(start_code);
         source.set_multicast_loop(true).unwrap();
 
         let recv_socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:5568").unwrap();
@@ -431,7 +424,9 @@ mod test {
 
         let mut recv_buf = [0; 1024];
 
-        source.terminate_stream(1).unwrap();
+        let start_code: u8 = 0;
+
+        source.terminate_stream(1, start_code).unwrap();
         for _ in 0..2 {
             recv_socket.recv_from(&mut recv_buf).unwrap();
             assert_eq!(

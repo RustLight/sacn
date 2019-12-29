@@ -57,7 +57,6 @@ pub const CHECK_BROADCAST_DEFAULT: bool = false;
 #[derive(Debug)]
 pub struct DMXData{
     pub universe: u16,
-    pub start_code: u8,
     pub values: Vec<u8>,
     pub sync_uni: u16 // The universe the data is waiting for a synchronisation packet from, 0 indicates it isn't waiting for a universe. 
 }
@@ -68,7 +67,6 @@ impl Clone for DMXData {
         
         DMXData {
             universe: self.universe,
-            start_code: self.start_code,
             values: new_vals,
             sync_uni: self.sync_uni
         }
@@ -132,16 +130,14 @@ impl SacnReceiver {
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
             let dmx_data: DMXData = DMXData {
                 universe: data_pkt.universe, 
-                start_code: vals[0],
-                values: vals[1..].to_vec(),
+                values: vals.to_vec(),
                 sync_uni: data_pkt.synchronization_address
             };
 
             #[cfg(not(feature = "std"))]
             let dmx_data: DMXData = DMXData {
-                universe: data_pkt.universe, 
-                start_code: data_pkt.data.property_values[0],
-                values: data_pkt.data.property_values[1..],
+                universe: data_pkt.universe,
+                values: data_pkt.data.property_values,
                 sync_uni: data_pkt.synchronization_address
             };
 
@@ -150,17 +146,15 @@ impl SacnReceiver {
             #[cfg(feature = "std")]
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
             let dmx_data: DMXData = DMXData {
-                universe: data_pkt.universe, 
-                start_code: vals[0],
-                values: vals[1..].to_vec(),
+                universe: data_pkt.universe,
+                values: vals.to_vec(),
                 sync_uni: data_pkt.synchronization_address
             };
 
             #[cfg(not(feature = "std"))]
             let dmx_data: DMXData = DMXData {
-                universe: data_pkt.universe, 
-                start_code: data_pkt.data.property_values[0],
-                values: data_pkt.data.property_values[1..],
+                universe: data_pkt.universe,
+                values: data_pkt.data.property_values,
                 sync_uni: data_pkt.synchronization_address
             };
 
@@ -260,12 +254,10 @@ fn test_store_retrieve_waiting_data(){
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
-    let start_code: u8 = 0;
     let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     let dmx_data = DMXData {
         universe: universe,
-        start_code: start_code,
         values: vals.clone(),
         sync_uni: sync_uni 
     };
@@ -276,7 +268,6 @@ fn test_store_retrieve_waiting_data(){
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
-    assert_eq!(res[0].start_code, start_code);
     assert_eq!(res[0].sync_uni, sync_uni);
     assert_eq!(res[0].values, vals);
 }
@@ -287,19 +278,16 @@ fn test_store_2_retrieve_1_waiting_data(){
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
-    let start_code: u8 = 0;
     let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     let dmx_data = DMXData {
         universe: universe,
-        start_code: start_code,
         values: vals.clone(),
         sync_uni: sync_uni 
     };
 
     let dmx_data2 = DMXData {
         universe: universe + 1,
-        start_code: start_code,
         values: vals.clone(),
         sync_uni: sync_uni + 1 
     };
@@ -311,7 +299,6 @@ fn test_store_2_retrieve_1_waiting_data(){
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
-    assert_eq!(res[0].start_code, start_code);
     assert_eq!(res[0].sync_uni, sync_uni);
     assert_eq!(res[0].values, vals);
 }
@@ -322,12 +309,10 @@ fn test_store_2_retrieve_2_waiting_data(){
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
-    let start_code: u8 = 0;
     let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     let dmx_data = DMXData {
         universe: universe,
-        start_code: start_code,
         values: vals.clone(),
         sync_uni: sync_uni 
     };
@@ -336,7 +321,6 @@ fn test_store_2_retrieve_2_waiting_data(){
 
     let dmx_data2 = DMXData {
         universe: universe + 1,
-        start_code: start_code + 1,
         values: vals2.clone(),
         sync_uni: sync_uni + 1 
     };
@@ -348,7 +332,6 @@ fn test_store_2_retrieve_2_waiting_data(){
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
-    assert_eq!(res[0].start_code, start_code);
     assert_eq!(res[0].sync_uni, sync_uni);
     assert_eq!(res[0].values, vals);
 
@@ -356,7 +339,6 @@ fn test_store_2_retrieve_2_waiting_data(){
 
     assert_eq!(res2.len(), 1);
     assert_eq!(res2[0].universe, universe + 1);
-    assert_eq!(res2[0].start_code, start_code + 1);
     assert_eq!(res2[0].sync_uni, sync_uni + 1);
     assert_eq!(res2[0].values, vals2);
 }
@@ -405,17 +387,16 @@ impl DmxReciever {
 
 // Performs a HTP DMX merge of data.
 // The first argument (i) is the existing data, n is the new data.
-// This function is only valid if both inputs have the same universe, sync addr and start code.
+// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
 // If this doesn't hold an error will be returned.
-// Other merge functions may allow merging different start codes.
+// Other merge functions may allow merging different start codes or not check for them.
 fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
-    if i.universe != n.universe || i.start_code != n.start_code || i.sync_uni != n.sync_uni {
-        return Err(Error::new(ErrorKind::InvalidInput, "Attempted DMX merge on dmx data with different universes, start_codes or syncronisation universes"))
+    if i.values.len() < 1 || n.values.len() < 1 || i.universe != n.universe || i.values[0] != n.values[0] || i.sync_uni != n.sync_uni {
+        return Err(Error::new(ErrorKind::InvalidInput, "Attempted DMX merge on dmx data with different universes, syncronisation universes or data with no values"))
     }
 
     let mut r: DMXData = DMXData{
         universe: i.universe,
-        start_code: i.start_code,
         values: Vec::new(),
         sync_uni: i.sync_uni
     };
