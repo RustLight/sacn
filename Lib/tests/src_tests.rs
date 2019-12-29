@@ -4,11 +4,6 @@
 extern crate lazy_static;
 extern crate sacn;
 use sacn::DmxSource;
-use std::{time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
-
-fn main(){
-    
-}
 
 #[test]
 fn test_send_single_universe(){

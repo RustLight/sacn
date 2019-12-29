@@ -6,15 +6,7 @@ use sacn::recieve::DMXData;
 use std::io::{Error};
 
 fn main() {
-    // let universe: u16 = 1;
-    // let mut reciever = DmxReciever::listen_universe(universe).unwrap();
     
-    // loop {
-    //     match reciever.recv_data_blocking(){
-    //         Ok(data) => displayData(data),
-    //         Err(e) => displayErr(e)
-    //     } 
-    // }
 }
 
 fn _display_data(data: Vec<DMXData>){
