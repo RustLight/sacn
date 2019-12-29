@@ -1,16 +1,21 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 extern crate lazy_static;
 extern crate sacn;
-use sacn::{DmxSource};
-use sacn::recieve::{DMXData, SacnReceiver, ACN_SDT_MULTICAST_PORT};
 use std::{thread};
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 use std::io::Error;
 use std::net::{SocketAddr, Ipv4Addr};
+use sacn::{DmxSource};
+use sacn::recieve::{SacnReceiver, DMXData, ACN_SDT_MULTICAST_PORT};
 
 fn main(){
 
 }
+
+// TODO: CLEANUP
 
 #[test]
 fn test_send_recv_single_universe(){
@@ -23,19 +28,19 @@ fn test_send_recv_single_universe(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = match SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
             Ok(sr) => sr,
-            Err(e) => panic!("Failed to create sacn receiver!")
+            Err(_) => panic!("Failed to create sacn receiver!")
         };
 
-        dmx_recv.set_nonblocking(false);
+        dmx_recv.set_nonblocking(false).unwrap();
 
         dmx_recv.listen_universes(&[universe]).unwrap();
 
-        thread_tx.send(Ok(Vec::new()));
+        thread_tx.send(Ok(Vec::new())).unwrap();
 
-        thread_tx.send(dmx_recv.recv());
+        thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    rx.recv(); // Blocks until the receiver says it is ready. 
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     let dmx_source = DmxSource::new("Controller").unwrap();
 
@@ -45,7 +50,7 @@ fn test_send_recv_single_universe(){
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
-    rcv_thread.join();
+    rcv_thread.join().unwrap();
 
     assert!(!received_result.is_err(), "Failed: Error when receving data");
 
@@ -69,19 +74,19 @@ fn test_send_recv_across_universe(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = match SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
             Ok(sr) => sr,
-            Err(e) => panic!("Failed to create sacn receiver!")
+            Err(_) => panic!("Failed to create sacn receiver!")
         };
 
-        dmx_recv.set_nonblocking(false);
+        dmx_recv.set_nonblocking(false).unwrap();
 
         dmx_recv.listen_universes(&[2, 3]).unwrap();
 
-        thread_tx.send(Ok(Vec::new())); // Signal that the receiver is ready to receive.
+        thread_tx.send(Ok(Vec::new())).unwrap(); // Signal that the receiver is ready to receive.
 
-        thread_tx.send(dmx_recv.recv());
+        thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    rx.recv(); // Blocks until the receiver says it is ready. 
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     let dmx_source = DmxSource::new("Controller").unwrap();
 
@@ -91,7 +96,7 @@ fn test_send_recv_across_universe(){
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
-    rcv_thread.join();
+    rcv_thread.join().unwrap();
 
     assert!(!received_result.is_err(), "Failed: Error when receving data");
 

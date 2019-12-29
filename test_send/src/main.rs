@@ -1,7 +1,10 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 extern crate lazy_static;
 extern crate sacn;
 use sacn::DmxSource;
-use std::{thread, time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
+use std::{time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
 
 fn main(){
     
@@ -11,8 +14,6 @@ fn main(){
 fn test_send_single_universe(){
     let dmx_source = DmxSource::new("Controller").unwrap();
 
-    let wait_time = time::Duration::from_millis(500);
-
     let priority = 100;
 
     assert!(!dmx_source.send_across_universe(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority).is_err(), "Failed to send single universe");
@@ -21,8 +22,6 @@ fn test_send_single_universe(){
 #[test]
 fn test_send_across_universe(){
     let dmx_source = DmxSource::new("Controller").unwrap();
-
-    let wait_time = time::Duration::from_millis(500);
 
     let priority = 100;
 

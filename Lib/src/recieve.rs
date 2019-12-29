@@ -10,14 +10,12 @@
 
 use net2::UdpSocketExt;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
-use socket2::{Socket, Domain, Protocol, Type};
 
 use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLayerData::DataPacket, 
     E131RootLayerData::SynchronizationPacket, E131RootLayerData::UniverseDiscoveryPacket, UniverseDiscoveryPacketFramingLayer, 
-    SynchronizationPacketFramingLayer, DataPacketFramingLayer, DataPacketDmpLayer};
+    SynchronizationPacketFramingLayer, DataPacketFramingLayer};
 
 use std::io;
-use std::time::Duration;
 use std::io::{Error, ErrorKind};
 
 pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; // As defined in ANSI E1.31-2018
@@ -63,7 +61,7 @@ pub struct DMXData{
 
 impl Clone for DMXData {
     fn clone(&self) -> DMXData {
-        let mut new_vals = self.values.to_vec(); // https://stackoverflow.com/questions/21369876/what-is-the-idiomatic-rust-way-to-copy-clone-a-vector-in-a-parameterized-functio (26/12/2019)
+        let new_vals = self.values.to_vec(); // https://stackoverflow.com/questions/21369876/what-is-the-idiomatic-rust-way-to-copy-clone-a-vector-in-a-parameterized-functio (26/12/2019)
         
         DMXData {
             universe: self.universe,
@@ -81,7 +79,7 @@ struct DmxReciever{
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
     receiver: DmxReciever,
-    waitingData: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
+    waiting_data: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
     universes: Vec<u16>
 }
 
@@ -105,39 +103,39 @@ impl SacnReceiver {
             SacnReceiver {
                 // multicast_universe_receivers: Vec::new(),
                 receiver: DmxReciever::new(addr)?,
-                waitingData: Vec::new(),
+                waiting_data: Vec::new(),
                 universes: Vec::new()
                 // next_index: 0,
             }
         )
     }
 
-    pub fn clearWaitingData(&mut self){
-        self.waitingData.clear();
+    pub fn clear_waiting_data(&mut self){
+        self.waiting_data.clear();
     }
 
      // Handles the given data packet for this DMX reciever.
     // Returns the universe data if successful.
     // If the returned Vec is empty it indicates that the data was received successfully but isn't ready to act on.
     // Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
-    fn handleDataPacket(&mut self, dataPkt: DataPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
-        if dataPkt.synchronization_address == NO_SYNC_ADDR {
-            self.clearWaitingData();
+    fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+        if data_pkt.synchronization_address == NO_SYNC_ADDR {
+            self.clear_waiting_data();
 
             #[cfg(feature = "std")]
-            let vals: Vec<u8> = dataPkt.data.property_values.into_owned();
-            let dmxData: DMXData = DMXData {
-                universe: dataPkt.universe, 
+            let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
+            let dmx_data: DMXData = DMXData {
+                universe: data_pkt.universe, 
                 start_code: vals[0],
                 values: vals[1..].to_vec()};
 
             #[cfg(not(feature = "std"))]
-            let dmxData: DMXData = DMXData {
-                universe: dataPkt.universe, 
-                start_code: dataPkt.data.property_values[0],
-                values: dataPkt.data.property_values[1..]};
+            let dmx_data: DMXData = DMXData {
+                universe: data_pkt.universe, 
+                start_code: data_pkt.data.property_values[0],
+                values: data_pkt.data.property_values[1..]};
 
-            return Ok(vec![dmxData]);
+            return Ok(vec![dmx_data]);
         }
         
         Err(Error::new(ErrorKind::Other, "Sync data packet handling not implemented"))
@@ -155,16 +153,16 @@ impl SacnReceiver {
         it shall hold that E1.31 Data Packet until the arrival of the appropriate E1.31 Synchronization Packet before acting on it.
 
 */
-    fn handleSyncPacket(&mut self, syncPkt: SynchronizationPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+    fn handle_sync_packet(&mut self, _sync_pkt: SynchronizationPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
         Err(Error::new(ErrorKind::Other, "Sync pkt handling not Implemented"))
     }
 
-    fn handleUniverseDiscoveryPacket(&mut self, discoveryPkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+    fn handle_universe_discovery_packet(&mut self, _discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
         Err(Error::new(ErrorKind::Other, "Universe Discovery Not Implemented"))
     }
 
-    pub fn set_nonblocking(&mut self, is_nonblocking: bool){
-        self.receiver.set_nonblocking(is_nonblocking);
+    pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
+        self.receiver.set_nonblocking(is_nonblocking)
     }
 
     // Attempt to recieve data from any of the registered universes.
@@ -180,9 +178,9 @@ impl SacnReceiver {
                 let pdu: E131RootLayer = pkt.pdu;
                 let data: E131RootLayerData = pdu.data;
                 match data {
-                    DataPacket(d) => self.handleDataPacket(d),
-                    SynchronizationPacket(s) => self.handleSyncPacket(s),
-                    UniverseDiscoveryPacket(u) => self.handleUniverseDiscoveryPacket(u)
+                    DataPacket(d) => self.handle_data_packet(d),
+                    SynchronizationPacket(s) => self.handle_sync_packet(s),
+                    UniverseDiscoveryPacket(u) => self.handle_universe_discovery_packet(u)
                 }
             }
             Err(err) => {
@@ -217,7 +215,7 @@ impl DmxReciever {
     // Returns a packet if there is one available. The packet may not be ready to transmit if it is awaiting synchronisation.
     // Doesn't block so may return a WouldBlock error to indicate that there was no data ready.
     fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error>{
-        let (len, _remote_addr) = self.socket.recv_from(&mut buf[0..])?;
+        let (_len, _remote_addr) = self.socket.recv_from(&mut buf[0..])?;
 
         match AcnRootLayerProtocol::parse(buf) {
             Ok(pkt) => {
@@ -229,8 +227,8 @@ impl DmxReciever {
         }
     }
 
-    pub fn set_nonblocking(&mut self, is_nonblocking: bool){
-        self.socket.set_nonblocking(is_nonblocking);
+    pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
+        self.socket.set_nonblocking(is_nonblocking)
     }
 }
 
@@ -344,11 +342,11 @@ fn test_universe_to_ip_array_limit_low(){
 #[test]
 #[should_panic]
 fn test_universe_to_ip_array_out_range_low(){
-    let res = universe_to_ipv4_arr(0).unwrap();
+    universe_to_ipv4_arr(0).unwrap();
 }
 
 #[test]
 #[should_panic]
 fn test_universe_to_ip_array_out_range_high(){
-    let res = universe_to_ipv4_arr(E131_MAX_MULTICAST_UNIVERSE + 1).unwrap();
+    universe_to_ipv4_arr(E131_MAX_MULTICAST_UNIVERSE + 1).unwrap();
 }
