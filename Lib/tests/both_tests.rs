@@ -11,12 +11,6 @@ use std::net::{SocketAddr, Ipv4Addr};
 use sacn::{DmxSource};
 use sacn::recieve::{SacnReceiver, DMXData, ACN_SDT_MULTICAST_PORT};
 
-fn main(){
-
-}
-
-// TODO: CLEANUP
-
 #[test]
 fn test_send_recv_single_universe(){
     let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
