@@ -88,45 +88,6 @@ pub struct SacnReceiver {
     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
 }
 
-// Performs a HTP DMX merge of data.
-// The first argument (i) is the existing data, n is the new data.
-// This function is only valid if both inputs have the same universe, sync addr and start code.
-// If this doesn't hold an error will be returned.
-// Other merge functions may allow merging different start codes.
-fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
-    if i.universe != n.universe || i.start_code != n.start_code || i.sync_uni != n.sync_uni {
-        return Err(Error::new(ErrorKind::InvalidInput, "Attempted DMX merge on dmx data with different universes, start_codes or syncronisation universes"))
-    }
-
-    let mut r: DMXData = DMXData{
-        universe: i.universe,
-        start_code: i.start_code,
-        values: Vec::new(),
-        sync_uni: i.sync_uni
-    };
-
-    let mut i_iter = i.values.iter();
-    let mut n_iter = n.values.iter();
-
-    let mut i_val = i_iter.next();
-    let mut n_val = n_iter.next();
-
-    while (i_val.is_some()) || (n_val.is_some()){
-        if i_val == None {
-            r.values.push(*n_val.unwrap());
-        } else if n_val == None {
-            r.values.push(*i_val.unwrap());
-        } else {
-            r.values.push(max(*n_val.unwrap(), *i_val.unwrap()));
-        }
-
-        i_val = i_iter.next();
-        n_val = n_iter.next();
-    }
-
-    Ok(r)
-}
-
 impl SacnReceiver {
     pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
         self.listen_multicast_universes(universes)?;
@@ -312,6 +273,45 @@ impl DmxReciever {
     pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
         self.socket.set_nonblocking(is_nonblocking)
     }
+}
+
+// Performs a HTP DMX merge of data.
+// The first argument (i) is the existing data, n is the new data.
+// This function is only valid if both inputs have the same universe, sync addr and start code.
+// If this doesn't hold an error will be returned.
+// Other merge functions may allow merging different start codes.
+fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
+    if i.universe != n.universe || i.start_code != n.start_code || i.sync_uni != n.sync_uni {
+        return Err(Error::new(ErrorKind::InvalidInput, "Attempted DMX merge on dmx data with different universes, start_codes or syncronisation universes"))
+    }
+
+    let mut r: DMXData = DMXData{
+        universe: i.universe,
+        start_code: i.start_code,
+        values: Vec::new(),
+        sync_uni: i.sync_uni
+    };
+
+    let mut i_iter = i.values.iter();
+    let mut n_iter = n.values.iter();
+
+    let mut i_val = i_iter.next();
+    let mut n_val = n_iter.next();
+
+    while (i_val.is_some()) || (n_val.is_some()){
+        if i_val == None {
+            r.values.push(*n_val.unwrap());
+        } else if n_val == None {
+            r.values.push(*i_val.unwrap());
+        } else {
+            r.values.push(max(*n_val.unwrap(), *i_val.unwrap()));
+        }
+
+        i_val = i_iter.next();
+        n_val = n_iter.next();
+    }
+
+    Ok(r)
 }
 
 /// Converts given universe number in range 1 - 63999 inclusive into an u8 array of length 4 with the first byte being
