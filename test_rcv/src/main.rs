@@ -1,7 +1,8 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 extern crate sacn;
-use sacn::DmxSource;
-use sacn::recieve::{DmxReciever, ACN_SDT_MULTICAST_PORT, RCV_BUF_DEFAULT_SIZE, DMXData};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use sacn::recieve::DMXData;
 use std::io::{Error};
 
 fn main() {
@@ -16,7 +17,7 @@ fn main() {
     // }
 }
 
-fn displayData(data: Vec<DMXData>){
+fn _display_data(data: Vec<DMXData>){
     println!("START RECEIVED DATA");
     for d in data {
         println!("Universe: {} Start Code: {}", d.universe, d.start_code);
@@ -28,6 +29,6 @@ fn displayData(data: Vec<DMXData>){
     println!("END RECEIVED DATA");
 }
 
-fn displayErr(err: Error){
+fn _display_err(err: Error){
     println!("Error Encountered: {}", err);
 }
