@@ -12,7 +12,7 @@ fn main() {
 fn _display_data(data: Vec<DMXData>){
     println!("START RECEIVED DATA");
     for d in data {
-        println!("Universe: {} Start Code: {}", d.universe, d.start_code);
+        println!("Universe: {}", d.universe);
         for v in d.values {
             print!("{}", v);
         }
