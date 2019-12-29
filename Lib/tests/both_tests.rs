@@ -11,6 +11,9 @@ use std::net::{SocketAddr, Ipv4Addr};
 use sacn::{DmxSource};
 use sacn::recieve::{SacnReceiver, DMXData, ACN_SDT_MULTICAST_PORT};
 
+// TODO: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
+// - Decided it shouldn't be seperated.
+
 #[test]
 fn test_send_recv_single_universe(){
     let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
@@ -59,6 +62,8 @@ fn test_send_recv_single_universe(){
     assert_eq!(received_universe.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
 }
 
+/// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
+/// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 #[test]
 fn test_send_recv_across_universe(){
     let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
@@ -77,7 +82,7 @@ fn test_send_recv_across_universe(){
 
         thread_tx.send(Ok(Vec::new())).unwrap(); // Signal that the receiver is ready to receive.
 
-        thread_tx.send(dmx_recv.recv()).unwrap();
+        thread_tx.send(dmx_recv.recv()).unwrap(); // Receive the sync packet, the data packets shouldn't have caused .recv to return as forced to wait for sync.
     });
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
@@ -88,27 +93,27 @@ fn test_send_recv_across_universe(){
 
     assert!(!dmx_source.send_across_universe(&[2, 3], &TEST_DATA_MULTIPLE_UNIVERSE, priority).is_err(), "Failed to send 2 universes synchronised");
 
-    let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
+    assert!(!sync_pkt_res.is_err(), "Failed: Error when receving packets");
 
-    let received_data: Vec<DMXData> = received_result.unwrap();
+    let received_data: Vec<DMXData> = sync_pkt_res.unwrap();
 
     assert_eq!(received_data.len(), 2); // Check 2 universes received as expected.
 
-    let received_universe_1: DMXData = received_data[0].clone();
+    assert_eq!(received_data[0].universe, 2); // Check that the universe received is as expected.
 
-    assert_eq!(received_universe_1.universe, 2); // Check that the universe received is as expected.
+    assert_eq!(received_data[0].sync_uni, 2); // Check that the sync universe is as expected.
 
-    assert_eq!(received_universe_1.values, TEST_DATA_MULTIPLE_UNIVERSE[..512].to_vec(), "Universe 1 received payload values don't match sent!");
+    assert_eq!(received_data[0].values, TEST_DATA_MULTIPLE_UNIVERSE[..512].to_vec(), "Universe 1 received payload values don't match sent!");
 
-    let received_universe_2: DMXData = received_data[1].clone();
+    assert_eq!(received_data[1].universe, 3); // Check that the universe received is as expected.
 
-    assert_eq!(received_universe_2.universe, 3); // Check that the universe received is as expected.
+    assert_eq!(received_data[1].sync_uni, 2); // Check that the sync universe is as expected.
 
-    assert_eq!(received_universe_2.values, TEST_DATA_MULTIPLE_UNIVERSE[512..].to_vec(), "Universe 2 received payload values don't match sent!");
+    assert_eq!(received_data[1].values, TEST_DATA_MULTIPLE_UNIVERSE[512..].to_vec(), "Universe 2 received payload values don't match sent!");
 }
 
 const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [
