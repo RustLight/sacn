@@ -18,6 +18,8 @@ use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLay
 use std::io;
 use std::io::{Error, ErrorKind};
 
+use std::cmp::max;
+
 pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; // As defined in ANSI E1.31-2018
 
 /// Value of the highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
@@ -56,7 +58,8 @@ pub const CHECK_BROADCAST_DEFAULT: bool = false;
 pub struct DMXData{
     pub universe: u16,
     pub start_code: u8,
-    pub values: Vec<u8>
+    pub values: Vec<u8>,
+    pub sync_uni: u16 // The universe the data is waiting for a synchronisation packet from, 0 indicates it isn't waiting for a universe. 
 }
 
 impl Clone for DMXData {
@@ -66,7 +69,8 @@ impl Clone for DMXData {
         DMXData {
             universe: self.universe,
             start_code: self.start_code,
-            values: new_vals
+            values: new_vals,
+            sync_uni: self.sync_uni
         }
     }
 }
@@ -80,7 +84,47 @@ struct DmxReciever{
 pub struct SacnReceiver {
     receiver: DmxReciever,
     waiting_data: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
-    universes: Vec<u16>
+    universes: Vec<u16>,
+    merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
+}
+
+// Performs a HTP DMX merge of data.
+// The first argument (i) is the existing data, n is the new data.
+// This function is only valid if both inputs have the same universe, sync addr and start code.
+// If this doesn't hold an error will be returned.
+// Other merge functions may allow merging different start codes.
+fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
+    if i.universe != n.universe || i.start_code != n.start_code || i.sync_uni != n.sync_uni {
+        return Err(Error::new(ErrorKind::InvalidInput, "Attempted DMX merge on dmx data with different universes, start_codes or syncronisation universes"))
+    }
+
+    let mut r: DMXData = DMXData{
+        universe: i.universe,
+        start_code: i.start_code,
+        values: Vec::new(),
+        sync_uni: i.sync_uni
+    };
+
+    let mut i_iter = i.values.iter();
+    let mut n_iter = n.values.iter();
+
+    let mut i_val = i_iter.next();
+    let mut n_val = n_iter.next();
+
+    while (i_val.is_some()) || (n_val.is_some()){
+        if i_val == None {
+            r.values.push(*n_val.unwrap());
+        } else if n_val == None {
+            r.values.push(*i_val.unwrap());
+        } else {
+            r.values.push(max(*n_val.unwrap(), *i_val.unwrap()));
+        }
+
+        i_val = i_iter.next();
+        n_val = n_iter.next();
+    }
+
+    Ok(r)
 }
 
 impl SacnReceiver {
@@ -104,7 +148,8 @@ impl SacnReceiver {
                 // multicast_universe_receivers: Vec::new(),
                 receiver: DmxReciever::new(addr)?,
                 waiting_data: Vec::new(),
-                universes: Vec::new()
+                universes: Vec::new(),
+                merge_func: htp_dmx_merge,
                 // next_index: 0,
             }
         )
@@ -127,18 +172,55 @@ impl SacnReceiver {
             let dmx_data: DMXData = DMXData {
                 universe: data_pkt.universe, 
                 start_code: vals[0],
-                values: vals[1..].to_vec()};
+                values: vals[1..].to_vec(),
+                sync_uni: data_pkt.synchronization_address
+            };
 
             #[cfg(not(feature = "std"))]
             let dmx_data: DMXData = DMXData {
                 universe: data_pkt.universe, 
                 start_code: data_pkt.data.property_values[0],
-                values: data_pkt.data.property_values[1..]};
+                values: data_pkt.data.property_values[1..],
+                sync_uni: data_pkt.synchronization_address
+            };
 
             return Ok(vec![dmx_data]);
+        } else {
+            #[cfg(feature = "std")]
+            let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
+            let dmx_data: DMXData = DMXData {
+                universe: data_pkt.universe, 
+                start_code: vals[0],
+                values: vals[1..].to_vec(),
+                sync_uni: data_pkt.synchronization_address
+            };
+
+            #[cfg(not(feature = "std"))]
+            let dmx_data: DMXData = DMXData {
+                universe: data_pkt.universe, 
+                start_code: data_pkt.data.property_values[0],
+                values: data_pkt.data.property_values[1..],
+                sync_uni: data_pkt.synchronization_address
+            };
+
+            self.store_waiting_data(&dmx_data)?;
+            
+            Ok(Vec::new())
         }
-        
-        Err(Error::new(ErrorKind::Other, "Sync data packet handling not implemented"))
+    }
+
+    fn store_waiting_data(&mut self, data: &DMXData) -> Result<(), Error>{
+        for i in 0 .. self.waiting_data.len() {
+            if self.waiting_data[i].universe == data.universe && self.waiting_data[i].sync_uni == data.sync_uni { 
+                // Implementation detail: Multiple bits of data for the same universe can 
+                // be buffered at one time as long as the data is waiting for different synchronisation universes.
+                // Only if the data is for the same universe and is waiting for the same synchronisation universe is it merged.
+                self.waiting_data[i] = ((self.merge_func)(&self.waiting_data[i], data)).unwrap();
+                return Ok(())
+            }
+        }
+
+        Err(Error::new(ErrorKind::Other, "Not Implemented"))
     }
         
     // Handles the given synchronisation packet for this DMX receiver. 
