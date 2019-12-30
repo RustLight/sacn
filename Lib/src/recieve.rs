@@ -13,10 +13,12 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
 use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLayerData::DataPacket, 
     E131RootLayerData::SynchronizationPacket, E131RootLayerData::UniverseDiscoveryPacket, UniverseDiscoveryPacketFramingLayer, 
-    SynchronizationPacketFramingLayer, DataPacketFramingLayer};
+    SynchronizationPacketFramingLayer, DataPacketFramingLayer, UniverseDiscoveryPacketUniverseDiscoveryLayer};
 
 use std::io;
 use std::io::{Error, ErrorKind};
+
+use std::borrow::Cow;
 
 use std::cmp::max;
 
@@ -78,12 +80,18 @@ struct DmxReciever{
     socket: UdpSocket
 }
 
+pub struct DiscoveredSacnSource {
+
+}
+
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
     receiver: DmxReciever,
     waiting_data: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
-    universes: Vec<u16>,
+    universes: Vec<u16>, // Universes that this receiver is currently listening for
+    discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been discovered by this receiver through universe discovery packets.
     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
+    partially_discovered_sources: DiscoveredSacnSource // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
 }
 
 impl SacnReceiver {
@@ -215,8 +223,41 @@ impl SacnReceiver {
         Ok(res)
     }
 
-    fn handle_universe_discovery_packet(&mut self, _discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
-        Err(Error::new(ErrorKind::Other, "Universe Discovery Not Implemented"))
+    // Report point: There is no guarantees made by the protocol that different sources will have different names.
+    // As names are used to match universe discovery packets this means that if 2 sources have the same name it won't
+    // be clear which one is sending what universes as they will appear as one source. 
+
+    // Report point: partially discovered sources are only marked as discovered when a full set of discovery packets has been
+    // receieved, if a discovery packet is receieved but there are more pages the source won't be discovered until all the pages are receieved.
+    // If a page is lost this therefore means the source update / discovery in its entirety will be lost - implementation detail.
+
+    fn handle_universe_discovery_packet(&mut self, discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+        let src_name = discovery_pkt.source_name;
+        let data: UniverseDiscoveryPacketUniverseDiscoveryLayer = discovery_pkt.data;
+
+        let page: u8 = data.page;
+        let last_page: u8 = data.last_page;
+
+        #[cfg(feature = "std")]
+        let universes: Cow<'a, [u16]> = data.universes;
+
+        #[cfg(not(feature = "std"))]
+        let universes: Vec<u16, [u16; 512]> = data.universes;
+
+        if (page == last_page){ // Indicates that all discovery pages from this source have been receieved.
+            
+        }
+
+        for i in 0 .. self.discovered_sources.len() {
+            if self.discovered_sources[i].src_name == src_name { // Already know about this source so update it.
+                self.discovered_sources[i];
+                break;
+            }
+        }
+
+        // TODO, this is a forced type pattern, perhaps the returned type should be different for each handler and an enum/option 
+        // used to switch between them.
+        Ok(Vec::new())
     }
 
     pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
