@@ -24,9 +24,17 @@ use net2::UdpBuilder;
 use uuid::Uuid;
 
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, SynchronizationPacketFramingLayer, E131RootLayer,
-             E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE};
+             E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE, UniverseDiscoveryPacketUniverseDiscoveryLayer, 
+             UniverseDiscoveryPacketFramingLayer};
 
+/// The default delay between sending data packets and sending a synchronisation packet, used as advised by ANSI-E1.31-2018 Appendix B.1
 pub const DEFAULT_SYNC_DELAY: Duration = time::Duration::from_millis(10);
+
+/// The maximum number of universes per page in a universe discovery packet.
+pub const DISCOVERY_UNI_PER_PAGE: usize = 512;
+
+/// The universe used for universe discovery as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative)
+pub const DISCOVERY_UNIVERSE: u16 = 64214;
 
 pub fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
@@ -296,6 +304,39 @@ impl DmxSource {
                 sequence += 1;
             }
         }
+        Ok(())
+    }
+
+    /// Sends a universe discovery packet advertising the universes that this source is registered to send.
+    pub fn send_universe_discovery(&self) -> Result<()>{
+        let pages_req: u8 = ((self.universes.len() / DISCOVERY_UNI_PER_PAGE) + 1) as u8;
+
+        for p in 0 .. pages_req {
+            self.send_universe_discovery_detailed(p, pages_req - 1, &self.universes[(p as usize) .. (((p as usize) + 1) * DISCOVERY_UNI_PER_PAGE)])?;
+        }
+        Ok(())
+    }
+
+    fn send_universe_discovery_detailed(&self, page: u8, last_page: u8, universes: &[u16]) -> Result<()>{
+        let packet = AcnRootLayerProtocol {
+            pdu: E131RootLayer {
+                cid: self.cid,
+                data: E131RootLayerData::UniverseDiscoveryPacket(
+                    UniverseDiscoveryPacketFramingLayer {
+                        source_name: self.name.as_str().into(),
+                        data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+                            page: page,
+                            last_page: last_page,
+                            universes: universes.into(),
+                        },
+                    },
+                ),
+            },
+        };
+
+        let ip = try!(universe_to_ip(DISCOVERY_UNIVERSE));
+        self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip)?;
+
         Ok(())
     }
 
