@@ -4,23 +4,46 @@
 extern crate lazy_static;
 extern crate sacn;
 use sacn::DmxSource;
+use std::io::{Error, ErrorKind};
 
 #[test]
-fn test_send_single_universe(){
-    let dmx_source = DmxSource::new("Controller").unwrap();
+fn test_send_without_registering(){
+    let mut dmx_source = DmxSource::new("Controller").unwrap();
 
     let priority = 100;
 
-    assert!(!dmx_source.send_across_universe(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority).is_err(), "Failed to send single universe");
+    let universe: u16 = 1;
+
+    match dmx_source.send_across_universe(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority) {
+        Ok(_) => {},
+        Err(e) => assert_eq!(e.kind(), ErrorKind::Other, "")
+    }
+}
+
+#[test]
+fn test_send_single_universe(){
+    let mut dmx_source = DmxSource::new("Controller").unwrap();
+
+    let priority = 100;
+
+    let universe: u16 = 1;
+
+    dmx_source.register_universe(universe);
+
+    dmx_source.send_across_universe(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
 }
 
 #[test]
 fn test_send_across_universe(){
-    let dmx_source = DmxSource::new("Controller").unwrap();
+    let mut dmx_source = DmxSource::new("Controller").unwrap();
 
     let priority = 100;
 
-    assert!(!dmx_source.send_across_universe(&[1, 2], &TEST_DATA_MULTIPLE_UNIVERSE, priority).is_err(), "Failed to send across universes");
+    let universes: [u16; 2] = [1, 2];
+
+    dmx_source.register_universes(&universes);
+
+    dmx_source.send_across_universe(&universes, &TEST_DATA_MULTIPLE_UNIVERSE, priority).unwrap();
 }
 
 const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [

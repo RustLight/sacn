@@ -16,12 +16,17 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
 use std::net::UdpSocket;
 use std::cmp;
+use std::time;
+use std::time::Duration;
+use std::thread::sleep;
 
 use net2::UdpBuilder;
 use uuid::Uuid;
 
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, SynchronizationPacketFramingLayer, E131RootLayer,
              E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE};
+
+pub const DEFAULT_SYNC_DELAY: Duration = time::Duration::from_millis(10);
 
 pub fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
@@ -65,6 +70,8 @@ pub struct DmxSource {
     name: String,
     preview_data: bool,
     sequences: RefCell<HashMap<u16, u8>>,
+    sync_delay: Duration,
+    universes: Vec<u16> // A list of the universes registered to send by this source, used for universe discovery. Always sorted with lowest universe first to allow quicker usage.
 }
 
 impl DmxSource {
@@ -101,7 +108,25 @@ impl DmxSource {
             name: name.to_string(),
             preview_data: false,
             sequences: RefCell::new(HashMap::new()),
+            sync_delay: DEFAULT_SYNC_DELAY,
+            universes: Vec::new() 
         })
+    }
+
+    pub fn register_universe(&mut self, universe: u16){
+        if self.universes.len() == 0 {
+            self.universes.push(universe);
+        } else {
+            // https://doc.rust-lang.org/std/vec/struct.Vec.html#method.binary_search (30/12/2019)
+            let i = self.universes.binary_search(&universe).unwrap_or_else(|x| x);
+            self.universes.insert(i, universe);
+        }
+    }
+
+    pub fn register_universes(&mut self, universes: &[u16]){
+        for u in universes {
+            self.register_universe(*u);
+        }
     }
 
     /// Sends DMX data to specified universe.
@@ -110,10 +135,17 @@ impl DmxSource {
         self.send_with_priority(universe, data, 100)
     }
 
-    /// Sends DMX data that spans multiple universes using universe synchronization. 
+    /// Sends DMX data that spans multiple universes using universe synchronization.
+    /// Will fail if the universes haven't been previously registered with this SacnSource.
     pub fn send_across_universe(&self, universes: &[u16], data: &[u8], priority: u8) -> Result<()> {
         if data.len() == 0 {
            return Err(Error::new(ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
+        }
+
+        for u in universes {
+            if !self.universes.contains(u) {
+                return Err(Error::new(ErrorKind::Other, "Must register universes to send before sending on them"));
+            }
         }
 
         // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
@@ -144,6 +176,8 @@ impl DmxSource {
                 sync_addr)?;
                 println!("Data pkt sent");
             }
+            // Small delay before sending sync packet as per ANSI-E1.31-2018 Appendix B.1
+            sleep(self.sync_delay);
             
             self.send_sync_packet(sync_addr)?; // A sync packet must be sent so that the receiver will act on the sent data.
             println!("Sync pkt sent");
