@@ -230,13 +230,18 @@ impl SacnReceiver {
     // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast).
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
-
         match self.receiver.recv(&mut buf){
             Ok(pkt) => {
                 let pdu: E131RootLayer = pkt.pdu;
                 let data: E131RootLayerData = pdu.data;
                 match data {
-                    DataPacket(d) => self.handle_data_packet(d),
+                    DataPacket(d) => { 
+                        let r = self.handle_data_packet(d)?;
+                        if r.len() <= 0 { // Indicates that there is no data ready to pass up yet so don't return.
+                            return self.recv();
+                        }
+                        Ok(r)
+                    },
                     SynchronizationPacket(s) => self.handle_sync_packet(s),
                     UniverseDiscoveryPacket(u) => self.handle_universe_discovery_packet(u)
                 }
