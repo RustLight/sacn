@@ -21,3 +21,29 @@ Secondary Objectives
 4. Window and Unix support. - Semester 2 Week 4
 5. Introduce unicast and broadcast support. - Semester 2 Week 2
 6. Ipv4 and Ipv6 support - TBD
+
+
+Actual Completion Times:
+Draft report (with what has been done so far) - Not done
+Finished draft report - Not done
+Finaling report - Not done
+Submit - Not done
+
+Primary Objectives
+1. Learn rust - Throughout the project development
+2. Establish the extends of the existing implementation and introduce more thorough testing to verify its correctness(fixing issues found). - Partially done, 30/12/19
+3. Expand the existing implementation to allow receiving DMX through sACN. - 30/12/19 (with universe sync)
+4. Expand the existing implementation to allow sending DMX with universe synchronisation. - 30/12/19
+5. Expand the existing implementation to allow universe discovery. - Not done
+6. Add support for options as defined in ANSI E1.31-2018 - Not done
+
+Justification for 2. being after 3. and 4. is not sure how much will be needed for the universe synchronisation and discovery as some of it exists already.
+
+Secondary Objectives
+
+1. Analyse the performance of this protocol implementation verses other implementations in different languages using a number of different metrics. - Not done
+2. Analyse the performance of this protocol in various implementations verses another protocol such as ArtNet[7]. - Not done
+3. Test the completed implementation in a real-world environment by creating a demo program which utilises the library. - Not done
+4. Window and Unix support. - Not done
+5. Introduce unicast and broadcast support. - Not done
+6. Ipv4 and Ipv6 support - Not done
