@@ -80,9 +80,6 @@ struct DmxReciever{
     socket: UdpSocket
 }
 
-pub struct DiscoveredSacnSource {
-
-}
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
@@ -223,6 +220,14 @@ impl SacnReceiver {
         Ok(res)
     }
 
+    fn find_partially_discovered_src(&self, name: String) -> Option<usize>{
+        for i in 0 .. self.partially_discovered_sources.len() {
+            if (self.partially_discovered_sources[i].name == name){
+                return i;
+            }
+        }
+    }
+
     // Report point: There is no guarantees made by the protocol that different sources will have different names.
     // As names are used to match universe discovery packets this means that if 2 sources have the same name it won't
     // be clear which one is sending what universes as they will appear as one source. 
@@ -231,8 +236,18 @@ impl SacnReceiver {
     // receieved, if a discovery packet is receieved but there are more pages the source won't be discovered until all the pages are receieved.
     // If a page is lost this therefore means the source update / discovery in its entirety will be lost - implementation detail.
 
+    pub struct DiscoveredSacnSource {
+        name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
+        last_page: u8, // The last page that will be sent by this source.
+        pages: Vec<UniversePage>
+    }
+
+    pub struct UniversePage {
+        page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
+        universes: Vec<u16> // The universes that the source is transmitting.
+    }
+
     fn handle_universe_discovery_packet(&mut self, discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
-        let src_name = discovery_pkt.source_name;
         let data: UniverseDiscoveryPacketUniverseDiscoveryLayer = discovery_pkt.data;
 
         let page: u8 = data.page;
@@ -244,16 +259,30 @@ impl SacnReceiver {
         #[cfg(not(feature = "std"))]
         let universes: Vec<u16, [u16; 512]> = data.universes;
 
-        if (page == last_page){ // Indicates that all discovery pages from this source have been receieved.
-            
-        }
+        let uni_page: UniversePage = UniversePage {
+                page: page,
+                universes: universes.into()
+            };
 
-        for i in 0 .. self.discovered_sources.len() {
-            if self.discovered_sources[i].src_name == src_name { // Already know about this source so update it.
-                self.discovered_sources[i];
-                break;
+        match self.find_partially_discovered_src(discovery_pkt.source_name) {
+            Some(index) => {
+                self.partially_discovered_sources[index].pages.push(uni_page);
+                if self.partially_discovered_sources[index].has_all_pages() {
+                    self.update_discovered_srcs(partially_discovered_sources);
+                }
+            }
+            None => {
+                if (page == 0 && page == last_page){ // Indicates that this is a single page universe discovery packet.
+                    self.update_discovered_srcs(discovery_pkt.source_name, UniversePage {
+                        page: page,
+                        universe
+                    });
+                }
             }
         }
+
+        
+        
 
         // TODO, this is a forced type pattern, perhaps the returned type should be different for each handler and an enum/option 
         // used to switch between them.
