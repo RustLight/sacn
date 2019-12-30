@@ -478,7 +478,6 @@ fn join_multicast(socket: &UdpSocket, addr: SocketAddr) -> io::Result<()> {
 
 #[cfg(windows)]
 fn bind_socket(addr: SocketAddr) -> io::Result<UdpSocket>{
-    println!("Windows binding multicast... ADDR: {}", addr);
     let addr = match addr {
         SocketAddr::V4(addr) => {
             SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), addr.port())

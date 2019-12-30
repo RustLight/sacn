@@ -151,12 +151,6 @@ impl DmxSource {
         // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
         let required_universes = (data.len() / UNIVERSE_CHANNEL_CAPACITY) + 1;
 
-        println!("Required universes: {}", required_universes);
-
-        // if data.len() % UNIVERSE_CHANNEL_CAPACITY > 0{ // Make sure that there is enough universes
-        //     required_universes = required_universes + 1;
-        // }
-
         if universes.len() < required_universes {
             return Err(Error::new(ErrorKind::InvalidInput, "Must provide enough universes to send on"));
         }
@@ -174,13 +168,11 @@ impl DmxSource {
                 &data[start_index .. end_index], 
                 priority, 
                 sync_addr)?;
-                println!("Data pkt sent");
             }
             // Small delay before sending sync packet as per ANSI-E1.31-2018 Appendix B.1
             sleep(self.sync_delay);
             
             self.send_sync_packet(sync_addr)?; // A sync packet must be sent so that the receiver will act on the sent data.
-            println!("Sync pkt sent");
             Ok(())
         }
     }

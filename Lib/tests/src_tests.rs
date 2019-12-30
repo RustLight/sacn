@@ -8,11 +8,9 @@ use std::io::{Error, ErrorKind};
 
 #[test]
 fn test_send_without_registering(){
-    let mut dmx_source = DmxSource::new("Controller").unwrap();
+    let dmx_source = DmxSource::new("Controller").unwrap();
 
     let priority = 100;
-
-    let universe: u16 = 1;
 
     match dmx_source.send_across_universe(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority) {
         Ok(_) => {},
