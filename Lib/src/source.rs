@@ -21,7 +21,7 @@ use net2::UdpBuilder;
 use uuid::Uuid;
 
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, SynchronizationPacketFramingLayer, E131RootLayer,
-             E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE, DEFAULT_SYNC_UNIVERSE};
+             E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE};
 
 pub fn universe_to_ip(universe: u16) -> Result<String> {
     if universe == 0 || universe > 63999 {
@@ -34,6 +34,12 @@ pub fn universe_to_ip(universe: u16) -> Result<String> {
     let low_byte = universe & 0xff;
     Ok(format!("239.255.{}.{}:5568", high_byte, low_byte))
 }
+
+// Report: The first universe for the data to be synchronised across multiple universes is 
+// used as the syncronisation universe by default. This is done as it means that the receiever should
+// be listening for this universe. 
+
+// TODO, Write live code examples like the one below:
 
 /// A DMX over sACN sender.
 ///
@@ -49,8 +55,8 @@ pub fn universe_to_ip(universe: u16) -> Result<String> {
 ///
 /// let mut dmx_source = DmxSource::new("Controller").unwrap();
 ///
-/// dmx_source.send(1, &[100, 100, 100, 100, 100, 100]);
-/// dmx_source.terminate_stream(1);
+/// dmx_source.send(1, &[0, 100, 100, 100, 100, 100, 100]);
+/// dmx_source.terminate_stream(1, 0);
 /// ```
 #[derive(Debug)]
 pub struct DmxSource {
@@ -110,12 +116,16 @@ impl DmxSource {
            return Err(Error::new(ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
         }
 
-        let mut required_universes = data.len() / UNIVERSE_CHANNEL_CAPACITY;
-        if data.len() % UNIVERSE_CHANNEL_CAPACITY > 0{ // Make sure that there is enough universes
-            required_universes = required_universes + 1;
-        }
+        // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
+        let required_universes = (data.len() / UNIVERSE_CHANNEL_CAPACITY) + 1;
 
-        if universes.len() < required_universes{
+        println!("Required universes: {}", required_universes);
+
+        // if data.len() % UNIVERSE_CHANNEL_CAPACITY > 0{ // Make sure that there is enough universes
+        //     required_universes = required_universes + 1;
+        // }
+
+        if universes.len() < required_universes {
             return Err(Error::new(ErrorKind::InvalidInput, "Must provide enough universes to send on"));
         }
 
@@ -123,18 +133,20 @@ impl DmxSource {
             // All fits within 1 universe so therefore send the data normally.
             self.send_with_priority(universes[0], data, 100)
         } else {
-            let sync_addr = DEFAULT_SYNC_UNIVERSE;
-            for i in 0 .. (required_universes - 1) {
+            let sync_addr = universes[0];
+            for i in 0 .. required_universes {
                 let start_index = i * UNIVERSE_CHANNEL_CAPACITY;
                 // Safety check to make sure that the end index doesn't exceed the data length
-                let end_index = cmp::min(((i + 1) * UNIVERSE_CHANNEL_CAPACITY) - 1, data.len());
+                let end_index = cmp::min((i + 1) * UNIVERSE_CHANNEL_CAPACITY, data.len());
                 self.send_detailed(universes[i], 
                 &data[start_index .. end_index], 
                 priority, 
                 sync_addr)?;
+                println!("Data pkt sent");
             }
             
             self.send_sync_packet(sync_addr)?; // A sync packet must be sent so that the receiver will act on the sent data.
+            println!("Sync pkt sent");
             Ok(())
         }
     }
