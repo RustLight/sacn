@@ -40,11 +40,13 @@ fn test_send_recv_single_universe(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let dmx_source = DmxSource::new("Controller").unwrap();
+    let mut dmx_source = DmxSource::new("Controller").unwrap();
 
     let priority = 100;
 
-    let _ = dmx_source.send_across_universe(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
+    dmx_source.register_universe(universe);
+
+    let _ = dmx_source.send_across_universe(&[universe], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -74,6 +76,8 @@ fn test_send_recv_across_universe(){
 
     let thread_tx = tx.clone();
 
+    const UNIVERSES: [u16; 2] = [2, 3];
+
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = match SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
             Ok(sr) => sr,
@@ -82,7 +86,7 @@ fn test_send_recv_across_universe(){
 
         dmx_recv.set_nonblocking(false).unwrap();
 
-        dmx_recv.listen_universes(&[2, 3]).unwrap();
+        dmx_recv.listen_universes(&UNIVERSES).unwrap();
 
         thread_tx.send(Ok(Vec::new())).unwrap(); // Signal that the receiver is ready to receive.
 
@@ -91,11 +95,13 @@ fn test_send_recv_across_universe(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let dmx_source = DmxSource::new("Controller").unwrap();
+    let mut dmx_source = DmxSource::new("Controller").unwrap();
 
     let priority = 100;
 
-    assert!(!dmx_source.send_across_universe(&[2, 3], &TEST_DATA_MULTIPLE_UNIVERSE, priority).is_err(), "Failed to send 2 universes synchronised");
+    dmx_source.register_universes(&UNIVERSES);
+
+    dmx_source.send_across_universe(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, priority).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
