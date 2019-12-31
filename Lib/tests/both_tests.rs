@@ -3,6 +3,7 @@
 
 extern crate lazy_static;
 extern crate sacn;
+
 use std::{thread};
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
@@ -189,9 +190,6 @@ fn test_send_recv_single_universe(){
 
 /// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
-
-// TODO: This test assumes the ordering of the receieved universes (the first sent being the first in the list) but this isn't always
-// the case / isn't guaranteed.
 #[test]
 fn test_send_recv_across_universe(){
     let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
@@ -231,7 +229,9 @@ fn test_send_recv_across_universe(){
 
     assert!(!sync_pkt_res.is_err(), "Failed: Error when receving packets");
 
-    let received_data: Vec<DMXData> = sync_pkt_res.unwrap();
+    let mut received_data: Vec<DMXData> = sync_pkt_res.unwrap();
+
+    received_data.sort(); // No guarantee on the ordering of the receieved data so sort it first to allow easier checking.
 
     assert_eq!(received_data.len(), 2); // Check 2 universes received as expected.
 
