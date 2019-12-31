@@ -353,6 +353,62 @@ fn find_discovered_src(srcs: &Vec<DiscoveredSacnSource>, name: &String) -> Optio
     None
 }
 
+// pub struct SacnReceiver {
+//     receiver: DmxReciever,
+//     waiting_data: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
+//     universes: Vec<u16>, // Universes that this receiver is currently listening for
+//     discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been discovered by this receiver through universe discovery packets.
+//     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
+//     partially_discovered_sources: Vec<DiscoveredSacnSource> // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
+// }
+// pub struct DiscoveredSacnSource {
+//     name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
+//     last_page: u8, // The last page that will be sent by this source.
+//     pages: Vec<UniversePage>
+// }
+
+// #[derive(Eq, Ord, PartialEq, PartialOrd)]
+// pub struct UniversePage {
+//     page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
+//     universes: Vec<u16> // The universes that the source is transmitting.
+// }
+
+#[test]
+fn test_handle_single_page_discovery_packet() {
+    let mut dmx_rcv = SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let name = "Test Src 1";
+    let page: u8 = 0;
+    let last_page: u8 = 0;
+    let universes: Vec<u16> = vec![0, 1, 2, 3, 4, 5];
+
+    let discovery_pkt: UniverseDiscoveryPacketFramingLayer = UniverseDiscoveryPacketFramingLayer {
+        source_name: name.into(),
+
+        /// Universe dicovery layer.
+        data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+            page: page,
+
+            /// The number of the final page.
+            last_page: last_page,
+
+            /// List of universes.
+            universes: universes.clone().into(),
+        },
+    };
+
+    let res: Vec<DMXData> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt).unwrap();
+    assert_eq!(res.len(), 0);
+
+    assert_eq!(dmx_rcv.discovered_sources.len(), 1);
+
+    assert_eq!(dmx_rcv.discovered_sources[0].name, name);
+    assert_eq!(dmx_rcv.discovered_sources[0].last_page, last_page);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages.len(), 1);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].page, page);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].universes, universes);
+}
+
 #[test]
 fn test_store_retrieve_waiting_data(){
     let mut dmx_rcv = SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
