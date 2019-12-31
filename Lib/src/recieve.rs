@@ -54,7 +54,7 @@ pub const CHECK_MUTLICAST_DEFAULT: bool = true;
 // By default shouldn't check for packets sent over the network using broadcast.
 pub const CHECK_BROADCAST_DEFAULT: bool = false;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct DMXData{
     pub universe: u16,
     pub values: Vec<u8>,
@@ -396,7 +396,7 @@ fn test_handle_single_page_discovery_packet() {
             universes: universes.clone().into(),
         },
     };
-    
+
     let res: Option<Vec<DMXData>> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt).unwrap();
 
     assert!(res.is_none());
