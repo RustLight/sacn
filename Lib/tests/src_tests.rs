@@ -12,7 +12,7 @@ fn test_send_without_registering(){
 
     let priority = 100;
 
-    match dmx_source.send_across_universe(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority) {
+    match dmx_source.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority) {
         Ok(_) => {},
         Err(e) => assert_eq!(e.kind(), ErrorKind::Other, "")
     }
@@ -28,7 +28,7 @@ fn test_send_single_universe(){
 
     dmx_source.register_universe(universe);
 
-    dmx_source.send_across_universe(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
+    dmx_source.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
 }
 
 #[test]
@@ -41,7 +41,7 @@ fn test_send_across_universe(){
 
     dmx_source.register_universes(&universes);
 
-    dmx_source.send_across_universe(&universes, &TEST_DATA_MULTIPLE_UNIVERSE, priority).unwrap();
+    dmx_source.send(&universes, &TEST_DATA_MULTIPLE_UNIVERSE, priority).unwrap();
 }
 
 const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [

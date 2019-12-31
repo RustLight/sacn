@@ -54,6 +54,8 @@ pub fn universe_to_ip(universe: u16) -> Result<String> {
 
 // TODO, Write live code examples like the one below:
 
+// Note the test below is depreciated so won't work without the sections being commented out.
+
 /// A DMX over sACN sender.
 ///
 /// DmxSource is used for sending sACN packets over ethernet.
@@ -68,7 +70,7 @@ pub fn universe_to_ip(universe: u16) -> Result<String> {
 ///
 /// let mut dmx_source = DmxSource::new("Controller").unwrap();
 ///
-/// dmx_source.send(1, &[0, 100, 100, 100, 100, 100, 100]);
+/// // dmx_source.send(1, &[0, 100, 100, 100, 100, 100, 100]);
 /// dmx_source.terminate_stream(1, 0);
 /// ```
 #[derive(Debug)]
@@ -137,15 +139,12 @@ impl DmxSource {
         }
     }
 
-    /// Sends DMX data to specified universe.
-    #[deprecated(note="Use send_across_universe instead")]
-    pub fn send(&self, universe: u16, data: &[u8]) -> Result<()> {
-        self.send_with_priority(universe, data, 100)
-    }
-
     /// Sends DMX data that spans multiple universes using universe synchronization.
     /// Will fail if the universes haven't been previously registered with this SacnSource.
-    pub fn send_across_universe(&self, universes: &[u16], data: &[u8], priority: u8) -> Result<()> {
+    /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate
+    /// than specified in ANSI E1.11 [DMX] unless configured by the user to do so in an environment 
+    /// which doesn't contain any E1.31 to DMX512-A converters.
+    pub fn send(&self, universes: &[u16], data: &[u8], priority: u8) -> Result<()> {
         if data.len() == 0 {
            return Err(Error::new(ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
         }

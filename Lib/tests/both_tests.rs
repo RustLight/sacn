@@ -46,7 +46,7 @@ fn test_send_recv_single_universe(){
 
     dmx_source.register_universe(universe);
 
-    let _ = dmx_source.send_across_universe(&[universe], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
+    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -101,7 +101,7 @@ fn test_send_recv_across_universe(){
 
     dmx_source.register_universes(&UNIVERSES);
 
-    dmx_source.send_across_universe(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, priority).unwrap();
+    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, priority).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
