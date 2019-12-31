@@ -149,11 +149,11 @@ impl SacnReceiver {
         self.waiting_data.clear();
     }
 
-     // Handles the given data packet for this DMX reciever.
+    // Handles the given data packet for this DMX reciever.
     // Returns the universe data if successful.
-    // If the returned Vec is empty it indicates that the data was received successfully but isn't ready to act on.
+    // If the returned value is None it indicates that the data was received successfully but isn't ready to act on.
     // Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
-    fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+    fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>, Error>{
         if data_pkt.synchronization_address == NO_SYNC_ADDR {
             self.clear_waiting_data();
 
@@ -172,7 +172,7 @@ impl SacnReceiver {
                 sync_uni: data_pkt.synchronization_address
             };
 
-            return Ok(vec![dmx_data]);
+            return Ok(Some(vec![dmx_data]));
         } else {
             #[cfg(feature = "std")]
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
@@ -191,7 +191,7 @@ impl SacnReceiver {
 
             self.store_waiting_data(dmx_data)?;
             
-            Ok(Vec::new())
+            Ok(None)
         }
     }
 
@@ -223,8 +223,13 @@ impl SacnReceiver {
         it shall hold that E1.31 Data Packet until the arrival of the appropriate E1.31 Synchronization Packet before acting on it.
 
 */
-    fn handle_sync_packet(&mut self, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
-        self.rtrv_waiting_data(sync_pkt.synchronization_address)
+    fn handle_sync_packet(&mut self, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Option<Vec<DMXData>>, Error>{
+        let res = self.rtrv_waiting_data(sync_pkt.synchronization_address)?;
+        if res.len() == 0 {
+            Ok(None)
+        } else {
+            Ok(Some(res))
+        }
     }
 
     // Retrieves and removes the DMX data of all waiting data with a synchronisation address matching the one provided.
@@ -242,7 +247,6 @@ impl SacnReceiver {
                 i = i + 1;
             }
         }
-
         Ok(res)
     }
 
@@ -264,7 +268,7 @@ impl SacnReceiver {
     // receieved, if a discovery packet is receieved but there are more pages the source won't be discovered until all the pages are receieved.
     // If a page is lost this therefore means the source update / discovery in its entirety will be lost - implementation detail.
 
-    fn handle_universe_discovery_packet(&mut self, discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
+    fn handle_universe_discovery_packet(&mut self, discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Result<Option<Vec<DMXData>>, Error>{
         let data: UniverseDiscoveryPacketUniverseDiscoveryLayer = discovery_pkt.data;
 
         let page: u8 = data.page;
@@ -304,9 +308,7 @@ impl SacnReceiver {
             }
         }
 
-        // TODO, this is a forced type pattern, perhaps the returned type should be different for each handler and an enum/option 
-        // used to switch between them.
-        Ok(Vec::new())
+        Ok(None)
     }
 
     pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
@@ -324,16 +326,14 @@ impl SacnReceiver {
             Ok(pkt) => {
                 let pdu: E131RootLayer = pkt.pdu;
                 let data: E131RootLayerData = pdu.data;
-                match data {
-                    DataPacket(d) => { 
-                        let r = self.handle_data_packet(d)?;
-                        if r.len() <= 0 { // Indicates that there is no data ready to pass up yet so don't return.
-                            return self.recv();
-                        }
-                        Ok(r)
-                    },
-                    SynchronizationPacket(s) => self.handle_sync_packet(s),
-                    UniverseDiscoveryPacket(u) => self.handle_universe_discovery_packet(u)
+                let res = match data {
+                    DataPacket(d) => self.handle_data_packet(d)?,
+                    SynchronizationPacket(s) => self.handle_sync_packet(s)?,
+                    UniverseDiscoveryPacket(u) => self.handle_universe_discovery_packet(u)?
+                };
+                match res {
+                    Some(r) => Ok(r),
+                    None => self.recv() // Indicates that there is no data ready to pass up yet so don't return.
                 }
             }
             Err(err) => {
@@ -396,9 +396,10 @@ fn test_handle_single_page_discovery_packet() {
             universes: universes.clone().into(),
         },
     };
+    
+    let res: Option<Vec<DMXData>> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt).unwrap();
 
-    let res: Vec<DMXData> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt).unwrap();
-    assert_eq!(res.len(), 0);
+    assert!(res.is_none());
 
     assert_eq!(dmx_rcv.discovered_sources.len(), 1);
 
