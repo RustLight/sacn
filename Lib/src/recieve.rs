@@ -18,8 +18,6 @@ use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLay
 use std::io;
 use std::io::{Error, ErrorKind};
 
-use std::borrow::Cow;
-
 use std::cmp::max;
 
 pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; // As defined in ANSI E1.31-2018
@@ -80,6 +78,32 @@ struct DmxReciever{
     socket: UdpSocket
 }
 
+pub struct DiscoveredSacnSource {
+    name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
+    last_page: u8, // The last page that will be sent by this source.
+    pages: Vec<UniversePage>
+}
+
+#[derive(Eq, Ord, PartialEq, PartialOrd)]
+pub struct UniversePage {
+    page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
+    universes: Vec<u16> // The universes that the source is transmitting.
+}
+
+impl DiscoveredSacnSource {
+    pub fn has_all_pages(&mut self) -> bool {
+        // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/sorting.html (31/12/2019)
+        self.pages.sort_by(|a, b| b.page.cmp(&a.page));
+        
+        for i in 0 .. (self.last_page + 1) {
+            if self.pages[i as usize].page != i {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
@@ -88,7 +112,7 @@ pub struct SacnReceiver {
     universes: Vec<u16>, // Universes that this receiver is currently listening for
     discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been discovered by this receiver through universe discovery packets.
     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
-    partially_discovered_sources: DiscoveredSacnSource // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
+    partially_discovered_sources: Vec<DiscoveredSacnSource> // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
 }
 
 impl SacnReceiver {
@@ -113,7 +137,9 @@ impl SacnReceiver {
                 receiver: DmxReciever::new(addr)?,
                 waiting_data: Vec::new(),
                 universes: Vec::new(),
+                discovered_sources: Vec::new(),
                 merge_func: htp_dmx_merge,
+                partially_discovered_sources: Vec::new(),
                 // next_index: 0,
             }
         )
@@ -220,12 +246,14 @@ impl SacnReceiver {
         Ok(res)
     }
 
-    fn find_partially_discovered_src(&self, name: String) -> Option<usize>{
-        for i in 0 .. self.partially_discovered_sources.len() {
-            if (self.partially_discovered_sources[i].name == name){
-                return i;
-            }
+    fn update_discovered_srcs(&mut self, src: DiscoveredSacnSource) {
+        match find_discovered_src(&self.discovered_sources, &src.name){
+            Some(index) => {
+                self.discovered_sources.remove(index);
+            },
+            None => {}
         }
+        self.discovered_sources.push(src);
     }
 
     // Report point: There is no guarantees made by the protocol that different sources will have different names.
@@ -236,17 +264,6 @@ impl SacnReceiver {
     // receieved, if a discovery packet is receieved but there are more pages the source won't be discovered until all the pages are receieved.
     // If a page is lost this therefore means the source update / discovery in its entirety will be lost - implementation detail.
 
-    pub struct DiscoveredSacnSource {
-        name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
-        last_page: u8, // The last page that will be sent by this source.
-        pages: Vec<UniversePage>
-    }
-
-    pub struct UniversePage {
-        page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
-        universes: Vec<u16> // The universes that the source is transmitting.
-    }
-
     fn handle_universe_discovery_packet(&mut self, discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Result<Vec<DMXData>, Error>{
         let data: UniverseDiscoveryPacketUniverseDiscoveryLayer = discovery_pkt.data;
 
@@ -254,7 +271,7 @@ impl SacnReceiver {
         let last_page: u8 = data.last_page;
 
         #[cfg(feature = "std")]
-        let universes: Cow<'a, [u16]> = data.universes;
+        let universes = data.universes;
 
         #[cfg(not(feature = "std"))]
         let universes: Vec<u16, [u16; 512]> = data.universes;
@@ -264,25 +281,28 @@ impl SacnReceiver {
                 universes: universes.into()
             };
 
-        match self.find_partially_discovered_src(discovery_pkt.source_name) {
+        match find_discovered_src(&self.partially_discovered_sources, &discovery_pkt.source_name.to_string()) {
             Some(index) => {
                 self.partially_discovered_sources[index].pages.push(uni_page);
                 if self.partially_discovered_sources[index].has_all_pages() {
-                    self.update_discovered_srcs(partially_discovered_sources);
+                    let discovered_src: DiscoveredSacnSource = self.partially_discovered_sources.remove(index);
+                    self.update_discovered_srcs(discovered_src);
                 }
             }
             None => {
-                if (page == 0 && page == last_page){ // Indicates that this is a single page universe discovery packet.
-                    self.update_discovered_srcs(discovery_pkt.source_name, UniversePage {
-                        page: page,
-                        universe
-                    });
+                let discovered_src: DiscoveredSacnSource = DiscoveredSacnSource {
+                    name: discovery_pkt.source_name.to_string(),
+                    last_page: last_page,
+                    pages: vec![uni_page],
+                };
+
+                if page == 0 && page == last_page { // Indicates that this is a single page universe discovery packet.
+                    self.update_discovered_srcs(discovered_src);
+                } else { // Indicates that this is a page in a set of pages as part of a sources universe discovery.
+                    self.partially_discovered_sources.push(discovered_src);
                 }
             }
         }
-
-        
-        
 
         // TODO, this is a forced type pattern, perhaps the returned type should be different for each handler and an enum/option 
         // used to switch between them.
@@ -321,6 +341,16 @@ impl SacnReceiver {
             }
         }
     }
+}
+
+// Searches for the discovered source with the given name in the given vector of discovered sources and returns the index of the src or None if not found.
+fn find_discovered_src(srcs: &Vec<DiscoveredSacnSource>, name: &String) -> Option<usize> {
+    for i in 0 .. srcs.len() {
+        if srcs[i].name == *name {
+            return Some(i);
+        }
+    }
+    None
 }
 
 #[test]
