@@ -240,53 +240,126 @@ use sacn::packet::UNIVERSE_CHANNEL_CAPACITY;
     /// - Receivers that do not support sequence numbering of packets should ignore these fields: 
     /// - Receivers that support sequence numbering should evaluate sequence numbers seperately for each E1.31 
     ///     packet type and within each packet type seperately for each universe:
-    /// - Receivers should process packets in the order received unless discarded by 
+    /// - Receivers should process packets in the order received unless the sequence number of the packet receieved
+    ///     minus the sequence number of the last accepted sequence number is less than or equal to 0 but greater than -20:
 /// 7 DMP Layer Protocol
+    /// - DMP data should only appear in E1.31 Data Packets and not E1.31 Sync or Discovery packets
+    /// - The DMP data should be formatted as specified in Table 7-8
 /// 7.1 DMP Layer: Flags & Length
+    /// - The PDU length is encoded at the low 12 bits:
+    /// - 0x7 must appear in the top 4 bits:
+    /// - The DMP layer PDU length is computed starting at octet 115 and ends including the last value in the DMP PDU (octet 637 for a full payload):
 /// 7.2 DMP Layer: Vector
+    /// - The DMP layer vector must be set to VECTOR_DMP_SET_PROPERTY:
+    /// - Receivers should discard packets if the receieved value is not VECTOR_DMP_SET_PROPERTY:
 /// 7.3 Address Type and Data Type
+    /// - The DMP layer address type and data type must be 0xa1:
+    /// - Receivers must discard packets if the value is not 0xa1
 /// 7.4 First Property Address
+    /// - The DMP Layers first property address must be 0x0000:
+    /// - Receivers must discard packets if the value is not 0x0000:
 /// 7.5 Address Increment
+    /// - The DMP layer address increment must be 0x0001:
+    /// - Receivers must discard packets if the value is not 0x0001:
 /// 7.6 Property Value Count
+    /// - Must contain the number of DMX512-A [DMX] slots including the START code slot:
 /// 7.7 Property Values (DMX512-A Data)
+    /// - The first octet of the property values field is the DMX512-A START Code
+    /// - The maximum number of data slots excluding the START Code is 512 data slots:
+    /// - Alternate START Code data much be processed in compliance with ANSI E1.11 [DMX] Section 8.5.3.3:
 /// 8 Universe Discovery Layer
+    /// - The packet must be formatted as specified in Table 8-9:
 /// 8.1 Flags and Length
+    /// - The PDU length is encoded in the low 12 bits:
+    /// - 0x7 must be encoded in the top 4 bits:
+    /// - The PDU length is computed from octet 112 upto and including the last universe in the universe 
+    ///     discovery PDU (octet 1143 for a full payload):
 /// 8.2 Universe Discovery Layer: Vector
+    /// - The university discovery layer vector must be VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST:
+    /// - Receievers should discard packets if the received value is not VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST:
 /// 8.3 Page
+    /// - Indicates the page being specified in the set of universe discovery packets starting at 0:
 /// 8.4 Last Page
+    /// - Indicates the index of the last page in the set of universe discovery packets:
 /// 8.5 List of Universes
+    /// - Must be numerically sorted:
+    /// - May be empty:
+    /// - Should contain all of the universes upon which a source is actively transmitting 
+    ///     E1.31 Data and Synchronisation information:
 /// 9 Operation of E1.31 in IPv4 and IPv6 Networks
+    /// - The standard can work over either and which modes are supported should be indicated:
 /// 9.1 Association of Multicast Addresses and Universe
+    /// - The standard should work over multicasting:
+    /// - The standard should also work using unicast:
+    /// - Addressing of multicast traffic done by setting 2 least significant bytes to the desired universe number 
+    ///     or synchronisation address:
+    /// - Sources operating over IPv4 and IPv6 simultaneously should transmit identical E1.31 packets regardless of IP transport used:
+    /// - Recievers operating in IPv4 and IPV6 simultaneously should not process E1.31 packets differently based on the IP transport:
+    /// - Receivers operating in IPv4 and IPv6 simultaneously seeing the same packet via both IP transports shall only act on one instance of that packet:
 /// 9.1.1 Multicast Addressing
+    /// - E1.31 devices should not transmit on address 239.255.255.0 through 239.255.255.255:
+    /// - E1.31 devices shall not used universe number 0 or univere numbers [64000 - 65535] excluding universe 64214 (used for universe discovery only):
+    /// - The identity of the universe must be determined by the universe number in packet and not assumed from multicast address:
+    /// - E1.31 devices should also respond to E1.31 data receieved on its unicast address:
+    /// - When multicast addressing is used the UDP destination port shall be set to the standard ACN-SDT multicast port ACN_SDT_MULTICAST_PORT:
+    /// - For unicast communication the ACN-SDT multicast port shall be used by default but may be configured differently: 
 /// 9.2 Multicast Subscription
+    /// - Receivers supporting IPv4 must support IGMP v2 or any subsequent superset of IGMPv2's functionality:
+    /// - Receivers supporting IPv6 shall support MLD V1 or any subsequent subset of MLD1's functionality:
 /// 9.3 Allocation of Multicast Addresses
 /// 9.3.1 Allocation of IPv4 Multicast Addresses
+    /// - Multicast IPv4 addresses must be defined as in Table 9-10
 /// 9.3.2 Allocation of IPv6 Multicast Addresses
+    /// - Multicast IPv6 addresses must be defined as in Table 9-11 and Table 9-12
 /// 9.4 IPv4 and IPv6 Support Requirements
+    /// - E1.31 sources need to be able to operate on both IPv4 and IPv6 potentially simultaneously: 
+    /// - The state of IPv4 / IPv6 operation should be configurable by the end user:
 /// 10 Translation between DMX512-A and E1.31 Data Transmission
 /// 10.1 DMX512-A to E1.31 Translation
 /// 10.1.1 Boot Condition
+    /// - A DMX512-A [DMX] to E1.31 translator shall not transmit E1.31 data packets for a given universe until it has received at least one valid DMX512-A input packet for that universe:
 /// 10.1.2 Temporal Sequence
+    /// - A DMX512-A [DMX] to E1.31 translator shall transmit packets in the order in which they were received from the DMX512-A source:
 /// 10.1.3 Loss of Data
+    /// - On loss of data as defined in DMX512-A a source shall terminate transmission as per Section 6.7.1:
 /// 10.2 E1.31 to DMX512-A Translation
 /// 10.2.1 General
 /// 10.2.2 Loss of Data
+    /// - There must be an operating mode where upon detection of loss of data as defined in 6.7.1 for all sources of a universe a source shall
+    ///     immediately stop transmitting DMX512-A packets:
 /// 11 Universe Synchronization
+    /// - There is no restriction on the number of synchronisation addresses allowed on a single network:
+    /// - It is possible to have multiple independent universes configured for E1.31 synchronisation concurrently:
 /// 11.1 Synchronized and Unsynchronized Data
 /// 11.1.1 When to Begin Synchronizing Data
+    /// - A receiever should begin universe synchronisation upon receipt of the first syncronisation packet for that universe:
 /// 11.1.2 When to Stop Synchronizing Data
+    /// - A receiever should stop universe synchronisation if it does not receieve an E1.31 synchronisation packet on that universe within E131_NETWORK_DATA_LOSS_TIMEOUT:
+    /// - The behaviour on timeout may be determined by the Force Synchronisation Option bit:
 /// 11.2 Synchronization Timings in a Streaming Environment
 /// 11.2.1 Arrival of Multiple Packets Before Processing
+    /// - An E1.31 receiever should only synchronise using the definitive E1.31 data for that universe:
+    /// - If there is a single source the definitive data is the data packet with the most recent valid sequence number:
+    /// - If there are multiple active syncrhonisation sources on the same synchronisation address it is beyond the scope of the standard:
 /// 11.2.2 Delays Before Universe Synchronization
+    /// - Recommended to add a configurable delay between data packets and transmission of an E1.31 synchronisation packet: 
 /// 12 Universe Discovery
+    /// - Legacy devices may not implement it even though to be compliant they should:
 /// 12.1 Universe Discovery and Termination
+    /// - A source that is not sending any universe data may stop sending E1.31 Universe Discovery Packets until transmission resumse:
+    /// - Alternatively a source could send an empty list of universes:
 /// 12.2 Termination of Stream Transmission
-///
+    /// - A E1.31 data stream is terminated when either a Stream_Terminated packet is receieved:
+    /// - or if no packet is receieved for an interval of E131_NETWORK_DATA_LOSS_TIMEOUT:
+    /// - A source that has terminated transmission for an E1.31 univers must refelct the change no later than the end of the second E131_UNIVERSE_DISCOVERY_INTERVAL
+
 /// Appendix A: Defined Parameters (Normative)
+    /// - All parameters used must match those specified in Appendix A:
 /// Appendix B: An Example of Universe Synchronization For Implementors (Informative)
 /// B.1 Universe Synchronization for Sources
+    /// - The completed implementation must produce exactly the example response given for the given conditions / inputs:
 /// B.2 Universe Synchronization for Receivers
-///
+    /// - The completed implementation must produce exactly the example response given for the given conditions / inputs:
 /// Table 4-1: E1.31 Data Packet
 /// Table 4-2: E1.31 Synchronization Packet Format
 /// Table 4-3: E1.31 Universe Discovery Packet Format
