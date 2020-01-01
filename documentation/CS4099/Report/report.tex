@@ -83,6 +83,64 @@
 	process
 	The development approach taken and justification for
 	its adoption.
+
+	A waterfall based process model was used for the development of the program. In the waterfall
+	method there are several distinct phases of the project as shown in figure: \ref{waterfall-diag}. This 
+	development approach was chosen as it has a very clear structure which allows easy to manage distinct milestones 
+	so progress through the project can be more easily tracked. This process method has a number of disadvantages aswell
+	with the main one being the inflexibility - if something major needed to change it would be difficult to adapt the project. 
+	As this project is based on a clearly defined specification provided by the protocal specification and the domains were 
+	clearly defined at the start it means that this inflexibility isn't a major issue and so therefore choosing the waterfall 
+	method for its advantages makes sense. 
+
+	\label{waterfall-diag}
+	\includegraphics[width=\textwidth]{sdlc_waterfall_model.jpg}
+	\caption{A diagram showing the waterfall development process, [\cite{waterfall-diagram}]}
+
+	\paragraph*{}
+	The waterfall model can be clearly seen throughout the development of the program. The first phase of 'requirement analysis'
+	is the protocol specification itself as it clearly lays out the goals of the protocol and what it is required to do. On top of this
+	there is the project goals which were defined around the protocol specifically for how much of the protocol this specification should
+	implement for example universe-syncronisation, IPv4/IPv6 support, Unix/Windows support etc. When take together this gives a clear list of
+	requirements as so allows moving onto the 'system design' phase.
+
+	\paragraph*{}
+	The system design phase is where the requirements are turned into a technical plan for how they will be implemented. Alot of this also comes from
+	the protocol specification itself as it describes how each bit of a compliant implementation should behave and so therefore the design can be based
+	of this.
+
+	\paragraph*{}
+	The 'implementation' phase was done 
+
+	One of the requirements
+	of the project that was defined was that the implementation should be in rust. This combined with the existing base
+	incomplete implementation that was used meant that the general system design was built around this. In general the system
+	was designed around there being distinct receivers and senders with communication being mostly one-way. This meant that the two
+	different sides could be developed in relative isolation as all their communication must be done in a way that is compliant with the
+	protocol which provides the interface between them.
+
+	\paragraph*{}
+	The 'testing' phase is the combining of the various bits of the implementation. This is marked by the passing of the various intergration tests
+	where the sender and the receiver were passing information back and forth. Also part of this phase is the overall compliance tests which are detailed
+	later which show that the implementation of the protocol as a whole conforms to the design and requirements.
+
+	\paragraph*{}
+	Once the testing phase has finished the implementation can move onto the 'deployment' phase. In an industry project this would mean 
+	distributing the implementation to users and then later moving to the maintenance stage to fix issues or improve various parts of the project
+	as opportunities or problems are reported. Within this project the deployment took the form of the development of 2 small programs, one which transmits data 
+	specified by the user in the form of various dynamic patterns and a receiver which logs all received input. Theses programs followed a waterfall development
+	methodolgy as described later. These programs were then used with various other sACN devices in a real-world environment to show real usage/deployment of
+	the protocol. Issues that are discovered at this point can then be fixed through patches which represent the 'maintenance' phase of the program.
+	
+	\paragraph*{}
+	Reflection on the methonolody used
+	In general the approach used worked well for the project as it fit the natural development stratergy meaning there weren't any points where the development felt
+	like it was 'fighting' the approach chosen. There were a few potential problems that were identified however. One of these was that the model forced rigid time 
+	constraints. This is because if too long is spent on any one stage all the subsequent stages would suffer. This was taken as a fairly minor issue for this project 
+	because the constraints of fixed submissions deadlines already meant that there some rigid time constraints in place. 
+
+	\ref{waterfall-diagram}
+	https://www.tutorialspoint.com/sdlc/sdlc_waterfall_model.htm (01/01/2020)
 	
 	\section*{Ethics}
 	Ethics
