@@ -150,29 +150,97 @@ use sacn::packet::UNIVERSE_CHANNEL_CAPACITY;
     /// - All different operating modes for a device should be compliant with the standard or or non-compliant configurations should be 
     ///     clearly declared as such.
 /// 6.2.4 E1.31 Data Packet: Synchronization Address
-    /// 
 /// 6.2.4.1 Synchronization Address Usage in an E1.31 Data Packet
+    /// - A synchronisation address of value 0 indicates that the data isn't synchronised meaning any waiting
+    ///     data must be discarded and the data acted on immediately.
+    /// - A nonzero synchronization address means that the data is synchronised, if the receiever doesn't support universe
+    ///     universe synchronisation the packet should be processed normally:  Doesn't apply as the implementation supports universe synchronisation.
+    /// - A nonzero synchronisation address means that the data packet should be held until the arrival of the corresponding E1.31 synchronisation
+    ///     packet to release it:
+    /// - A receiver must not synchronise any data until it has receieved its first E1.31 synchronisation packet on the synchronisation address:
 /// 6.2.5 E1.31 Data Packet: Sequence Number
+    /// - Sources must maintain a sequence number for each universe transmitted:
+    /// - The sequence number should be incremented by one for each packet sent on the universe:
 /// 6.2.6 E1.31 Data Packet: Options
+    /// - The most significant bit is the Preview_Data, when set to 1 this means that the data is intended for use that doesn't affect the live output e.g.
+    ///     for visualisers or media server preview applications:
+    /// - The Stream_Terminated bit (2nd most significant) triggers the termination of a stream or universe synchronisation without waiting
+    ///     for timeout and to indicate that the termination is not due to a fault condition. When set to 1 the source of data for the universe
+    ///     specified has terminated transmission of the universe:
+    /// - A source should send three packets when terminating the universe source:
+    /// - A receiver should enter network data loss condition when a packet with the stream terminated bit is set:
+    /// - A receiver should ignore any property values in a packet with the stream termination bit set:
+    /// - The Force_Synchronisation bit (3rd most significant) says how a receiver should handle the loss of synchronisation, if set to 0 then 
+    ///     on synchronisation loss the reciever must not update / process any new packets until syncronisation is re-established / resumes:
+    /// - If the Force_Synchronisation bit is set to 1 then if synchronisation is lost receivers may continue to process new E1.31 data packets
+    ///     without having to wait for synchronisation to resume / re-etablish:
+    /// - The least significant 5 bits of the field are reserved for future use and must be transmitted as 0:
+    /// - The least significant 5 bits of the field should be ignored by receivers:
 /// 6.2.7 E1.31 Data Packet: Universe
+    /// - Universe values must be in the range 1 to 63999 inclusive:
+    /// - Other universe values are reserved for future use and must not be used except for the E131_DISCOVERY UNIVERSE:
+    /// - The E131_DISCOVERY_UNIVERSE: is used for universe discovery:
 /// 6.3 E1.31 Synchronization Packet Framing Layer
+    /// - The synchronisation packet framing layer must conform to Table 6-6:
 /// 6.3.1 E1.31 Synchronization Packet: Vector
+    /// - The E1.31 layer vector must have a value of VECTOR_E131_EXTENDED_SYNCHRONIZATION for an E1.31 Synchronization Packet:
 /// 6.3.2 E1.31 Synchronization Packet: Sequence Number
+    /// - Sources must maintain a sequence number for each universe transmitted:
+    /// - The sequence number should be incremented by one for each packet sent on the universe:
 /// 6.3.3 E1.31 Synchronization Packet: Synchronization Address
 /// 6.3.3.1 Synchronization Address Usage in an E1.31 Synchronization Packet
+    /// - A synchronisation packet with a synchronisation address of 0 is meaningless as the entire purpose of the packet is to
+    ///     be used for universe synchronisation so should never be transmitted:
+    /// - A synchronisation packet with a synchronisation address of 0 should be ignored by receievers:
+    /// - When sending via multicast synchronisation packets must be sent only to the address corresponding to the synchronisation address:
+    /// - Receievers may ignore synchronization packets sent to multicast address not corresponding to synchronisation addresses:
 /// 6.3.4 E1.31 Synchronization Packet: Reserved
+    /// - Octets 47-48 of a E1.31 Synchronisation packet are reserved for future used and must be transmitted as 0:
+    /// - Octets 47-48 of a E1.31 Synchronisation packet must be ignored by receievers:
 /// 6.4 E1.31 Universe Discovery Packet Framing Layer
+    /// - Packets must be formatted as specified in Table 6-7:
 /// 6.4.1 E1.31 Universe Discovery Packet: Vector
+    /// - E1.31 Universe Discovery Packets must have the E1.31 layer vector set to VECTOR_E131_EXTENDED_DISCOVERY: 
 /// 6.4.2 E1.31 Universe Discovery Packet: Source Name
+    /// - The source name must be null-terminated:
+    /// - The source name of a component must match the UACN field as specified in EPI 19 [ACN]:
+    /// - The source name may be the same across multiple universes sourced by the same component:
+    /// - The source name should be unique: Left to the implementer / user-configuration
 /// 6.4.3 E1.31 Universe Discovery Packet: Reserved
+    /// - Octets 108-111 of the E1.31 Universe Discovery Packets are reserved for future use and must be transmitted as 0:
+    /// - Octets 108-111 of the E1.31 Universe Discovery Packets must be ignored by receievers:
 /// 6.5 Processing by Receivers
+    /// - Receievers must discard packets if the receieved value is not VECTOR_E131_DATA_PACKET, 
+    ///     VECTOR_E131_EXTENDED_SYNCHRONIZATION or VECTOR_E131_EXTENDED_DISCOVERY:
+    /// - Receivers that do not support universe synchronisation may ignore packets with VECTOR_E131_EXTENDED_SYNCHRONISATION: 
+    ///     Doesn't apply as implementation supports universe synchronisation.
 /// 6.6 Framing Layer Operation and Timing - Source Requirements
 /// 6.6.1 Transmission Rate
+    /// - E1.31 sources must not transmit packets for a given universe number at a rate which exceeds the maximum refresh 
+    ///     rate specified in E1.11 [DMX] unless configured by the user to do so:
+    /// - E1.11 places special restrictions on the maximum rate for alternate START Code packets in Section 8.5.3.2:
 /// 6.6.2 Null START Code Transmission Requirements in E1.31 Data Packets
+    /// - Transmission of Null START code data should only be done when it changes:
+    /// - Before entering this period of transmission suppression three packets of the values should be sent:
+    /// - During transmission suppression a single keep-alive packet should be transmitted at intervals of between
+    ///     800mS and 1000mS, each keep-alive packet should have identical content to the last Null START Code data 
+    ///     packet sent (but with sequence number still incremented normally):
+    /// - These requirements do not apply to alternate START code data:
 /// 6.7 Framing Layer Operation and Timing - Receiver Requirements
 /// 6.7.1 Network Data Loss
+    /// - Network data loss is a conditional defined as teh absence of reception of E1.31 packets from a given source for a
+    ///     period of E131_NETWORK_DATA_LOSS_TIMEOUT:
+    /// - or the recepit of a packet containing the options field Stream_Terminated set to 1:
+    /// - Data loss is specific to a universe not a source:
+    /// - A specific universe is considered disconnected on data loss:
 /// 6.7.1.1 Network Data Loss and Universe Discovery
+    /// - Sources experiencing a network data loss condition must reflect the change in the E1.31 Universe 
+    ///     discovery list of universes no later than 2 E131_UNIVERSE_DISCOVER_INTERVAL's
 /// 6.7.2 Sequence Numbering
+    /// - Receivers that do not support sequence numbering of packets should ignore these fields: 
+    /// - Receivers that support sequence numbering should evaluate sequence numbers seperately for each E1.31 
+    ///     packet type and within each packet type seperately for each universe:
+    /// - Receivers should process packets in the order received unless discarded by 
 /// 7 DMP Layer Protocol
 /// 7.1 DMP Layer: Flags & Length
 /// 7.2 DMP Layer: Vector
