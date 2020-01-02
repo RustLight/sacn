@@ -62,6 +62,8 @@ use uuid::Uuid;
 
 use error::{PackError, ParseError};
 
+pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; // As defined in ANSI E1.31-2018
+
 // The payload capacity for a sacn packet, for DMX data this would translate to 512 frames + a startcode byte.
 pub const UNIVERSE_CHANNEL_CAPACITY: usize = 513;
 
