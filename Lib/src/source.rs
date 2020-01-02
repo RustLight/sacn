@@ -14,15 +14,15 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
-use std::net::UdpSocket;
 use std::cmp;
 use std::time;
 use std::time::Duration;
 use std::thread::sleep;
 
 use net2::UdpBuilder;
-use std::net::SocketAddr;
 use uuid::Uuid;
+
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, SynchronizationPacketFramingLayer, E131RootLayer,
              E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE, UniverseDiscoveryPacketUniverseDiscoveryLayer, 
@@ -91,36 +91,54 @@ pub struct DmxSource {
     preview_data: bool,
     sequences: RefCell<HashMap<u16, u8>>,
     sync_delay: Duration,
-    universes: Vec<u16> // A list of the universes registered to send by this source, used for universe discovery. Always sorted with lowest universe first to allow quicker usage.
+    universes: Vec<u16>, // A list of the universes registered to send by this source, used for universe discovery. Always sorted with lowest universe first to allow quicker usage.
 }
 
 impl DmxSource {
-    /// Constructs a new DmxSource with the given name.
-    pub fn new(name: &str) -> Result<DmxSource> {
+    /// Constructs a new DmxSource with the given name, binding to an IPv4 address.
+    pub fn new_v4(name: &str) -> Result<DmxSource> {
         let cid = Uuid::new_v4();
-        DmxSource::with_cid(name, cid)
+        DmxSource::with_cid_v4(name, cid)
     }
-    /// Consturcts a new DmxSource with the given name and binding to the supplied ip.
-    pub fn with_ip(name: &str, ip: &str) -> Result<DmxSource> {
-        let cid = Uuid::new_v4();
+
+    /// Constructs a new DmxSource with the given name and specified CID binding to an IPv4 address.
+    pub fn with_cid_v4(name: &str, cid: Uuid) -> Result<DmxSource> {
+        let ip = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
         DmxSource::with_cid_ip(name, cid, ip)
     }
 
-    /// Constructs a new DmxSource with the given name and specified CID.
-    pub fn with_cid(name: &str, cid: Uuid) -> Result<DmxSource> {
-        let ip = "0.0.0.0";
-        DmxSource::with_cid_ip(name, cid, &ip)
+    /// Constructs a new DmxSource with the given name, binding to an IPv6 address.
+    pub fn new_v6(name: &str) -> Result<DmxSource> {
+        let cid = Uuid::new_v4();
+        DmxSource::with_cid_v6(name, cid)
     }
-    /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
-    pub fn with_cid_ip(name: &str, cid: Uuid, ip: &str) -> Result<DmxSource> {
-        let ip_port = format!("{}:0", ip);
-        let socket_builder = try!(UdpBuilder::new_v4());
-        let socket = try!(socket_builder.bind(&ip_port));
 
-        // // https://doc.rust-lang.org/std/net/struct.UdpSocket.html 23/09/2019
-        // socket.set_multicast_loop_v4(true).expect("Failed to set multicast loop v4!");
-        // https://doc.rust-lang.org/std/net/struct.UdpSocket.html 23/09/2019
-        socket.set_multicast_ttl_v4(42).expect("Failed to set multicast TTL");
+    /// Constructs a new DmxSource with the given name and specified CID binding to an IPv6 address.
+    pub fn with_cid_v6(name: &str, cid: Uuid) -> Result<DmxSource> {
+        let ip = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
+        DmxSource::with_cid_ip(name, cid, ip)
+    }
+
+    /// Consturcts a new DmxSource with the given name and binding to the supplied ip.
+    pub fn with_ip(name: &str, ip: SocketAddr) -> Result<DmxSource> {
+         DmxSource::with_cid_ip(name, Uuid::new_v4(), ip)
+    }
+
+    
+    /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
+    pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<DmxSource> {
+        let socket_builder;
+        let socket;
+
+        if ip.is_ipv4() {
+            socket_builder = UdpBuilder::new_v4()?;
+            socket = socket_builder.bind(ip)?;
+            socket.set_multicast_ttl_v4(42).expect("Failed to set multicast TTL"); // TODO, is this needed? Why is this here?
+        } else if ip.is_ipv6() {
+            return Err(Error::new(ErrorKind::Other, "IPv6 sending not implemented"));
+        } else {
+            return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
+        }
 
         Ok(DmxSource {
             socket,
