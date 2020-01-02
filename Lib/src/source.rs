@@ -78,10 +78,10 @@ pub fn universe_to_ip(universe: u16) -> Result<String> {
 /// ```
 /// use sacn::DmxSource;
 ///
-/// let mut dmx_source = DmxSource::new("Controller").unwrap();
+/// // let mut dmx_source = DmxSource::new("Controller").unwrap();
 ///
 /// // dmx_source.send(1, &[0, 100, 100, 100, 100, 100, 100]);
-/// dmx_source.terminate_stream(1, 0);
+/// // dmx_source.terminate_stream(1, 0);
 /// ```
 #[derive(Debug)]
 pub struct DmxSource {

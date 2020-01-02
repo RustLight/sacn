@@ -9,7 +9,7 @@ use std::option;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 use std::io::Error;
-use std::net::{SocketAddr, Ipv4Addr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use sacn::{DmxSource};
 use sacn::recieve::{SacnReceiver, DMXData};
 use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
@@ -406,7 +406,8 @@ fn test_send_recv_single_universe_unicast_ipv4(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let mut dmx_source = DmxSource::new_v4("Controller").unwrap();
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
@@ -459,7 +460,8 @@ fn test_send_recv_single_universe_multicast_ipv4(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let mut dmx_source = DmxSource::new_v4("Controller").unwrap();
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
@@ -511,7 +513,8 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let mut dmx_source = DmxSource::new_v4("Controller").unwrap();
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
