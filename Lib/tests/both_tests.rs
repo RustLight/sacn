@@ -5,13 +5,14 @@ extern crate lazy_static;
 extern crate sacn;
 
 use std::{thread};
+use std::option;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 use std::io::Error;
 use std::net::{SocketAddr, Ipv4Addr};
 use sacn::{DmxSource};
-use sacn::recieve::{SacnReceiver, DMXData, ACN_SDT_MULTICAST_PORT};
-use sacn::packet::UNIVERSE_CHANNEL_CAPACITY;
+use sacn::recieve::{SacnReceiver, DMXData};
+use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
 
 // Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
 // - Decided it shouldn't be seperated.
@@ -405,7 +406,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let mut dmx_source = DmxSource::new("Controller").unwrap();
+    let mut dmx_source = DmxSource::new_v4("Controller").unwrap();
 
     let priority = 100;
 
@@ -413,7 +414,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
 
     let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT);
 
-    let _ = dmx_source.send_unicast(&[universe], &TEST_DATA_SINGLE_UNIVERSE, priority, dst_ip).unwrap();
+    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
     // let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
@@ -458,13 +459,13 @@ fn test_send_recv_single_universe_multicast_ipv4(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let mut dmx_source = DmxSource::new("Controller").unwrap();
+    let mut dmx_source = DmxSource::new_v4("Controller").unwrap();
 
     let priority = 100;
 
     dmx_source.register_universe(universe);
 
-    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
+    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -510,13 +511,13 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let mut dmx_source = DmxSource::new("Controller").unwrap();
+    let mut dmx_source = DmxSource::new_v4("Controller").unwrap();
 
     let priority = 100;
 
     dmx_source.register_universes(&UNIVERSES);
 
-    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, priority).unwrap();
+    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 

@@ -55,7 +55,7 @@ pub fn universe_to_ip(universe: u16) -> Result<String> {
     let low_byte = universe & 0xff;
 
     // As per ANSI E1.31-2018 Section 9.3.1 Table 9-10.
-    Ok(format!("239.255.{}.{}:{}", ACN_SDT_MULTICAST_PORT, high_byte, low_byte))
+    Ok(format!("239.255.{}.{}:{}", high_byte, low_byte, ACN_SDT_MULTICAST_PORT))
 }
 
 // Report: The first universe for the data to be synchronised across multiple universes is 
@@ -123,7 +123,6 @@ impl DmxSource {
     pub fn with_ip(name: &str, ip: SocketAddr) -> Result<DmxSource> {
          DmxSource::with_cid_ip(name, Uuid::new_v4(), ip)
     }
-
     
     /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<DmxSource> {
@@ -262,7 +261,9 @@ impl DmxSource {
         if dst_ip.is_some() {
             self.socket.send_to(&packet.pack_alloc().unwrap(), dst_ip.unwrap())?;
         } else {
-            self.socket.send_to(&packet.pack_alloc().unwrap(), universe_to_ip(universe)?)?;
+            // self.socket.send_to(&packet.pack_alloc().unwrap(), &*(universe_to_ip(universe)?))?;
+            let dst = universe_to_ip(universe)?;
+            self.socket.send_to(&packet.pack_alloc().unwrap(), dst).expect("Send to failed!");
         }
 
         if sequence == 255 {
@@ -276,7 +277,7 @@ impl DmxSource {
 
     // Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.
     pub fn send_sync_packet(&self, universe: u16) -> Result<()> {
-        let ip = try!(universe_to_ip(universe));
+        let ip = universe_to_ip(universe)?;
         let mut sequence = match self.sequences.borrow().get(&universe) {
             Some(s) => *s,
             None => 0,
@@ -291,7 +292,7 @@ impl DmxSource {
                 })
             }
         };
-        try!(self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip));
+        self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip)?;
 
         if sequence == 255 {
             sequence = 0;
@@ -309,7 +310,7 @@ impl DmxSource {
     /// The start code passed in is used for the first byte of the otherwise empty data payload to indicate the 
     /// start_code of the data.
     pub fn terminate_stream(&self, universe: u16, start_code: u8) -> Result<()> {
-        let ip = try!(universe_to_ip(universe));
+        let ip = universe_to_ip(universe)?;
         let mut sequence = match self.sequences.borrow_mut().remove(&universe) {
             Some(s) => s,
             None => 0,
@@ -334,7 +335,7 @@ impl DmxSource {
                     }),
                 },
             };
-            try!(self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip));
+            self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip)?;
 
             if sequence == 255 {
                 sequence = 0;
@@ -372,7 +373,7 @@ impl DmxSource {
             },
         };
 
-        let ip = try!(universe_to_ip(DISCOVERY_UNIVERSE));
+        let ip = universe_to_ip(DISCOVERY_UNIVERSE)?;
         self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip)?;
 
         Ok(())
@@ -513,17 +514,22 @@ mod test {
         // Property values
         packet.extend(&dmx_data);
 
-        let mut source = DmxSource::with_cid(&source_name, Uuid::from_bytes(&cid).unwrap()).unwrap();
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+        let mut source = DmxSource::with_cid_ip(&source_name, Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
+
         source.set_preview_mode(preview_data);
         source.set_multicast_loop(true).unwrap();
 
-        let recv_socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:5568").unwrap();
+        let recv_socket = UdpSocket::bind("0.0.0.0:5568").unwrap();
+
         recv_socket.join_multicast_v4(&Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0))
                    .unwrap();
 
         let mut recv_buf = [0; 1024];
 
-        source.send_with_priority(universe, &dmx_data, priority).unwrap();
+        source.register_universes(&[universe]);
+
+        source.send(&[universe], &dmx_data, Some(priority), None, None).unwrap();
         let (amt, _) = recv_socket.recv_from(&mut recv_buf).unwrap();
 
         assert_eq!(&packet[..], &recv_buf[0..amt]);
@@ -531,7 +537,9 @@ mod test {
 
     #[test]
     fn test_terminate_stream() {
-        let source = DmxSource::new("Source").unwrap();
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+        let source = DmxSource::with_ip("Source", ip).unwrap();
+
         source.set_multicast_loop(true).unwrap();
 
         let recv_socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:5568").unwrap();

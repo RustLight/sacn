@@ -5,14 +5,15 @@ extern crate lazy_static;
 extern crate sacn;
 use sacn::DmxSource;
 use std::io::{Error, ErrorKind};
+use std::option;
 
 #[test]
 fn test_send_without_registering(){
-    let dmx_source = DmxSource::new("Controller").unwrap();
+    let dmx_source = DmxSource::new_v4("Controller").unwrap();
 
     let priority = 100;
 
-    match dmx_source.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority) {
+    match dmx_source.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
         Ok(_) => {},
         Err(e) => assert_eq!(e.kind(), ErrorKind::Other, "")
     }
@@ -20,7 +21,7 @@ fn test_send_without_registering(){
 
 #[test]
 fn test_send_single_universe(){
-    let mut dmx_source = DmxSource::new("Controller").unwrap();
+    let mut dmx_source = DmxSource::new_v4("Controller").unwrap();
 
     let priority = 100;
 
@@ -28,12 +29,12 @@ fn test_send_single_universe(){
 
     dmx_source.register_universe(universe);
 
-    dmx_source.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
+    dmx_source.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 }
 
 #[test]
 fn test_send_across_universe(){
-    let mut dmx_source = DmxSource::new("Controller").unwrap();
+    let mut dmx_source = DmxSource::new_v4("Controller").unwrap();
 
     let priority = 100;
 
@@ -41,7 +42,7 @@ fn test_send_across_universe(){
 
     dmx_source.register_universes(&universes);
 
-    dmx_source.send(&universes, &TEST_DATA_MULTIPLE_UNIVERSE, priority).unwrap();
+    dmx_source.send(&universes, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, None).unwrap();
 }
 
 const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [
