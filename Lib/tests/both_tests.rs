@@ -290,8 +290,8 @@ use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
 /// 9 Operation of E1.31 in IPv4 and IPv6 Networks
     /// - The standard can work over either and which modes are supported should be indicated:
 /// 9.1 Association of Multicast Addresses and Universe
-    /// - The standard should work over multicasting:
-    /// - The standard should also work using unicast:
+    /// - The standard should work over multicasting: Compliance shown by test_send_recv_single_universe_multicast_ipv4
+    /// - The standard should also work using unicast: Compliance shown by test_send_recv_single_universe_unicast_ipv4
     /// - Addressing of multicast traffic done by setting 2 least significant bytes to the desired universe number 
     ///     or synchronisation address:
     /// - Sources operating over IPv4 and IPv6 simultaneously should transmit identical E1.31 packets regardless of IP transport used:
@@ -301,9 +301,9 @@ use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
     /// - E1.31 devices should not transmit on address 239.255.255.0 through 239.255.255.255:
     /// - E1.31 devices shall not used universe number 0 or univere numbers [64000 - 65535] excluding universe 64214 (used for universe discovery only):
     /// - The identity of the universe must be determined by the universe number in packet and not assumed from multicast address:
-    /// - E1.31 devices should also respond to E1.31 data receieved on its unicast address:
+    /// - E1.31 devices should also respond to E1.31 data receieved on its unicast address: Compliance shown by test_send_recv_single_universe_unicast_ipv4
     /// - When multicast addressing is used the UDP destination port shall be set to the standard ACN-SDT multicast port ACN_SDT_MULTICAST_PORT:
-    /// - For unicast communication the ACN-SDT multicast port shall be used by default but may be configured differently: 
+    /// - For unicast communication the ACN-SDT multicast port shall be used by default but may be configured differently: Compliance shown by test_send_recv_single_universe_unicast_ipv4
 /// 9.2 Multicast Subscription
     /// - Receivers supporting IPv4 must support IGMP v2 or any subsequent superset of IGMPv2's functionality:
     /// - Receivers supporting IPv6 shall support MLD V1 or any subsequent subset of MLD1's functionality:
@@ -416,7 +416,6 @@ fn test_send_recv_single_universe_unicast_ipv4(){
     let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT);
 
     let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
-    // let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
