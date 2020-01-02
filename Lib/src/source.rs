@@ -21,11 +21,12 @@ use std::time::Duration;
 use std::thread::sleep;
 
 use net2::UdpBuilder;
+use std::net::SocketAddr;
 use uuid::Uuid;
 
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, SynchronizationPacketFramingLayer, E131RootLayer,
              E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE, UniverseDiscoveryPacketUniverseDiscoveryLayer, 
-             UniverseDiscoveryPacketFramingLayer};
+             UniverseDiscoveryPacketFramingLayer, ACN_SDT_MULTICAST_PORT}; // As defined in ANSI E1.31-2018};
 
 /// The default delay between sending data packets and sending a synchronisation packet, used as advised by ANSI-E1.31-2018 Appendix B.1
 pub const DEFAULT_SYNC_DELAY: Duration = time::Duration::from_millis(10);
@@ -36,8 +37,15 @@ pub const DISCOVERY_UNI_PER_PAGE: usize = 512;
 /// The universe used for universe discovery as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative)
 pub const DISCOVERY_UNIVERSE: u16 = 64214;
 
+/// The default priority used for the E1.31 packet priority field, as per ANSI E1.31 Section 4.1 Table 4-1
+pub const DEFAULT_PRIORITY: u8 = 100;
+
+pub const LOWEST_ALLOWED_UNIVERSE: u16 = 1; // The lowest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
+
+pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
+
 pub fn universe_to_ip(universe: u16) -> Result<String> {
-    if universe == 0 || universe > 63999 {
+    if universe < LOWEST_ALLOWED_UNIVERSE || universe > HIGHEST_ALLOWED_UNIVERSE {
         return Err(Error::new(
             ErrorKind::InvalidInput,
             "universe is limited to the range 1 to 63999",
@@ -45,7 +53,9 @@ pub fn universe_to_ip(universe: u16) -> Result<String> {
     }
     let high_byte = (universe >> 8) & 0xff;
     let low_byte = universe & 0xff;
-    Ok(format!("239.255.{}.{}:5568", high_byte, low_byte))
+
+    // As per ANSI E1.31-2018 Section 9.3.1 Table 9-10.
+    Ok(format!("239.255.{}.{}:{}", ACN_SDT_MULTICAST_PORT, high_byte, low_byte))
 }
 
 // Report: The first universe for the data to be synchronised across multiple universes is 
@@ -85,18 +95,18 @@ pub struct DmxSource {
 }
 
 impl DmxSource {
-    /// Constructs a new DmxSource with DMX START code set to 0.
+    /// Constructs a new DmxSource with the given name.
     pub fn new(name: &str) -> Result<DmxSource> {
         let cid = Uuid::new_v4();
         DmxSource::with_cid(name, cid)
     }
-    /// Consturcts a new DmxSource with binding to the supplied ip and a DMX START code set to 0.
+    /// Consturcts a new DmxSource with the given name and binding to the supplied ip.
     pub fn with_ip(name: &str, ip: &str) -> Result<DmxSource> {
         let cid = Uuid::new_v4();
         DmxSource::with_cid_ip(name, cid, ip)
     }
 
-    /// Constructs a new DmxSource with DMX START code set to 0 with specified CID.
+    /// Constructs a new DmxSource with the given name and specified CID.
     pub fn with_cid(name: &str, cid: Uuid) -> Result<DmxSource> {
         let ip = "0.0.0.0";
         DmxSource::with_cid_ip(name, cid, &ip)
@@ -144,12 +154,21 @@ impl DmxSource {
     /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate
     /// than specified in ANSI E1.11 [DMX] unless configured by the user to do so in an environment 
     /// which doesn't contain any E1.31 to DMX512-A converters.
-    pub fn send(&self, universes: &[u16], data: &[u8], priority: u8) -> Result<()> {
+    /// If dst_ip is None then multicast is used otherwise unicast is used to the given ip.
+    /// If priority is None then the default priority is used (100).
+    /// If syncronisation_addr is None then the first universe is used for synchronisation if the data spans across multiple universes.
+    ///     Note that if the data all fits within one universe it won't be synchronised.
+    ///     To send data that must wait for later synchronisation use the send_sync method.
+    pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
         if data.len() == 0 {
            return Err(Error::new(ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
         }
 
         for u in universes {
+            if *u < LOWEST_ALLOWED_UNIVERSE || *u > HIGHEST_ALLOWED_UNIVERSE{
+                return Err(Error::new(ErrorKind::InvalidInput, format!("Universes must be in the range [{} - {}]", LOWEST_ALLOWED_UNIVERSE, HIGHEST_ALLOWED_UNIVERSE)));
+            }
+
             if !self.universes.contains(u) {
                 return Err(Error::new(ErrorKind::Other, "Must register universes to send before sending on them"));
             }
@@ -162,36 +181,38 @@ impl DmxSource {
             return Err(Error::new(ErrorKind::InvalidInput, "Must provide enough universes to send on"));
         }
 
-        if required_universes <= 1 {
-            // All fits within 1 universe so therefore send the data normally.
-            self.send_with_priority(universes[0], data, 100)
+        let sync_addr = if required_universes <= 1 {
+            NO_SYNC_UNIVERSE
         } else {
-            let sync_addr = universes[0];
-            for i in 0 .. required_universes {
-                let start_index = i * UNIVERSE_CHANNEL_CAPACITY;
-                // Safety check to make sure that the end index doesn't exceed the data length
-                let end_index = cmp::min((i + 1) * UNIVERSE_CHANNEL_CAPACITY, data.len());
-                self.send_detailed(universes[i], 
-                &data[start_index .. end_index], 
-                priority, 
-                sync_addr)?;
-            }
+            syncronisation_addr.unwrap_or(universes[0])
+        };
+        
+        for i in 0 .. required_universes {
+            let start_index = i * UNIVERSE_CHANNEL_CAPACITY;
+            // Safety check to make sure that the end index doesn't exceed the data length
+            let end_index = cmp::min((i + 1) * UNIVERSE_CHANNEL_CAPACITY, data.len());
+
+            self.send_detailed(universes[i], &data[start_index .. end_index], priority.unwrap_or(DEFAULT_PRIORITY), sync_addr, &dst_ip)?;
+        }
+
+        if required_universes > 1 {
             // Small delay before sending sync packet as per ANSI-E1.31-2018 Appendix B.1
             sleep(self.sync_delay);
             
             self.send_sync_packet(sync_addr)?; // A sync packet must be sent so that the receiver will act on the sent data.
-            Ok(())
         }
+
+        Ok(())
     }
 
-    pub fn send_detailed(&self, universe: u16, data: &[u8], priority: u8, sync_address: u16) -> Result<()> {
+    pub fn send_detailed(&self, universe: u16, data: &[u8], priority: u8, sync_address: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
         if priority > 200 {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
                 "priority must be <= 200",
             ));
         }
-        let ip = try!(universe_to_ip(universe));
+
         let mut sequence = match self.sequences.borrow().get(&universe) {
             Some(s) => *s,
             None => 0,
@@ -219,7 +240,12 @@ impl DmxSource {
                 }),
             },
         };
-        try!(self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip));
+
+        if dst_ip.is_some() {
+            self.socket.send_to(&packet.pack_alloc().unwrap(), dst_ip.unwrap())?;
+        } else {
+            self.socket.send_to(&packet.pack_alloc().unwrap(), universe_to_ip(universe)?)?;
+        }
 
         if sequence == 255 {
             sequence = 0;
@@ -228,11 +254,6 @@ impl DmxSource {
         }
         self.sequences.borrow_mut().insert(universe, sequence);
         Ok(())
-    }
-
-    /// Sends DMX data to specified universe with specified priority.
-    pub fn send_with_priority(&self, universe: u16, data: &[u8], priority: u8) -> Result<()> {
-        self.send_detailed(universe, data, priority, NO_SYNC_UNIVERSE)
     }
 
     // Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.

@@ -20,27 +20,27 @@ use sacn::packet::UNIVERSE_CHANNEL_CAPACITY;
 /// 1.1 Scope - No specific test
 /// 1.2 Overview and Architecture 
     /// - Allows transfer of arbitary START code DMX512-A data:
-    /// - DMX data can be synchronized across multiple receivers using universe syncronisation
+    /// - DMX data can be synchronized across multiple receivers using universe syncronisation:
     /// - Uses a ACN wrapper meaning it is compatiable with devices following the ANSI E.1.17 [ACN] standard: 
     /// - Uses UDP as the transport/IP layer protocol:
-    /// - Supports multicast addressing:
+    /// - Supports multicast addressing: 
     /// - Supports unicast addressing: 
 /// 1.3 Appropriate Use of This Standard
-    /// - Uses UDP to provide a non-reliable IP transport mechanism
-    /// - Allows multiple senders and receivers
+    /// - Uses UDP to provide a non-reliable IP transport mechanism:
+    /// - Allows multiple senders and receivers:
 /// 1.4 Classes of Data Appropriate for Transmission
     /// - Allows transfer of arbitary START code DMX512-A data:
 /// 1.5 Universe Synchronization
     /// - Allows synchronisation through the universe synchronisation mechanism:
 /// 1.6 Universe Discovery
-    /// - Allows universe discovery through the universe discovery mechanism
+    /// - Allows universe discovery through the universe discovery mechanism:
 /// 3 Definitions
 /// 3.5 Source
     /// - A source is uniquely identified by a number in the header of the packet:
     /// - A source may send multiple streams of data for different universes:
     /// - Multiple sources may output data for a given universe:
 /// 3.6 Receiver
-    /// - A receiever may listen on multiple universes
+    /// - A receiever may listen on multiple universes:
 /// 3.7 Active Data Slots
     /// - Sources for E1.31 should specify the location and amount of active data slots
     ///     using the DMP First Property Address and DMP Property Count fields (shown in Table 4-1):
@@ -381,7 +381,60 @@ use sacn::packet::UNIVERSE_CHANNEL_CAPACITY;
 /// Figure 8-1: Universe Discovery Flags and Length
 
 #[test]
-fn test_send_recv_single_universe(){
+fn test_send_recv_single_universe_unicast_ipv4(){
+    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+
+    let thread_tx = tx.clone();
+
+    let universe = 1;
+
+    let rcv_thread = thread::spawn(move || {
+        let mut dmx_recv = match SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)){
+            Ok(sr) => sr,
+            Err(_) => panic!("Failed to create sacn receiver!")
+        };
+
+        dmx_recv.set_nonblocking(false).unwrap();
+
+        dmx_recv.listen_universes(&[universe]).unwrap();
+
+        thread_tx.send(Ok(Vec::new())).unwrap();
+
+        thread_tx.send(dmx_recv.recv()).unwrap();
+    });
+
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+
+    let mut dmx_source = DmxSource::new("Controller").unwrap();
+
+    let priority = 100;
+
+    dmx_source.register_universe(universe);
+
+    let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT);
+
+    let _ = dmx_source.send_unicast(&[universe], &TEST_DATA_SINGLE_UNIVERSE, priority, dst_ip).unwrap();
+    // let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, priority).unwrap();
+
+    let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+
+    rcv_thread.join().unwrap();
+
+    assert!(!received_result.is_err(), "Failed: Error when receving data");
+
+    let received_data: Vec<DMXData> = received_result.unwrap();
+
+    assert_eq!(received_data.len(), 1); // Check only 1 universe received as expected.
+
+    let received_universe: DMXData = received_data[0].clone();
+
+    assert_eq!(received_universe.universe, universe); // Check that the universe received is as expected.
+
+    assert_eq!(received_universe.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+}
+
+#[test]
+fn test_send_recv_single_universe_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
@@ -433,7 +486,7 @@ fn test_send_recv_single_universe(){
 /// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 #[test]
-fn test_send_recv_across_universe(){
+fn test_send_recv_across_universe_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
