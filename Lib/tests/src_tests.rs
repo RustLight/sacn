@@ -14,7 +14,7 @@ fn test_send_without_registering(){
     let priority = 100;
 
     match dmx_source.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
-        Ok(_) => {},
+        Ok(_) => {assert!(false, "Source didn't prevent sending without registering")},
         Err(e) => assert_eq!(e.kind(), ErrorKind::Other, "")
     }
 }

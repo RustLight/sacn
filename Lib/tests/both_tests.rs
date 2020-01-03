@@ -26,7 +26,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)){
+        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)){
             Ok(sr) => sr,
             Err(_) => panic!("Failed to create sacn receiver!")
         };
@@ -79,7 +79,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
+        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
             Ok(sr) => sr,
             Err(_) => panic!("Failed to create sacn receiver!")
         };
@@ -132,7 +132,7 @@ fn test_send_recv_across_universe_multicast_ipv4(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
+        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
             Ok(sr) => sr,
             Err(_) => panic!("Failed to create sacn receiver!")
         };

@@ -520,7 +520,7 @@ fn join_multicast(socket: &UdpSocket, addr: SocketAddr) -> io::Result<()> {
 
 #[test]
 fn test_handle_single_page_discovery_packet() {
-    let mut dmx_rcv = SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+    let mut dmx_rcv = SacnReceiver::new_v4().unwrap();
 
     let name = "Test Src 1";
     let page: u8 = 0;
@@ -557,7 +557,7 @@ fn test_handle_single_page_discovery_packet() {
 
 #[test]
 fn test_store_retrieve_waiting_data(){
-    let mut dmx_rcv = SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+    let mut dmx_rcv = SacnReceiver::new_v4().unwrap();
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
@@ -581,7 +581,7 @@ fn test_store_retrieve_waiting_data(){
 
 #[test]
 fn test_store_2_retrieve_1_waiting_data(){
-    let mut dmx_rcv = SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+    let mut dmx_rcv = SacnReceiver::new_v4().unwrap();
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
@@ -612,7 +612,7 @@ fn test_store_2_retrieve_1_waiting_data(){
 
 #[test]
 fn test_store_2_retrieve_2_waiting_data(){
-    let mut dmx_rcv = SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+    let mut dmx_rcv = SacnReceiver::new_v4().unwrap();
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
@@ -648,54 +648,4 @@ fn test_store_2_retrieve_2_waiting_data(){
     assert_eq!(res2[0].universe, universe + 1);
     assert_eq!(res2[0].sync_uni, sync_uni + 1);
     assert_eq!(res2[0].values, vals2);
-}
-
-#[test]
-fn test_universe_to_ip_array_lowest_byte_normal(){
-    let val: u16 = 119;
-    let res = universe_to_ipv4_arr(val).unwrap();
-    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
-    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
-    assert!(res[2] == ((val / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
-    assert!(res[3] == ((val % 256) as u8)); // val % 256 = value in lowest byte.  
-}
-
-#[test]
-fn test_universe_to_ip_array_both_bytes_normal(){
-    let val: u16 = 300;
-    let res = universe_to_ipv4_arr(val).unwrap();
-    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
-    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
-    assert!(res[2] == ((val / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
-    assert!(res[3] == ((val % 256) as u8)); // val % 256 = value in lowest byte.  
-}
-
-#[test]
-fn test_universe_to_ip_array_limit_high(){
-    let res = universe_to_ipv4_arr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
-    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
-    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
-    assert!(res[2] == ((E131_MAX_MULTICAST_UNIVERSE / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
-    assert!(res[3] == ((E131_MAX_MULTICAST_UNIVERSE % 256) as u8)); // val % 256 = value in lowest byte. 
-}
-
-#[test]
-fn test_universe_to_ip_array_limit_low(){
-    let res = universe_to_ipv4_arr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
-    assert!(res[0] == E131_MULTICAST_IPV4_HIGHEST_BYTE);
-    assert!(res[1] == E131_MULTICAST_IPV4_SECOND_BYTE);
-    assert!(res[2] == ((E131_MIN_MULTICAST_UNIVERSE / 256) as u8)); // val / 256 = value in highest byte. 256 = 2^8 (number of values within one 8 bit byte inc. 0).
-    assert!(res[3] == ((E131_MIN_MULTICAST_UNIVERSE % 256) as u8)); // val % 256 = value in lowest byte. 
-}
-
-#[test]
-#[should_panic]
-fn test_universe_to_ip_array_out_range_low(){
-    universe_to_ipv4_arr(0).unwrap();
-}
-
-#[test]
-#[should_panic]
-fn test_universe_to_ip_array_out_range_high(){
-    universe_to_ipv4_arr(E131_MAX_MULTICAST_UNIVERSE + 1).unwrap();
 }
