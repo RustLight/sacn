@@ -1078,6 +1078,54 @@ impl_universe_discovery_packet_universe_discovery_layer!(<'a>);
 #[cfg(not(feature = "std"))]
 impl_universe_discovery_packet_universe_discovery_layer!();
 
+#[test]
+fn test_universe_to_ip_array_lowest_byte_normal(){
+    let val: u16 = 119;
+    let res = universe_to_ipv4_multicast_addr(val).unwrap();
+    
+    assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (val/256) as u8, (val % 256) as u8)), ACN_SDT_MULTICAST_PORT));
+}
+
+#[test]
+fn test_universe_to_ip_array_both_bytes_normal(){
+    let val: u16 = 300;
+    let res = universe_to_ipv4_multicast_addr(val).unwrap();
+    
+    assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (val/256) as u8, (val % 256) as u8)), ACN_SDT_MULTICAST_PORT));
+}
+
+#[test]
+fn test_universe_to_ip_array_limit_high(){
+    let res = universe_to_ipv4_multicast_addr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
+    
+    assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (E131_MAX_MULTICAST_UNIVERSE/256) as u8, (E131_MAX_MULTICAST_UNIVERSE % 256) as u8)), ACN_SDT_MULTICAST_PORT));
+}
+
+#[test]
+fn test_universe_to_ip_array_limit_low(){
+    let res = universe_to_ipv4_multicast_addr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
+    
+    assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (E131_MIN_MULTICAST_UNIVERSE/256) as u8, (E131_MIN_MULTICAST_UNIVERSE % 256) as u8)), ACN_SDT_MULTICAST_PORT));
+}
+
+#[test]
+#[should_panic]
+fn test_universe_to_ip_array_out_range_low(){
+    match universe_to_ipv4_multicast_addr(0) {
+        Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed below minimum allowed universe")},
+        Err(e) => assert_eq!(e.kind(), ErrorKind::Other, "")
+    }
+}
+
+#[test]
+#[should_panic]
+fn test_universe_to_ip_array_out_range_high(){
+    match universe_to_ipv4_multicast_addr(E131_MAX_MULTICAST_UNIVERSE + 10) {
+        Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed above maximum allowed universe")},
+        Err(e) => assert_eq!(e.kind(), ErrorKind::Other, "")
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
