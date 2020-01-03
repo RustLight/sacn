@@ -19,7 +19,7 @@ use std::time;
 use std::time::Duration;
 use std::thread::sleep;
 
-use net2::UdpBuilder;
+use net2::{UdpBuilder, UdpSocketExt};
 use uuid::Uuid;
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
@@ -108,6 +108,7 @@ impl DmxSource {
     }
 
     /// Constructs a new DmxSource with the given name, binding to an IPv6 address.
+    /// By default this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     pub fn new_v6(name: &str) -> Result<DmxSource> {
         let cid = Uuid::new_v4();
         DmxSource::with_cid_v6(name, cid)
@@ -125,6 +126,7 @@ impl DmxSource {
     }
     
     /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
+    /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<DmxSource> {
         let socket_builder;
         let socket;
@@ -134,7 +136,9 @@ impl DmxSource {
             socket = socket_builder.bind(ip)?;
             socket.set_multicast_ttl_v4(42).expect("Failed to set multicast TTL"); // TODO, is this needed? Why is this here?
         } else if ip.is_ipv6() {
-            return Err(Error::new(ErrorKind::Other, "IPv6 sending not implemented"));
+            socket_builder = UdpBuilder::new_v6()?;
+            socket_builder.only_v6(true)?;
+            socket = socket_builder.bind(ip)?;
         } else {
             return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
         }
@@ -148,6 +152,10 @@ impl DmxSource {
             sync_delay: DEFAULT_SYNC_DELAY,
             universes: Vec::new() 
         })
+    }
+
+    pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
+        self.socket.set_only_v6(val)
     }
 
     pub fn register_universe(&mut self, universe: u16){
