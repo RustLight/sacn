@@ -44,6 +44,7 @@ pub const LOWEST_ALLOWED_UNIVERSE: u16 = 1; // The lowest valued universe allowe
 
 pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
 
+#[deprecated] // Need to switch to using the version in packet.
 pub fn universe_to_ip(universe: u16) -> Result<String> {
     if universe < LOWEST_ALLOWED_UNIVERSE || universe > HIGHEST_ALLOWED_UNIVERSE {
         return Err(Error::new(
