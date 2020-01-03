@@ -8,7 +8,7 @@
 // - Simultaneous Ipv4 or Ipv6 support (Ipv6 preferred as newer and going to become more standard?)
 // - Support for Windows and Unix
 
-use net2::UdpSocketExt;
+use net2::{UdpBuilder, UdpSocketExt};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
 use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLayerData::DataPacket, 
@@ -73,7 +73,8 @@ impl Clone for DMXData {
 
 /// Used for receiving dmx or other data on a particular universe using multicast.
 struct DmxReciever{
-    socket: UdpSocket
+    socket: UdpSocket,
+    addr: SocketAddr
 }
 
 pub struct DiscoveredSacnSource {
@@ -114,6 +115,44 @@ pub struct SacnReceiver {
 }
 
 impl SacnReceiver {
+     /// Constructs a new SacnReceiver binding to an IPv4 address.
+     pub fn new_v4() -> Result<SacnReceiver, Error> {
+        let ip = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
+        SacnReceiver::with_ip(ip)
+    }
+
+    /// Constructs a new SacnReceiver binding to an IPv6 address.
+    /// By default this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    pub fn new_v6() -> Result<SacnReceiver, Error> {
+        let ip = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
+        SacnReceiver::with_ip(ip)
+    }
+
+    /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
+        Ok (
+            SacnReceiver {
+                // multicast_universe_receivers: Vec::new(),
+                receiver: DmxReciever::new(ip)?,
+                waiting_data: Vec::new(),
+                universes: Vec::new(),
+                discovered_sources: Vec::new(),
+                merge_func: htp_dmx_merge,
+                partially_discovered_sources: Vec::new(),
+                // next_index: 0,
+            }
+        )
+    }
+
+    /// Allow sending on ipv6 
+    pub fn set_ipv6_only(&mut self, val: bool) -> Result<(), Error>{
+        self.receiver.set_only_v6(val)
+    }
+
+    pub fn clear_waiting_data(&mut self){
+        self.waiting_data.clear();
+    }
+
     pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
         self.listen_multicast_universes(universes)?;
         self.universes.extend(universes); // Added all the newly listened to universes.
@@ -126,25 +165,6 @@ impl SacnReceiver {
             self.receiver.listen_multicast_universe(*u)?
         }
         Ok(())
-    }
-
-    pub fn new (addr: SocketAddr) -> Result<SacnReceiver, Error> {
-        Ok (
-            SacnReceiver {
-                // multicast_universe_receivers: Vec::new(),
-                receiver: DmxReciever::new(addr)?,
-                waiting_data: Vec::new(),
-                universes: Vec::new(),
-                discovered_sources: Vec::new(),
-                merge_func: htp_dmx_merge,
-                partially_discovered_sources: Vec::new(),
-                // next_index: 0,
-            }
-        )
-    }
-
-    pub fn clear_waiting_data(&mut self){
-        self.waiting_data.clear();
     }
 
     // Handles the given data packet for this DMX reciever.
@@ -371,6 +391,184 @@ fn find_discovered_src(srcs: &Vec<DiscoveredSacnSource>, name: &String) -> Optio
 //     universes: Vec<u16> // The universes that the source is transmitting.
 // }
 
+/// In general all lower level transport layer and below stuff is handled by DmxReciever . 
+impl DmxReciever {
+    // Creates a new DMX receiver on the interface specified by the given address.
+    /// If the given address is an IPv4 address then communication will only work between IPv4 devices, if the given address is IPv6 then communication
+    /// will only work between IPv6 devices by default but IPv4 receiving can be enabled using set_ipv6_only(false).
+    pub fn new (ip: SocketAddr) -> Result<DmxReciever, Error> {
+        let socket_builder;
+        let socket;
+
+        if ip.is_ipv4() {
+            socket_builder = UdpBuilder::new_v4()?;
+            socket = socket_builder.bind(ip)?;
+        } else if ip.is_ipv6() {
+            socket_builder = UdpBuilder::new_v6()?;
+            socket_builder.only_v6(true)?;
+            socket = socket_builder.bind(ip)?;
+        } else {
+            return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
+        }
+
+        Ok(
+            DmxReciever {
+                socket: socket,
+                addr: ip
+            }
+        )
+    }
+
+    /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
+    /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
+    pub fn listen_multicast_universe(&self, universe: u16) -> Result<(), Error> {
+
+        // FIXME, THIS ASSUMES IPV4
+
+        let ipv4_addr_segments = universe_to_ipv4_arr(universe)?;
+        let multicast_addr: IpAddr = Ipv4Addr::new(ipv4_addr_segments[0], ipv4_addr_segments[1], ipv4_addr_segments[2], ipv4_addr_segments[3]).into();
+
+        join_multicast(&self.socket, SocketAddr::new(multicast_addr, ACN_SDT_MULTICAST_PORT))?;
+
+        Ok(())
+    }
+
+    /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
+    /// This will return an error if the SacnReceiver wasn't created using an IPv6 address to bind to.
+    pub fn set_only_v6(&mut self, val: bool) -> Result<(), Error>{
+        if self.addr.is_ipv4() {
+            Err(Error::new(ErrorKind::Other, "Attempted to set IPv6 only when set to use an IPv4 address"))
+        } else {
+            self.socket.set_only_v6(val)
+        }
+    }
+
+    // Returns a packet if there is one available. The packet may not be ready to transmit if it is awaiting synchronisation.
+    // Doesn't block so may return a WouldBlock error to indicate that there was no data ready.
+    fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error>{
+        let (_len, _remote_addr) = self.socket.recv_from(&mut buf[0..])?;
+
+        match AcnRootLayerProtocol::parse(buf) {
+            Ok(pkt) => {
+                Ok(pkt)
+            }
+            Err(err) => {
+                Err(Error::new(ErrorKind::Other, err))
+            }
+        }
+    }
+
+    pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
+        self.socket.set_nonblocking(is_nonblocking)
+    }
+}
+
+// Performs a HTP DMX merge of data.
+// The first argument (i) is the existing data, n is the new data.
+// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
+// If this doesn't hold an error will be returned.
+// Other merge functions may allow merging different start codes or not check for them.
+fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
+    if i.values.len() < 1 || n.values.len() < 1 || i.universe != n.universe || i.values[0] != n.values[0] || i.sync_uni != n.sync_uni {
+        return Err(Error::new(ErrorKind::InvalidInput, "Attempted DMX merge on dmx data with different universes, syncronisation universes or data with no values"))
+    }
+
+    let mut r: DMXData = DMXData{
+        universe: i.universe,
+        values: Vec::new(),
+        sync_uni: i.sync_uni
+    };
+
+    let mut i_iter = i.values.iter();
+    let mut n_iter = n.values.iter();
+
+    let mut i_val = i_iter.next();
+    let mut n_val = n_iter.next();
+
+    while (i_val.is_some()) || (n_val.is_some()){
+        if i_val == None {
+            r.values.push(*n_val.unwrap());
+        } else if n_val == None {
+            r.values.push(*i_val.unwrap());
+        } else {
+            r.values.push(max(*n_val.unwrap(), *i_val.unwrap()));
+        }
+
+        i_val = i_iter.next();
+        n_val = n_iter.next();
+    }
+
+    Ok(r)
+}
+
+/// Converts given universe number in range 1 - 63999 inclusive into an u8 array of length 4 with the first byte being
+/// the highest byte in the multicast IP for that universe, the second byte being the second highest and so on.
+/// 
+/// Converstion done as specified in section 9.3.1 of ANSI E1.31-2018
+///
+/// Returns as a Result with the OK value being the array and the Err value being an Error.
+fn universe_to_ipv4_arr(universe: u16) -> Result<[u8;4], Error>{
+    if universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "universe is limited to the range 1 to 63999",
+        ));
+    }
+    let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
+    let low_byte: u8 = (universe & 0xff) as u8;
+
+    Ok([E131_MULTICAST_IPV4_HIGHEST_BYTE, E131_MULTICAST_IPV4_SECOND_BYTE, high_byte, low_byte])
+}
+
+// fn new_socket(addr: &SocketAddr) -> io::Result<UdpSocket> {
+//     let domain = if addr.is_ipv4(){
+//         Domain::ipv4()
+//     } else {
+//         Domain::ipv6()
+//     };
+
+//     let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
+//     socket.set_nonblocking(true)?;
+
+//     Ok(socket.into_udp_socket())
+// }
+
+fn join_multicast(socket: &UdpSocket, addr: SocketAddr) -> io::Result<()> {
+    let ip_addr = addr.ip();
+
+    match ip_addr {
+        IpAddr::V4(ref mdns_v4) => {
+            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0))?; // Needs to be set to the IP of the interface/network which the multicast packets are sent on (unless only 1 network)
+        }
+        IpAddr::V6(ref mdns_v6) => {
+            socket.join_multicast_v6(mdns_v6, 0)?;
+            socket.set_only_v6(true)?; // TODO, check if this is as expected - why only v6?
+        }
+    };
+
+    Ok(())
+}
+
+// #[cfg(windows)]
+// fn bind_socket(addr: SocketAddr) -> io::Result<UdpSocket>{
+//     let addr = match addr {
+//         SocketAddr::V4(addr) => {
+//             SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), addr.port())
+//         }
+//         SocketAddr::V6(addr) => {
+//             SocketAddr::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).into(), addr.port())
+//         }
+//     };
+
+//     UdpSocket::bind(addr)
+// }
+
+
+// #[cfg(unix)]
+// fn bind_socket(socket: &Socket, addr: &SocketAddr) -> io::Result<()> {
+//     socket.bind(&SockAddr::from(addr))?;
+// }
+
 #[test]
 fn test_handle_single_page_discovery_packet() {
     let mut dmx_rcv = SacnReceiver::new(SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
@@ -501,154 +699,6 @@ fn test_store_2_retrieve_2_waiting_data(){
     assert_eq!(res2[0].universe, universe + 1);
     assert_eq!(res2[0].sync_uni, sync_uni + 1);
     assert_eq!(res2[0].values, vals2);
-}
-
-impl DmxReciever {
-    // Creates a new DMX receiver on the interface specified by the given address.
-    // TODO, look at ways to refer to interfaces without using IP's.
-    pub fn new (addr: SocketAddr) -> Result<DmxReciever, Error> {
-        Ok(
-            DmxReciever {
-                socket: bind_socket(addr)?
-            }
-        )
-    }
-
-    /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
-    /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
-    pub fn listen_multicast_universe(&self, universe: u16) -> Result<(), Error> {
-        let ipv4_addr_segments = universe_to_ipv4_arr(universe)?;
-        let multicast_addr: IpAddr = Ipv4Addr::new(ipv4_addr_segments[0], ipv4_addr_segments[1], ipv4_addr_segments[2], ipv4_addr_segments[3]).into();
-
-        join_multicast(&self.socket, SocketAddr::new(multicast_addr, ACN_SDT_MULTICAST_PORT))?;
-
-        Ok(())
-    }
-
-    // Returns a packet if there is one available. The packet may not be ready to transmit if it is awaiting synchronisation.
-    // Doesn't block so may return a WouldBlock error to indicate that there was no data ready.
-    fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error>{
-        let (_len, _remote_addr) = self.socket.recv_from(&mut buf[0..])?;
-
-        match AcnRootLayerProtocol::parse(buf) {
-            Ok(pkt) => {
-                Ok(pkt)
-            }
-            Err(err) => {
-                Err(Error::new(ErrorKind::Other, err))
-            }
-        }
-    }
-
-    pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
-        self.socket.set_nonblocking(is_nonblocking)
-    }
-}
-
-// Performs a HTP DMX merge of data.
-// The first argument (i) is the existing data, n is the new data.
-// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
-// If this doesn't hold an error will be returned.
-// Other merge functions may allow merging different start codes or not check for them.
-fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
-    if i.values.len() < 1 || n.values.len() < 1 || i.universe != n.universe || i.values[0] != n.values[0] || i.sync_uni != n.sync_uni {
-        return Err(Error::new(ErrorKind::InvalidInput, "Attempted DMX merge on dmx data with different universes, syncronisation universes or data with no values"))
-    }
-
-    let mut r: DMXData = DMXData{
-        universe: i.universe,
-        values: Vec::new(),
-        sync_uni: i.sync_uni
-    };
-
-    let mut i_iter = i.values.iter();
-    let mut n_iter = n.values.iter();
-
-    let mut i_val = i_iter.next();
-    let mut n_val = n_iter.next();
-
-    while (i_val.is_some()) || (n_val.is_some()){
-        if i_val == None {
-            r.values.push(*n_val.unwrap());
-        } else if n_val == None {
-            r.values.push(*i_val.unwrap());
-        } else {
-            r.values.push(max(*n_val.unwrap(), *i_val.unwrap()));
-        }
-
-        i_val = i_iter.next();
-        n_val = n_iter.next();
-    }
-
-    Ok(r)
-}
-
-/// Converts given universe number in range 1 - 63999 inclusive into an u8 array of length 4 with the first byte being
-/// the highest byte in the multicast IP for that universe, the second byte being the second highest and so on.
-/// 
-/// Converstion done as specified in section 9.3.1 of ANSI E1.31-2018
-///
-/// Returns as a Result with the OK value being the array and the Err value being an Error.
-fn universe_to_ipv4_arr(universe: u16) -> Result<[u8;4], Error>{
-    if universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            "universe is limited to the range 1 to 63999",
-        ));
-    }
-    let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
-    let low_byte: u8 = (universe & 0xff) as u8;
-
-    Ok([E131_MULTICAST_IPV4_HIGHEST_BYTE, E131_MULTICAST_IPV4_SECOND_BYTE, high_byte, low_byte])
-}
-
-// fn new_socket(addr: &SocketAddr) -> io::Result<UdpSocket> {
-//     let domain = if addr.is_ipv4(){
-//         Domain::ipv4()
-//     } else {
-//         Domain::ipv6()
-//     };
-
-//     let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
-//     socket.set_nonblocking(true)?;
-
-//     Ok(socket.into_udp_socket())
-// }
-
-fn join_multicast(socket: &UdpSocket, addr: SocketAddr) -> io::Result<()> {
-    let ip_addr = addr.ip();
-
-    match ip_addr {
-        IpAddr::V4(ref mdns_v4) => {
-            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0))?; // Needs to be set to the IP of the interface/network which the multicast packets are sent on (unless only 1 network)
-        }
-        IpAddr::V6(ref mdns_v6) => {
-            socket.join_multicast_v6(mdns_v6, 0)?;
-            socket.set_only_v6(true)?; // TODO, check if this is as expected - why only v6?
-        }
-    };
-
-    Ok(())
-}
-
-#[cfg(windows)]
-fn bind_socket(addr: SocketAddr) -> io::Result<UdpSocket>{
-    let addr = match addr {
-        SocketAddr::V4(addr) => {
-            SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), addr.port())
-        }
-        SocketAddr::V6(addr) => {
-            SocketAddr::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).into(), addr.port())
-        }
-    };
-
-    UdpSocket::bind(addr)
-}
-
-
-#[cfg(unix)]
-fn bind_socket(socket: &Socket, addr: &SocketAddr) -> io::Result<()> {
-    socket.bind(&SockAddr::from(addr))?;
 }
 
 #[test]
