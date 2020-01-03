@@ -154,6 +154,7 @@ impl DmxSource {
         })
     }
 
+    /// Allow sending on ipv6 
     pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
         self.socket.set_only_v6(val)
     }
