@@ -492,7 +492,6 @@ fn join_multicast(socket: &UdpSocket, addr: SocketAddr) -> io::Result<()> {
         }
         IpAddr::V6(ref mdns_v6) => {
             socket.join_multicast_v6(mdns_v6, 0)?;
-            socket.set_only_v6(true)?; // TODO, check if this is as expected - why only v6?
         }
     };
 
