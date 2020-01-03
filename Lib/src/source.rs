@@ -263,12 +263,25 @@ impl DmxSource {
 
             if self.addr.is_ipv6(){
                 dst = universe_to_ipv6_multicast_addr(universe)?;
+
+
+                // Didn't fix bug
+                // // https://stackoverflow.com/questions/48957517/how-can-an-ipaddr-be-converted-to-an-ipv4addr (03/01/2020)
+                // match dst.ip() {
+                //     IpAddr::V6(ip) => {
+                //         self.socket.join_multicast_v6(&ip, 0);
+                //     }
+                //     IpAddr::V4(ip) => {
+                //         // TODO, this seems like a bad way of doing this
+                //     }
+                // }
+                
             } else {
                 dst = universe_to_ipv4_multicast_addr(universe)?;
             }
 
             println!("{}", dst);
-            
+
             self.socket.send_to(&packet.pack_alloc().unwrap(), dst).expect("Send to failed!");
         }
 

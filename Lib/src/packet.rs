@@ -1083,6 +1083,8 @@ fn test_universe_to_ipv4_lowest_byte_normal(){
     let val: u16 = 119;
     let res = universe_to_ipv4_multicast_addr(val).unwrap();
     
+    assert!(res.ip().is_multicast());
+
     assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (val/256) as u8, (val % 256) as u8)), ACN_SDT_MULTICAST_PORT));
 }
 
@@ -1091,6 +1093,8 @@ fn test_universe_to_ip_ipv4_both_bytes_normal(){
     let val: u16 = 300;
     let res = universe_to_ipv4_multicast_addr(val).unwrap();
     
+    assert!(res.ip().is_multicast());
+
     assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (val/256) as u8, (val % 256) as u8)), ACN_SDT_MULTICAST_PORT));
 }
 
@@ -1098,13 +1102,17 @@ fn test_universe_to_ip_ipv4_both_bytes_normal(){
 fn test_universe_to_ip_ipv4_limit_high(){
     let res = universe_to_ipv4_multicast_addr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
     
+    assert!(res.ip().is_multicast());
+
     assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (E131_MAX_MULTICAST_UNIVERSE/256) as u8, (E131_MAX_MULTICAST_UNIVERSE % 256) as u8)), ACN_SDT_MULTICAST_PORT));
 }
 
 #[test]
 fn test_universe_to_ip_ipv4_limit_low(){
     let res = universe_to_ipv4_multicast_addr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
-    
+
+    assert!(res.ip().is_multicast());
+
     assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (E131_MIN_MULTICAST_UNIVERSE/256) as u8, (E131_MIN_MULTICAST_UNIVERSE % 256) as u8)), ACN_SDT_MULTICAST_PORT));
 }
 
@@ -1129,6 +1137,8 @@ fn test_universe_to_ipv6_lowest_byte_normal(){
     let val: u16 = 119;
     let res = universe_to_ipv6_multicast_addr(val).unwrap();
 
+    assert!(res.ip().is_multicast());
+
     let low_16: u16 = (((val/256) as u16) << 8) | ((val % 256) as u16);
     
     assert_eq!(res, SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16)), ACN_SDT_MULTICAST_PORT));
@@ -1139,6 +1149,8 @@ fn test_universe_to_ip_ipv6_both_bytes_normal(){
     let val: u16 = 300;
     let res = universe_to_ipv6_multicast_addr(val).unwrap();
 
+    assert!(res.ip().is_multicast());
+
     let low_16: u16 = (((val/256) as u16) << 8) | ((val % 256) as u16);
     
     assert_eq!(res, SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16)), ACN_SDT_MULTICAST_PORT));
@@ -1148,6 +1160,8 @@ fn test_universe_to_ip_ipv6_both_bytes_normal(){
 fn test_universe_to_ip_ipv6_limit_high(){
     let res = universe_to_ipv6_multicast_addr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
 
+    assert!(res.ip().is_multicast());
+
     let low_16: u16 = (((E131_MAX_MULTICAST_UNIVERSE/256) as u16) << 8) | ((E131_MAX_MULTICAST_UNIVERSE % 256) as u16);
     
     assert_eq!(res, SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16)), ACN_SDT_MULTICAST_PORT));
@@ -1156,6 +1170,8 @@ fn test_universe_to_ip_ipv6_limit_high(){
 #[test]
 fn test_universe_to_ip_ipv6_limit_low(){
     let res = universe_to_ipv6_multicast_addr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
+
+    assert!(res.ip().is_multicast());
 
     let low_16: u16 = (((E131_MIN_MULTICAST_UNIVERSE/256) as u16) << 8) | ((E131_MIN_MULTICAST_UNIVERSE % 256) as u16);
     
