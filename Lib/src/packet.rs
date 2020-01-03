@@ -61,7 +61,7 @@ use heapless::{String, Vec};
 use uuid::Uuid;
 
 use std::io::{Error, ErrorKind};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use error::{PackError, ParseError};
 
@@ -119,7 +119,7 @@ pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr, Erro
 
     let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
     let low_byte: u8 = (universe & 0xff) as u8;
-    let low_16: u16 = (((high_byte as u16) << 8) | (low_byte as u16));
+    let low_16: u16 = ((high_byte as u16) << 8) | (low_byte as u16);
 
     // As per ANSI E1.31-2018 Section 9.3.2 Table 9-12.
     Ok(SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x83, low_16)), ACN_SDT_MULTICAST_PORT))

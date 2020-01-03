@@ -26,7 +26,8 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, SynchronizationPacketFramingLayer, E131RootLayer,
              E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE, UniverseDiscoveryPacketUniverseDiscoveryLayer, 
-             UniverseDiscoveryPacketFramingLayer, ACN_SDT_MULTICAST_PORT}; // As defined in ANSI E1.31-2018};
+             UniverseDiscoveryPacketFramingLayer, ACN_SDT_MULTICAST_PORT,
+             universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr}; // As defined in ANSI E1.31-2018};
 
 /// The default delay between sending data packets and sending a synchronisation packet, used as advised by ANSI-E1.31-2018 Appendix B.1
 pub const DEFAULT_SYNC_DELAY: Duration = time::Duration::from_millis(10);
@@ -43,21 +44,6 @@ pub const DEFAULT_PRIORITY: u8 = 100;
 pub const LOWEST_ALLOWED_UNIVERSE: u16 = 1; // The lowest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
 
 pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
-
-#[deprecated] // Need to switch to using the version in packet.
-pub fn universe_to_ip(universe: u16) -> Result<String> {
-    if universe < LOWEST_ALLOWED_UNIVERSE || universe > HIGHEST_ALLOWED_UNIVERSE {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            "universe is limited to the range 1 to 63999",
-        ));
-    }
-    let high_byte = (universe >> 8) & 0xff;
-    let low_byte = universe & 0xff;
-
-    // As per ANSI E1.31-2018 Section 9.3.1 Table 9-10.
-    Ok(format!("239.255.{}.{}:{}", high_byte, low_byte, ACN_SDT_MULTICAST_PORT))
-}
 
 // Report: The first universe for the data to be synchronised across multiple universes is 
 // used as the syncronisation universe by default. This is done as it means that the receiever should
@@ -87,6 +73,7 @@ pub fn universe_to_ip(universe: u16) -> Result<String> {
 #[derive(Debug)]
 pub struct DmxSource {
     socket: UdpSocket,
+    addr: SocketAddr,
     cid: Uuid,
     name: String,
     preview_data: bool,
@@ -145,13 +132,14 @@ impl DmxSource {
         }
 
         Ok(DmxSource {
-            socket,
-            cid,
+            socket: socket,
+            addr: ip,
+            cid: cid,
             name: name.to_string(),
             preview_data: false,
             sequences: RefCell::new(HashMap::new()),
             sync_delay: DEFAULT_SYNC_DELAY,
-            universes: Vec::new() 
+            universes: Vec::new()
         })
     }
 
@@ -271,8 +259,14 @@ impl DmxSource {
         if dst_ip.is_some() {
             self.socket.send_to(&packet.pack_alloc().unwrap(), dst_ip.unwrap())?;
         } else {
-            // self.socket.send_to(&packet.pack_alloc().unwrap(), &*(universe_to_ip(universe)?))?;
-            let dst = universe_to_ip(universe)?;
+            let dst;
+
+            if self.addr.is_ipv6(){
+                dst = universe_to_ipv6_multicast_addr(universe)?;
+            } else {
+                dst = universe_to_ipv4_multicast_addr(universe)?;
+            }
+            
             self.socket.send_to(&packet.pack_alloc().unwrap(), dst).expect("Send to failed!");
         }
 
@@ -287,7 +281,13 @@ impl DmxSource {
 
     // Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.
     pub fn send_sync_packet(&self, universe: u16) -> Result<()> {
-        let ip = universe_to_ip(universe)?;
+        let ip;
+        if self.addr.is_ipv6(){
+            ip = universe_to_ipv6_multicast_addr(universe)?;
+        } else {
+            ip = universe_to_ipv4_multicast_addr(universe)?;
+        }
+
         let mut sequence = match self.sequences.borrow().get(&universe) {
             Some(s) => *s,
             None => 0,
@@ -302,7 +302,7 @@ impl DmxSource {
                 })
             }
         };
-        self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip)?;
+        self.socket.send_to(&packet.pack_alloc().unwrap(), ip)?;
 
         if sequence == 255 {
             sequence = 0;
@@ -320,7 +320,13 @@ impl DmxSource {
     /// The start code passed in is used for the first byte of the otherwise empty data payload to indicate the 
     /// start_code of the data.
     pub fn terminate_stream(&self, universe: u16, start_code: u8) -> Result<()> {
-        let ip = universe_to_ip(universe)?;
+        let ip;
+        if self.addr.is_ipv6(){
+            ip = universe_to_ipv6_multicast_addr(universe)?;
+        } else {
+            ip = universe_to_ipv4_multicast_addr(universe)?;
+        }
+
         let mut sequence = match self.sequences.borrow_mut().remove(&universe) {
             Some(s) => s,
             None => 0,
@@ -345,7 +351,7 @@ impl DmxSource {
                     }),
                 },
             };
-            self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip)?;
+            self.socket.send_to(&packet.pack_alloc().unwrap(), ip)?;
 
             if sequence == 255 {
                 sequence = 0;
@@ -383,8 +389,14 @@ impl DmxSource {
             },
         };
 
-        let ip = universe_to_ip(DISCOVERY_UNIVERSE)?;
-        self.socket.send_to(&packet.pack_alloc().unwrap(), &*ip)?;
+        let ip;
+        if self.addr.is_ipv6(){
+            ip = universe_to_ipv6_multicast_addr(DISCOVERY_UNIVERSE)?;
+        } else {
+            ip = universe_to_ipv4_multicast_addr(DISCOVERY_UNIVERSE)?;
+        }
+
+        self.socket.send_to(&packet.pack_alloc().unwrap(), ip)?;
 
         Ok(())
     }
