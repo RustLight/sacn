@@ -60,7 +60,22 @@ use byteorder::{ByteOrder, NetworkEndian};
 use heapless::{String, Vec};
 use uuid::Uuid;
 
+use std::io::{Error, ErrorKind};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
+
 use error::{PackError, ParseError};
+
+/// Value of the highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
+pub const E131_MULTICAST_IPV4_HIGHEST_BYTE: u8 = 239;
+
+/// Value of the second highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
+pub const E131_MULTICAST_IPV4_SECOND_BYTE: u8 = 255;
+
+/// The maximum universe number that can be used with the E1.31 protocol as specified in section 9.1.1 of ANSI E1.31-2018.
+pub const E131_MAX_MULTICAST_UNIVERSE: u16 = 63999;
+
+/// The lowest / minimum universe number that can be used with the E1.31 protocol as specified in section 9.1.1 of ANSI E1.31-2018.
+pub const E131_MIN_MULTICAST_UNIVERSE: u16 = 1;
 
 pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; // As defined in ANSI E1.31-2018
 
@@ -72,6 +87,43 @@ pub const NO_SYNC_UNIVERSE: u16 = 0;
 
 // Could be anything, implementation dependent, default universe used as the syncronisation universe.
 pub const DEFAULT_SYNC_UNIVERSE: u16 = 1;
+
+/// Converts given universe number in range 1 - 63999 inclusive into an u8 array of length 4 with the first byte being
+/// the highest byte in the multicast IP for that universe, the second byte being the second highest and so on.
+/// 
+/// Converstion done as specified in section 9.3.1 of ANSI E1.31-2018
+///
+/// Returns as a Result with the OK value being the array and the Err value being an Error.
+pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr, Error>{
+    if universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "universe is limited to the range 1 to 63999",
+        ));
+    }
+
+    let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
+    let low_byte: u8 = (universe & 0xff) as u8;
+
+    // As per ANSI E1.31-2018 Section 9.3.1 Table 9-10.
+    Ok(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, high_byte, low_byte)), ACN_SDT_MULTICAST_PORT))
+}
+
+pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr, Error>{
+    if universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE {
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "universe is limited to the range 1 to 63999",
+        ));
+    }
+
+    let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
+    let low_byte: u8 = (universe & 0xff) as u8;
+    let low_16: u16 = (((high_byte as u16) << 8) | (low_byte as u16));
+
+    // As per ANSI E1.31-2018 Section 9.3.2 Table 9-12.
+    Ok(SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x83, low_16)), ACN_SDT_MULTICAST_PORT))
+}
 
 #[inline]
 fn zeros(buf: &mut [u8], n: usize) {

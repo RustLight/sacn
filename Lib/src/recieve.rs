@@ -13,24 +13,13 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
 use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLayerData::DataPacket, 
     E131RootLayerData::SynchronizationPacket, E131RootLayerData::UniverseDiscoveryPacket, UniverseDiscoveryPacketFramingLayer, 
-    SynchronizationPacketFramingLayer, DataPacketFramingLayer, UniverseDiscoveryPacketUniverseDiscoveryLayer, ACN_SDT_MULTICAST_PORT}; // As defined in ANSI E1.31-2018};
+    SynchronizationPacketFramingLayer, DataPacketFramingLayer, UniverseDiscoveryPacketUniverseDiscoveryLayer, ACN_SDT_MULTICAST_PORT,
+    universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr};
 
 use std::io;
 use std::io::{Error, ErrorKind};
 
 use std::cmp::max;
-
-/// Value of the highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
-pub const E131_MULTICAST_IPV4_HIGHEST_BYTE: u8 = 239;
-
-/// Value of the second highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
-pub const E131_MULTICAST_IPV4_SECOND_BYTE: u8 = 255;
-
-/// The maximum universe number that can be used with the E1.31 protocol as specified in section 9.1.1 of ANSI E1.31-2018.
-pub const E131_MAX_MULTICAST_UNIVERSE: u16 = 63999;
-
-/// The lowest / minimum universe number that can be used with the E1.31 protocol as specified in section 9.1.1 of ANSI E1.31-2018.
-pub const E131_MIN_MULTICAST_UNIVERSE: u16 = 1;
 
 /// The default size of the buffer used to recieve E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
@@ -371,26 +360,6 @@ fn find_discovered_src(srcs: &Vec<DiscoveredSacnSource>, name: &String) -> Optio
     None
 }
 
-// pub struct SacnReceiver {
-//     receiver: DmxReciever,
-//     waiting_data: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
-//     universes: Vec<u16>, // Universes that this receiver is currently listening for
-//     discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been discovered by this receiver through universe discovery packets.
-//     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
-//     partially_discovered_sources: Vec<DiscoveredSacnSource> // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
-// }
-// pub struct DiscoveredSacnSource {
-//     name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
-//     last_page: u8, // The last page that will be sent by this source.
-//     pages: Vec<UniversePage>
-// }
-
-// #[derive(Eq, Ord, PartialEq, PartialOrd)]
-// pub struct UniversePage {
-//     page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
-//     universes: Vec<u16> // The universes that the source is transmitting.
-// }
-
 /// In general all lower level transport layer and below stuff is handled by DmxReciever . 
 impl DmxReciever {
     // Creates a new DMX receiver on the interface specified by the given address.
@@ -422,15 +391,15 @@ impl DmxReciever {
     /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
     /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
     pub fn listen_multicast_universe(&self, universe: u16) -> Result<(), Error> {
+        let multicast_addr;
 
-        // FIXME, THIS ASSUMES IPV4
+        if self.addr.is_ipv4() {
+            multicast_addr = universe_to_ipv4_multicast_addr(universe)?;
+        } else {
+            multicast_addr = universe_to_ipv6_multicast_addr(universe)?;
+        }
 
-        let ipv4_addr_segments = universe_to_ipv4_arr(universe)?;
-        let multicast_addr: IpAddr = Ipv4Addr::new(ipv4_addr_segments[0], ipv4_addr_segments[1], ipv4_addr_segments[2], ipv4_addr_segments[3]).into();
-
-        join_multicast(&self.socket, SocketAddr::new(multicast_addr, ACN_SDT_MULTICAST_PORT))?;
-
-        Ok(())
+        join_multicast(&self.socket, multicast_addr)
     }
 
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
@@ -499,25 +468,6 @@ fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
     }
 
     Ok(r)
-}
-
-/// Converts given universe number in range 1 - 63999 inclusive into an u8 array of length 4 with the first byte being
-/// the highest byte in the multicast IP for that universe, the second byte being the second highest and so on.
-/// 
-/// Converstion done as specified in section 9.3.1 of ANSI E1.31-2018
-///
-/// Returns as a Result with the OK value being the array and the Err value being an Error.
-fn universe_to_ipv4_arr(universe: u16) -> Result<[u8;4], Error>{
-    if universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            "universe is limited to the range 1 to 63999",
-        ));
-    }
-    let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
-    let low_byte: u8 = (universe & 0xff) as u8;
-
-    Ok([E131_MULTICAST_IPV4_HIGHEST_BYTE, E131_MULTICAST_IPV4_SECOND_BYTE, high_byte, low_byte])
 }
 
 // fn new_socket(addr: &SocketAddr) -> io::Result<UdpSocket> {
