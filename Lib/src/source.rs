@@ -266,6 +266,8 @@ impl DmxSource {
             } else {
                 dst = universe_to_ipv4_multicast_addr(universe)?;
             }
+
+            println!("{}", dst);
             
             self.socket.send_to(&packet.pack_alloc().unwrap(), dst).expect("Send to failed!");
         }
