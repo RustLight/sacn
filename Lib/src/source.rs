@@ -215,7 +215,7 @@ impl DmxSource {
             // Small delay before sending sync packet as per ANSI-E1.31-2018 Appendix B.1
             sleep(self.sync_delay);
             
-            self.send_sync_packet(sync_addr)?; // A sync packet must be sent so that the receiver will act on the sent data.
+            self.send_sync_packet(sync_addr, &dst_ip)?; // A sync packet must be sent so that the receiver will act on the sent data.
         }
 
         Ok(())
@@ -296,12 +296,17 @@ impl DmxSource {
     }
 
     // Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.
-    pub fn send_sync_packet(&self, universe: u16) -> Result<()> {
+    pub fn send_sync_packet(&self, universe: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
         let ip;
-        if self.addr.is_ipv6(){
-            ip = universe_to_ipv6_multicast_addr(universe)?;
+
+        if dst_ip.is_none() {
+            if self.addr.is_ipv6(){
+                ip = universe_to_ipv6_multicast_addr(universe)?;
+            } else {
+                ip = universe_to_ipv4_multicast_addr(universe)?;
+            }
         } else {
-            ip = universe_to_ipv4_multicast_addr(universe)?;
+            ip = dst_ip.unwrap();
         }
 
         let mut sequence = match self.sequences.borrow().get(&universe) {
