@@ -440,7 +440,7 @@ fn test_send_recv_across_universe_unicast_ipv4(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), ACN_SDT_MULTICAST_PORT + 1);
     let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
