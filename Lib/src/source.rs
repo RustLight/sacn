@@ -115,6 +115,7 @@ impl DmxSource {
     
     /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    /// By default the TTL for ipv4 packets is 1 to keep them within the local network.
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<DmxSource> {
         let socket_builder;
         let socket;
@@ -122,7 +123,7 @@ impl DmxSource {
         if ip.is_ipv4() {
             socket_builder = UdpBuilder::new_v4()?;
             socket = socket_builder.bind(ip)?;
-            socket.set_multicast_ttl_v4(42).expect("Failed to set multicast TTL"); // TODO, is this needed? Why is this here?
+            socket.set_multicast_ttl_v4(1).expect("Failed to set ipv4 multicast TTL"); // Keep packets within the local network by default.
         } else if ip.is_ipv6() {
             socket_builder = UdpBuilder::new_v6()?;
             socket_builder.only_v6(true)?;

@@ -183,7 +183,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)){
+        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)){
             Ok(sr) => sr,
             Err(_) => panic!("Failed to create sacn receiver!")
         };
@@ -199,12 +199,17 @@ fn test_send_recv_single_universe_multicast_ipv6(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT + 1);
+    // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
+    // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use.
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+
     let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
     dmx_source.register_universe(universe);
+
+    println!("{:#?}", dmx_source);
 
     let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
