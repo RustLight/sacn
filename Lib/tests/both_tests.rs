@@ -5,6 +5,7 @@ extern crate lazy_static;
 extern crate sacn;
 
 use std::{thread};
+use std::thread::sleep;
 use std::option;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver, RecvTimeoutError};
@@ -167,7 +168,9 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
 
     dmx_source.register_universes(&UNIVERSES);
 
-    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, None).unwrap();
+    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
+    sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
+    dmx_source.send_sync_packet(UNIVERSES[0], &None);
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -228,7 +231,9 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 
     dmx_source.register_universes(&UNIVERSES);
 
-    dmx_source.send(&UNIVERSES, &TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, Some(priority), None, None).unwrap();
+    dmx_source.send(&UNIVERSES, &TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
+    sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
+    dmx_source.send_sync_packet(UNIVERSES[0], &None);
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -658,7 +663,9 @@ fn test_send_recv_across_universe_multicast_ipv6(){
 
     dmx_source.register_universes(&UNIVERSES);
 
-    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, None).unwrap();
+    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
+    sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
+    dmx_source.send_sync_packet(UNIVERSES[0], &None);
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -719,7 +726,9 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 
     dmx_source.register_universes(&UNIVERSES);
 
-    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, None).unwrap();
+    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
+    sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
+    dmx_source.send_sync_packet(UNIVERSES[0], &None);
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -782,7 +791,9 @@ fn test_send_recv_across_universe_unicast_ipv6(){
 
     let dst_ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
 
-    let _ = dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+    let _ = dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), Some(UNIVERSES[0])).unwrap();
+    sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
+    dmx_source.send_sync_packet(UNIVERSES[0], &Some(dst_ip));
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -845,7 +856,9 @@ fn test_send_recv_across_universe_unicast_ipv4(){
 
     let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT);
 
-    let _ = dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+    let _ = dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), Some(UNIVERSES[0])).unwrap();
+    sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
+    dmx_source.send_sync_packet(UNIVERSES[0], &Some(dst_ip));
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
