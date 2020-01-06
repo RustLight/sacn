@@ -172,11 +172,12 @@ impl DmxSource {
     /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate
     /// than specified in ANSI E1.11 [DMX] unless configured by the user to do so in an environment 
     /// which doesn't contain any E1.31 to DMX512-A converters.
-    /// If dst_ip is None then multicast is used otherwise unicast is used to the given ip.
+    /// If dst_ip is None then multicast is used otherwise unicast is used to the given ip. Broadcast is achieved by giving the broadcast IP.
     /// If priority is None then the default priority is used (100).
-    /// If syncronisation_addr is None then the first universe is used for synchronisation if the data spans across multiple universes.
-    ///     Note that if the data all fits within one universe it won't be synchronised.
-    ///     To send data that must wait for later synchronisation use the send_sync method.
+    /// If syncronisation_addr is Some() then the data will be sent with the given synchronisation address meaning it won't be acted on by receivers until a corresponding
+    ///     synchronisation packet is sent using send_sync_packet(). If it is None then the data won't be synchronised and so will be acted upon by recievers immediately. This means
+    ///     if sending more than 1 universe of data it may be acted upon at different times for each universe. A reasonable default for this is to use the first of the universes if 
+    ///     synchronisation is required. Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the sync packet.
     pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
         if data.len() == 0 {
            return Err(Error::new(ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
@@ -199,10 +200,10 @@ impl DmxSource {
             return Err(Error::new(ErrorKind::InvalidInput, "Must provide enough universes to send on"));
         }
 
-        let sync_addr = if required_universes <= 1 {
+        let sync_addr = if required_universes <= 1 || syncronisation_addr.is_none() {
             NO_SYNC_UNIVERSE
         } else {
-            syncronisation_addr.unwrap_or(universes[0])
+            syncronisation_addr.unwrap()
         };
         
         for i in 0 .. required_universes {
@@ -213,17 +214,10 @@ impl DmxSource {
             self.send_detailed(universes[i], &data[start_index .. end_index], priority.unwrap_or(DEFAULT_PRIORITY), sync_addr, &dst_ip)?;
         }
 
-        if required_universes > 1 {
-            // Small delay before sending sync packet as per ANSI-E1.31-2018 Appendix B.1
-            sleep(self.sync_delay);
-            
-            self.send_sync_packet(sync_addr, &dst_ip)?; // A sync packet must be sent so that the receiver will act on the sent data.
-        }
-
         Ok(())
     }
 
-    pub fn send_detailed(&self, universe: u16, data: &[u8], priority: u8, sync_address: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
+    fn send_detailed(&self, universe: u16, data: &[u8], priority: u8, sync_address: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
         if priority > 200 {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -266,26 +260,13 @@ impl DmxSource {
 
             if self.addr.is_ipv6(){
                 dst = universe_to_ipv6_multicast_addr(universe)?;
-
-
-                // Didn't fix bug
-                // // https://stackoverflow.com/questions/48957517/how-can-an-ipaddr-be-converted-to-an-ipv4addr (03/01/2020)
-                // match dst.ip() {
-                //     IpAddr::V6(ip) => {
-                //         self.socket.join_multicast_v6(&ip, 0);
-                //     }
-                //     IpAddr::V4(ip) => {
-                //         // TODO, this seems like a bad way of doing this
-                //     }
-                // }
-                
             } else {
                 dst = universe_to_ipv4_multicast_addr(universe)?;
             }
 
             println!("{}", dst);
 
-            self.socket.send_to(&packet.pack_alloc().unwrap(), dst).expect("Send to failed!");
+            self.socket.send_to(&packet.pack_alloc().unwrap(), dst)?;
         }
 
         if sequence == 255 {
