@@ -167,6 +167,18 @@ impl DmxSource {
         }
     }
 
+    fn universe_allowed(&self, u: &u16) -> Result<()>{
+        if *u < LOWEST_ALLOWED_UNIVERSE || *u > HIGHEST_ALLOWED_UNIVERSE{
+            return Err(Error::new(ErrorKind::InvalidInput, format!("Universes must be in the range [{} - {}]", LOWEST_ALLOWED_UNIVERSE, HIGHEST_ALLOWED_UNIVERSE)));
+        }
+
+        if !self.universes.contains(u) {
+            return Err(Error::new(ErrorKind::Other, "Must register universes to send before sending on them"));
+        }
+
+        Ok(())
+    }
+
     /// Sends DMX data that spans multiple universes using universe synchronization.
     /// Will fail if the universes haven't been previously registered with this SacnSource.
     /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate
@@ -184,13 +196,11 @@ impl DmxSource {
         }
 
         for u in universes {
-            if *u < LOWEST_ALLOWED_UNIVERSE || *u > HIGHEST_ALLOWED_UNIVERSE{
-                return Err(Error::new(ErrorKind::InvalidInput, format!("Universes must be in the range [{} - {}]", LOWEST_ALLOWED_UNIVERSE, HIGHEST_ALLOWED_UNIVERSE)));
-            }
+            self.universe_allowed(u)?;
+        }
 
-            if !self.universes.contains(u) {
-                return Err(Error::new(ErrorKind::Other, "Must register universes to send before sending on them"));
-            }
+        if syncronisation_addr.is_some() {
+            self.universe_allowed(&syncronisation_addr.unwrap())?;
         }
 
         // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
