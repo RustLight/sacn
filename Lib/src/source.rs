@@ -19,6 +19,8 @@ use std::time;
 use std::time::Duration;
 use std::thread::sleep;
 
+// use math::round;
+
 use net2::{UdpBuilder, UdpSocketExt};
 use uuid::Uuid;
 
@@ -191,7 +193,7 @@ impl DmxSource {
         }
 
         // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
-        let required_universes = (data.len() / UNIVERSE_CHANNEL_CAPACITY) + 1;
+        let required_universes = (data.len() as f64 / UNIVERSE_CHANNEL_CAPACITY as f64).ceil() as usize;
 
         if universes.len() < required_universes {
             return Err(Error::new(ErrorKind::InvalidInput, "Must provide enough universes to send on"));
