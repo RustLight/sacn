@@ -209,19 +209,13 @@ impl DmxSource {
         if universes.len() < required_universes {
             return Err(Error::new(ErrorKind::InvalidInput, "Must provide enough universes to send on"));
         }
-
-        let sync_addr = if required_universes <= 1 || syncronisation_addr.is_none() {
-            NO_SYNC_UNIVERSE
-        } else {
-            syncronisation_addr.unwrap()
-        };
         
         for i in 0 .. required_universes {
             let start_index = i * UNIVERSE_CHANNEL_CAPACITY;
             // Safety check to make sure that the end index doesn't exceed the data length
             let end_index = cmp::min((i + 1) * UNIVERSE_CHANNEL_CAPACITY, data.len());
 
-            self.send_detailed(universes[i], &data[start_index .. end_index], priority.unwrap_or(DEFAULT_PRIORITY), sync_addr, &dst_ip)?;
+            self.send_detailed(universes[i], &data[start_index .. end_index], priority.unwrap_or(DEFAULT_PRIORITY), syncronisation_addr.unwrap_or(NO_SYNC_UNIVERSE), &dst_ip)?;
         }
 
         Ok(())
