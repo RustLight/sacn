@@ -389,7 +389,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     // when they shouldn't. This is difficult to avoid using this method of testing. It is also possible for the delay on the network to be so high that it 
     // causes the timeout, this is also difficult to avoid. Both of these reasons should be considered if this test passes occasionally but not consistently. 
     // The timeout should be large enough to make this unlikely although must be lower than the protocol's in-built timeout.
-    const wait_receive_timeout: u64 = 3;
+    const wait_receive_timeout: u64 = 1;
     let attemptRecv = rx.recv_timeout(Duration::from_secs(wait_receive_timeout));
 
     match attemptRecv {
