@@ -142,17 +142,20 @@ impl SacnReceiver {
         self.waiting_data.clear();
     }
 
-    pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
-        self.listen_multicast_universes(universes)?;
-        self.universes.extend(universes); // Added all the newly listened to universes.
-        Ok(())
-    }
-
     /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
-    fn listen_multicast_universes(&self, universes: &[u16]) -> Result<(), Error>{
+    pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
         for u in universes {
-            self.receiver.listen_multicast_universe(*u)?
+            match self.universes.binary_search(u) {
+                Err(i) => { // Value not found, i is the position it should be inserted
+                    self.universes.insert(i, *u);
+                    self.receiver.listen_multicast_universe(*u)?
+                }
+                Ok(_) => {
+                    // If value found then don't insert to avoid duplicates.
+                }
+            }
         }
+
         Ok(())
     }
 

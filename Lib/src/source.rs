@@ -155,9 +155,14 @@ impl DmxSource {
         if self.universes.len() == 0 {
             self.universes.push(universe);
         } else {
-            // https://doc.rust-lang.org/std/vec/struct.Vec.html#method.binary_search (30/12/2019)
-            let i = self.universes.binary_search(&universe).unwrap_or_else(|x| x);
-            self.universes.insert(i, universe);
+            match self.universes.binary_search(&universe) {
+                Err(i) => { // Value not found, i is the position it should be inserted
+                    self.universes.insert(i, universe);
+                }
+                Ok(_) => {
+                    // If value found then don't insert to avoid duplicates.
+                }
+            }
         }
     }
 
