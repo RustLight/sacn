@@ -343,7 +343,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     let universe1 = 1;
     let universe2 = 2;
 
-    let sync_uni = 2;
+    let sync_uni = 3;
 
     let rcv_thread1 = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
@@ -351,6 +351,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
         dmx_recv.set_nonblocking(false).unwrap();
 
         dmx_recv.listen_universes(&[universe1]).unwrap();
+        dmx_recv.listen_universes(&[sync_uni]).unwrap();
 
         thread1_tx.send(Ok(Vec::new())).unwrap();
 
@@ -363,6 +364,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
         dmx_recv.set_nonblocking(false).unwrap();
 
         dmx_recv.listen_universes(&[universe2]).unwrap();
+        dmx_recv.listen_universes(&[sync_uni]).unwrap();
 
         thread2_tx.send(Ok(Vec::new())).unwrap();
 
@@ -380,6 +382,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
 
     dmx_source.register_universe(universe1);
     dmx_source.register_universe(universe2);
+    dmx_source.register_universe(sync_uni);
 
     let _ = dmx_source.send(&[universe1], &TEST_DATA_MULTIPLE_UNIVERSE[..513], Some(priority), None, Some(sync_uni)).unwrap();
     let _ = dmx_source.send(&[universe2], &TEST_DATA_MULTIPLE_UNIVERSE[513..], Some(priority), None, Some(sync_uni)).unwrap();
