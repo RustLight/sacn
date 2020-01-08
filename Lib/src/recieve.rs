@@ -133,6 +133,12 @@ impl SacnReceiver {
         )
     }
 
+    // TODO
+    pub fn set_merge_fn(&mut self, func: (fn(&DMXData, &DMXData))) -> Result<(), Error> {
+        self.merge_func = func;
+        Ok(())
+    }
+
     /// Allow sending on ipv6 
     pub fn set_ipv6_only(&mut self, val: bool) -> Result<(), Error>{
         self.receiver.set_only_v6(val)
@@ -440,7 +446,7 @@ impl DmxReciever {
 // This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
 // If this doesn't hold an error will be returned.
 // Other merge functions may allow merging different start codes or not check for them.
-fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
+pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
     if i.values.len() < 1 || n.values.len() < 1 || i.universe != n.universe || i.values[0] != n.values[0] || i.sync_uni != n.sync_uni {
         return Err(Error::new(ErrorKind::InvalidInput, "Attempted DMX merge on dmx data with different universes, syncronisation universes or data with no values"))
     }
