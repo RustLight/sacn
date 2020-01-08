@@ -892,7 +892,7 @@ fn test_send_recv_across_universe_unicast_ipv4(){
 }
 
 #[test]
-fn test_two_senders__one_recv_different_universes_multicast_ipv4(){
+fn test_two_senders_one_recv_different_universes_multicast_ipv4(){
     let universe_1 = 1;
     let universe_2 = 2;
 
@@ -939,6 +939,105 @@ fn test_two_senders__one_recv_different_universes_multicast_ipv4(){
 
     assert_eq!(res[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec());
     assert_eq!(res[1].values, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec());
+}
+
+#[test]
+fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
+    let universe = 1;
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    dmx_recv.set_nonblocking(false).unwrap();
+
+    dmx_recv.listen_universes(&[universe]).unwrap();
+
+    let snd_thread_1 = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+
+        let priority = 100;
+
+        dmx_source.register_universe(universe);
+
+        let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+    });
+
+    let snd_thread_2 = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 2);
+        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+
+        let priority = 100;
+
+        dmx_source.register_universe(universe);
+
+        let _ = dmx_source.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
+    });
+
+    let res1: Vec<DMXData> = dmx_recv.recv().unwrap();
+    let res2: Vec<DMXData> = dmx_recv.recv().unwrap();
+
+    assert_eq!(res1.len(), 1);
+    assert_eq!(res2.len(), 1);
+
+    let mut res = vec![res1[0].clone(), res2[0].clone()];
+
+    assert_eq!(res[0].universe, universe);
+    assert_eq!(res[1].universe, universe);
+
+    if res[0].values == TEST_DATA_SINGLE_UNIVERSE.to_vec() {
+        assert_eq!(res[1].values, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec());
+    } else {
+        assert_eq!(res[0].values, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec());
+        assert_eq!(res[1].values, TEST_DATA_SINGLE_UNIVERSE.to_vec());
+    }
+}
+
+#[test]
+fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
+    let (tx, rx): (Sender<()>, Receiver<()>) = mpsc::channel();
+
+    let snd_tx_1 = tx.clone();
+    let snd_tx_2 = tx.clone();
+
+    let universe = 1;
+    let sync_uni = 2;
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    dmx_recv.set_nonblocking(false).unwrap();
+
+    dmx_recv.listen_universes(&[universe]).unwrap();
+
+    dmx_recv.set_merge_fn();
+
+    let snd_thread_1 = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+
+        let priority = 100;
+
+        dmx_source.register_universe(universe);
+        dmx_source.register_universe(sync_uni);
+
+        let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
+        snd_tx_1.send();
+    });
+
+    let snd_thread_2 = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 2);
+        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+
+        let priority = 100;
+
+        dmx_source.register_universe(universe);
+        dmx_source.register_universe(sync_uni);
+
+        let _ = dmx_source.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
+        snd_tx_2.send();
+        dmx_source.send_sync_packet() // Must only send once both threads have sent for this test to test what happens in that situation (where there will be a merge).
+    });
+
+    let res1: Vec<DMXData> = dmx_recv.recv().unwrap();
 }
 
 const TEST_DATA_PARTIAL_CAPACITY_UNIVERSE: [u8; 313] = [0,
