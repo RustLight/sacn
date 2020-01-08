@@ -893,7 +893,52 @@ fn test_send_recv_across_universe_unicast_ipv4(){
 
 #[test]
 fn test_two_senders__one_recv_different_universes_multicast_ipv4(){
-    assert!(false, "Test not implemented");
+    let universe_1 = 1;
+    let universe_2 = 2;
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    dmx_recv.set_nonblocking(false).unwrap();
+
+    dmx_recv.listen_universes(&[universe_1]).unwrap();
+    dmx_recv.listen_universes(&[universe_2]).unwrap();
+
+    let snd_thread_1 = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+
+        let priority = 100;
+
+        dmx_source.register_universe(universe_1);
+
+        let _ = dmx_source.send(&[universe_1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+    });
+
+    let snd_thread_2 = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 2);
+        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+
+        let priority = 100;
+
+        dmx_source.register_universe(universe_2);
+
+        let _ = dmx_source.send(&[universe_2], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
+    });
+
+    let res1: Vec<DMXData> = dmx_recv.recv().unwrap();
+    let res2: Vec<DMXData> = dmx_recv.recv().unwrap();
+
+    assert_eq!(res1.len(), 1);
+    assert_eq!(res2.len(), 1);
+
+    let mut res = vec![res1[0].clone(), res2[0].clone()];
+    res.sort_unstable();
+
+    assert_eq!(res[0].universe, universe_1);
+    assert_eq!(res[1].universe, universe_2);
+
+    assert_eq!(res[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec());
+    assert_eq!(res[1].values, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec());
 }
 
 const TEST_DATA_PARTIAL_CAPACITY_UNIVERSE: [u8; 313] = [0,
