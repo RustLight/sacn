@@ -134,7 +134,7 @@ impl SacnReceiver {
     }
 
     // TODO
-    pub fn set_merge_fn(&mut self, func: (fn(&DMXData, &DMXData))) -> Result<(), Error> {
+    pub fn set_merge_fn(&mut self, func: (fn(&DMXData, &DMXData) -> Result<DMXData, Error>)) -> Result<(), Error> {
         self.merge_func = func;
         Ok(())
     }

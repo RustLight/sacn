@@ -8,11 +8,11 @@ use std::{thread};
 use std::thread::sleep;
 use std::option;
 use std::sync::mpsc;
-use std::sync::mpsc::{Sender, Receiver, RecvTimeoutError};
+use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
 use std::io::Error;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use sacn::{DmxSource};
-use sacn::recieve::{SacnReceiver, DMXData};
+use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
 use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
 
 use std::time::Duration;
@@ -994,7 +994,7 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
 
 #[test]
 fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
-    let (tx, rx): (Sender<()>, Receiver<()>) = mpsc::channel();
+    let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking
 
     let snd_tx_1 = tx.clone();
     let snd_tx_2 = tx.clone();
@@ -1008,7 +1008,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
 
     dmx_recv.listen_universes(&[universe]).unwrap();
 
-    dmx_recv.set_merge_fn();
+    dmx_recv.set_merge_fn(htp_dmx_merge);
 
     let snd_thread_1 = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
@@ -1020,7 +1020,6 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
         dmx_source.register_universe(sync_uni);
 
         let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
-        snd_tx_1.send();
     });
 
     let snd_thread_2 = thread::spawn(move || {
@@ -1033,11 +1032,13 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
         dmx_source.register_universe(sync_uni);
 
         let _ = dmx_source.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
-        snd_tx_2.send();
-        dmx_source.send_sync_packet() // Must only send once both threads have sent for this test to test what happens in that situation (where there will be a merge).
+        rx.recv(); // Must only send once both threads have sent for this test to test what happens in that situation (where there will be a merge).
+        dmx_source.send_sync_packet(sync_uni, &None);
     });
 
     let res1: Vec<DMXData> = dmx_recv.recv().unwrap();
+
+    assert_eq!(res1.len(), 1);
 }
 
 const TEST_DATA_PARTIAL_CAPACITY_UNIVERSE: [u8; 313] = [0,
