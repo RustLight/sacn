@@ -976,6 +976,9 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
     let res1: Vec<DMXData> = dmx_recv.recv().unwrap();
     let res2: Vec<DMXData> = dmx_recv.recv().unwrap();
 
+    snd_thread_1.join().unwrap();
+    snd_thread_2.join().unwrap();
+
     assert_eq!(res1.len(), 1);
     assert_eq!(res2.len(), 1);
 
@@ -996,22 +999,21 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
 fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
     let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking
 
-    let snd_tx_1 = tx.clone();
-    let snd_tx_2 = tx.clone();
+    let snd_tx = tx.clone();
 
     let universe = 1;
     let sync_uni = 2;
 
-    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
     dmx_recv.set_nonblocking(false).unwrap();
 
-    dmx_recv.listen_universes(&[universe]).unwrap();
+    dmx_recv.listen_universes(&[universe, sync_uni]).unwrap();
 
     dmx_recv.set_merge_fn(htp_dmx_merge);
 
     let snd_thread_1 = thread::spawn(move || {
-        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
         let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
 
         let priority = 100;
@@ -1020,11 +1022,12 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
         dmx_source.register_universe(sync_uni);
 
         let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
+        snd_tx.send(());
     });
 
     let snd_thread_2 = thread::spawn(move || {
-        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 2);
-        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap()), ACN_SDT_MULTICAST_PORT + 2);
+        let mut dmx_source = DmxSource::with_ip("Source 2", ip).unwrap();
 
         let priority = 100;
 
@@ -1033,12 +1036,25 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
 
         let _ = dmx_source.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
         rx.recv(); // Must only send once both threads have sent for this test to test what happens in that situation (where there will be a merge).
-        dmx_source.send_sync_packet(sync_uni, &None);
+        dmx_source.send_sync_packet(sync_uni, &None).unwrap();
     });
 
     let res1: Vec<DMXData> = dmx_recv.recv().unwrap();
 
+    snd_thread_1.join().unwrap();
+    snd_thread_2.join().unwrap();
+
     assert_eq!(res1.len(), 1);
+    assert_eq!(res1[0].values, htp_dmx_merge(&DMXData {
+        universe: universe,
+        values: TEST_DATA_SINGLE_UNIVERSE.to_vec(),
+        sync_uni: sync_uni,
+    },
+    &DMXData {
+        universe: universe,
+        values: TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec(),
+        sync_uni: sync_uni,
+    },).unwrap().values);
 }
 
 const TEST_DATA_PARTIAL_CAPACITY_UNIVERSE: [u8; 313] = [0,
