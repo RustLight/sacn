@@ -1122,7 +1122,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
             dmx_recv.set_nonblocking(false).unwrap();
 
             // Receivers listen to all universes
-            for i in ((i as u16) + (BASE_UNIVERSE as u16)) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
+            for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
                 dmx_recv.listen_universes(&[i]).unwrap();
             }
 
@@ -1147,6 +1147,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
 
     for _i in 0 .. RCV_THREADS {
         let res: Vec<Result<Vec<DMXData>, Error>> = rcv_rx.recv().unwrap();
+
         assert_eq!(res.len(), SND_THREADS);
 
         let mut rcv_dmx_datas: Vec<DMXData> = Vec::new();
