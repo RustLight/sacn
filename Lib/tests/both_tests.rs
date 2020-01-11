@@ -1072,7 +1072,319 @@ fn test_two_senders_two_recv_multicast_ipv4(){
 
     let mut snd_data: Vec<Vec<u8>> = Vec::new();
 
+    for i in 1 .. SND_THREADS + 1 {
+        let mut d: Vec<u8> = Vec::new();
+        for _k in 0 .. SND_DATA_LEN {
+            d.push(i as u8);
+        }
+        snd_data.push(d);
+    }
+
+    let mut snd_threads = Vec::new();
+    let mut rcv_threads = Vec::new();
+
+    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
+
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+
+    const BASE_UNIVERSE: u16 = 2;
+
     for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        let data = snd_data[i].clone();
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
+            let mut dmx_source = DmxSource::with_ip(&format!("Source {}", i), ip).unwrap();
+    
+            let priority = 100;
+
+            let universe: u16 = (i as u16) + BASE_UNIVERSE; 
+    
+            dmx_source.register_universe(universe); // Senders all send on different universes.
+
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+    
+            dmx_source.send(&[universe], &data, Some(priority), None, None).unwrap();
+        }));
+    }
+
+    for i in 0 .. RCV_THREADS {
+        let tx = rcv_tx.clone();
+
+        rcv_threads.push(thread::spawn(move || {
+            // Port kept the same so must use multiple IP's.
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+    
+            dmx_recv.set_nonblocking(false).unwrap();
+
+            // Receivers listen to all universes
+            for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
+                dmx_recv.listen_universes(&[i]).unwrap();
+            }
+
+            let mut res: Vec<Result<Vec<DMXData>, Error>> = Vec::new();
+
+            tx.send(Vec::new()).unwrap(); // Receiver notifies controlling thread it is ready.
+
+            for _i in 0 .. SND_THREADS { // Receiver should receive from every universe.
+                res.push(dmx_recv.recv()); // Receiver won't complete this until it receives from the senders which are all held waiting on the controlling thread.
+            }
+
+            // Results of each receive are sent back, this allows checking that each reciever was an expected universe, all universes were received and there were no errors.
+            tx.send(res).unwrap(); 
+        }));
+
+        assert_eq!(rcv_rx.recv().unwrap().len(), 0); // Wait till the receiver has notified controlling thread it is ready.
+    }
+
+    for _i in 0 .. SND_THREADS {
+        snd_rx.recv().unwrap(); // Allow each sender to progress
+    }
+
+    for _i in 0 .. RCV_THREADS {
+        let res: Vec<Result<Vec<DMXData>, Error>> = rcv_rx.recv().unwrap();
+
+        assert_eq!(res.len(), SND_THREADS);
+
+        let mut rcv_dmx_datas: Vec<DMXData> = Vec::new();
+
+        for r in res {
+            let data: Vec<DMXData> = r.unwrap(); // Check that there are no errors when receiving.
+            assert_eq!(data.len(), 1); // Check that each universe was received seperately.
+            rcv_dmx_datas.push(data[0].clone());
+        }
+
+        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
+
+        for k in 0 .. SND_THREADS {
+            assert_eq!(rcv_dmx_datas[k].universe, ((k as u16) + BASE_UNIVERSE)); // Check that the universe received is as expected.
+
+            assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
+        }
+    }
+}
+
+#[test]
+fn test_three_senders_two_recv_multicast_ipv4(){
+    const SND_THREADS: usize = 3;
+    const RCV_THREADS: usize = 2;
+    const SND_DATA_LEN: usize = 100;
+
+    let mut snd_data: Vec<Vec<u8>> = Vec::new();
+
+    for i in 1 .. SND_THREADS + 1 {
+        let mut d: Vec<u8> = Vec::new();
+        for _k in 0 .. SND_DATA_LEN {
+            d.push(i as u8);
+        }
+        snd_data.push(d);
+    }
+
+    let mut snd_threads = Vec::new();
+    let mut rcv_threads = Vec::new();
+
+    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
+
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+
+    const BASE_UNIVERSE: u16 = 2;
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        let data = snd_data[i].clone();
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
+            let mut dmx_source = DmxSource::with_ip(&format!("Source {}", i), ip).unwrap();
+    
+            let priority = 100;
+
+            let universe: u16 = (i as u16) + BASE_UNIVERSE; 
+    
+            dmx_source.register_universe(universe); // Senders all send on different universes.
+
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+    
+            dmx_source.send(&[universe], &data, Some(priority), None, None).unwrap();
+        }));
+    }
+
+    for i in 0 .. RCV_THREADS {
+        let tx = rcv_tx.clone();
+
+        rcv_threads.push(thread::spawn(move || {
+            // Port kept the same so must use multiple IP's.
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+    
+            dmx_recv.set_nonblocking(false).unwrap();
+
+            // Receivers listen to all universes
+            for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
+                dmx_recv.listen_universes(&[i]).unwrap();
+            }
+
+            let mut res: Vec<Result<Vec<DMXData>, Error>> = Vec::new();
+
+            tx.send(Vec::new()).unwrap(); // Receiver notifies controlling thread it is ready.
+
+            for _i in 0 .. SND_THREADS { // Receiver should receive from every universe.
+                res.push(dmx_recv.recv()); // Receiver won't complete this until it receives from the senders which are all held waiting on the controlling thread.
+            }
+
+            // Results of each receive are sent back, this allows checking that each reciever was an expected universe, all universes were received and there were no errors.
+            tx.send(res).unwrap(); 
+        }));
+
+        assert_eq!(rcv_rx.recv().unwrap().len(), 0); // Wait till the receiver has notified controlling thread it is ready.
+    }
+
+    for _i in 0 .. SND_THREADS {
+        snd_rx.recv().unwrap(); // Allow each sender to progress
+    }
+
+    for _i in 0 .. RCV_THREADS {
+        let res: Vec<Result<Vec<DMXData>, Error>> = rcv_rx.recv().unwrap();
+
+        assert_eq!(res.len(), SND_THREADS);
+
+        let mut rcv_dmx_datas: Vec<DMXData> = Vec::new();
+
+        for r in res {
+            let data: Vec<DMXData> = r.unwrap(); // Check that there are no errors when receiving.
+            assert_eq!(data.len(), 1); // Check that each universe was received seperately.
+            rcv_dmx_datas.push(data[0].clone());
+        }
+
+        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
+
+        for k in 0 .. SND_THREADS {
+            assert_eq!(rcv_dmx_datas[k].universe, ((k as u16) + BASE_UNIVERSE)); // Check that the universe received is as expected.
+
+            assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
+        }
+    }
+}
+
+#[test]
+fn test_two_senders_three_recv_multicast_ipv4(){
+    const SND_THREADS: usize = 2;
+    const RCV_THREADS: usize = 3;
+    const SND_DATA_LEN: usize = 100;
+
+    let mut snd_data: Vec<Vec<u8>> = Vec::new();
+
+    for i in 1 .. SND_THREADS + 1 {
+        let mut d: Vec<u8> = Vec::new();
+        for _k in 0 .. SND_DATA_LEN {
+            d.push(i as u8);
+        }
+        snd_data.push(d);
+    }
+
+    let mut snd_threads = Vec::new();
+    let mut rcv_threads = Vec::new();
+
+    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
+
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+
+    const BASE_UNIVERSE: u16 = 2;
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        let data = snd_data[i].clone();
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
+            let mut dmx_source = DmxSource::with_ip(&format!("Source {}", i), ip).unwrap();
+    
+            let priority = 100;
+
+            let universe: u16 = (i as u16) + BASE_UNIVERSE; 
+    
+            dmx_source.register_universe(universe); // Senders all send on different universes.
+
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+    
+            dmx_source.send(&[universe], &data, Some(priority), None, None).unwrap();
+        }));
+    }
+
+    for i in 0 .. RCV_THREADS {
+        let tx = rcv_tx.clone();
+
+        rcv_threads.push(thread::spawn(move || {
+            // Port kept the same so must use multiple IP's.
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+    
+            dmx_recv.set_nonblocking(false).unwrap();
+
+            // Receivers listen to all universes
+            for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
+                dmx_recv.listen_universes(&[i]).unwrap();
+            }
+
+            let mut res: Vec<Result<Vec<DMXData>, Error>> = Vec::new();
+
+            tx.send(Vec::new()).unwrap(); // Receiver notifies controlling thread it is ready.
+
+            for _i in 0 .. SND_THREADS { // Receiver should receive from every universe.
+                res.push(dmx_recv.recv()); // Receiver won't complete this until it receives from the senders which are all held waiting on the controlling thread.
+            }
+
+            // Results of each receive are sent back, this allows checking that each reciever was an expected universe, all universes were received and there were no errors.
+            tx.send(res).unwrap(); 
+        }));
+
+        assert_eq!(rcv_rx.recv().unwrap().len(), 0); // Wait till the receiver has notified controlling thread it is ready.
+    }
+
+    for _i in 0 .. SND_THREADS {
+        snd_rx.recv().unwrap(); // Allow each sender to progress
+    }
+
+    for _i in 0 .. RCV_THREADS {
+        let res: Vec<Result<Vec<DMXData>, Error>> = rcv_rx.recv().unwrap();
+
+        assert_eq!(res.len(), SND_THREADS);
+
+        let mut rcv_dmx_datas: Vec<DMXData> = Vec::new();
+
+        for r in res {
+            let data: Vec<DMXData> = r.unwrap(); // Check that there are no errors when receiving.
+            assert_eq!(data.len(), 1); // Check that each universe was received seperately.
+            rcv_dmx_datas.push(data[0].clone());
+        }
+
+        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
+
+        for k in 0 .. SND_THREADS {
+            assert_eq!(rcv_dmx_datas[k].universe, ((k as u16) + BASE_UNIVERSE)); // Check that the universe received is as expected.
+
+            assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
+        }
+    }
+}
+
+#[test]
+fn test_three_senders_three_recv_multicast_ipv4(){
+    const SND_THREADS: usize = 3;
+    const RCV_THREADS: usize = 3;
+    const SND_DATA_LEN: usize = 100;
+
+    let mut snd_data: Vec<Vec<u8>> = Vec::new();
+
+    for i in 1 .. SND_THREADS + 1 {
         let mut d: Vec<u8> = Vec::new();
         for _k in 0 .. SND_DATA_LEN {
             d.push(i as u8);
