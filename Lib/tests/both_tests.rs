@@ -25,6 +25,7 @@ use std::time::Duration;
 /// Theses must be changed depending on the network that the test machine is on.
 const TEST_NETWORK_INTERFACE_IP_1: &'static str = "192.168.0.10";
 const TEST_NETWORK_INTERFACE_IP_2: &'static str = "192.168.0.9";
+const TEST_NETWORK_INTERFACE_IPS: Vec<&'static str> = vec![TEST_NETWORK_INTERFACE_IP_1, TEST_NETWORK_INTERFACE_IP_2, "192.168.0.8"];
 
 /// 
 #[test]
@@ -1061,6 +1062,104 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
         values: TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec(),
         sync_uni: sync_uni,
     },).unwrap().values);
+}
+
+#[test]
+fn test_two_senders_two_recv_multicast_ipv4(){
+    const SND_THREADS: usize = 2;
+    const RCV_THREADS: usize = 2;
+    const SND_DATA_LEN: usize = 100;
+
+    let snd_data: Vec<Vec<u8>> = Vec::new();
+
+    for i in 0 .. SND_THREADS {
+        let d: Vec<u8> = Vec::new();
+        for k in 0 .. SND_DATA_LEN {
+            d.push(i as u8);
+        }
+        snd_data.push(d);
+    }
+
+    let snd_threads = Vec::new();
+    let rcv_threads = Vec::new();
+
+    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
+
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+
+    const BASE_UNIVERSE: u16 = 2;
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let mut dmx_source = DmxSource::with_ip("Source " + i, ip).unwrap();
+    
+            let priority = 100;
+
+            let universe: u16 = i + BASE_UNIVERSE; 
+    
+            dmx_source.register_universe(universe); // Senders all send on different universes.
+
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+    
+            dmx_source.send(&[universe], &snd_data[i], Some(priority), None, None).unwrap();
+        }));
+    }
+
+    for i in 0 .. RCV_THREADS {
+        let tx = rcv_tx.clone();
+
+        rcv_threads.push(thread::spawn(move || {
+            // Port kept the same so must use multiple IP's.
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+    
+            dmx_recv.set_nonblocking(false).unwrap();
+
+            // Receivers listen to all universes
+            dmx_recv.listen_universes(&[(i + BASE_UNIVERSE) .. (SND_THREADS + BASE_UNIVERSE)]).unwrap();
+
+            let res: Vec<Result<Vec<DMXData>, Error>> = Vec::new();
+
+            tx.send(Vec::new()).unwrap(); // Receiver notifies controlling thread it is ready.
+
+            for i in 0 .. SND_THREADS { // Receiver should receive from every universe.
+                res.push(dmx_recv.recv()); // Receiver won't complete this until it receives from the senders which are all held waiting on the controlling thread.
+            }
+
+            // Results of each receive are sent back, this allows checking that each reciever was an expected universe, all universes were received and there were no errors.
+            tx.send(res).unwrap(); 
+        }));
+
+        assert_eq!(rcv_rx.recv().unwrap().len(), 0); // Wait till the receiver has notified controlling thread it is ready.
+    }
+
+    for i in 0 .. SND_THREADS {
+        snd_rx.recv().unwrap(); // Allow each sender to progress
+    }
+
+    for i in 0 .. RCV_THREADS {
+        let res: Vec<Result<Vec<DMXData>, Error>> = rcv_rx.recv();
+        assert_eq!(res.len(), SND_THREADS);
+
+        let mut rcv_dmx_datas: Vec<DMXData> = Vec::new();
+
+        for r in res {
+            let data: Vec<DMXData> = res.unwrap(); // Check that there are no errors when receiving.
+            assert_eq!(data.len(), 1); // Check that each universe was received seperately.
+            rcv_dmx_datas.add(data[0]);
+        }
+
+        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
+
+        for i in 0 .. SND_THREADS {
+            assert_eq!(rcv_dmx_datas[i].universe, (i + BASE_UNIVERSE)); // Check that the universe received is as expected.
+
+            assert_eq!(rcv_dmx_datas[i].values, snd_data[i].to_vec(), "Received payload values don't match sent!");
+        }
+    }
 }
 
 const TEST_DATA_PARTIAL_CAPACITY_UNIVERSE: [u8; 313] = [0,
