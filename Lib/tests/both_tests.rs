@@ -23,8 +23,8 @@ use std::time::Duration;
 /// For some tests to work multiple instances of the protocol must be on the same network with the same port for example to test multiple simultaneous receivers, this means multiple IP's are needed.
 /// This is achieved by assigning multiple static IP's to the test machine and theses IP's are specified below.
 /// Theses must be changed depending on the network that the test machine is on.
-const TEST_NETWORK_INTERFACE_IP_1: &'static str = "192.168.1.10";
-const TEST_NETWORK_INTERFACE_IP_2: &'static str = "192.168.1.9";
+const TEST_NETWORK_INTERFACE_IP_1: &'static str = "192.168.0.10";
+const TEST_NETWORK_INTERFACE_IP_2: &'static str = "192.168.0.9";
 
 /// 
 #[test]
@@ -170,7 +170,7 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
 
     dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    dmx_source.send_sync_packet(UNIVERSES[0], &None);
+    dmx_source.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -233,7 +233,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 
     dmx_source.send(&UNIVERSES, &TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    dmx_source.send_sync_packet(UNIVERSES[0], &None);
+    dmx_source.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -392,10 +392,10 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     // when they shouldn't. This is difficult to avoid using this method of testing. It is also possible for the delay on the network to be so high that it 
     // causes the timeout, this is also difficult to avoid. Both of these reasons should be considered if this test passes occasionally but not consistently. 
     // The timeout should be large enough to make this unlikely although must be lower than the protocol's in-built timeout.
-    const wait_receive_timeout: u64 = 1;
-    let attemptRecv = rx.recv_timeout(Duration::from_secs(wait_receive_timeout));
+    const WAIT_RECV_TIMEOUT: u64 = 1;
+    let attempt_recv = rx.recv_timeout(Duration::from_secs(WAIT_RECV_TIMEOUT));
 
-    match attemptRecv {
+    match attempt_recv {
         Ok(o) => {
             println!("{:#?}", o);
             assert!(false, "Receivers received without waiting for sync");
@@ -403,7 +403,9 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
         Err(e) => assert_eq!(e, RecvTimeoutError::Timeout)
     }
 
-    dmx_source.send_sync_packet(sync_uni, &None);
+    dmx_source.send_sync_packet(sync_uni, &None).unwrap();
+
+    println!("Waiting to receive");
 
     let received_result1: Vec<DMXData> = rx.recv().unwrap().unwrap();
     let received_result2: Vec<DMXData> = rx.recv().unwrap().unwrap();
@@ -671,7 +673,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
 
     dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
-    dmx_source.send_sync_packet(UNIVERSES[0], &None);
+    dmx_source.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -734,7 +736,7 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 
     dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
-    dmx_source.send_sync_packet(UNIVERSES[0], &None);
+    dmx_source.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -799,7 +801,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
 
     let _ = dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    dmx_source.send_sync_packet(UNIVERSES[0], &Some(dst_ip));
+    dmx_source.send_sync_packet(UNIVERSES[0], &Some(dst_ip)).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -864,7 +866,7 @@ fn test_send_recv_across_universe_unicast_ipv4(){
 
     let _ = dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    dmx_source.send_sync_packet(UNIVERSES[0], &Some(dst_ip));
+    dmx_source.send_sync_packet(UNIVERSES[0], &Some(dst_ip)).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -928,6 +930,10 @@ fn test_two_senders_one_recv_different_universes_multicast_ipv4(){
     let res1: Vec<DMXData> = dmx_recv.recv().unwrap();
     let res2: Vec<DMXData> = dmx_recv.recv().unwrap();
 
+    snd_thread_1.join().unwrap();
+    snd_thread_2.join().unwrap();
+
+
     assert_eq!(res1.len(), 1);
     assert_eq!(res2.len(), 1);
 
@@ -982,7 +988,7 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
     assert_eq!(res1.len(), 1);
     assert_eq!(res2.len(), 1);
 
-    let mut res = vec![res1[0].clone(), res2[0].clone()];
+    let res = vec![res1[0].clone(), res2[0].clone()];
 
     assert_eq!(res[0].universe, universe);
     assert_eq!(res[1].universe, universe);
@@ -1010,7 +1016,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
 
     dmx_recv.listen_universes(&[universe, sync_uni]).unwrap();
 
-    dmx_recv.set_merge_fn(htp_dmx_merge);
+    dmx_recv.set_merge_fn(htp_dmx_merge).unwrap();
 
     let snd_thread_1 = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
@@ -1022,7 +1028,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
         dmx_source.register_universe(sync_uni);
 
         let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
-        snd_tx.send(());
+        snd_tx.send(()).unwrap();
     });
 
     let snd_thread_2 = thread::spawn(move || {
@@ -1035,7 +1041,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
         dmx_source.register_universe(sync_uni);
 
         let _ = dmx_source.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
-        rx.recv(); // Must only send once both threads have sent for this test to test what happens in that situation (where there will be a merge).
+        rx.recv().unwrap(); // Must only send once both threads have sent for this test to test what happens in that situation (where there will be a merge).
         dmx_source.send_sync_packet(sync_uni, &None).unwrap();
     });
 
