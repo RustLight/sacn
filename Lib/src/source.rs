@@ -20,6 +20,7 @@ use std::time::Duration;
 use std::thread::{sleep, JoinHandle};
 use std::thread;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 // use math::round;
 
@@ -90,6 +91,7 @@ pub struct DmxSource {
     sequences: RefCell<HashMap<u16, u8>>,
     sync_delay: Duration,
     universes: Vec<u16>, // A list of the universes registered to send by this source, used for universe discovery. Always sorted with lowest universe first to allow quicker usage.
+    running: bool
     // update_thread: JoinHandle<()> // The thread which runs every poll_period to perform various periodic action such as send universe discovery adverts. 
 }
 
@@ -97,10 +99,11 @@ pub struct DmxSource {
 pub struct SacnSource {
     // internal: Arc<Mutex<DmxSource>>
     internal: Arc<Mutex<DmxSource>>,
-    update_thread: JoinHandle<()>
+    update_thread: Option<JoinHandle<()>>
 }
 
 impl SacnSource {
+
     /// Constructs a new SacnSource with the given name, binding to an IPv4 address.
     pub fn new_v4(name: &str) -> Result<SacnSource> {
         let cid = Uuid::new_v4();
@@ -137,15 +140,15 @@ impl SacnSource {
         let mut internal_src = Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?));
 
         let mut trd_src = internal_src.clone();
-        
+
         let src = SacnSource { 
             internal: internal_src,
-            update_thread: trd_builder.spawn(move || {
-                loop {
+            update_thread: Some(trd_builder.spawn(move || {
+                while (trd_src.lock().unwrap().running) {
                     thread::sleep(DEFAULT_POLL_PERIOD);
                     perform_periodic_update(&mut trd_src);
                 }
-            }).unwrap(),
+            }).unwrap()),
         };
 
         Ok(src)
@@ -173,8 +176,17 @@ impl SacnSource {
         self.internal.lock().unwrap().send_sync_packet(universe, dst_ip)
     }
 
-    pub fn terminate_stream(&self, universe: u16, start_code: u8) -> Result<()> {
+    pub fn terminate_stream(&mut self, universe: u16, start_code: u8) -> Result<()> {
         self.internal.lock().unwrap().terminate_stream(universe, start_code)
+    }
+
+    pub fn terminate(&mut self){
+        // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
+        if let Some(thread) = self.update_thread.take() {
+            println!("Thread about to join");
+            thread.join().unwrap();
+            println!("Thread joined");
+        }
     }
 
     pub fn send_universe_discovery(&self) -> Result<()> {
@@ -234,6 +246,15 @@ impl SacnSource {
     }
 }
 
+// impl Drop for SacnSource {
+//     fn drop(&mut self){
+//         // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
+//         if let Some(thread) = self.update_thread.take() {
+//             thread.join().unwrap();
+//         }
+//     }
+// }
+
 impl DmxSource {
     /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
@@ -261,7 +282,8 @@ impl DmxSource {
             preview_data: false,
             sequences: RefCell::new(HashMap::new()),
             sync_delay: DEFAULT_SYNC_DELAY,
-            universes: Vec::new()
+            universes: Vec::new(),
+            running: true
         })
     }
 
