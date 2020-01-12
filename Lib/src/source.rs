@@ -81,6 +81,9 @@ pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 /// // dmx_source.terminate_stream(1, 0);
 /// ```
 
+// General info / concept of running flag.
+// https://www.reddit.com/r/rust/comments/b4ys9j/is_there_a_way_to_force_thread_to_join/ (12/01/2020)
+
 #[derive(Debug)]
 pub struct DmxSource {
     socket: UdpSocket,
