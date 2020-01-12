@@ -95,6 +95,7 @@ pub struct DmxSource {
 
 #[derive(Debug, Clone)]
 pub struct SacnSource {
+    // internal: Arc<Mutex<DmxSource>>
     internal: Arc<Mutex<DmxSource>>
 }
 
@@ -154,13 +155,11 @@ impl SacnSource {
     }
 
     pub fn register_universes(&mut self, universes: &[u16]){
-        // for u in universes {
-        //     self.register_universe(*u);
-        // }
+        self.internal.lock().unwrap().register_universes(universes);
     }
 
     pub fn register_universe(&mut self, universe: u16) {
-
+        self.internal.lock().unwrap().register_universe(universe);
     }
 
     pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
@@ -263,7 +262,7 @@ impl DmxSource {
         })
     }
 
-    fn register_universes(&mut self, universes: &[u16]){
+    pub fn register_universes(&mut self, universes: &[u16]){
         for u in universes {
             self.register_universe(*u);
         }
