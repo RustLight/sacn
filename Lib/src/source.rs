@@ -17,7 +17,9 @@ use std::io::{Error, ErrorKind, Result};
 use std::cmp;
 use std::time;
 use std::time::Duration;
-use std::thread::sleep;
+use std::thread::{sleep, JoinHandle};
+use std::thread;
+use std::sync::{Arc, Mutex};
 
 // use math::round;
 
@@ -47,6 +49,11 @@ pub const LOWEST_ALLOWED_UNIVERSE: u16 = 1; // The lowest valued universe allowe
 
 pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
 
+pub const UPDATE_THREAD_NAME: &'static str = "rust_sacn_update_thread"; // The name of the thread which runs periodically to perform various actions such as universe discovery adverts.
+
+// The poll rate of the update thread.
+pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
+
 // Report: The first universe for the data to be synchronised across multiple universes is 
 // used as the syncronisation universe by default. This is done as it means that the receiever should
 // be listening for this universe. 
@@ -72,6 +79,7 @@ pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe 
 /// // dmx_source.send(1, &[0, 100, 100, 100, 100, 100, 100]);
 /// // dmx_source.terminate_stream(1, 0);
 /// ```
+
 #[derive(Debug)]
 pub struct DmxSource {
     socket: UdpSocket,
@@ -82,6 +90,32 @@ pub struct DmxSource {
     sequences: RefCell<HashMap<u16, u8>>,
     sync_delay: Duration,
     universes: Vec<u16>, // A list of the universes registered to send by this source, used for universe discovery. Always sorted with lowest universe first to allow quicker usage.
+    // update_thread: JoinHandle<()> // The thread which runs every poll_period to perform various periodic action such as send universe discovery adverts. 
+}
+
+#[derive(Debug, Clone)]
+pub struct SacnSource {
+    internal: Arc<Mutex<DmxSource>>
+}
+
+impl SacnSource {
+    pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
+        let trd_builder = thread::Builder::new().name(UPDATE_THREAD_NAME.into());
+
+        let src = SacnSource { 
+            internal: Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?))
+        };
+
+        let mut trd_src = src.clone();
+        let handle: JoinHandle<()> = trd_builder.spawn(move || {
+            loop {
+                thread::sleep(DEFAULT_POLL_PERIOD);
+                perform_periodic_update(&mut trd_src.internal);
+            }
+        }).unwrap();
+
+        Ok(src)
+    }
 }
 
 impl DmxSource {
@@ -120,19 +154,18 @@ impl DmxSource {
     /// By default the TTL for ipv4 packets is 1 to keep them within the local network.
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<DmxSource> {
         let socket_builder;
-        let socket;
 
         if ip.is_ipv4() {
             socket_builder = UdpBuilder::new_v4()?;
-            socket = socket_builder.bind(ip)?;
-            socket.set_multicast_ttl_v4(1).expect("Failed to set ipv4 multicast TTL"); // Keep packets within the local network by default.
+            // socket.set_multicast_ttl_v4(1).expect("Failed to set ipv4 multicast TTL"); // Keep packets within the local network by default.
         } else if ip.is_ipv6() {
             socket_builder = UdpBuilder::new_v6()?;
             socket_builder.only_v6(true)?;
-            socket = socket_builder.bind(ip)?;
         } else {
             return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
         }
+
+        let socket: UdpSocket = socket_builder.bind(ip)?;
 
         Ok(DmxSource {
             socket: socket,
@@ -465,6 +498,10 @@ impl DmxSource {
     pub fn multicast_loop(&self) -> Result<bool> {
         self.socket.multicast_loop_v4()
     }
+}
+
+fn perform_periodic_update(src: &mut Arc<Mutex<DmxSource>>){
+    println!("Periodic update!");
 }
 
 #[cfg(test)]

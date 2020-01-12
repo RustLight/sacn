@@ -1475,6 +1475,73 @@ fn test_three_senders_three_recv_multicast_ipv4(){
     }
 }
 
+#[test]
+fn test_universe_discovery_one_universe_one_source_ipv4(){
+    const SND_THREADS: usize = 1;
+    const BASE_UNIVERSE: u16 = 2;
+    const SOURCE_NAMES: [&'static str; 1] = ["Source 1"]
+
+    let (snd_tx, snd_rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+
+    let mut snd_threads = Vec::new();
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+
+            let mut dmx_source = DmxSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
+    
+            let universe: u16 = (i as u16) + BASE_UNIVERSE;
+    
+            dmx_source.register_universe(universe);
+
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
+        }));
+    }
+
+    let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)){
+        Ok(sr) => sr,
+        Err(_) => panic!("Failed to create sacn receiver!")
+    };
+
+    dmx_recv.set_nonblocking(false).unwrap();
+
+    dmx_recv.listen_universes(&[universe]).unwrap();
+
+    thread_tx.send(Ok(Vec::new())).unwrap();
+
+    thread_tx.send(dmx_recv.recv()).unwrap();
+
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+
+    let priority = 100;
+
+    dmx_source.register_universe(universe);
+
+    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+
+    let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+
+    rcv_thread.join().unwrap();
+
+    assert!(!received_result.is_err(), "Failed: Error when receving data");
+
+    let received_data: Vec<DMXData> = received_result.unwrap();
+
+    assert_eq!(received_data.len(), 1); // Check only 1 universe received as expected.
+
+    let received_universe: DMXData = received_data[0].clone();
+
+    assert_eq!(received_universe.universe, universe); // Check that the universe received is as expected.
+
+    assert_eq!(received_universe.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+}
+
 const TEST_DATA_PARTIAL_CAPACITY_UNIVERSE: [u8; 313] = [0,
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
