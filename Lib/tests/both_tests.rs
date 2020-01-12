@@ -23,9 +23,7 @@ use std::time::Duration;
 /// For some tests to work multiple instances of the protocol must be on the same network with the same port for example to test multiple simultaneous receivers, this means multiple IP's are needed.
 /// This is achieved by assigning multiple static IP's to the test machine and theses IP's are specified below.
 /// Theses must be changed depending on the network that the test machine is on.
-const TEST_NETWORK_INTERFACE_IP_1: &'static str = "192.168.0.10";
-const TEST_NETWORK_INTERFACE_IP_2: &'static str = "192.168.0.9";
-const TEST_NETWORK_INTERFACE_IPS: [&'static str; 3] = ["192.168.0.9", "192.168.0.10", "192.168.0.8"];
+const TEST_NETWORK_INTERFACE_IPS: [&'static str; 3] = ["192.168.1.9", "192.168.1.10", "192.168.1.8"];
 
 /// 
 #[test]
@@ -262,7 +260,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 }
 
 // Note: For this test to work the PC must be capable of connecting to the network on 2 IP's, this was done in windows by adding another static IP so the PC was connecting through
-// 2 different IP's to the network. Theses IPs are manually specified as the constants TEST_NETWORK_INTERFACE_IP_1 and TEST_NETWORK_INTERFACE_IP_2 in this test and so to run it must be changed
+// 2 different IP's to the network. Theses IPs are manually specified in the TEST_NETWORK_INTERFACE_IPS constant and so to run it must be changed
 // depending on the environment.
 #[test]
 fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
@@ -274,7 +272,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     let universe = 1;
 
     let rcv_thread1 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -286,7 +284,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     });
 
     let rcv_thread2 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_2.parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -300,7 +298,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     let _ = rx.recv().unwrap(); // Blocks until both receivers say they are ready.
     let _ = rx.recv().unwrap();
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
     let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
 
@@ -331,9 +329,6 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     assert_eq!(received_universe2.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
 }
 
-// Note: For this test to work the PC must be capable of connecting to the network on 2 IP's, this was done in windows by adding another static IP so the PC was connecting through
-// 2 different IP's to the network. Theses IPs are manually specified as the constants TEST_NETWORK_INTERFACE_IP_1 and TEST_NETWORK_INTERFACE_IP_2 in this test and so to run it must be changed
-// depending on the environment.
 #[test]
 fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
@@ -347,7 +342,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     let sync_uni = 3;
 
     let rcv_thread1 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -360,7 +355,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     });
 
     let rcv_thread2 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_2.parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -375,7 +370,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     let _ = rx.recv().unwrap(); // Blocks until both receivers say they are ready.
     let _ = rx.recv().unwrap();
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
     let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
 
@@ -1011,7 +1006,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
     let universe = 1;
     let sync_uni = 2;
 
-    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap(), ACN_SDT_MULTICAST_PORT)).unwrap();
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
     dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1020,7 +1015,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
     dmx_recv.set_merge_fn(htp_dmx_merge).unwrap();
 
     let snd_thread_1 = thread::spawn(move || {
-        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
         let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
 
         let priority = 100;
@@ -1033,7 +1028,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
     });
 
     let snd_thread_2 = thread::spawn(move || {
-        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IP_1.parse().unwrap()), ACN_SDT_MULTICAST_PORT + 2);
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 2);
         let mut dmx_source = DmxSource::with_ip("Source 2", ip).unwrap();
 
         let priority = 100;
