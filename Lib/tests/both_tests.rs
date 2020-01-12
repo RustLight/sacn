@@ -23,7 +23,8 @@ use std::time::Duration;
 /// For some tests to work multiple instances of the protocol must be on the same network with the same port for example to test multiple simultaneous receivers, this means multiple IP's are needed.
 /// This is achieved by assigning multiple static IP's to the test machine and theses IP's are specified below.
 /// Theses must be changed depending on the network that the test machine is on.
-const TEST_NETWORK_INTERFACE_IPS: [&'static str; 3] = ["192.168.1.9", "192.168.1.10", "192.168.1.8"];
+const TEST_NETWORK_INTERFACE_IPV4: [&'static str; 3] = ["192.168.1.9", "192.168.1.10", "192.168.1.8"];
+const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 1] = ["fe80::6dd7:f9c9:2cbe:a238"];
 
 /// 
 #[test]
@@ -35,10 +36,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -49,11 +47,11 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
@@ -61,7 +59,9 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
 
     src.register_universe(universe);
 
-    let _ = src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
+    src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
+
+    src.terminate();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -90,10 +90,7 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -108,7 +105,7 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
@@ -144,10 +141,7 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)) {
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -160,7 +154,7 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
@@ -207,7 +201,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -220,7 +214,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
@@ -257,7 +251,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 }
 
 // Note: For this test to work the PC must be capable of connecting to the network on 2 IP's, this was done in windows by adding another static IP so the PC was connecting through
-// 2 different IP's to the network. Theses IPs are manually specified in the TEST_NETWORK_INTERFACE_IPS constant and so to run it must be changed
+// 2 different IP's to the network. Theses IPs are manually specified in the TEST_NETWORK_INTERFACE_IPV4 constant and so to run it must be changed
 // depending on the environment.
 #[test]
 fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
@@ -269,7 +263,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     let universe = 1;
 
     let rcv_thread1 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -281,7 +275,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     });
 
     let rcv_thread2 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -295,7 +289,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     rx.recv().unwrap(); // Blocks until both receivers say they are ready.
     rx.recv().unwrap();
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
@@ -339,7 +333,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     let sync_uni = 3;
 
     let rcv_thread1 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -352,7 +346,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     });
 
     let rcv_thread2 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -367,7 +361,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     rx.recv().unwrap(); // Blocks until both receivers say they are ready.
     rx.recv().unwrap();
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
@@ -428,10 +422,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -481,10 +472,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -534,10 +522,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -552,7 +537,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
@@ -588,11 +573,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
-
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT)).unwrap();
         dmx_recv.set_nonblocking(false).unwrap();
 
         dmx_recv.listen_universes(&[universe]).unwrap();
@@ -604,7 +585,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
@@ -641,10 +622,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)) {
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -657,7 +635,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
@@ -667,6 +645,11 @@ fn test_send_recv_across_universe_multicast_ipv6(){
     src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
     src.send_sync_packet(UNIVERSES[0], &None).unwrap();
+
+    println!("About to terminate");
+    src.terminate();
+
+    println!("About to terminated");
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -704,10 +687,7 @@ fn test_send_recv_across_universe_multicast_ipv4(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -767,10 +747,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)) {
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -832,10 +809,7 @@ fn test_send_recv_across_universe_unicast_ipv4(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1003,7 +977,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
     let universe = 1;
     let sync_uni = 2;
 
-    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT)).unwrap();
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
     dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1012,7 +986,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
     dmx_recv.set_merge_fn(htp_dmx_merge).unwrap();
 
     let snd_thread_1 = thread::spawn(move || {
-        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
         let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
         let priority = 100;
@@ -1025,7 +999,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
     });
 
     let snd_thread_2 = thread::spawn(move || {
-        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 2);
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 2);
         let mut src = SacnSource::with_ip("Source 2", ip).unwrap();
 
         let priority = 100;
@@ -1078,7 +1052,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
     let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
-    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
 
     const BASE_UNIVERSE: u16 = 2;
 
@@ -1088,7 +1062,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
         let data = snd_data[i].clone();
 
         snd_threads.push(thread::spawn(move || {
-            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
             // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
             let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
     
@@ -1109,7 +1083,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
 
         rcv_threads.push(thread::spawn(move || {
             // Port kept the same so must use multiple IP's.
-            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
             dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1182,7 +1156,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
     let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
-    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
 
     const BASE_UNIVERSE: u16 = 2;
 
@@ -1192,7 +1166,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
         let data = snd_data[i].clone();
 
         snd_threads.push(thread::spawn(move || {
-            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
             // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
             let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
     
@@ -1213,7 +1187,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
 
         rcv_threads.push(thread::spawn(move || {
             // Port kept the same so must use multiple IP's.
-            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
             dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1286,7 +1260,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
     let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
-    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
 
     const BASE_UNIVERSE: u16 = 2;
 
@@ -1296,7 +1270,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
         let data = snd_data[i].clone();
 
         snd_threads.push(thread::spawn(move || {
-            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
             // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
             let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
     
@@ -1317,7 +1291,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
 
         rcv_threads.push(thread::spawn(move || {
             // Port kept the same so must use multiple IP's.
-            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
             dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1390,7 +1364,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
     let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
-    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
 
     const BASE_UNIVERSE: u16 = 2;
 
@@ -1400,7 +1374,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
         let data = snd_data[i].clone();
 
         snd_threads.push(thread::spawn(move || {
-            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
             // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
             let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
     
@@ -1421,7 +1395,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 
         rcv_threads.push(thread::spawn(move || {
             // Port kept the same so must use multiple IP's.
-            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
             dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1486,7 +1460,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 //         let tx = snd_tx.clone();
 
 //         snd_threads.push(thread::spawn(move || {
-//             let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+//             let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
 
 //             let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
     
@@ -1498,10 +1472,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 //         }));
 //     }
 
-//     let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)){
-//         Ok(sr) => sr,
-//         Err(_) => panic!("Failed to create sacn receiver!")
-//     };
+//     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
 //     dmx_recv.set_nonblocking(false).unwrap();
 
