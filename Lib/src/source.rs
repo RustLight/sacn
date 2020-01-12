@@ -93,10 +93,11 @@ pub struct DmxSource {
     // update_thread: JoinHandle<()> // The thread which runs every poll_period to perform various periodic action such as send universe discovery adverts. 
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SacnSource {
     // internal: Arc<Mutex<DmxSource>>
-    internal: Arc<Mutex<DmxSource>>
+    internal: Arc<Mutex<DmxSource>>,
+    update_thread: JoinHandle<()>
 }
 
 impl SacnSource {
@@ -133,17 +134,19 @@ impl SacnSource {
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
         let trd_builder = thread::Builder::new().name(UPDATE_THREAD_NAME.into());
 
-        let src = SacnSource { 
-            internal: Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?))
-        };
+        let mut internal_src = Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?));
 
-        let mut trd_src = src.clone();
-        let handle: JoinHandle<()> = trd_builder.spawn(move || {
-            loop {
-                thread::sleep(DEFAULT_POLL_PERIOD);
-                perform_periodic_update(&mut trd_src.internal);
-            }
-        }).unwrap();
+        let mut trd_src = internal_src.clone();
+        
+        let src = SacnSource { 
+            internal: internal_src,
+            update_thread: trd_builder.spawn(move || {
+                loop {
+                    thread::sleep(DEFAULT_POLL_PERIOD);
+                    perform_periodic_update(&mut trd_src);
+                }
+            }).unwrap(),
+        };
 
         Ok(src)
     }
@@ -163,71 +166,71 @@ impl SacnSource {
     }
 
     pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
-        Err(Error::new(ErrorKind::Other, "Not impl"))
+        self.internal.lock().unwrap().send(universes, data, priority, dst_ip, syncronisation_addr)
     }
 
     pub fn send_sync_packet(&self, universe: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
-        Err(Error::new(ErrorKind::Other, "Not impl"))
+        self.internal.lock().unwrap().send_sync_packet(universe, dst_ip)
     }
 
     pub fn terminate_stream(&self, universe: u16, start_code: u8) -> Result<()> {
-        Err(Error::new(ErrorKind::Other, "Not impl"))
+        self.internal.lock().unwrap().terminate_stream(universe, start_code)
     }
 
     pub fn send_universe_discovery(&self) -> Result<()> {
-        Err(Error::new(ErrorKind::Other, "Not impl"))
+        self.internal.lock().unwrap().send_universe_discovery()
     }
 
-    //  /// Returns the ACN CID device identifier of the DmxSource.
-    // pub fn cid(&self) -> &Uuid {
-        
-    // }
+     /// Returns the ACN CID device identifier of the DmxSource.
+    pub fn cid(&self) -> Uuid {
+        *self.internal.lock().unwrap().cid()
+    }
 
     /// Sets the ACN CID device identifier.
     pub fn set_cid(&mut self, cid: Uuid) {
-        
+        self.internal.lock().unwrap().set_cid(cid);
     }
 
-    // /// Returns the ACN source name.
-    // pub fn name(&self) -> &str {
-
-    // }
+    /// Returns the ACN source name.
+    pub fn name(&self) -> String {
+        self.internal.lock().unwrap().name().into()
+    }
 
     /// Sets ACN source name.
     pub fn set_name(&mut self, name: &str) {
-
+        self.internal.lock().unwrap().set_name(name);
     }
 
     /// Returns if DmxSource is in preview mode.
     pub fn preview_mode(&self) -> bool {
-        false
+        self.internal.lock().unwrap().preview_mode()
     }
 
     /// Sets the DmxSource to preview mode.
     ///
     /// All packets will be sent with Preview_Data flag set to 1.
     pub fn set_preview_mode(&mut self, preview_mode: bool) {
-
+        self.internal.lock().unwrap().set_preview_mode(preview_mode);
     }
 
     /// Sets the multicast time to live.
     pub fn set_multicast_ttl(&self, multicast_ttl: u32) -> Result<()> {
-        Err(Error::new(ErrorKind::Other, "Not impl"))
+        self.internal.lock().unwrap().set_multicast_ttl(multicast_ttl)
     }
 
     /// Returns the multicast time to live of the socket.
     pub fn multicast_ttl(&self) -> Result<u32> {
-        Err(Error::new(ErrorKind::Other, "Not impl"))
+        self.internal.lock().unwrap().multicast_ttl()
     }
 
     /// Sets if multicast loop is enabled.
     pub fn set_multicast_loop(&self, multicast_loop: bool) -> Result<()> {
-        Err(Error::new(ErrorKind::Other, "Not impl"))
+        self.internal.lock().unwrap().set_multicast_loop(multicast_loop)
     }
 
     /// Returns if multicast loop of the socket is enabled.
     pub fn multicast_loop(&self) -> Result<bool> {
-        Err(Error::new(ErrorKind::Other, "Not impl"))
+        self.internal.lock().unwrap().multicast_loop()
     }
 }
 
@@ -579,7 +582,7 @@ impl DmxSource {
 }
 
 fn perform_periodic_update(src: &mut Arc<Mutex<DmxSource>>){
-    println!("Periodic update!");
+    
 }
 
 #[cfg(test)]
