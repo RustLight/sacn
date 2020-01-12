@@ -207,10 +207,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)) {
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
