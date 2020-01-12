@@ -159,6 +159,10 @@ impl SacnSource {
         // }
     }
 
+    pub fn register_universe(&mut self, universe: u16) {
+
+    }
+
     pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
         Err(Error::new(ErrorKind::Other, "Not impl"))
     }
@@ -257,6 +261,12 @@ impl DmxSource {
             sync_delay: DEFAULT_SYNC_DELAY,
             universes: Vec::new()
         })
+    }
+
+    fn register_universes(&mut self, universes: &[u16]){
+        for u in universes {
+            self.register_universe(*u);
+        }
     }
 
     fn register_universe(&mut self, universe: u16){
@@ -678,8 +688,10 @@ mod test {
 
     #[test]
     fn test_terminate_stream() {
+        let cid = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-        let source = DmxSource::with_ip("Source", ip).unwrap();
+        let source = DmxSource::with_cid_ip(&"Source", Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
 
         source.set_multicast_loop(true).unwrap();
 
