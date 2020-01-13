@@ -195,6 +195,7 @@ impl SacnReceiver {
         // TODO, handle other options, sequence numbers etc.
         if data_pkt.stream_terminated {
             // TODO, handle termination of stream
+            return Ok(None)
         }
 
         if data_pkt.synchronization_address == NO_SYNC_ADDR {
