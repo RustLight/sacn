@@ -466,6 +466,54 @@ impl DmxSource {
         Ok(())
     }
 
+    fn send_terminate_stream_pkt(&self, universe: u16, dst_ip: &Option<SocketAddr>, start_code: u8) -> Result<()> {
+        let ip = match dst_ip{
+            Some(x) => *x,
+            None => {
+                if self.addr.is_ipv6(){
+                    universe_to_ipv6_multicast_addr(universe)?
+                } else {
+                    universe_to_ipv4_multicast_addr(universe)?
+                }
+            }
+        };
+
+        let mut sequence = match self.sequences.borrow_mut().remove(&universe) {
+            Some(s) => s,
+            None => 0,
+        };
+
+        let packet = AcnRootLayerProtocol {
+            pdu: E131RootLayer {
+                cid: self.cid,
+                data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
+                    source_name: self.name.as_str().into(),
+                    priority: 100,
+                    synchronization_address: 0,
+                    sequence_number: sequence,
+                    preview_data: self.preview_data,
+                    stream_terminated: true,
+                    force_synchronization: false,
+                    universe,
+                    data: DataPacketDmpLayer {
+                        property_values: vec![start_code].into(),
+                    },
+                }),
+            },
+        };
+        println!("Terminate stream pkt: {:?}", &packet.pack_alloc().unwrap());
+
+        self.socket.send_to(&packet.pack_alloc().unwrap(), ip)?;
+
+        if sequence == 255 {
+            sequence = 0;
+        } else {
+            sequence += 1;
+        }
+
+        Ok(())
+    }
+
     /// Terminates a universe stream.
     ///
     /// Terminates a stream to a specified universe by sending three packages with
@@ -473,44 +521,8 @@ impl DmxSource {
     /// The start code passed in is used for the first byte of the otherwise empty data payload to indicate the 
     /// start_code of the data.
     fn terminate_stream(&self, universe: u16, start_code: u8) -> Result<()> {
-        let ip;
-        if self.addr.is_ipv6(){
-            ip = universe_to_ipv6_multicast_addr(universe)?;
-        } else {
-            ip = universe_to_ipv4_multicast_addr(universe)?;
-        }
-
-        let mut sequence = match self.sequences.borrow_mut().remove(&universe) {
-            Some(s) => s,
-            None => 0,
-        };
-
         for _ in 0..3 {
-            let packet = AcnRootLayerProtocol {
-                pdu: E131RootLayer {
-                    cid: self.cid,
-                    data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-                        source_name: self.name.as_str().into(),
-                        priority: 100,
-                        synchronization_address: 0,
-                        sequence_number: sequence,
-                        preview_data: self.preview_data,
-                        stream_terminated: true,
-                        force_synchronization: false,
-                        universe,
-                        data: DataPacketDmpLayer {
-                            property_values: vec![start_code].into(),
-                        },
-                    }),
-                },
-            };
-            self.socket.send_to(&packet.pack_alloc().unwrap(), ip)?;
-
-            if sequence == 255 {
-                sequence = 0;
-            } else {
-                sequence += 1;
-            }
+            self.send_terminate_stream_pkt(universe, &None, start_code)?;
         }
         Ok(())
     }
