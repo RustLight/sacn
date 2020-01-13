@@ -20,6 +20,7 @@ use std::time::Duration;
 use std::thread::{sleep, JoinHandle};
 use std::thread;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 // use math::round;
 
@@ -51,6 +52,8 @@ pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe 
 
 pub const UPDATE_THREAD_NAME: &'static str = "rust_sacn_update_thread"; // The name of the thread which runs periodically to perform various actions such as universe discovery adverts.
 
+pub const DEFAULT_TERMINATE_START_CODE: u8 = 0; // The default startcode used to send stream termination packets when the SacnSource is dropped.
+
 // The poll rate of the update thread.
 pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 
@@ -72,13 +75,17 @@ pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 /// # Examples
 ///
 /// ```
-/// use sacn::DmxSource;
+/// // THIS EXAMPLE IS DEPRECIATED
+/// // use sacn::DmxSource;
 ///
 /// // let mut dmx_source = DmxSource::new("Controller").unwrap();
 ///
 /// // dmx_source.send(1, &[0, 100, 100, 100, 100, 100, 100]);
 /// // dmx_source.terminate_stream(1, 0);
 /// ```
+
+// General info / concept of running flag.
+// https://www.reddit.com/r/rust/comments/b4ys9j/is_there_a_way_to_force_thread_to_join/ (12/01/2020)
 
 #[derive(Debug)]
 pub struct DmxSource {
@@ -90,69 +97,168 @@ pub struct DmxSource {
     sequences: RefCell<HashMap<u16, u8>>,
     sync_delay: Duration,
     universes: Vec<u16>, // A list of the universes registered to send by this source, used for universe discovery. Always sorted with lowest universe first to allow quicker usage.
+    running: bool
     // update_thread: JoinHandle<()> // The thread which runs every poll_period to perform various periodic action such as send universe discovery adverts. 
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SacnSource {
-    internal: Arc<Mutex<DmxSource>>
+    // internal: Arc<Mutex<DmxSource>>
+    internal: Arc<Mutex<DmxSource>>,
+    update_thread: Option<JoinHandle<()>>
 }
 
 impl SacnSource {
+    /// Constructs a new SacnSource with the given name, binding to an IPv4 address.
+    pub fn new_v4(name: &str) -> Result<SacnSource> {
+        let cid = Uuid::new_v4();
+        SacnSource::with_cid_v4(name, cid)
+    }
+
+    /// Constructs a new SacnSource with the given name and specified CID binding to an IPv4 address.
+    pub fn with_cid_v4(name: &str, cid: Uuid) -> Result<SacnSource> {
+        let ip = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
+        SacnSource::with_cid_ip(name, cid, ip)
+    }
+
+    /// Constructs a new SacnSource with the given name, binding to an IPv6 address.
+    /// By default this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    pub fn new_v6(name: &str) -> Result<SacnSource> {
+        let cid = Uuid::new_v4();
+        SacnSource::with_cid_v6(name, cid)
+    }
+
+    /// Constructs a new SacnSource with the given name and specified CID binding to an IPv6 address.
+    pub fn with_cid_v6(name: &str, cid: Uuid) -> Result<SacnSource> {
+        let ip = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
+        SacnSource::with_cid_ip(name, cid, ip)
+    }
+
+    /// Consturcts a new SacnSource with the given name and binding to the supplied ip.
+    pub fn with_ip(name: &str, ip: SocketAddr) -> Result<SacnSource> {
+        SacnSource::with_cid_ip(name, Uuid::new_v4(), ip)
+    }
+
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
         let trd_builder = thread::Builder::new().name(UPDATE_THREAD_NAME.into());
 
+        let mut internal_src = Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?));
+
+        let mut trd_src = internal_src.clone();
+
         let src = SacnSource { 
-            internal: Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?))
+            internal: internal_src,
+            update_thread: Some(trd_builder.spawn(move || {
+                while (trd_src.lock().unwrap().running) {
+                    thread::sleep(DEFAULT_POLL_PERIOD);
+                    perform_periodic_update(&mut trd_src);
+                }
+            }).unwrap()),
         };
 
-        let mut trd_src = src.clone();
-        let handle: JoinHandle<()> = trd_builder.spawn(move || {
-            loop {
-                thread::sleep(DEFAULT_POLL_PERIOD);
-                perform_periodic_update(&mut trd_src.internal);
-            }
-        }).unwrap();
-
         Ok(src)
+    }
+
+    /// Allow sending on ipv6 
+    pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
+        // self.socket.set_only_v6(val)
+        Err(Error::new(ErrorKind::Other, "Not impl"))
+    }
+
+    pub fn register_universes(&mut self, universes: &[u16]){
+        self.internal.lock().unwrap().register_universes(universes);
+    }
+
+    pub fn register_universe(&mut self, universe: u16) {
+        self.internal.lock().unwrap().register_universe(universe);
+    }
+
+    pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
+        self.internal.lock().unwrap().send(universes, data, priority, dst_ip, syncronisation_addr)
+    }
+
+    pub fn send_sync_packet(&self, universe: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
+        self.internal.lock().unwrap().send_sync_packet(universe, dst_ip)
+    }
+
+    pub fn terminate_stream(&mut self, universe: u16, start_code: u8) -> Result<()> {
+        self.internal.lock().unwrap().terminate_stream(universe, start_code)
+    }
+
+    pub fn send_universe_discovery(&self) -> Result<()> {
+        self.internal.lock().unwrap().send_universe_discovery()
+    }
+
+     /// Returns the ACN CID device identifier of the DmxSource.
+    pub fn cid(&self) -> Uuid {
+        *self.internal.lock().unwrap().cid()
+    }
+
+    /// Sets the ACN CID device identifier.
+    pub fn set_cid(&mut self, cid: Uuid) {
+        self.internal.lock().unwrap().set_cid(cid);
+    }
+
+    /// Returns the ACN source name.
+    pub fn name(&self) -> String {
+        self.internal.lock().unwrap().name().into()
+    }
+
+    /// Sets ACN source name.
+    pub fn set_name(&mut self, name: &str) {
+        self.internal.lock().unwrap().set_name(name);
+    }
+
+    /// Returns if DmxSource is in preview mode.
+    pub fn preview_mode(&self) -> bool {
+        self.internal.lock().unwrap().preview_mode()
+    }
+
+    /// Sets the DmxSource to preview mode.
+    ///
+    /// All packets will be sent with Preview_Data flag set to 1.
+    pub fn set_preview_mode(&mut self, preview_mode: bool) {
+        self.internal.lock().unwrap().set_preview_mode(preview_mode);
+    }
+
+    /// Sets the multicast time to live.
+    pub fn set_multicast_ttl(&self, multicast_ttl: u32) -> Result<()> {
+        self.internal.lock().unwrap().set_multicast_ttl(multicast_ttl)
+    }
+
+    /// Returns the multicast time to live of the socket.
+    pub fn multicast_ttl(&self) -> Result<u32> {
+        self.internal.lock().unwrap().multicast_ttl()
+    }
+
+    /// Sets if multicast loop is enabled.
+    pub fn set_multicast_loop(&self, multicast_loop: bool) -> Result<()> {
+        self.internal.lock().unwrap().set_multicast_loop(multicast_loop)
+    }
+
+    /// Returns if multicast loop of the socket is enabled.
+    pub fn multicast_loop(&self) -> Result<bool> {
+        self.internal.lock().unwrap().multicast_loop()
+    }
+}
+
+impl Drop for SacnSource {
+    fn drop(&mut self){
+        // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
+        if let Some(thread) = self.update_thread.take() {
+            {
+                self.internal.lock().unwrap().terminate(DEFAULT_TERMINATE_START_CODE);
+            }
+            thread.join().unwrap();
+        }
     }
 }
 
 impl DmxSource {
-    /// Constructs a new DmxSource with the given name, binding to an IPv4 address.
-    pub fn new_v4(name: &str) -> Result<DmxSource> {
-        let cid = Uuid::new_v4();
-        DmxSource::with_cid_v4(name, cid)
-    }
-
-    /// Constructs a new DmxSource with the given name and specified CID binding to an IPv4 address.
-    pub fn with_cid_v4(name: &str, cid: Uuid) -> Result<DmxSource> {
-        let ip = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
-        DmxSource::with_cid_ip(name, cid, ip)
-    }
-
-    /// Constructs a new DmxSource with the given name, binding to an IPv6 address.
-    /// By default this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
-    pub fn new_v6(name: &str) -> Result<DmxSource> {
-        let cid = Uuid::new_v4();
-        DmxSource::with_cid_v6(name, cid)
-    }
-
-    /// Constructs a new DmxSource with the given name and specified CID binding to an IPv6 address.
-    pub fn with_cid_v6(name: &str, cid: Uuid) -> Result<DmxSource> {
-        let ip = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
-        DmxSource::with_cid_ip(name, cid, ip)
-    }
-
-    /// Consturcts a new DmxSource with the given name and binding to the supplied ip.
-    pub fn with_ip(name: &str, ip: SocketAddr) -> Result<DmxSource> {
-         DmxSource::with_cid_ip(name, Uuid::new_v4(), ip)
-    }
-    
     /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     /// By default the TTL for ipv4 packets is 1 to keep them within the local network.
-    pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<DmxSource> {
+    fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<DmxSource> {
         let socket_builder;
 
         if ip.is_ipv4() {
@@ -175,16 +281,18 @@ impl DmxSource {
             preview_data: false,
             sequences: RefCell::new(HashMap::new()),
             sync_delay: DEFAULT_SYNC_DELAY,
-            universes: Vec::new()
+            universes: Vec::new(),
+            running: true
         })
     }
 
-    /// Allow sending on ipv6 
-    pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
-        self.socket.set_only_v6(val)
+    pub fn register_universes(&mut self, universes: &[u16]){
+        for u in universes {
+            self.register_universe(*u);
+        }
     }
 
-    pub fn register_universe(&mut self, universe: u16){
+    fn register_universe(&mut self, universe: u16){
         if self.universes.len() == 0 {
             self.universes.push(universe);
         } else {
@@ -196,12 +304,6 @@ impl DmxSource {
                     // If value found then don't insert to avoid duplicates.
                 }
             }
-        }
-    }
-
-    pub fn register_universes(&mut self, universes: &[u16]){
-        for u in universes {
-            self.register_universe(*u);
         }
     }
 
@@ -228,7 +330,13 @@ impl DmxSource {
     ///     synchronisation packet is sent using send_sync_packet(). If it is None then the data won't be synchronised and so will be acted upon by recievers immediately. This means
     ///     if sending more than 1 universe of data it may be acted upon at different times for each universe. A reasonable default for this is to use the first of the universes if 
     ///     synchronisation is required. Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the sync packet.
-    pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
+    fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
+        println!("Sending universes: {:?} data: {:?} priority: {:?} dst_ip: {:?} sync_addr: {:?}", universes, data, priority, dst_ip, syncronisation_addr);
+
+        if self.running == false { // Indicates that this sender has been terminated.
+            return Err(Error::new(ErrorKind::NotConnected, "Sender has been terminated / isn't live")); 
+        }
+
         if data.len() == 0 {
            return Err(Error::new(ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
         }
@@ -253,13 +361,13 @@ impl DmxSource {
             // Safety check to make sure that the end index doesn't exceed the data length
             let end_index = cmp::min((i + 1) * UNIVERSE_CHANNEL_CAPACITY, data.len());
 
-            self.send_detailed(universes[i], &data[start_index .. end_index], priority.unwrap_or(DEFAULT_PRIORITY), syncronisation_addr.unwrap_or(NO_SYNC_UNIVERSE), &dst_ip)?;
+            self.send_universe(universes[i], &data[start_index .. end_index], priority.unwrap_or(DEFAULT_PRIORITY), syncronisation_addr.unwrap_or(NO_SYNC_UNIVERSE), &dst_ip)?;
         }
 
         Ok(())
     }
 
-    fn send_detailed(&self, universe: u16, data: &[u8], priority: u8, sync_address: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
+    fn send_universe(&self, universe: u16, data: &[u8], priority: u8, sync_address: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
         if priority > 200 {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -321,7 +429,7 @@ impl DmxSource {
     }
 
     // Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.
-    pub fn send_sync_packet(&self, universe: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
+    fn send_sync_packet(&self, universe: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
         let ip;
 
         if dst_ip.is_none() {
@@ -359,57 +467,80 @@ impl DmxSource {
         Ok(())
     }
 
-    /// Terminates a universe stream.
-    ///
-    /// Terminates a stream to a specified universe by sending three packages with
-    /// Stream_Terminated flag set to 1.
-    /// The start code passed in is used for the first byte of the otherwise empty data payload to indicate the 
-    /// start_code of the data.
-    pub fn terminate_stream(&self, universe: u16, start_code: u8) -> Result<()> {
-        let ip;
-        if self.addr.is_ipv6(){
-            ip = universe_to_ipv6_multicast_addr(universe)?;
-        } else {
-            ip = universe_to_ipv4_multicast_addr(universe)?;
-        }
+    fn send_terminate_stream_pkt(&self, universe: u16, dst_ip: &Option<SocketAddr>, start_code: u8) -> Result<()> {
+        let ip = match dst_ip{
+            Some(x) => *x,
+            None => {
+                if self.addr.is_ipv6(){
+                    universe_to_ipv6_multicast_addr(universe)?
+                } else {
+                    universe_to_ipv4_multicast_addr(universe)?
+                }
+            }
+        };
 
         let mut sequence = match self.sequences.borrow_mut().remove(&universe) {
             Some(s) => s,
             None => 0,
         };
 
-        for _ in 0..3 {
-            let packet = AcnRootLayerProtocol {
-                pdu: E131RootLayer {
-                    cid: self.cid,
-                    data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
-                        source_name: self.name.as_str().into(),
-                        priority: 100,
-                        synchronization_address: 0,
-                        sequence_number: sequence,
-                        preview_data: self.preview_data,
-                        stream_terminated: true,
-                        force_synchronization: false,
-                        universe,
-                        data: DataPacketDmpLayer {
-                            property_values: vec![start_code].into(),
-                        },
-                    }),
-                },
-            };
-            self.socket.send_to(&packet.pack_alloc().unwrap(), ip)?;
+        let packet = AcnRootLayerProtocol {
+            pdu: E131RootLayer {
+                cid: self.cid,
+                data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
+                    source_name: self.name.as_str().into(),
+                    priority: 100,
+                    synchronization_address: 0,
+                    sequence_number: sequence,
+                    preview_data: self.preview_data,
+                    stream_terminated: true,
+                    force_synchronization: false,
+                    universe,
+                    data: DataPacketDmpLayer {
+                        property_values: vec![start_code].into(),
+                    },
+                }),
+            },
+        };
+        let res = &packet.pack_alloc().unwrap();
 
-            if sequence == 255 {
-                sequence = 0;
-            } else {
-                sequence += 1;
-            }
+        // println!("Terminate stream pkt: {:?}", res);
+
+        self.socket.send_to(res, ip)?;
+
+        if sequence == 255 {
+            sequence = 0;
+        } else {
+            sequence += 1;
+        }
+
+        Ok(())
+    }
+
+    /// Terminates a universe stream.
+    ///
+    /// Terminates a stream to a specified universe by sending three packages with
+    /// Stream_Terminated flag set to 1.
+    /// The start code passed in is used for the first byte of the otherwise empty data payload to indicate the 
+    /// start_code of the data.
+    fn terminate_stream(&self, universe: u16, start_code: u8) -> Result<()> {
+        for _ in 0..3 {
+            self.send_terminate_stream_pkt(universe, &None, start_code)?;
         }
         Ok(())
     }
 
+    /// Terminates the DMX source.
+    /// This includes terminating each registered universe with the start_code given.
+    fn terminate(&mut self, start_code: u8) {
+        self.running = false;
+        for u in &self.universes {
+            self.terminate_stream(*u, start_code);
+        }
+    }
+
     /// Sends a universe discovery packet advertising the universes that this source is registered to send.
-    pub fn send_universe_discovery(&self) -> Result<()>{
+    fn send_universe_discovery(&self) -> Result<()>{
         let pages_req: u8 = ((self.universes.len() / DISCOVERY_UNI_PER_PAGE) + 1) as u8;
 
         for p in 0 .. pages_req {
@@ -448,60 +579,60 @@ impl DmxSource {
     }
 
     /// Returns the ACN CID device identifier of the DmxSource.
-    pub fn cid(&self) -> &Uuid {
+    fn cid(&self) -> &Uuid {
         &self.cid
     }
 
     /// Sets the ACN CID device identifier.
-    pub fn set_cid(&mut self, cid: Uuid) {
+    fn set_cid(&mut self, cid: Uuid) {
         self.cid = cid;
     }
 
     /// Returns the ACN source name.
-    pub fn name(&self) -> &str {
+    fn name(&self) -> &str {
         &self.name
     }
 
     /// Sets ACN source name.
-    pub fn set_name(&mut self, name: &str) {
+    fn set_name(&mut self, name: &str) {
         self.name = name.to_string();
     }
 
     /// Returns if DmxSource is in preview mode.
-    pub fn preview_mode(&self) -> bool {
+    fn preview_mode(&self) -> bool {
         self.preview_data
     }
 
     /// Sets the DmxSource to preview mode.
     ///
     /// All packets will be sent with Preview_Data flag set to 1.
-    pub fn set_preview_mode(&mut self, preview_mode: bool) {
+    fn set_preview_mode(&mut self, preview_mode: bool) {
         self.preview_data = preview_mode;
     }
 
     /// Sets the multicast time to live.
-    pub fn set_multicast_ttl(&self, multicast_ttl: u32) -> Result<()> {
+    fn set_multicast_ttl(&self, multicast_ttl: u32) -> Result<()> {
         self.socket.set_multicast_ttl_v4(multicast_ttl)
     }
 
     /// Returns the multicast time to live of the socket.
-    pub fn multicast_ttl(&self) -> Result<u32> {
+    fn multicast_ttl(&self) -> Result<u32> {
         self.socket.multicast_ttl_v4()
     }
 
     /// Sets if multicast loop is enabled.
-    pub fn set_multicast_loop(&self, multicast_loop: bool) -> Result<()> {
+    fn set_multicast_loop(&self, multicast_loop: bool) -> Result<()> {
         self.socket.set_multicast_loop_v4(multicast_loop)
     }
 
     /// Returns if multicast loop of the socket is enabled.
-    pub fn multicast_loop(&self) -> Result<bool> {
+    fn multicast_loop(&self) -> Result<bool> {
         self.socket.multicast_loop_v4()
     }
 }
 
 fn perform_periodic_update(src: &mut Arc<Mutex<DmxSource>>){
-    println!("Periodic update!");
+    
 }
 
 #[cfg(test)]
@@ -609,8 +740,10 @@ mod test {
 
     #[test]
     fn test_terminate_stream() {
+        let cid = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-        let source = DmxSource::with_ip("Source", ip).unwrap();
+        let source = DmxSource::with_cid_ip(&"Source", Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
 
         source.set_multicast_loop(true).unwrap();
 
