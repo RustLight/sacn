@@ -108,7 +108,6 @@ pub struct SacnSource {
 }
 
 impl SacnSource {
-
     /// Constructs a new SacnSource with the given name, binding to an IPv4 address.
     pub fn new_v4(name: &str) -> Result<SacnSource> {
         let cid = Uuid::new_v4();
@@ -331,6 +330,8 @@ impl DmxSource {
     ///     if sending more than 1 universe of data it may be acted upon at different times for each universe. A reasonable default for this is to use the first of the universes if 
     ///     synchronisation is required. Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the sync packet.
     fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
+        println!("Sending universes: {:?} data: {:?} priority: {:?} dst_ip: {:?} sync_addr: {:?}", universes, data, priority, dst_ip, syncronisation_addr);
+
         if self.running == false { // Indicates that this sender has been terminated.
             return Err(Error::new(ErrorKind::NotConnected, "Sender has been terminated / isn't live")); 
         }
