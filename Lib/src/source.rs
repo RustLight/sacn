@@ -187,6 +187,9 @@ impl SacnSource {
         // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
         if let Some(thread) = self.update_thread.take() {
             println!("Thread about to join");
+            {
+                self.internal.lock().unwrap().running = false;
+            }
             thread.join().unwrap();
             println!("Thread joined");
         }
