@@ -192,6 +192,11 @@ impl SacnReceiver {
     // If the returned value is None it indicates that the data was received successfully but isn't ready to act on.
     // Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
     fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>, Error>{
+        // TODO, handle other options, sequence numbers etc.
+        if data_pkt.stream_terminated {
+            // TODO, handle termination of stream
+        }
+
         if data_pkt.synchronization_address == NO_SYNC_ADDR {
             self.clear_waiting_data();
 
