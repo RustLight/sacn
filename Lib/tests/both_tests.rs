@@ -571,7 +571,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
         dmx_recv.set_nonblocking(false).unwrap();
 
         dmx_recv.listen_universes(&[universe]).unwrap();
@@ -581,16 +581,16 @@ fn test_send_recv_single_universe_multicast_ipv4(){
         thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
     src.register_universe(universe);
 
-    let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+    src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
