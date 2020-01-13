@@ -41,7 +41,7 @@ pub const CHECK_MUTLICAST_DEFAULT: bool = true;
 // By default shouldn't check for packets sent over the network using broadcast.
 pub const CHECK_BROADCAST_DEFAULT: bool = false;
 
-#[derive(Debug, Eq)]
+#[derive(Debug)]
 pub struct DMXData{
     pub universe: u16,
     pub values: Vec<u8>,
@@ -62,7 +62,7 @@ impl Clone for DMXData {
 
 impl Ord for DMXData {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.universe.cmp(&other.universe)
+        self.universe.cmp(&other.universe).then(self.sync_uni.cmp(&other.sync_uni)).then(self.values.cmp(&other.values))
     }
 }
 
@@ -74,9 +74,13 @@ impl PartialOrd for DMXData {
 
 impl PartialEq for DMXData {
     fn eq(&self, other: &Self) -> bool {
-        self.universe == other.universe
+        self.universe == other.universe &&
+        self.sync_uni == other.sync_uni &&
+        self.values == other.values
     }
 }
+
+impl Eq for DMXData {}
 
 /// Used for receiving dmx or other data on a particular universe using multicast.
 struct DmxReciever{

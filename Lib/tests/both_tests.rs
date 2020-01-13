@@ -1431,6 +1431,8 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 
         rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
 
+        println!("{:?}", rcv_dmx_datas);
+
         for k in 0 .. SND_THREADS {
             assert_eq!(rcv_dmx_datas[k].universe, ((k as u16) + BASE_UNIVERSE)); // Check that the universe received is as expected.
 
