@@ -61,8 +61,6 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
 
     src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
 
-    src.terminate();
-
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
@@ -101,7 +99,7 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
@@ -113,7 +111,7 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
 
     src.register_universe(universe);
 
-    let _ = src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, None).unwrap();
+    src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, None).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -645,11 +643,6 @@ fn test_send_recv_across_universe_multicast_ipv6(){
     src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
     src.send_sync_packet(UNIVERSES[0], &None).unwrap();
-
-    println!("About to terminate");
-    src.terminate();
-
-    println!("About to terminated");
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
