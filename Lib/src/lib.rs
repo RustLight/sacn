@@ -26,7 +26,7 @@ extern crate net2;
 extern crate uuid;
 
 #[cfg(feature = "std")]
-pub use self::source::DmxSource;
+pub use self::source::SacnSource;
 
 pub mod error;
 pub mod packet;

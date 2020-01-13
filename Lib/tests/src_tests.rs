@@ -3,17 +3,17 @@
 
 extern crate lazy_static;
 extern crate sacn;
-use sacn::DmxSource;
+use sacn::SacnSource;
 use std::io::{Error, ErrorKind};
 use std::option;
 
 #[test]
 fn test_send_without_registering(){
-    let dmx_source = DmxSource::new_v4("Controller").unwrap();
+    let src = SacnSource::new_v4("Controller").unwrap();
 
     let priority = 100;
 
-    match dmx_source.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
+    match src.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
         Ok(_) => {assert!(false, "Source didn't prevent sending without registering")},
         Err(e) => assert_eq!(e.kind(), ErrorKind::Other, "")
     }
@@ -21,28 +21,28 @@ fn test_send_without_registering(){
 
 #[test]
 fn test_send_single_universe(){
-    let mut dmx_source = DmxSource::new_v4("Controller").unwrap();
+    let mut src = SacnSource::new_v4("Controller").unwrap();
 
     let priority = 100;
 
     let universe: u16 = 1;
 
-    dmx_source.register_universe(universe);
+    src.register_universe(universe);
 
-    dmx_source.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+    src.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 }
 
 #[test]
 fn test_send_across_universe(){
-    let mut dmx_source = DmxSource::new_v4("Controller").unwrap();
+    let mut src = SacnSource::new_v4("Controller").unwrap();
 
     let priority = 100;
 
     let universes: [u16; 2] = [1, 2];
 
-    dmx_source.register_universes(&universes);
+    src.register_universes(&universes);
 
-    dmx_source.send(&universes, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, None).unwrap();
+    src.send(&universes, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, None).unwrap();
 }
 
 const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [

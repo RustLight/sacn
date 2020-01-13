@@ -19,7 +19,7 @@ use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLay
 use std::io;
 use std::io::{Error, ErrorKind};
 
-use std::cmp::max;
+use std::cmp::{max, Ordering};
 
 /// The default size of the buffer used to recieve E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
@@ -41,7 +41,7 @@ pub const CHECK_MUTLICAST_DEFAULT: bool = true;
 // By default shouldn't check for packets sent over the network using broadcast.
 pub const CHECK_BROADCAST_DEFAULT: bool = false;
 
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Debug)]
 pub struct DMXData{
     pub universe: u16,
     pub values: Vec<u8>,
@@ -59,6 +59,28 @@ impl Clone for DMXData {
         }
     }
 }
+
+impl Ord for DMXData {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.universe.cmp(&other.universe).then(self.sync_uni.cmp(&other.sync_uni)).then(self.values.cmp(&other.values))
+    }
+}
+
+impl PartialOrd for DMXData {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for DMXData {
+    fn eq(&self, other: &Self) -> bool {
+        self.universe == other.universe &&
+        self.sync_uni == other.sync_uni &&
+        self.values == other.values
+    }
+}
+
+impl Eq for DMXData {}
 
 /// Used for receiving dmx or other data on a particular universe using multicast.
 struct DmxReciever{
@@ -170,6 +192,12 @@ impl SacnReceiver {
     // If the returned value is None it indicates that the data was received successfully but isn't ready to act on.
     // Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
     fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>, Error>{
+        // TODO, handle other options, sequence numbers etc.
+        if data_pkt.stream_terminated {
+            // TODO, handle termination of stream
+            return Ok(None)
+        }
+
         if data_pkt.synchronization_address == NO_SYNC_ADDR {
             self.clear_waiting_data();
 

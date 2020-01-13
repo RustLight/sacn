@@ -11,7 +11,7 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
 use std::io::Error;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
-use sacn::{DmxSource};
+use sacn::{SacnSource};
 use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
 use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
 
@@ -23,7 +23,8 @@ use std::time::Duration;
 /// For some tests to work multiple instances of the protocol must be on the same network with the same port for example to test multiple simultaneous receivers, this means multiple IP's are needed.
 /// This is achieved by assigning multiple static IP's to the test machine and theses IP's are specified below.
 /// Theses must be changed depending on the network that the test machine is on.
-const TEST_NETWORK_INTERFACE_IPS: [&'static str; 3] = ["192.168.1.9", "192.168.1.10", "192.168.1.8"];
+const TEST_NETWORK_INTERFACE_IPV4: [&'static str; 3] = ["192.168.1.9", "192.168.1.10", "192.168.1.8"];
+const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 1] = ["fe80::6dd7:f9c9:2cbe:a238"];
 
 /// 
 #[test]
@@ -35,10 +36,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -49,19 +47,19 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universe(universe);
+    src.register_universe(universe);
 
-    let _ = dmx_source.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
+    src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -90,10 +88,7 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -104,19 +99,19 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universe(universe);
+    src.register_universe(universe);
 
-    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, None).unwrap();
+    src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, None).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -144,10 +139,7 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)) {
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -160,16 +152,16 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES);
 
-    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
+    src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    dmx_source.send_sync_packet(UNIVERSES[0], &None).unwrap();
+    src.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -207,10 +199,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)) {
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -223,16 +212,16 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES);
 
-    dmx_source.send(&UNIVERSES, &TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
+    src.send(&UNIVERSES, &TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    dmx_source.send_sync_packet(UNIVERSES[0], &None).unwrap();
+    src.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -260,7 +249,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 }
 
 // Note: For this test to work the PC must be capable of connecting to the network on 2 IP's, this was done in windows by adding another static IP so the PC was connecting through
-// 2 different IP's to the network. Theses IPs are manually specified in the TEST_NETWORK_INTERFACE_IPS constant and so to run it must be changed
+// 2 different IP's to the network. Theses IPs are manually specified in the TEST_NETWORK_INTERFACE_IPV4 constant and so to run it must be changed
 // depending on the environment.
 #[test]
 fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
@@ -272,7 +261,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     let universe = 1;
 
     let rcv_thread1 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -284,7 +273,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     });
 
     let rcv_thread2 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -295,18 +284,18 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
         thread2_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until both receivers say they are ready.
-    let _ = rx.recv().unwrap();
+    rx.recv().unwrap(); // Blocks until both receivers say they are ready.
+    rx.recv().unwrap();
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universe(universe);
+    src.register_universe(universe);
 
-    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+    src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
     let received_result1: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
     let received_result2: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
@@ -342,7 +331,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     let sync_uni = 3;
 
     let rcv_thread1 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -355,7 +344,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     });
 
     let rcv_thread2 = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -367,21 +356,21 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
         thread2_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until both receivers say they are ready.
-    let _ = rx.recv().unwrap();
+    rx.recv().unwrap(); // Blocks until both receivers say they are ready.
+    rx.recv().unwrap();
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universe(universe1);
-    dmx_source.register_universe(universe2);
-    dmx_source.register_universe(sync_uni);
+    src.register_universe(universe1);
+    src.register_universe(universe2);
+    src.register_universe(sync_uni);
 
-    let _ = dmx_source.send(&[universe1], &TEST_DATA_MULTIPLE_UNIVERSE[..513], Some(priority), None, Some(sync_uni)).unwrap();
-    let _ = dmx_source.send(&[universe2], &TEST_DATA_MULTIPLE_UNIVERSE[513..], Some(priority), None, Some(sync_uni)).unwrap();
+    src.send(&[universe1], &TEST_DATA_MULTIPLE_UNIVERSE[..513], Some(priority), None, Some(sync_uni)).unwrap();
+    src.send(&[universe2], &TEST_DATA_MULTIPLE_UNIVERSE[513..], Some(priority), None, Some(sync_uni)).unwrap();
 
     // Waiting to receive, if anything is received it indicates one of the receivers progressed without waiting for synchronisation.
     // This has the issue that is is possible that even though they could have progressed the receive threads may not have leading them to pass this part 
@@ -399,7 +388,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
         Err(e) => assert_eq!(e, RecvTimeoutError::Timeout)
     }
 
-    dmx_source.send_sync_packet(sync_uni, &None).unwrap();
+    src.send_sync_packet(sync_uni, &None).unwrap();
 
     println!("Waiting to receive");
 
@@ -431,10 +420,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -448,15 +434,15 @@ fn test_send_recv_single_universe_unicast_ipv6(){
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT + 1);
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universe(universe);
+    src.register_universe(universe);
 
     let dst_ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
 
-    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+    let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -484,10 +470,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -501,15 +484,15 @@ fn test_send_recv_single_universe_unicast_ipv4(){
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     let ip: SocketAddr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT + 1);
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universe(universe);
+    src.register_universe(universe);
 
     let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT);
 
-    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+    let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -537,10 +520,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -555,15 +535,15 @@ fn test_send_recv_single_universe_multicast_ipv6(){
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universe(universe);
+    src.register_universe(universe);
 
-    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+    let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -591,11 +571,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
-
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
         dmx_recv.set_nonblocking(false).unwrap();
 
         dmx_recv.listen_universes(&[universe]).unwrap();
@@ -605,16 +581,16 @@ fn test_send_recv_single_universe_multicast_ipv4(){
         thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universe(universe);
+    src.register_universe(universe);
 
-    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+    src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
     let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -644,10 +620,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT)) {
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -660,16 +633,16 @@ fn test_send_recv_across_universe_multicast_ipv6(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES);
 
-    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
+    src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
-    dmx_source.send_sync_packet(UNIVERSES[0], &None).unwrap();
+    src.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -707,10 +680,7 @@ fn test_send_recv_across_universe_multicast_ipv4(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -724,15 +694,15 @@ fn test_send_recv_across_universe_multicast_ipv4(){
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES);
 
-    dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
+    src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
-    dmx_source.send_sync_packet(UNIVERSES[0], &None).unwrap();
+    src.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -770,10 +740,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)) {
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -787,17 +754,17 @@ fn test_send_recv_across_universe_unicast_ipv6(){
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT + 1);
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES);
 
     let dst_ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
 
-    let _ = dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), Some(UNIVERSES[0])).unwrap();
+    let _ = src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    dmx_source.send_sync_packet(UNIVERSES[0], &Some(dst_ip)).unwrap();
+    src.send_sync_packet(UNIVERSES[0], &Some(dst_ip)).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -835,10 +802,7 @@ fn test_send_recv_across_universe_unicast_ipv4(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)){
-            Ok(sr) => sr,
-            Err(_) => panic!("Failed to create sacn receiver!")
-        };
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
         dmx_recv.set_nonblocking(false).unwrap();
 
@@ -852,17 +816,17 @@ fn test_send_recv_across_universe_unicast_ipv4(){
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
-    dmx_source.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES);
 
     let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT);
 
-    let _ = dmx_source.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), Some(UNIVERSES[0])).unwrap();
+    let _ = src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    dmx_source.send_sync_packet(UNIVERSES[0], &Some(dst_ip)).unwrap();
+    src.send_sync_packet(UNIVERSES[0], &Some(dst_ip)).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
 
@@ -903,24 +867,24 @@ fn test_two_senders_one_recv_different_universes_multicast_ipv4(){
 
     let snd_thread_1 = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
         let priority = 100;
 
-        dmx_source.register_universe(universe_1);
+        src.register_universe(universe_1);
 
-        let _ = dmx_source.send(&[universe_1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+        let _ = src.send(&[universe_1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
     });
 
     let snd_thread_2 = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 2);
-        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
         let priority = 100;
 
-        dmx_source.register_universe(universe_2);
+        src.register_universe(universe_2);
 
-        let _ = dmx_source.send(&[universe_2], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
+        let _ = src.send(&[universe_2], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
     });
 
     let res1: Vec<DMXData> = dmx_recv.recv().unwrap();
@@ -955,24 +919,24 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
 
     let snd_thread_1 = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
         let priority = 100;
 
-        dmx_source.register_universe(universe);
+        src.register_universe(universe);
 
-        let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+        let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
     });
 
     let snd_thread_2 = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 2);
-        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
         let priority = 100;
 
-        dmx_source.register_universe(universe);
+        src.register_universe(universe);
 
-        let _ = dmx_source.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
+        let _ = src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
     });
 
     let res1: Vec<DMXData> = dmx_recv.recv().unwrap();
@@ -1006,7 +970,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
     let universe = 1;
     let sync_uni = 2;
 
-    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT)).unwrap();
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
     dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1015,30 +979,30 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
     dmx_recv.set_merge_fn(htp_dmx_merge).unwrap();
 
     let snd_thread_1 = thread::spawn(move || {
-        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
-        let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
         let priority = 100;
 
-        dmx_source.register_universe(universe);
-        dmx_source.register_universe(sync_uni);
+        src.register_universe(universe);
+        src.register_universe(sync_uni);
 
-        let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
+        src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
         snd_tx.send(()).unwrap();
     });
 
     let snd_thread_2 = thread::spawn(move || {
-        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 2);
-        let mut dmx_source = DmxSource::with_ip("Source 2", ip).unwrap();
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 2);
+        let mut src = SacnSource::with_ip("Source 2", ip).unwrap();
 
         let priority = 100;
 
-        dmx_source.register_universe(universe);
-        dmx_source.register_universe(sync_uni);
+        src.register_universe(universe);
+        src.register_universe(sync_uni);
 
-        let _ = dmx_source.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
+        src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
         rx.recv().unwrap(); // Must only send once both threads have sent for this test to test what happens in that situation (where there will be a merge).
-        dmx_source.send_sync_packet(sync_uni, &None).unwrap();
+        src.send_sync_packet(sync_uni, &None).unwrap();
     });
 
     let res1: Vec<DMXData> = dmx_recv.recv().unwrap();
@@ -1081,7 +1045,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
     let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
-    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
 
     const BASE_UNIVERSE: u16 = 2;
 
@@ -1091,19 +1055,19 @@ fn test_two_senders_two_recv_multicast_ipv4(){
         let data = snd_data[i].clone();
 
         snd_threads.push(thread::spawn(move || {
-            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
             // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
-            let mut dmx_source = DmxSource::with_ip(&format!("Source {}", i), ip).unwrap();
+            let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
     
             let priority = 100;
 
             let universe: u16 = (i as u16) + BASE_UNIVERSE; 
     
-            dmx_source.register_universe(universe); // Senders all send on different universes.
+            src.register_universe(universe); // Senders all send on different universes.
 
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
     
-            dmx_source.send(&[universe], &data, Some(priority), None, None).unwrap();
+            src.send(&[universe], &data, Some(priority), None, None).unwrap();
         }));
     }
 
@@ -1112,7 +1076,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
 
         rcv_threads.push(thread::spawn(move || {
             // Port kept the same so must use multiple IP's.
-            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
             dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1160,6 +1124,14 @@ fn test_two_senders_two_recv_multicast_ipv4(){
 
             assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
         }
+    }
+
+    for s in snd_threads {
+        s.join().unwrap();
+    }
+
+    for r in rcv_threads {
+        r.join().unwrap();
     }
 }
 
@@ -1185,7 +1157,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
     let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
-    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
 
     const BASE_UNIVERSE: u16 = 2;
 
@@ -1195,19 +1167,19 @@ fn test_three_senders_two_recv_multicast_ipv4(){
         let data = snd_data[i].clone();
 
         snd_threads.push(thread::spawn(move || {
-            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
             // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
-            let mut dmx_source = DmxSource::with_ip(&format!("Source {}", i), ip).unwrap();
+            let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
     
             let priority = 100;
 
             let universe: u16 = (i as u16) + BASE_UNIVERSE; 
     
-            dmx_source.register_universe(universe); // Senders all send on different universes.
+            src.register_universe(universe); // Senders all send on different universes.
 
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
     
-            dmx_source.send(&[universe], &data, Some(priority), None, None).unwrap();
+            src.send(&[universe], &data, Some(priority), None, None).unwrap();
         }));
     }
 
@@ -1216,7 +1188,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
 
         rcv_threads.push(thread::spawn(move || {
             // Port kept the same so must use multiple IP's.
-            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
             dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1264,6 +1236,14 @@ fn test_three_senders_two_recv_multicast_ipv4(){
 
             assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
         }
+    }
+
+    for s in snd_threads {
+        s.join().unwrap();
+    }
+
+    for r in rcv_threads {
+        r.join().unwrap();
     }
 }
 
@@ -1289,7 +1269,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
     let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
-    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
 
     const BASE_UNIVERSE: u16 = 2;
 
@@ -1299,19 +1279,19 @@ fn test_two_senders_three_recv_multicast_ipv4(){
         let data = snd_data[i].clone();
 
         snd_threads.push(thread::spawn(move || {
-            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
             // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
-            let mut dmx_source = DmxSource::with_ip(&format!("Source {}", i), ip).unwrap();
+            let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
     
             let priority = 100;
 
             let universe: u16 = (i as u16) + BASE_UNIVERSE; 
     
-            dmx_source.register_universe(universe); // Senders all send on different universes.
+            src.register_universe(universe); // Senders all send on different universes.
 
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
     
-            dmx_source.send(&[universe], &data, Some(priority), None, None).unwrap();
+            src.send(&[universe], &data, Some(priority), None, None).unwrap();
         }));
     }
 
@@ -1320,7 +1300,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
 
         rcv_threads.push(thread::spawn(move || {
             // Port kept the same so must use multiple IP's.
-            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
             dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1368,6 +1348,14 @@ fn test_two_senders_three_recv_multicast_ipv4(){
 
             assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
         }
+    }
+
+    for s in snd_threads {
+        s.join().unwrap();
+    }
+
+    for r in rcv_threads {
+        r.join().unwrap();
     }
 }
 
@@ -1393,7 +1381,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
     let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
-    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPS.len(), "Number of test network interface ips less than number of recv threads!");
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
 
     const BASE_UNIVERSE: u16 = 2;
 
@@ -1403,19 +1391,19 @@ fn test_three_senders_three_recv_multicast_ipv4(){
         let data = snd_data[i].clone();
 
         snd_threads.push(thread::spawn(move || {
-            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
             // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
-            let mut dmx_source = DmxSource::with_ip(&format!("Source {}", i), ip).unwrap();
+            let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
     
             let priority = 100;
 
             let universe: u16 = (i as u16) + BASE_UNIVERSE; 
     
-            dmx_source.register_universe(universe); // Senders all send on different universes.
+            src.register_universe(universe); // Senders all send on different universes.
 
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
     
-            dmx_source.send(&[universe], &data, Some(priority), None, None).unwrap();
+            src.send(&[universe], &data, Some(priority), None, None).unwrap();
         }));
     }
 
@@ -1424,7 +1412,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 
         rcv_threads.push(thread::spawn(move || {
             // Port kept the same so must use multiple IP's.
-            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
             dmx_recv.set_nonblocking(false).unwrap();
 
@@ -1467,80 +1455,56 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 
         rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
 
+        println!("{:?}", rcv_dmx_datas);
+
         for k in 0 .. SND_THREADS {
             assert_eq!(rcv_dmx_datas[k].universe, ((k as u16) + BASE_UNIVERSE)); // Check that the universe received is as expected.
 
             assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
         }
     }
-}
 
-#[test]
-fn test_universe_discovery_one_universe_one_source_ipv4(){
-    const SND_THREADS: usize = 1;
-    const BASE_UNIVERSE: u16 = 2;
-    const SOURCE_NAMES: [&'static str; 1] = ["Source 1"]
-
-    let (snd_tx, snd_rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
-
-    let mut snd_threads = Vec::new();
-
-    for i in 0 .. SND_THREADS {
-        let tx = snd_tx.clone();
-
-        snd_threads.push(thread::spawn(move || {
-            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
-
-            let mut dmx_source = DmxSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
-    
-            let universe: u16 = (i as u16) + BASE_UNIVERSE;
-    
-            dmx_source.register_universe(universe);
-
-            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
-        }));
+    for s in snd_threads {
+        s.join().unwrap();
     }
 
-    let mut dmx_recv = match SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPS[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)){
-        Ok(sr) => sr,
-        Err(_) => panic!("Failed to create sacn receiver!")
-    };
-
-    dmx_recv.set_nonblocking(false).unwrap();
-
-    dmx_recv.listen_universes(&[universe]).unwrap();
-
-    thread_tx.send(Ok(Vec::new())).unwrap();
-
-    thread_tx.send(dmx_recv.recv()).unwrap();
-
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
-
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut dmx_source = DmxSource::with_ip("Source", ip).unwrap();
-
-    let priority = 100;
-
-    dmx_source.register_universe(universe);
-
-    let _ = dmx_source.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
-
-    let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
-
-    rcv_thread.join().unwrap();
-
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
-
-    let received_data: Vec<DMXData> = received_result.unwrap();
-
-    assert_eq!(received_data.len(), 1); // Check only 1 universe received as expected.
-
-    let received_universe: DMXData = received_data[0].clone();
-
-    assert_eq!(received_universe.universe, universe); // Check that the universe received is as expected.
-
-    assert_eq!(received_universe.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+    for r in rcv_threads {
+        r.join().unwrap();
+    }
 }
+
+// #[test]
+// fn test_universe_discovery_one_universe_one_source_ipv4(){
+//     const SND_THREADS: usize = 1;
+//     const BASE_UNIVERSE: u16 = 2;
+//     const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
+
+//     let (snd_tx, snd_rx): (Sender<_>, Error>>, Receiver<_>, Error>>) = mpsc::channel();
+
+//     let mut snd_threads = Vec::new();
+
+//     for i in 0 .. SND_THREADS {
+//         let tx = snd_tx.clone();
+
+//         snd_threads.push(thread::spawn(move || {
+//             let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+
+//             let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
+    
+//             let universe: u16 = (i as u16) + BASE_UNIVERSE;
+    
+//             src.register_universe(universe);
+
+//             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
+//         }));
+//     }
+
+//     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+//     dmx_recv.set_nonblocking(false).unwrap();
+
+//     assert!(false, "Not implemented");
+// }
 
 const TEST_DATA_PARTIAL_CAPACITY_UNIVERSE: [u8; 313] = [0,
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,

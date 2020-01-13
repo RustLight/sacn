@@ -3,7 +3,7 @@
 
 extern crate lazy_static;
 extern crate sacn;
-use sacn::DmxSource;
+use sacn::SacnSource;
 use std::{time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
 
 fn main(){
