@@ -52,6 +52,8 @@ pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe 
 
 pub const UPDATE_THREAD_NAME: &'static str = "rust_sacn_update_thread"; // The name of the thread which runs periodically to perform various actions such as universe discovery adverts.
 
+pub const DEFAULT_TERMINATE_START_CODE: u8 = 0; // The default startcode used to send stream termination packets when the SacnSource is dropped.
+
 // The poll rate of the update thread.
 pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 
@@ -183,18 +185,6 @@ impl SacnSource {
         self.internal.lock().unwrap().terminate_stream(universe, start_code)
     }
 
-    pub fn terminate(&mut self){
-        // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
-        if let Some(thread) = self.update_thread.take() {
-            println!("Thread about to join");
-            {
-                self.internal.lock().unwrap().running = false;
-            }
-            thread.join().unwrap();
-            println!("Thread joined");
-        }
-    }
-
     pub fn send_universe_discovery(&self) -> Result<()> {
         self.internal.lock().unwrap().send_universe_discovery()
     }
@@ -252,14 +242,17 @@ impl SacnSource {
     }
 }
 
-// impl Drop for SacnSource {
-//     fn drop(&mut self){
-//         // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
-//         if let Some(thread) = self.update_thread.take() {
-//             thread.join().unwrap();
-//         }
-//     }
-// }
+impl Drop for SacnSource {
+    fn drop(&mut self){
+        // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
+        if let Some(thread) = self.update_thread.take() {
+            {
+                self.internal.lock().unwrap().terminate(DEFAULT_TERMINATE_START_CODE);
+            }
+            thread.join().unwrap();
+        }
+    }
+}
 
 impl DmxSource {
     /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
@@ -338,6 +331,10 @@ impl DmxSource {
     ///     if sending more than 1 universe of data it may be acted upon at different times for each universe. A reasonable default for this is to use the first of the universes if 
     ///     synchronisation is required. Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the sync packet.
     fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
+        if self.running == false { // Indicates that this sender has been terminated.
+            return Err(Error::new(ErrorKind::NotConnected, "Sender has been terminated / isn't live")); 
+        }
+
         if data.len() == 0 {
            return Err(Error::new(ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
         }
@@ -515,6 +512,15 @@ impl DmxSource {
             }
         }
         Ok(())
+    }
+
+    /// Terminates the DMX source.
+    /// This includes terminating each registered universe with the start_code given.
+    fn terminate(&mut self, start_code: u8) {
+        self.running = false;
+        for u in &self.universes {
+            self.terminate_stream(*u, start_code);
+        }
     }
 
     /// Sends a universe discovery packet advertising the universes that this source is registered to send.
