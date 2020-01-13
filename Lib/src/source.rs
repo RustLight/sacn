@@ -75,7 +75,8 @@ pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 /// # Examples
 ///
 /// ```
-/// use sacn::DmxSource;
+/// // THIS EXAMPLE IS DEPRECIATED
+/// // use sacn::DmxSource;
 ///
 /// // let mut dmx_source = DmxSource::new("Controller").unwrap();
 ///

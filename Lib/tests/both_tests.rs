@@ -1125,6 +1125,14 @@ fn test_two_senders_two_recv_multicast_ipv4(){
             assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
         }
     }
+
+    for s in snd_threads {
+        s.join().unwrap();
+    }
+
+    for r in rcv_threads {
+        r.join().unwrap();
+    }
 }
 
 #[test]
@@ -1229,6 +1237,14 @@ fn test_three_senders_two_recv_multicast_ipv4(){
             assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
         }
     }
+
+    for s in snd_threads {
+        s.join().unwrap();
+    }
+
+    for r in rcv_threads {
+        r.join().unwrap();
+    }
 }
 
 #[test]
@@ -1332,6 +1348,14 @@ fn test_two_senders_three_recv_multicast_ipv4(){
 
             assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
         }
+    }
+
+    for s in snd_threads {
+        s.join().unwrap();
+    }
+
+    for r in rcv_threads {
+        r.join().unwrap();
     }
 }
 
@@ -1438,6 +1462,14 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 
             assert_eq!(rcv_dmx_datas[k].values, snd_data[k], "Received payload values don't match sent!");
         }
+    }
+
+    for s in snd_threads {
+        s.join().unwrap();
+    }
+
+    for r in rcv_threads {
+        r.join().unwrap();
     }
 }
 
