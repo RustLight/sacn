@@ -501,9 +501,11 @@ impl DmxSource {
                 }),
             },
         };
-        println!("Terminate stream pkt: {:?}", &packet.pack_alloc().unwrap());
+        let res = &packet.pack_alloc().unwrap();
 
-        self.socket.send_to(&packet.pack_alloc().unwrap(), ip)?;
+        // println!("Terminate stream pkt: {:?}", res);
+
+        self.socket.send_to(res, ip)?;
 
         if sequence == 255 {
             sequence = 0;
