@@ -336,8 +336,6 @@ impl DmxSource {
     ///     if sending more than 1 universe of data it may be acted upon at different times for each universe. A reasonable default for this is to use the first of the universes if 
     ///     synchronisation is required. Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the sync packet.
     fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
-        println!("Sending universes: {:?} data: {:?} priority: {:?} dst_ip: {:?} sync_addr: {:?}", universes, data, priority, dst_ip, syncronisation_addr);
-
         if self.running == false { // Indicates that this sender has been terminated.
             return Err(Error::new(ErrorKind::NotConnected, "Sender has been terminated / isn't live")); 
         }
@@ -418,8 +416,6 @@ impl DmxSource {
             } else {
                 dst = universe_to_ipv4_multicast_addr(universe)?;
             }
-
-            println!("{}", dst);
 
             self.socket.send_to(&packet.pack_alloc().unwrap(), dst)?;
         }
@@ -508,8 +504,6 @@ impl DmxSource {
             },
         };
         let res = &packet.pack_alloc().unwrap();
-
-        // println!("Terminate stream pkt: {:?}", res);
 
         self.socket.send_to(res, ip)?;
 
@@ -638,7 +632,7 @@ impl DmxSource {
 
 fn perform_periodic_update(src: &mut Arc<Mutex<DmxSource>>){
     let mut unwrap_src = src.lock().unwrap();
-    if unwrap_src.last_discovery_advert_timestamp.duration_since(Instant::now()) > E131_E131_UNIVERSE_DISCOVERY_INTERVAL {
+    if Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_E131_UNIVERSE_DISCOVERY_INTERVAL {
         unwrap_src.send_universe_discovery();
         unwrap_src.last_discovery_advert_timestamp = Instant::now();
     }
