@@ -140,7 +140,7 @@ impl SacnSource {
     }
 
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
-        let trd_builder = thread::Builder::new().name(UPDATE_THREAD_NAME.into());
+        let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
 
         let mut internal_src = Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?));
 
