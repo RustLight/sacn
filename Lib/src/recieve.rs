@@ -20,6 +20,12 @@ use std::io;
 use std::io::{Error, ErrorKind};
 
 use std::cmp::{max, Ordering};
+use std::thread::{sleep, JoinHandle};
+use std::thread;
+use std::time;
+use std::time::Duration;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool};
 
 /// The default size of the buffer used to recieve E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
@@ -127,13 +133,13 @@ pub struct SacnReceiverInternal {
     universes: Vec<u16>, // Universes that this receiver is currently listening for
     discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been discovered by this receiver through universe discovery packets.
     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
-    partially_discovered_sources: Vec<DiscoveredSacnSource> // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
-    running: bool
+    partially_discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
+    running: bool,
 }
 
 pub struct SacnReceiver {
     internal: Arc<Mutex<SacnReceiverInternal>>,
-    update_thread: Option<JoinHandle<()>>
+    update_thread: Option<JoinHandle<()>>,
 }
 
 impl SacnReceiver {
@@ -154,16 +160,49 @@ impl SacnReceiver {
     pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
         let trd_builder = thread::Builder::new().name(RCV_UPDATE_THREAD_NAME.into());
 
-        let mut internal = Arc::new(Mutex::new(SacnReceiverInternal::with_ip(ip)?)).clone();
-        SacnReceiver {
-            internal: internal,
+        let mut internal = Arc::new(Mutex::new(SacnReceiverInternal::with_ip(ip)?));
+        Ok(SacnReceiver {
+            internal: internal.clone(),
             update_thread: Some(trd_builder.spawn(move || {
                 while (internal.lock().unwrap().running) {
                     thread::sleep(DEFAULT_RECV_POLL_PERIOD);
                     perform_periodic_update(&mut internal);
                 }
             }).unwrap()),
-        }
+        })
+    }
+
+    // TODO
+    pub fn set_merge_fn(&mut self, func: (fn(&DMXData, &DMXData) -> Result<DMXData, Error>)) -> Result<(), Error> {
+        self.internal.lock().unwrap().set_merge_fn(func)
+    }
+
+    /// Allow sending on ipv6 
+    pub fn set_ipv6_only(&mut self, val: bool) -> Result<(), Error>{
+        self.internal.lock().unwrap().set_ipv6_only(val)
+    }
+
+    pub fn clear_waiting_data(&mut self){
+        self.internal.lock().unwrap().clear_waiting_data()
+    }
+
+    /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
+    pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
+        self.internal.lock().unwrap().listen_universes(universes)
+    }
+
+    
+    pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
+        self.internal.lock().unwrap().set_nonblocking(is_nonblocking)
+    }
+
+    // Attempt to recieve data from any of the registered universes.
+    // This is the main method for receiving data.
+    // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
+    // is already handled.
+    // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast).
+    pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
+        self.internal.lock().unwrap().recv()
     }
 }
 
@@ -613,17 +652,19 @@ fn test_handle_single_page_discovery_packet() {
         },
     };
 
-    let res: Option<Vec<DMXData>> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt).unwrap();
+    let mut internal = dmx_rcv.internal.lock().unwrap();
+    
+    let res: Option<Vec<DMXData>> = internal.handle_universe_discovery_packet(discovery_pkt).unwrap();
 
     assert!(res.is_none());
 
-    assert_eq!(dmx_rcv.discovered_sources.len(), 1);
+    assert_eq!(internal.discovered_sources.len(), 1);
 
-    assert_eq!(dmx_rcv.discovered_sources[0].name, name);
-    assert_eq!(dmx_rcv.discovered_sources[0].last_page, last_page);
-    assert_eq!(dmx_rcv.discovered_sources[0].pages.len(), 1);
-    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].page, page);
-    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].universes, universes);
+    assert_eq!(internal.discovered_sources[0].name, name);
+    assert_eq!(internal.discovered_sources[0].last_page, last_page);
+    assert_eq!(internal.discovered_sources[0].pages.len(), 1);
+    assert_eq!(internal.discovered_sources[0].pages[0].page, page);
+    assert_eq!(internal.discovered_sources[0].pages[0].universes, universes);
 }
 
 #[test]
@@ -640,9 +681,11 @@ fn test_store_retrieve_waiting_data(){
         sync_uni: sync_uni 
     };
 
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+    let mut internal = dmx_rcv.internal.lock().unwrap();
 
-    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
+    internal.store_waiting_data(dmx_data).unwrap();
+
+    let res: Vec<DMXData> = internal.rtrv_waiting_data(sync_uni).unwrap();
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
@@ -670,10 +713,12 @@ fn test_store_2_retrieve_1_waiting_data(){
         sync_uni: sync_uni + 1 
     };
 
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
-    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
+    let mut internal = dmx_rcv.internal.lock().unwrap();
 
-    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
+    internal.store_waiting_data(dmx_data).unwrap();
+    internal.store_waiting_data(dmx_data2).unwrap();
+
+    let res: Vec<DMXData> = internal.rtrv_waiting_data(sync_uni).unwrap();
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
@@ -703,17 +748,19 @@ fn test_store_2_retrieve_2_waiting_data(){
         sync_uni: sync_uni + 1 
     };
 
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
-    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
+    let mut internal = dmx_rcv.internal.lock().unwrap();
 
-    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
+    internal.store_waiting_data(dmx_data).unwrap();
+    internal.store_waiting_data(dmx_data2).unwrap();
+
+    let res: Vec<DMXData> = internal.rtrv_waiting_data(sync_uni).unwrap();
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
     assert_eq!(res[0].sync_uni, sync_uni);
     assert_eq!(res[0].values, vals);
 
-    let res2: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni + 1).unwrap();
+    let res2: Vec<DMXData> = internal.rtrv_waiting_data(sync_uni + 1).unwrap();
 
     assert_eq!(res2.len(), 1);
     assert_eq!(res2[0].universe, universe + 1);
