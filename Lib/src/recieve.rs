@@ -41,6 +41,11 @@ pub const CHECK_MUTLICAST_DEFAULT: bool = true;
 // By default shouldn't check for packets sent over the network using broadcast.
 pub const CHECK_BROADCAST_DEFAULT: bool = false;
 
+// The name of the thread which runs periodically to perform actions on the receiver such as update discovered universes.
+pub const RCV_UPDATE_THREAD_NAME: &'static str = "rust_sacn_rcv_update_thread"; 
+
+pub const DEFAULT_RECV_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
+
 #[derive(Debug)]
 pub struct DMXData{
     pub universe: u16,
@@ -116,13 +121,19 @@ impl DiscoveredSacnSource {
 }
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
-pub struct SacnReceiver {
+pub struct SacnReceiverInternal {
     receiver: DmxReciever,
     waiting_data: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
     universes: Vec<u16>, // Universes that this receiver is currently listening for
     discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been discovered by this receiver through universe discovery packets.
     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
     partially_discovered_sources: Vec<DiscoveredSacnSource> // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
+    running: bool
+}
+
+pub struct SacnReceiver {
+    internal: Arc<Mutex<SacnReceiverInternal>>,
+    update_thread: Option<JoinHandle<()>>
 }
 
 impl SacnReceiver {
@@ -136,13 +147,35 @@ impl SacnReceiver {
     /// By default this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     pub fn new_v6() -> Result<SacnReceiver, Error> {
         let ip = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
-        SacnReceiver::with_ip(ip)
+        SacnReceiver::with_ip(ip)        
     }
 
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
+        let trd_builder = thread::Builder::new().name(RCV_UPDATE_THREAD_NAME.into());
+
+        let mut internal = Arc::new(Mutex::new(SacnReceiverInternal::with_ip(ip)?)).clone();
+        SacnReceiver {
+            internal: internal,
+            update_thread: Some(trd_builder.spawn(move || {
+                while (internal.lock().unwrap().running) {
+                    thread::sleep(DEFAULT_RECV_POLL_PERIOD);
+                    perform_periodic_update(&mut internal);
+                }
+            }).unwrap()),
+        }
+    }
+}
+
+fn perform_periodic_update(rcv: &mut Arc<Mutex<SacnReceiverInternal>>) {
+
+}
+
+impl SacnReceiverInternal {
+    /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiverInternal, Error> {
         Ok (
-            SacnReceiver {
+            SacnReceiverInternal {
                 // multicast_universe_receivers: Vec::new(),
                 receiver: DmxReciever::new(ip)?,
                 waiting_data: Vec::new(),
@@ -150,6 +183,7 @@ impl SacnReceiver {
                 discovered_sources: Vec::new(),
                 merge_func: htp_dmx_merge,
                 partially_discovered_sources: Vec::new(),
+                running: true
                 // next_index: 0,
             }
         )
