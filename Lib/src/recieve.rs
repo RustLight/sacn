@@ -206,6 +206,19 @@ impl SacnReceiver {
     }
 }
 
+impl Drop for SacnReceiver {
+    fn drop(&mut self){
+        // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
+        if let Some(thread) = self.update_thread.take() {
+            {
+                self.internal.lock().unwrap().terminate();
+            }
+            thread.join().unwrap();
+        }
+    }
+}
+
+
 fn perform_periodic_update(rcv: &mut Arc<Mutex<SacnReceiverInternal>>) {
 
 }
@@ -457,6 +470,11 @@ impl SacnReceiverInternal {
                 Err(err)
             }
         }
+    }
+    
+    /// Terminates the SacnReceiver including cleaning up all used resources as necessary.
+    pub fn terminate(&mut self){
+        self.running = false;
     }
 }
 
