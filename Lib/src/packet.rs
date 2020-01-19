@@ -65,6 +65,19 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use error::{PackError, ParseError};
 
+/// The maximum number of universes per page in a universe discovery packet.
+pub const DISCOVERY_UNI_PER_PAGE: usize = 512;
+
+/// The universe used for universe discovery as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative)
+pub const DISCOVERY_UNIVERSE: u16 = 64214;
+
+/// The default priority used for the E1.31 packet priority field, as per ANSI E1.31 Section 4.1 Table 4-1
+pub const DEFAULT_PRIORITY: u8 = 100;
+
+pub const LOWEST_ALLOWED_UNIVERSE: u16 = 1; // The lowest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
+
+pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
+
 /// Value of the highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
 pub const E131_MULTICAST_IPV4_HIGHEST_BYTE: u8 = 239;
 

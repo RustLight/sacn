@@ -31,24 +31,11 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
 use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, SynchronizationPacketFramingLayer, E131RootLayer,
              E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE, UniverseDiscoveryPacketUniverseDiscoveryLayer, 
-             UniverseDiscoveryPacketFramingLayer, ACN_SDT_MULTICAST_PORT,
-             universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr}; // As defined in ANSI E1.31-2018};
+             UniverseDiscoveryPacketFramingLayer, ACN_SDT_MULTICAST_PORT, DISCOVERY_UNIVERSE, DEFAULT_PRIORITY, LOWEST_ALLOWED_UNIVERSE,
+             universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr, DISCOVERY_UNI_PER_PAGE, HIGHEST_ALLOWED_UNIVERSE}; // As defined in ANSI E1.31-2018};
 
 /// The default delay between sending data packets and sending a synchronisation packet, used as advised by ANSI-E1.31-2018 Appendix B.1
 pub const DEFAULT_SYNC_DELAY: Duration = time::Duration::from_millis(10);
-
-/// The maximum number of universes per page in a universe discovery packet.
-pub const DISCOVERY_UNI_PER_PAGE: usize = 512;
-
-/// The universe used for universe discovery as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative)
-pub const DISCOVERY_UNIVERSE: u16 = 64214;
-
-/// The default priority used for the E1.31 packet priority field, as per ANSI E1.31 Section 4.1 Table 4-1
-pub const DEFAULT_PRIORITY: u8 = 100;
-
-pub const LOWEST_ALLOWED_UNIVERSE: u16 = 1; // The lowest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
-
-pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
 
 pub const SND_UPDATE_THREAD_NAME: &'static str = "rust_sacn_snd_update_thread"; // The name of the thread which runs periodically to perform various actions such as universe discovery adverts for the source.
 
