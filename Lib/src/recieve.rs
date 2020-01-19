@@ -259,7 +259,13 @@ impl SacnReceiverInternal {
     /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
     pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
         for u in universes {
-            match self.universes.binary_search(u) {
+            if u > HIGHEST_ALLOWED_UNIVERSE || u < LOWEST_ALLOWED_UNIVERSE || u == DISCOVERY_UNIVERSE {
+                return Err(Error::new(ErrorKind::InvalidInput, "Attempted to listen on a universe outwith the allowed range: {}", u));
+            }
+        }
+
+        for u in universes {
+            match self.universes.binary_search(u) { 
                 Err(i) => { // Value not found, i is the position it should be inserted
                     self.universes.insert(i, *u);
                     self.receiver.listen_multicast_universe(*u)?
