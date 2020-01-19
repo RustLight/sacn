@@ -50,7 +50,7 @@ pub const LOWEST_ALLOWED_UNIVERSE: u16 = 1; // The lowest valued universe allowe
 
 pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
 
-pub const UPDATE_THREAD_NAME: &'static str = "rust_sacn_update_thread"; // The name of the thread which runs periodically to perform various actions such as universe discovery adverts.
+pub const SND_UPDATE_THREAD_NAME: &'static str = "rust_sacn_snd_update_thread"; // The name of the thread which runs periodically to perform various actions such as universe discovery adverts for the source.
 
 pub const DEFAULT_TERMINATE_START_CODE: u8 = 0; // The default startcode used to send stream termination packets when the SacnSource is dropped.
 
@@ -144,7 +144,7 @@ impl SacnSource {
     }
 
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
-        let trd_builder = thread::Builder::new().name(UPDATE_THREAD_NAME.into());
+        let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
 
         let mut internal_src = Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?));
 
