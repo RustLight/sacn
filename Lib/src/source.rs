@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
 use std::cmp;
 use std::time;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::thread::{sleep, JoinHandle};
 use std::thread;
 use std::sync::{Arc, Mutex};
@@ -56,6 +56,9 @@ pub const DEFAULT_TERMINATE_START_CODE: u8 = 0; // The default startcode used to
 
 // The poll rate of the update thread.
 pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
+
+/// The interval between universe discovery packets (adverts) as defined by ANSI E1.31-2018 Appendix A.
+pub const E131_E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from_secs(10);
 
 // Report: The first universe for the data to be synchronised across multiple universes is 
 // used as the syncronisation universe by default. This is done as it means that the receiever should
@@ -97,7 +100,8 @@ pub struct DmxSource {
     sequences: RefCell<HashMap<u16, u8>>,
     sync_delay: Duration,
     universes: Vec<u16>, // A list of the universes registered to send by this source, used for universe discovery. Always sorted with lowest universe first to allow quicker usage.
-    running: bool
+    running: bool,
+    last_discovery_advert_timestamp: Instant
     // update_thread: JoinHandle<()> // The thread which runs every poll_period to perform various periodic action such as send universe discovery adverts. 
 }
 
@@ -282,7 +286,8 @@ impl DmxSource {
             sequences: RefCell::new(HashMap::new()),
             sync_delay: DEFAULT_SYNC_DELAY,
             universes: Vec::new(),
-            running: true
+            running: true,
+            last_discovery_advert_timestamp: Instant::now()
         })
     }
 
@@ -331,8 +336,6 @@ impl DmxSource {
     ///     if sending more than 1 universe of data it may be acted upon at different times for each universe. A reasonable default for this is to use the first of the universes if 
     ///     synchronisation is required. Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the sync packet.
     fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
-        println!("Sending universes: {:?} data: {:?} priority: {:?} dst_ip: {:?} sync_addr: {:?}", universes, data, priority, dst_ip, syncronisation_addr);
-
         if self.running == false { // Indicates that this sender has been terminated.
             return Err(Error::new(ErrorKind::NotConnected, "Sender has been terminated / isn't live")); 
         }
@@ -413,8 +416,6 @@ impl DmxSource {
             } else {
                 dst = universe_to_ipv4_multicast_addr(universe)?;
             }
-
-            println!("{}", dst);
 
             self.socket.send_to(&packet.pack_alloc().unwrap(), dst)?;
         }
@@ -503,8 +504,6 @@ impl DmxSource {
             },
         };
         let res = &packet.pack_alloc().unwrap();
-
-        // println!("Terminate stream pkt: {:?}", res);
 
         self.socket.send_to(res, ip)?;
 
@@ -632,7 +631,11 @@ impl DmxSource {
 }
 
 fn perform_periodic_update(src: &mut Arc<Mutex<DmxSource>>){
-    
+    let mut unwrap_src = src.lock().unwrap();
+    if Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_E131_UNIVERSE_DISCOVERY_INTERVAL {
+        unwrap_src.send_universe_discovery();
+        unwrap_src.last_discovery_advert_timestamp = Instant::now();
+    }
 }
 
 #[cfg(test)]
