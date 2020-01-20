@@ -191,18 +191,34 @@ impl SacnReceiver {
         self.internal.lock().unwrap().listen_universes(universes)
     }
 
-    
-    pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
-        self.internal.lock().unwrap().set_nonblocking(is_nonblocking)
+    pub fn set_nonblocking(&mut self, timeout: Option<Duration>) -> Result<(), Error> {
+        match timeout {
+            Some(t) => {
+                let internal = self.internal.lock().unwrap();
+                internal.set_nonblocking(true);
+                internal.set_timeout(t);
+            },
+            None => {
+                self.internal.lock().unwrap().set_nonblocking(false);
+            }
+        }
+        
     }
 
     // Attempt to recieve data from any of the registered universes.
     // This is the main method for receiving data.
     // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
     // is already handled.
-    // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast).
+    // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast) and 
+    // the set_nonblocking method has been called with a Some value.
+    // If a universe discovery packet is received it will be handled and the list of discovered universes will be updated.
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
         self.internal.lock().unwrap().recv()
+    }
+
+    
+    pub fn attempt_discover_sources(&mut self) -> Result<u16, Error> {
+
     }
 }
 
