@@ -1,55 +1,63 @@
 \documentclass[11pt,a4paper,notitlepage]{report}
-\usepackage[latin1]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{graphicx}
 \author{160007345}
-\title{Final Report}
+\title{Rust Implementation of the ANSI E1.31-2018 sACN Protocol}
+
+\setcounter{secnumdepth}{0}
+
 \begin{document}
 	\maketitle
-	\section*{Rough notes}
+	\section{Rough notes}
 	Title page
 	Containing the title of the project, the names of the
 	student(s), "University of St Andrews" and the date of
 	submission. You may add the name of your supervisor
 	if you wish.
 	
-	\section*{Abstract}
+	\section{Abstract}
 	Abstract Outline of the project using at most 250 words.
 	
-	\section*{Declaration}
+	The project expands on an existing implementation \cite{ORIGNIAL_IMPL} of the streaming architecture for control networks (sACN) protocol \cite{ANSI_E1.31} in rust with the aim to make a fully compliant library that allows sending and receiving DMX payload data without having to handle E1.31 specifics directly. This library is made to support Ipv4, Ipv6, unix and windows and is tested to show compliance with the protocol.
+	
+	\section{Declaration}
 	Declaration
-	"I/we* declare that the material submitted for
-	assessment is my/our* own work except where credit is
+	"I declare that the material submitted for
+	assessment is my own work except where credit is
 	explicitly given to others by citation or
 	acknowledgement. This work was performed during
 	the current academic year except where otherwise
 	stated.
-	"The main text of this project report is NN,NNN*
+	"The main text of this project report is NN,NNN
 	words long, including project specification and plan.
 	"In submitting this project report to the University of
-	St Andrews, I/we* give permission for it to be made
-	available for use in accordance with the regulations of
-	the University Library. I/we* also give permission for
-	the title and abstract to be published and for copies of
-	the report to be made and supplied at cost to any bona
-	fide library or research worker, and to be made
-	available on the World Wide Web. I/we* retain the
+	St Andrews, I give permission for it to be made
+	available for use in accordance with the regulations of the University Library. I also give permission for
+	the title and abstract to be published and for copies of the report to be made and supplied at cost to any bonafide library or research worker, and to be made
+	available on the World Wide Web. I retain the
 	copyright in this work."
-	(* to be filled in as appropriate)
+	
 	If there is a strong case for the protection of
 	confidential data, the parts of the declaration giving
 	permission for its use and publication may be omitted
 	by prior permission of the Honours Coordinator.
-	1
-	2017/18
 	
-	\section*{Contents Page}
-	Contents page Table of contents
+	\section{Contents Page}
+	\tableofcontents
 	
-	\section*{Introduction}
+	\section{Introduction}
 		Introduction
+		
+	The goal of this project was to create a rust library for sending and receiving sACN data that is fully compliant with the protocol specification as defined in ANSI E1.31-2018 \cite{ANSI_E1.31}. This project is based on an existing but incomplete implementation of the protocol \cite{ORIGNIAL_IMPL} which was then expanded upon.\\
+	
+	The following list of objectives
+	\begin{list}{}{}
+		\item
+	\end{list}
+	
 	Describe the problem you set out to solve and the
 	extent of your success in solving it. You should include
 	the aims and objectives of the project in order of
@@ -57,7 +65,7 @@
 	project for the reader to look for in the rest of your
 	report.
 	
-	\section*{Context Survey}
+	\section{Context Survey}
 	Context survey
 	Surveying the context, the background literature and
 	any recent work with similar aims. The context survey
@@ -66,10 +74,10 @@
 	available software. You may also describe potentially
 	useful tools and technologies here but do not go into
 	project-specific decisions.
-	\subsection*{DMX, SACN and ACN}
-	\subsection*{Other protocols}
+	\subsection{DMX, SACN and ACN}
+	\subsection{Other protocols}
 	
-	\section*{Requirement specification}
+	\section{Requirement specification}
 	Requirements
 	specification
 	Capturing the properties the software solution must
@@ -77,7 +85,7 @@
 	may wish to specify different types of requirements and
 	given them priorities if applicable.
 	
-	\section*{Software Engineering Process}
+	\section{Software Engineering Process}
 		Software
 	engineering
 	process
@@ -92,10 +100,12 @@
 	As this project is based on a clearly defined specification provided by the protocal specification and the domains were 
 	clearly defined at the start it means that this inflexibility isn't a major issue and so therefore choosing the waterfall 
 	method for its advantages makes sense. 
-
-	\label{waterfall-diag}
-	\includegraphics[width=\textwidth]{sdlc_waterfall_model.jpg}
-	\caption{A diagram showing the waterfall development process, [\cite{waterfall-diagram}]}
+	
+	\begin{figure}
+		\label{waterfall-diag}
+		\includegraphics[width=\textwidth]{sdlc_waterfall_model.jpg}
+		\caption{A diagram showing the waterfall development process, [\cite{waterfall-diagram}]}
+	\end{figure}
 
 	\paragraph*{}
 	The waterfall model can be clearly seen throughout the development of the program. The first phase of 'requirement analysis'
@@ -140,31 +150,31 @@
 	because the constraints of fixed submissions deadlines already meant that there some rigid time constraints in place. 
 
 	\ref{waterfall-diagram}
-	https://www.tutorialspoint.com/sdlc/sdlc_waterfall_model.htm (01/01/2020)
+	https://www.tutorialspoint.com/sdlc/sdlc\_waterfall\_model.htm (01/01/2020)
 	
-	\section*{Ethics}
+	\section{Ethics}
 	Ethics
 	Any ethical considerations for the project. You should
 	scan the signed ethical approval document, and include
 	it as an appendix.
 	
-	\section*{Design}
+	\section{Design}
 	Design
 	Indicating the structure of the system, with particular
 	focus on main ideas of the design, unusual design
 	features, etc.
-	\subsection*{ANSI E1.31-2018}
-	\subsection*{Critique of the protocol}
-	\section*{Implementation}
+	\subsection{ANSI E1.31-2018}
+	\subsection{Critique of the protocol}
+	\section{Implementation}
 	Implementation
 	How the implementation was done and tested, with
 	particular focus on important / novel algorithms
 	and/or data structures, unusual implementation
 	decisions, novel user interface features, etc.
 	
-	\subsection*{Implementation dependent specifics}
+	\subsection{Implementation dependent specifics}
 	
-	\section*{Evaluation and Critical Appraisal}
+	\section{Evaluation and Critical Appraisal}
 	Evaluation and
 	critical
 	appraisal
@@ -176,14 +186,14 @@
 	written about in published papers, or as distributed in
 	software available to you.
 	
-	\section*{Conclusions}
+	\section{Conclusions}
 	Conclusions
 	You should summarise your project, emphasising your
 	key achievements and significant drawbacks to your
 	work, and discuss future directions your work could be
 	taken in.
 	
-	\section*{Appendices}
+	\section{Appendices}
 	The appendices to your report will normally be as follows.
 	Testing
 	summary
@@ -191,15 +201,15 @@
 	verify or otherwise confirm the correctness of the
 	various modules and their combination.
 	
-	\section*{Testing}
-	\subsection*{Automated Testing}
-	\subsection*{Real-world Testing}
+	\section{Testing}
+	\subsection{Automated Testing}
+	\subsection{Real-world Testing}
 	
-	\section*{User Manual}
+	\section{User Manual}
 	User manual Instructions on installing, executing and using the
 	system where appropriate.
 	
-	\section*{Other Appendices}
+	\section{Other Appendices}
 	Other
 	appendices
 	If appropriate, you may include other material in
@@ -210,5 +220,24 @@
 	appropriate to discuss small sections in the main body of your report. Instead,
 	you will submit via MMS your code and associated material such as JavaDoc
 	documentation and detailed UML diagrams
+	
+	\begin{thebibliography}{9}
+		\bibitem{ANSI_E1.17}
+		ANSI E1.17 - 2015 Entertainment Technology?Architecture for Control Networks
+		\bibitem{ORIGNIAL_IMPL}
+		https://github.com/lschmierer/sacn (September 2019)
+		\bibitem{ANSI_E1.31}
+		ANSI E1.31 ? 2018 Entertainment Technology Lightweight streaming protocol for transport of DMX512 using ACN
+		\bibitem{DMX_INFO}
+		https://www.element14.com/community/groups/open-source-hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-protocol-detail-for-lighting-applications (17/09/2019)
+		\bibitem{C_IMPL}
+		https://github.com/hhromic/libe131 (17/09/2019)
+		\bibitem{RUST_LANG}
+		https://www.rust-lang.org/ (17/09/2019)
+		\bibitem{ArtNet}
+		http://artisticlicence.com/WebSiteMaster/User\%20Guides/art-net.pdf (17/09/2019)
+		
+		
+	\end{thebibliography}
 	
 \end{document}

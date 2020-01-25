@@ -27,6 +27,8 @@ use std::time::Duration;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool};
 
+use either::*;
+
 /// The default size of the buffer used to recieve E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
 pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
