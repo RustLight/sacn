@@ -1,24 +1,25 @@
 \contentsline {section}{Rough notes}{1}
 \contentsline {section}{Abstract}{1}
 \contentsline {section}{Declaration}{1}
-\contentsline {section}{Contents Page}{2}
-\contentsline {section}{Introduction}{3}
+\contentsline {section}{Introduction}{4}
 \contentsline {section}{Context Survey}{5}
 \contentsline {subsection}{DMX, SACN and ACN}{5}
-\contentsline {subsection}{Other protocols}{6}
-\contentsline {section}{Requirement specification}{6}
-\contentsline {section}{Software Engineering Process}{6}
-\contentsline {section}{Ethics}{8}
-\contentsline {section}{Design}{9}
-\contentsline {subsection}{ANSI E1.31-2018}{9}
-\contentsline {subsection}{Critique of the protocol}{9}
-\contentsline {section}{Implementation}{9}
-\contentsline {subsection}{Implementation dependent specifics}{9}
-\contentsline {section}{Evaluation and Critical Appraisal}{9}
-\contentsline {section}{Conclusions}{9}
-\contentsline {section}{Appendices}{9}
-\contentsline {section}{Testing}{10}
-\contentsline {subsection}{Automated Testing}{10}
-\contentsline {subsection}{Real-world Testing}{10}
-\contentsline {section}{User Manual}{10}
-\contentsline {section}{Other Appendices}{10}
+\contentsline {subsubsection}{DMX512}{5}
+\contentsline {subsubsection}{sACN}{6}
+\contentsline {subsubsection}{Rust}{6}
+\contentsline {subsection}{Related Work}{6}
+\contentsline {section}{Requirement specification}{7}
+\contentsline {section}{Software Engineering Process}{9}
+\contentsline {section}{Design}{11}
+\contentsline {subsection}{ANSI E1.31-2018}{11}
+\contentsline {subsection}{Critique of the protocol}{11}
+\contentsline {section}{Implementation}{11}
+\contentsline {subsection}{Implementation dependent specifics}{11}
+\contentsline {section}{Evaluation and Critical Appraisal}{11}
+\contentsline {section}{Conclusions}{11}
+\contentsline {section}{Appendices}{12}
+\contentsline {section}{Testing}{12}
+\contentsline {subsection}{Automated Testing}{12}
+\contentsline {subsection}{Real-world Testing}{12}
+\contentsline {section}{User Manual}{12}
+\contentsline {section}{Other Appendices}{12}
