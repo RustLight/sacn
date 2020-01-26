@@ -19,3 +19,6 @@ https://tsp.esta.org/tsp/documents/published_docs.php (22/09/2019)
 
 For having multiple IPs on windows
 https://www.quora.com/Can-a-computer-have-two-IP-addresses (06/01/2020)
+
+Might be useful
+https://www.mikewoodconsulting.com/articles/Protocol%20Fall%202017%20-%20Networking.pdf (26/01/2020)

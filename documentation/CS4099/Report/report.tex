@@ -50,20 +50,34 @@
 	
 	\section{Introduction}
 		Introduction
+		Describe the problem you set out to solve and the
+		extent of your success in solving it. You should include
+		the aims and objectives of the project in order of
+		importance and try to outline key aspects of your
+		project for the reader to look for in the rest of your
+		report.
 		
 	The goal of this project was to create a rust library for sending and receiving sACN data that is fully compliant with the protocol specification as defined in ANSI E1.31-2018 \cite{ANSI_E1.31}. This project is based on an existing but incomplete implementation of the protocol \cite{ORIGNIAL_IMPL} which was then expanded upon.\\
 	
-	The following list of objectives
-	\begin{list}{}{}
-		\item
+	The project was split into the following list of primary and secondary objectives.\\
+	\begin{list}{}{Primary}
+		\item Learn rust - This is an inherent part of the project as rust is a new language.
+		\item Establish the extends of the existing implementation - Only some parts of the protocol had been implemented so need to establish which bits and to what extent.
+		\item Introduce more through testing of existing - There is only a small amount of testing for the existing implementation which needs to be expanded on to verify it works
+		\item Allow receiving DMX through sACN
+		\item Allow sending DMX using universe synchronisation - This involves both data packets and sync packets.
+		\item Allow universe discovery - Sources of data can be discovered using adverts.
+		\item Add support for the options field - This includes things such as termination of streams and forced synchronisation.
+	\end{list}
+	\begin{list}{}{Secondary}
+		\item Analyse the performance of the protocol implementation verses other implementations in other languages - Using metrics such as data throughput, performance as number of universes increases.
+		\item Analyse the performance of the protocol versus other similar protocols such as ArtNet \cite{ArtNet}
+		\item Test the implementation in a real-world environment with real devices - Involves creating a small demo program.
+		\item Windows and Unix support - Windows 10 and the lab machine Fedora version.
+		\item Unicast, Multicast and Broadcast Support - The protocol works over all these with multicast being the preferred.
+		\item Ipv4 and Ipv6 support
 	\end{list}
 	
-	Describe the problem you set out to solve and the
-	extent of your success in solving it. You should include
-	the aims and objectives of the project in order of
-	importance and try to outline key aspects of your
-	project for the reader to look for in the rest of your
-	report.
 	
 	\section{Context Survey}
 	Context survey
@@ -74,7 +88,42 @@
 	available software. You may also describe potentially
 	useful tools and technologies here but do not go into
 	project-specific decisions.
+	
+	The ANSI E1.31 sACN protocol was originally specified in the document ANSI E1.31-2009 \cite{ANSI_E1.31_2009}. This represented the base version of the protocol without any universe synchronisation, universe discovery or discussion of operation with Ipv6. Since then it has been revised in 2016 (universe sync and discovery) \cite{ANSI_E1.31_2016} and again to its current latest version in 2018 (Ipv6). The future of ANSI E1.31 is still being actively developed and discussed \cite{WHAT_COMES_AFTER_SACN} with the direction of the ACN eco-system of lighting control data over IP being focused on supporting communication from receivers back to sources. This is 
+	
+	
+	
+	 isn't the only protocol built for sending DMX data across a network. 
+	
+	There are a number of existing implementations of sACN in rust however none are fully compliant with the protocol as specified in ANSI E1.31-2018. One of the most complete is \cite{ORIGNIAL_IMPL} which was used as the base for this project. As this is hosted on github it can be seen that while there are a number of forks (6 at time of writing) no public fork has any further progress which leads to the conclusion that this is the most complete open source rust implementation available. Note that this implementation appears in a number of places such as \cite{ORIGINAL_IMPL_RUST_DOC} but this is still the same implementation.\\
+	
+	Implementations of sACN exist in multiple languages, at the time of writing (Jan 2020) a cursory search for E1.31 repositories on github reveals repositories in multiple languages with the most prevalent being C++ and C as shown by Figure: \ref{E131_REPO_SEARCH}. An example of one of these projects is \ref{C++_IMPL} which allows both sending and receiving of sACN packets.
+	
+	\begin{figure}
+		\label{E131_REPO_SEARCH}
+		\includegraphics[width=\textwidth]{E131-Repo-Search}
+		\caption{A search of repositories on github with the search term "E1.31" as of Jan 2020}
+	\end{figure}
+	
+	There exist multiple implementations of the sACN protocol in a 
+	
+	
 	\subsection{DMX, SACN and ACN}
+	\subsubsection*{DMX512} DMX512 is an protocol used in the entertainment industry for the control of lighting, effects and other devices. It works by daisy chaining devices together into distinct physical chains (called universes) and is a one way protocol. This means that the devices in the line cannot communicate their presence back to the controller so the controller must know about the devices ahead of time and their addresses so it can broadcast packets down the line which the devices then receive and use. The DMX packets are a fixed size and contain five hundred and twelve 8-byte channel (+ a start code) which allows them to control up to 512 different devices on a singular line. A device may support the use of multiple channels to control different functionalities so for example a light with RGB colour mixing may use 3 channels to allow control of the Red, Green and Blue individually. Since there are only 512 channels available on a single universe this quickly imposes a limitation to the number of devices that can be connected together, especially as modern lighting fixtures commonly use upwards of 30 channels each for a moving light with usage of many more not uncommon. The solution to this was previously to simply have more physical lines (universes) and in this way allow more devices to be controlled simultaneously. This comes with a number of problems however as each new physical line means a new cable coming directly from the control desk.
+	
+	\paragraph*{DMX512 Problems}
+	\begin{list}{}{}
+		\item As the control desk is often far from the devices themselves (at the back of the venue whereas the lights/devices are above the stage) it means that many cables need to be run which can be expensive and time consuming.
+		\item The length of the cable runs can cause signal interference / degradation and DMX as a 1 way protocol does not have any error correction (bad frames if detected are thrown out).
+		\item The protocol only allowing 512 channels per physical line means that a device cannot have more channels than this. This is particularly a problem recently with the advent of complex fixtures which may have many LED's with individual colour control.
+	\end{list}
+	
+	\subsubsection*{sACN}
+	One solution to solve some of the problems with DMX is to send it using UDP over a standard IP based network and one of the protocols created to do this is sACN. This allows many DMX packets (and so many universes) to be simultaneously sent using a single network cable from the console and then to be received by the devices. Often for backwards compatibility reasons the sACN is converted back into DMX packets before being sent to the device as most devices older than a few years do not support direct sACN communication but this is rapidly increasing - particularly with higher end professional fixtures. 
+	
+	\subsubsection*{Rust}
+	Rust \cite{RUST_LANG} is a language designed to be used for writing fast, memory efficient systems code. It has relatively low overhead and because it doesn't require the additional overhead of a garbage collector it is perfect for usage in embedded or high performance systems. This makes it an ideal language for usage with sACN as responding quickly to control events is vital to a lighting system (imagine a sound effect goes off but the lighting doesn't until a second later). 
+	
 	\subsection{Other protocols}
 	
 	\section{Requirement specification}
@@ -152,11 +201,8 @@
 	\ref{waterfall-diagram}
 	https://www.tutorialspoint.com/sdlc/sdlc\_waterfall\_model.htm (01/01/2020)
 	
-	\section{Ethics}
-	Ethics
-	Any ethical considerations for the project. You should
-	scan the signed ethical approval document, and include
-	it as an appendix.
+	\section*{Ethics}
+	This project has no ethical considerations that require notification in this section.
 	
 	\section{Design}
 	Design
@@ -236,7 +282,24 @@
 		https://www.rust-lang.org/ (17/09/2019)
 		\bibitem{ArtNet}
 		http://artisticlicence.com/WebSiteMaster/User\%20Guides/art-net.pdf (17/09/2019)
+		\bibitem{ORIGINAL_IMPL_RUST_DOC}
+		https://docs.rs/sacn/0.4.4/sacn/index.html
+		(26/01/2020)
+		\bibitem{C++_IMPL}
+		https://github.com/hhromic/libe131
+		(26/01/2020)
+		\bibitem{ANSI_E1.31_2009}
+		https://tsp.esta.org/tsp/documents/docs/E1-31\_2009.pdf
+		(26/01/2020)
+		\bibitem{ANSI_E1.31_2016}
+		https://tsp.esta.org/tsp/documents/docs/E1-31-2016.pdf
+		(26/01/2020)
+		\bibitem{WHAT_COMES_AFTER_SACN}
+		http://www.rdmprotocol.org/files/What\_Comes\_After\_Streaming\_DMX\_over\_ACN\_\%20\%284\%29.pdf (26/01/2020)
+		\bibitem{ANSI_E1.33_2019}
 		
+		\bibitem{ANSI_E1.33_IMPL}
+		https://github.com/ETCLabs/RDMnet (26/01/2020)
 		
 	\end{thebibliography}
 	
