@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (MiKTeX 2.9.6840 64-bit) (preloaded format=pdflatex 2018.11.14)  25 JAN 2020 15:02
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (MiKTeX 2.9.6840 64-bit) (preloaded format=pdflatex 2018.11.14)  26 JAN 2020 11:34
 entering extended mode
 **./report.tex
 (report.tex
@@ -231,58 +231,69 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 [1
 
-{C:/Users/paul/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}]
+{C:/Users/paul/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}] [2]
 (report.toc)
 \tf@toc=\write3
 \openout3 = `report.toc'.
 
- [2
+
+Underfull \hbox (badness 10000) in paragraph at lines 60--61
+
+ []
+
+[3
 
 ]
-<sdlc_waterfall_model.jpg, id=12, 451.6875pt x 301.8778pt>
+Overfull \hbox (10.01921pt too wide) in paragraph at lines 73--74
+\OT1/cmr/m/n/10.95 im-ple-men-ta-tions in other lan-guages - Us-ing met-rics su
+ch as data through-
+ []
+
+[4] [5] [6]
+<sdlc_waterfall_model.jpg, id=25, 451.6875pt x 301.8778pt>
 File: sdlc_waterfall_model.jpg Graphic file (type jpg)
 <use sdlc_waterfall_model.jpg>
-Package pdftex.def Info: sdlc_waterfall_model.jpg  used on input line 98.
+Package pdftex.def Info: sdlc_waterfall_model.jpg  used on input line 137.
 (pdftex.def)             Requested size: 360.0pt x 240.61356pt.
 
 
-LaTeX Warning: Citation `waterfall-diagram' on page 3 undefined on input line 9
-9.
+LaTeX Warning: Citation `waterfall-diagram' on page 7 undefined on input line 1
+38.
 
-[3] [4 <./sdlc_waterfall_model.jpg>]
+[7 <./sdlc_waterfall_model.jpg>]
 
-LaTeX Warning: Reference `waterfall-diagram' on page 5 undefined on input line 
-144.
+LaTeX Warning: Reference `waterfall-diagram' on page 8 undefined on input line 
+183.
 
 
-Overfull \hbox (38.12727pt too wide) in paragraph at lines 144--146
+Overfull \hbox (38.12727pt too wide) in paragraph at lines 183--185
 [][] \OT1/cmr/m/n/10.95 https://www.tutorialspoint.com/sdlc/sdlc[]waterfall[]mo
 del.htm (01/01/2020) 
  []
 
-[5]
-Overfull \hbox (10.96207pt too wide) in paragraph at lines 182--187
+[8]
+Overfull \hbox (10.96207pt too wide) in paragraph at lines 221--226
 \OT1/cmr/m/n/10.95 Conclusions You should sum-marise your project, em-pha-sis-i
 ng your key achieve-
  []
 
-[6]
-Underfull \hbox (badness 10000) in paragraph at lines 224--225
+[9] [10]
+Underfull \hbox (badness 10000) in paragraph at lines 263--264
 []\OT1/cmr/m/n/10.95 https://www.element14.com/community/groups/open-source-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 224--225
+Underfull \hbox (badness 10000) in paragraph at lines 263--264
 \OT1/cmr/m/n/10.95 hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 230--231
+Underfull \hbox (badness 10000) in paragraph at lines 269--270
 []\OT1/cmr/m/n/10.95 http://artisticlicence.com/WebSiteMaster/User%20Guides/art
 -net.pdf
  []
 
-[7
+[11
 
 ] (report.aux)
 
@@ -292,20 +303,20 @@ LaTeX Warning: There were undefined references.
 Here is how much of TeX's memory you used:
  2389 strings out of 492970
  32908 string characters out of 3127037
- 97235 words of memory out of 3000000
+ 97279 words of memory out of 3000000
  6232 multiletter control sequences out of 15000+200000
  11958 words of font info for 45 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 41i,6n,29p,344b,217s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 41i,6n,25p,1510b,217s stack positions out of 5000i,500n,10000p,200000b,50000s
 <C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/
 cm/cmbx10.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/publ
 ic/amsfonts/cm/cmbx12.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/font
 s/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/paul/AppData/Local/Programs/MiKT
 eX 2.9/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/paul/AppData/Local/Pr
 ograms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr17.pfb>
-Output written on report.pdf (7 pages, 119698 bytes).
+Output written on report.pdf (11 pages, 134592 bytes).
 PDF statistics:
- 47 PDF objects out of 1000 (max. 8388607)
+ 59 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  6 words of extra memory for PDF output out of 10000 (max. 10000000)
 
