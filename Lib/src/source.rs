@@ -140,7 +140,7 @@ impl SacnSource {
         let src = SacnSource { 
             internal: internal_src,
             update_thread: Some(trd_builder.spawn(move || {
-                while (trd_src.lock().unwrap().running) {
+                while trd_src.lock().unwrap().running {
                     thread::sleep(DEFAULT_POLL_PERIOD);
                     perform_periodic_update(&mut trd_src);
                 }

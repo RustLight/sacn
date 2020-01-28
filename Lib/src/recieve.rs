@@ -14,7 +14,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLayerData::DataPacket, 
     E131RootLayerData::SynchronizationPacket, E131RootLayerData::UniverseDiscoveryPacket, UniverseDiscoveryPacketFramingLayer, 
     SynchronizationPacketFramingLayer, DataPacketFramingLayer, UniverseDiscoveryPacketUniverseDiscoveryLayer, ACN_SDT_MULTICAST_PORT,
-    universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr};
+    universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr, HIGHEST_ALLOWED_UNIVERSE, LOWEST_ALLOWED_UNIVERSE, DISCOVERY_UNIVERSE};
 
 use std::io;
 use std::io::{Error, ErrorKind};
@@ -26,8 +26,6 @@ use std::time;
 use std::time::Duration;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool};
-
-use either::*;
 
 /// The default size of the buffer used to recieve E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
@@ -166,7 +164,7 @@ impl SacnReceiver {
         Ok(SacnReceiver {
             internal: internal.clone(),
             update_thread: Some(trd_builder.spawn(move || {
-                while (internal.lock().unwrap().running) {
+                while internal.lock().unwrap().running {
                     thread::sleep(DEFAULT_RECV_POLL_PERIOD);
                     perform_periodic_update(&mut internal);
                 }
@@ -175,7 +173,7 @@ impl SacnReceiver {
     }
 
     // TODO
-    pub fn set_merge_fn(&mut self, func: (fn(&DMXData, &DMXData) -> Result<DMXData, Error>)) -> Result<(), Error> {
+    pub fn set_merge_fn(&mut self, func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>) -> Result<(), Error> {
         self.internal.lock().unwrap().set_merge_fn(func)
     }
 
@@ -194,17 +192,18 @@ impl SacnReceiver {
     }
 
     pub fn set_nonblocking(&mut self, timeout: Option<Duration>) -> Result<(), Error> {
-        match timeout {
-            Some(t) => {
-                let internal = self.internal.lock().unwrap();
-                internal.set_nonblocking(true);
-                internal.set_timeout(t);
-            },
-            None => {
-                self.internal.lock().unwrap().set_nonblocking(false);
-            }
-        }
-        
+        // match timeout {
+        //     Some(t) => {
+        //         let internal = self.internal.lock().unwrap();
+        //         // internal.set_nonblocking(true);
+        //         internal.set_timeout(t);
+        //     },
+        //     None => {
+        //         self.internal.lock().unwrap().set_nonblocking(false);
+        //     }
+        // }
+        self.internal.lock().unwrap().set_timeout(timeout);
+        Ok(())
     }
 
     // Attempt to recieve data from any of the registered universes.
@@ -220,7 +219,8 @@ impl SacnReceiver {
 
     
     pub fn attempt_discover_sources(&mut self) -> Result<u16, Error> {
-
+        // NOT IMPL
+        Ok(0)
     }
 }
 
@@ -260,7 +260,7 @@ impl SacnReceiverInternal {
     }
 
     // TODO
-    pub fn set_merge_fn(&mut self, func: (fn(&DMXData, &DMXData) -> Result<DMXData, Error>)) -> Result<(), Error> {
+    pub fn set_merge_fn(&mut self, func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>) -> Result<(), Error> {
         self.merge_func = func;
         Ok(())
     }
@@ -277,8 +277,8 @@ impl SacnReceiverInternal {
     /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
     pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
         for u in universes {
-            if u > HIGHEST_ALLOWED_UNIVERSE || u < LOWEST_ALLOWED_UNIVERSE || u == DISCOVERY_UNIVERSE {
-                return Err(Error::new(ErrorKind::InvalidInput, "Attempted to listen on a universe outwith the allowed range: {}", u));
+            if *u > HIGHEST_ALLOWED_UNIVERSE || *u < LOWEST_ALLOWED_UNIVERSE || *u == DISCOVERY_UNIVERSE {
+                return Err(Error::new(ErrorKind::InvalidInput, format!("Attempted to listen on a universe outwith the allowed range: {}", u)));
             }
         }
 
@@ -467,6 +467,10 @@ impl SacnReceiverInternal {
 
     pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
         self.receiver.set_nonblocking(is_nonblocking)
+    }
+
+    pub fn set_timeout(&mut self, time: Option<Duration>) {
+        // TODO 
     }
 
     // Attempt to recieve data from any of the registered universes.
