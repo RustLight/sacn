@@ -38,7 +38,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -90,7 +90,7 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -141,7 +141,7 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&UNIVERSES).unwrap();
 
@@ -201,7 +201,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&UNIVERSES).unwrap();
 
@@ -263,7 +263,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     let rcv_thread1 = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -275,7 +275,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     let rcv_thread2 = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -333,7 +333,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     let rcv_thread1 = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&[universe1]).unwrap();
         dmx_recv.listen_universes(&[sync_uni]).unwrap();
@@ -346,7 +346,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     let rcv_thread2 = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&[universe2]).unwrap();
         dmx_recv.listen_universes(&[sync_uni]).unwrap();
@@ -422,7 +422,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -472,7 +472,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -522,7 +522,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -572,7 +572,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
 
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -622,7 +622,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&UNIVERSES).unwrap();
 
@@ -682,7 +682,7 @@ fn test_send_recv_across_universe_multicast_ipv4(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&UNIVERSES).unwrap();
 
@@ -742,7 +742,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&UNIVERSES).unwrap();
 
@@ -804,7 +804,7 @@ fn test_send_recv_across_universe_unicast_ipv4(){
     let rcv_thread = thread::spawn(move || {
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-        dmx_recv.set_nonblocking(false).unwrap();
+        dmx_recv.set_timeout(None);
 
         dmx_recv.listen_universes(&UNIVERSES).unwrap();
 
@@ -860,7 +860,7 @@ fn test_two_senders_one_recv_different_universes_multicast_ipv4(){
 
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-    dmx_recv.set_nonblocking(false).unwrap();
+    dmx_recv.set_timeout(None);
 
     dmx_recv.listen_universes(&[universe_1]).unwrap();
     dmx_recv.listen_universes(&[universe_2]).unwrap();
@@ -913,7 +913,7 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
 
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-    dmx_recv.set_nonblocking(false).unwrap();
+    dmx_recv.set_timeout(None);
 
     dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -972,7 +972,7 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
 
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-    dmx_recv.set_nonblocking(false).unwrap();
+    dmx_recv.set_timeout(None);
 
     dmx_recv.listen_universes(&[universe, sync_uni]).unwrap();
 
@@ -1078,7 +1078,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
             // Port kept the same so must use multiple IP's.
             let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
-            dmx_recv.set_nonblocking(false).unwrap();
+            dmx_recv.set_timeout(None);
 
             // Receivers listen to all universes
             for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
@@ -1190,7 +1190,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
             // Port kept the same so must use multiple IP's.
             let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
-            dmx_recv.set_nonblocking(false).unwrap();
+            dmx_recv.set_timeout(None);
 
             // Receivers listen to all universes
             for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
@@ -1302,7 +1302,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
             // Port kept the same so must use multiple IP's.
             let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
-            dmx_recv.set_nonblocking(false).unwrap();
+            dmx_recv.set_timeout(None);
 
             // Receivers listen to all universes
             for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
@@ -1414,7 +1414,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
             // Port kept the same so must use multiple IP's.
             let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
     
-            dmx_recv.set_nonblocking(false).unwrap();
+            dmx_recv.set_timeout(None);
 
             // Receivers listen to all universes
             for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
@@ -1501,7 +1501,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 
 //     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-//     dmx_recv.set_nonblocking(false).unwrap();
+//     dmx_recv.set_timeout(None);
 
 //     assert!(false, "Not implemented");
 // }

@@ -191,20 +191,24 @@ impl SacnReceiver {
         self.internal.lock().unwrap().listen_universes(universes)
     }
 
-    pub fn set_nonblocking(&mut self, timeout: Option<Duration>) -> Result<(), Error> {
-        // match timeout {
-        //     Some(t) => {
-        //         let internal = self.internal.lock().unwrap();
-        //         // internal.set_nonblocking(true);
-        //         internal.set_timeout(t);
-        //     },
-        //     None => {
-        //         self.internal.lock().unwrap().set_nonblocking(false);
-        //     }
-        // }
-        self.internal.lock().unwrap().set_timeout(timeout);
-        Ok(())
+    pub fn set_timeout(&mut self, time: Option<Duration>) {
+        // TODO 
     }
+
+    // pub fn set_nonblocking(&mut self, timeout: Option<Duration>) -> Result<(), Error> {
+    //     // match timeout {
+    //     //     Some(t) => {
+    //     //         let internal = self.internal.lock().unwrap();
+    //     //         // internal.set_nonblocking(true);
+    //     //         internal.set_timeout(t);
+    //     //     },
+    //     //     None => {
+    //     //         self.internal.lock().unwrap().set_nonblocking(false);
+    //     //     }
+    //     // }
+    //     self.internal.lock().unwrap().set_timeout(timeout);
+    //     Ok(())
+    // }
 
     // Attempt to recieve data from any of the registered universes.
     // This is the main method for receiving data.
@@ -465,9 +469,9 @@ impl SacnReceiverInternal {
         Ok(None)
     }
 
-    pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
-        self.receiver.set_nonblocking(is_nonblocking)
-    }
+    // pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
+    //     self.receiver.set_nonblocking(is_nonblocking)
+    // }
 
     pub fn set_timeout(&mut self, time: Option<Duration>) {
         // TODO 
