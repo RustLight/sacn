@@ -52,6 +52,9 @@ pub const RCV_UPDATE_THREAD_NAME: &'static str = "rust_sacn_rcv_update_thread";
 
 pub const DEFAULT_RECV_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 
+// The default value for the reading timeout for a DmxReceiver.
+pub const DEFAULT_RECV_TIMEOUT: Option<Duration> = Some(time::Duration::from_millis(500));
+
 #[derive(Debug)]
 pub struct DMXData{
     pub universe: u16,
@@ -99,16 +102,17 @@ struct DmxReciever{
     addr: SocketAddr
 }
 
+#[derive(Clone)]
 pub struct DiscoveredSacnSource {
-    name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
-    last_page: u8, // The last page that will be sent by this source.
-    pages: Vec<UniversePage>
+    pub name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
+    pub last_page: u8, // The last page that will be sent by this source.
+    pub pages: Vec<UniversePage>
 }
 
-#[derive(Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Eq, Ord, PartialEq, PartialOrd, Clone)]
 pub struct UniversePage {
-    page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
-    universes: Vec<u16> // The universes that the source is transmitting.
+    pub page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
+    pub universes: Vec<u16> // The universes that the source is transmitting.
 }
 
 impl DiscoveredSacnSource {
@@ -192,7 +196,13 @@ impl SacnReceiver {
     }
 
     pub fn set_timeout(&mut self, time: Option<Duration>) {
-        // TODO 
+        self.internal.lock().unwrap().set_timeout(time);
+    }
+
+    /// Returns a copy of the Vec of discovered sources by this receiver, note that this isn't kept up to date so these source
+    /// may have timed out / changed etc. since this method returned.
+    pub fn get_discovered_sources(&self) -> Vec<DiscoveredSacnSource>{
+        self.internal.lock().unwrap().get_discovered_sources()
     }
 
     // pub fn set_nonblocking(&mut self, timeout: Option<Duration>) -> Result<(), Error> {
@@ -473,8 +483,8 @@ impl SacnReceiverInternal {
     //     self.receiver.set_nonblocking(is_nonblocking)
     // }
 
-    pub fn set_timeout(&mut self, time: Option<Duration>) {
-        // TODO 
+    pub fn set_timeout(&mut self, time: Option<Duration>) -> Result<(), Error> {
+        self.receiver.set_timeout(time)
     }
 
     // Attempt to recieve data from any of the registered universes.
@@ -508,6 +518,10 @@ impl SacnReceiverInternal {
     pub fn terminate(&mut self){
         self.running = false;
     }
+
+    pub fn get_discovered_sources(&self) -> Vec<DiscoveredSacnSource>{
+        self.discovered_sources.clone()
+    }
 }
 
 // Searches for the discovered source with the given name in the given vector of discovered sources and returns the index of the src or None if not found.
@@ -539,6 +553,8 @@ impl DmxReciever {
         } else {
             return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
         }
+
+        socket.set_read_timeout(DEFAULT_RECV_TIMEOUT);
 
         Ok(
             DmxReciever {
@@ -573,7 +589,8 @@ impl DmxReciever {
     }
 
     // Returns a packet if there is one available. The packet may not be ready to transmit if it is awaiting synchronisation.
-    // Doesn't block so may return a WouldBlock error to indicate that there was no data ready.
+    // Will only block if set_timeout was called with a timeout of None so otherwise (and by default) it won't 
+    // block so may return a WouldBlock error to indicate that there was no data ready.
     fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error>{
         let (_len, _remote_addr) = self.socket.recv_from(&mut buf[0..])?;
 
@@ -587,8 +604,10 @@ impl DmxReciever {
         }
     }
 
-    pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
-        self.socket.set_nonblocking(is_nonblocking)
+    // Set the timeout for the recv operation, if this is called with a value of None then the recv operation will become blocking.
+    // A timeout with Duration 0 will cause an error.
+    pub fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<(), Error> {
+        self.socket.set_read_timeout(timeout)
     }
 }
 
