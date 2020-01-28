@@ -24,8 +24,7 @@
 	The project expands on an existing implementation \cite{ORIGNIAL_IMPL} of the streaming architecture for control networks (sACN) protocol \cite{ANSI_E1.31} in rust with the aim to make a fully compliant library that allows sending and receiving DMX payload data without having to handle E1.31 specifics directly. This library is made to support Ipv4, Ipv6, unix and windows and is tested to show compliance with the protocol.
 	
 	\section{Declaration}
-	Declaration
-	"I declare that the material submitted for
+	I declare that the material submitted for
 	assessment is my own work except where credit is
 	explicitly given to others by citation or
 	acknowledgement. This work was performed during
@@ -38,12 +37,7 @@
 	available for use in accordance with the regulations of the University Library. I also give permission for
 	the title and abstract to be published and for copies of the report to be made and supplied at cost to any bonafide library or research worker, and to be made
 	available on the World Wide Web. I retain the
-	copyright in this work."
-	
-	If there is a strong case for the protection of
-	confidential data, the parts of the declaration giving
-	permission for its use and publication may be omitted
-	by prior permission of the Honours Coordinator.
+	copyright in this work.
 	
 	
 	\tableofcontents
@@ -104,7 +98,17 @@
 	One solution to solve some of the problems with DMX is to send it using UDP over a standard IP based network and one of the protocols created to do this is sACN. This allows many DMX packets (and so many universes) to be simultaneously sent using a single network cable from the console and then to be received by the devices. Often for backwards compatibility reasons the sACN is converted back into DMX packets before being sent to the device as most devices older than a few years do not support direct sACN communication but this is rapidly increasing - particularly with higher end professional fixtures. 
 	
 	\subsubsection{Rust}
-	Rust \cite{RUST_LANG} is a language designed to be used for writing fast, memory efficient systems code. It has relatively low overhead and because it doesn't require the additional overhead of a garbage collector it is perfect for usage in embedded or high performance systems. This makes it an ideal language for usage with sACN as responding quickly to control events is vital to a lighting system (imagine a sound effect goes off but the lighting doesn't until a second later). 
+	Rust \cite{RUST_LANG} is a compiled memory safe language with no garbage collector. It is extremely fast with near C/C++ like performance \cite{RUST_C_COMPARISON} but with a much stricter compiler that guarantees memory safety. As Rust has no runtime due to no garbage collector it is applicable to embedded devices or high performance .. 
+	
+	https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust.html
+	https://www.techrepublic.com/article/rust-programming-language-seven-reasons-why-you-should-learn-it-in-2019/
+	
+	
+	
+	Rust \cite{RUST_LANG} is a language designed to be used for writing fast, memory efficient systems code. It has relatively low overhead and because it doesn't require the additional overhead of a garbage collector it is perfect for usage in embedded or high performance systems. 
+	
+	
+	This makes it an ideal language for usage with sACN as responding quickly to control events is vital to a lighting system (imagine a sound effect goes off but the lighting doesn't until a second later). 
 	
 	\subsection{Related Work}
 	The ANSI E1.31 sACN protocol was originally specified in the document ANSI E1.31-2009 \cite{ANSI_E1.31_2009}. This represented the base version of the protocol without any universe synchronisation, universe discovery or discussion of operation with Ipv6. Since then it has been revised in 2016 (universe sync and discovery) \cite{ANSI_E1.31_2016} and again to its current latest version in 2018 (Ipv6). The future of ANSI E1.31 is still being actively developed and discussed \cite{WHAT_COMES_AFTER_SACN} with the direction of the ACN eco-system of lighting control data over IP being focused on supporting communication from receivers back to sources. Within traditional DMX systems this is supported using the remote device management protocol (RDM) as described in ANSI E1.20-2010 \cite{ANSI_E1.20_2010}. An IP version of the RDM protocol was then created (RDMnet) \cite{ANSI_E1.33_2019} which is ACN based and allows discovery and control of receivers over a network. RDMnet as a fairly new protocol is still in the process of being taken up by vendors but has strong support from ETC (a large lighting company \cite{ETC}) in the form of a maintained open source implementation of RDMnet in C++ \cite{ANSI_E1.33_IMPL}.\\
@@ -299,6 +303,8 @@
 		RDM
 		\bibitem{ETC}
 		https://www.etcconnect.com/About/ (26/01/2020)
+		\bibitem{RUST_C_COMPARISON}
+		https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust.html (28/01/2020)
 		
 	\end{thebibliography}
 	
