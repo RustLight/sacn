@@ -9,13 +9,15 @@ use std::thread::sleep;
 use std::option;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
-use std::io::Error;
+
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use sacn::{SacnSource};
 use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
 use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
 
 use std::time::Duration;
+
+use std::io::{Error, ErrorKind};
 
 // Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
 // - Decided it shouldn't be seperated.
@@ -1473,38 +1475,64 @@ fn test_three_senders_three_recv_multicast_ipv4(){
     }
 }
 
-// #[test]
-// fn test_universe_discovery_one_universe_one_source_ipv4(){
-//     const SND_THREADS: usize = 1;
-//     const BASE_UNIVERSE: u16 = 2;
-//     const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
+#[test]
+fn test_universe_discovery_one_universe_one_source_ipv4(){
+    const SND_THREADS: usize = 1;
+    const BASE_UNIVERSE: u16 = 2;
+    const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
 
-//     let (snd_tx, snd_rx): (Sender<_>, Error>>, Receiver<_>, Error>>) = mpsc::channel();
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
 
-//     let mut snd_threads = Vec::new();
+    let mut snd_threads = Vec::new();
 
-//     for i in 0 .. SND_THREADS {
-//         let tx = snd_tx.clone();
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
 
-//         snd_threads.push(thread::spawn(move || {
-//             let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
 
-//             let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
+            let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
     
-//             let universe: u16 = (i as u16) + BASE_UNIVERSE;
+            let universe: u16 = (i as u16) + BASE_UNIVERSE;
     
-//             src.register_universe(universe);
+            src.register_universe(universe);
 
-//             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
-//         }));
-//     }
+            tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
 
-//     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+            // sleep(Duration::from_secs(10)); // Sleep for awhile, this is to allow a universe discovery packet to be sent before the thread finished.
+        
+            // tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has 
+        }));
+    }
 
-//     dmx_recv.set_timeout(None);
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-//     assert!(false, "Not implemented");
-// }
+    dmx_recv.set_timeout(Some(Duration::from_secs(2))); // Timeout to give the receiver time to receive a universe discovery packet.
+
+    loop { 
+        let result = dmx_recv.recv();
+        match result { 
+            Err(e) => {
+                assert_eq!(e.kind(), ErrorKind::WouldBlock);
+            },
+            Ok(_) => {
+                assert!(false, "No data should have been passed up!");
+            }
+        }
+        
+        let discovered = dmx_recv.get_discovered_sources(); 
+        if discovered.len() > 0 {
+            assert_eq!(discovered.len(), 1);
+            assert_eq!(discovered[0].name, SOURCE_NAMES[0]);
+            assert_eq!(discovered[0].last_page, 0);
+            assert_eq!(discovered[0].pages.len(), 1);
+            assert_eq!(discovered[0].pages[0].page, 0);
+            assert_eq!(discovered[0].pages[0].universes.len(), 1);
+            assert_eq!(discovered[0].pages[0].universes[0], BASE_UNIVERSE);
+            break;
+        }
+    }
+}
 
 const TEST_DATA_PARTIAL_CAPACITY_UNIVERSE: [u8; 313] = [0,
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
