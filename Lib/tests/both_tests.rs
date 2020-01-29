@@ -1523,6 +1523,9 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
         }
         
         let discovered = dmx_recv.get_discovered_sources(); 
+
+        println!("Discovered: {:?}", discovered);
+
         if discovered.len() > 0 {
             assert_eq!(discovered.len(), 1);
             assert_eq!(discovered[0].name, SOURCE_NAMES[0]);
