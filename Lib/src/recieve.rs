@@ -102,14 +102,14 @@ struct DmxReciever{
     addr: SocketAddr
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DiscoveredSacnSource {
     pub name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
     pub last_page: u8, // The last page that will be sent by this source.
     pub pages: Vec<UniversePage>
 }
 
-#[derive(Eq, Ord, PartialEq, PartialOrd, Clone)]
+#[derive(Eq, Ord, PartialEq, PartialOrd, Clone, Debug)]
 pub struct UniversePage {
     pub page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
     pub universes: Vec<u16> // The universes that the source is transmitting.
@@ -268,7 +268,7 @@ impl SacnReceiverInternal {
                 running: true
         };
 
-        sri.listen_universes(&[DISCOVERY_UNIVERSE]);
+        sri.listen_universes(&[DISCOVERY_UNIVERSE])?;
 
         Ok(sri)
     }
@@ -291,7 +291,7 @@ impl SacnReceiverInternal {
     /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
     pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
         for u in universes {
-            if *u > HIGHEST_ALLOWED_UNIVERSE || *u < LOWEST_ALLOWED_UNIVERSE || *u == DISCOVERY_UNIVERSE {
+            if (*u != DISCOVERY_UNIVERSE) && (*u == 0 || *u > HIGHEST_ALLOWED_UNIVERSE) {
                 return Err(Error::new(ErrorKind::InvalidInput, format!("Attempted to listen on a universe outwith the allowed range: {}", u)));
             }
         }
@@ -496,6 +496,7 @@ impl SacnReceiverInternal {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
         match self.receiver.recv(&mut buf){
             Ok(pkt) => {
+                println!("PKT RECV: {:?}", pkt);
                 let pdu: E131RootLayer = pkt.pdu;
                 let data: E131RootLayerData = pdu.data;
                 let res = match data {
