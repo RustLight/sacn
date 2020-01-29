@@ -258,9 +258,7 @@ fn perform_periodic_update(rcv: &mut Arc<Mutex<SacnReceiverInternal>>) {
 impl SacnReceiverInternal {
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiverInternal, Error> {
-        Ok (
-            SacnReceiverInternal {
-                // multicast_universe_receivers: Vec::new(),
+        let mut sri = SacnReceiverInternal {
                 receiver: DmxReciever::new(ip)?,
                 waiting_data: Vec::new(),
                 universes: Vec::new(),
@@ -268,9 +266,11 @@ impl SacnReceiverInternal {
                 merge_func: htp_dmx_merge,
                 partially_discovered_sources: Vec::new(),
                 running: true
-                // next_index: 0,
-            }
-        )
+        };
+
+        sri.listen_universes(&[DISCOVERY_UNIVERSE]);
+
+        Ok(sri)
     }
 
     // TODO

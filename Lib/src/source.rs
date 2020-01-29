@@ -15,6 +15,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
 use std::cmp;
+use std::cmp::min;
 use std::time;
 use std::time::{Duration, Instant};
 use std::thread::{sleep, JoinHandle};
@@ -530,7 +531,9 @@ impl DmxSource {
         let pages_req: u8 = ((self.universes.len() / DISCOVERY_UNI_PER_PAGE) + 1) as u8;
 
         for p in 0 .. pages_req {
-            self.send_universe_discovery_detailed(p, pages_req - 1, &self.universes[(p as usize) .. (((p as usize) + 1) * DISCOVERY_UNI_PER_PAGE)])?;
+            let start_index = (p as usize) * DISCOVERY_UNI_PER_PAGE;
+            let end_index = min( ((p as usize) + 1) * DISCOVERY_UNI_PER_PAGE , self.universes.len());
+            self.send_universe_discovery_detailed(p, pages_req - 1, &self.universes[start_index .. end_index])?;
         }
         Ok(())
     }
@@ -558,6 +561,8 @@ impl DmxSource {
         } else {
             ip = universe_to_ipv4_multicast_addr(DISCOVERY_UNIVERSE)?;
         }
+
+        println!("Universe discovery send to address: {}", ip);
 
         self.socket.send_to(&packet.pack_alloc().unwrap(), ip)?;
 
@@ -621,6 +626,7 @@ fn perform_periodic_update(src: &mut Arc<Mutex<DmxSource>>){
     let mut unwrap_src = src.lock().unwrap();
     if Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_E131_UNIVERSE_DISCOVERY_INTERVAL {
         unwrap_src.send_universe_discovery();
+        println!("Sending discovery");
         unwrap_src.last_discovery_advert_timestamp = Instant::now();
     }
 }
