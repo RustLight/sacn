@@ -108,7 +108,7 @@ pub const DEFAULT_SYNC_UNIVERSE: u16 = 1;
 ///
 /// Returns as a Result with the OK value being the array and the Err value being an Error.
 pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr, Error>{
-    if universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE {
+    if (universe != DISCOVERY_UNIVERSE) && (universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE) {
         return Err(Error::new(
             ErrorKind::InvalidInput,
             "universe is limited to the range 1 to 63999",
@@ -123,7 +123,7 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr, Erro
 }
 
 pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr, Error>{
-    if universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE {
+    if (universe != DISCOVERY_UNIVERSE) && (universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE) {
         return Err(Error::new(
             ErrorKind::InvalidInput,
             "universe is limited to the range 1 to 63999",

@@ -1513,7 +1513,9 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
         let result = dmx_recv.recv();
         match result { 
             Err(e) => {
-                assert_eq!(e.kind(), ErrorKind::WouldBlock);
+                if !(e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut) {
+                    assert!(false, "Unexpected error returned");
+                }
             },
             Ok(_) => {
                 assert!(false, "No data should have been passed up!");
