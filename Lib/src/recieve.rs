@@ -14,18 +14,17 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLayerData::DataPacket, 
     E131RootLayerData::SynchronizationPacket, E131RootLayerData::UniverseDiscoveryPacket, UniverseDiscoveryPacketFramingLayer, 
     SynchronizationPacketFramingLayer, DataPacketFramingLayer, UniverseDiscoveryPacketUniverseDiscoveryLayer, ACN_SDT_MULTICAST_PORT,
-    universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr, HIGHEST_ALLOWED_UNIVERSE, LOWEST_ALLOWED_UNIVERSE, DISCOVERY_UNIVERSE};
+    universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr, HIGHEST_ALLOWED_UNIVERSE, DISCOVERY_UNIVERSE};
 
 use std::io;
 use std::io::{Error, ErrorKind};
 
 use std::cmp::{max, Ordering};
-use std::thread::{sleep, JoinHandle};
+use std::thread::{JoinHandle};
 use std::thread;
 use std::time;
 use std::time::Duration;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool};
 
 /// The default size of the buffer used to recieve E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
@@ -251,7 +250,7 @@ impl Drop for SacnReceiver {
 }
 
 
-fn perform_periodic_update(rcv: &mut Arc<Mutex<SacnReceiverInternal>>) {
+fn perform_periodic_update(_rcv: &mut Arc<Mutex<SacnReceiverInternal>>) {
 
 }
 
@@ -496,7 +495,7 @@ impl SacnReceiverInternal {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
         match self.receiver.recv(&mut buf){
             Ok(pkt) => {
-                println!("PKT RECV: {:?}", pkt);
+                // println!("PKT RECV: {:?}", pkt);
                 let pdu: E131RootLayer = pkt.pdu;
                 let data: E131RootLayerData = pdu.data;
                 let res = match data {

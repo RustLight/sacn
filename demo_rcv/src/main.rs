@@ -5,6 +5,10 @@ extern crate sacn;
 use sacn::recieve::DMXData;
 use std::io::{Error};
 
+/// Demo receiver, this is used as part of the intergration tests across the network.
+/// This receiver will receive on the universes given as command line arguments.
+/// The receiver will print any received data to act on to std out. 
+
 fn main() {
     
 }
