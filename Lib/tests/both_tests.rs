@@ -49,7 +49,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
@@ -101,7 +101,7 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
@@ -286,8 +286,8 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
         thread2_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    rx.recv().unwrap(); // Blocks until both receivers say they are ready.
-    rx.recv().unwrap();
+    rx.recv().unwrap().unwrap(); // Blocks until both receivers say they are ready.
+    rx.recv().unwrap().unwrap();
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
@@ -358,8 +358,8 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
         thread2_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    rx.recv().unwrap(); // Blocks until both receivers say they are ready.
-    rx.recv().unwrap();
+    rx.recv().unwrap().unwrap(); // Blocks until both receivers say they are ready.
+    rx.recv().unwrap().unwrap();
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
@@ -583,7 +583,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
         thread_tx.send(dmx_recv.recv()).unwrap();
     });
 
-    rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
