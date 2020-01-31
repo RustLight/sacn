@@ -1524,7 +1524,7 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
         
         let discovered = dmx_recv.get_discovered_sources(); 
 
-        println!("Discovered: {:?}", discovered);
+        // println!("Discovered: {:?}", discovered);
 
         if discovered.len() > 0 {
             assert_eq!(discovered.len(), 1);
@@ -1536,6 +1536,12 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
             assert_eq!(discovered[0].pages[0].universes[0], BASE_UNIVERSE);
             break;
         }
+    }
+
+    snd_rx.recv().unwrap();
+
+    for s in snd_threads {
+        s.join().unwrap();
     }
 }
 

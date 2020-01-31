@@ -18,10 +18,9 @@ use std::cmp;
 use std::cmp::min;
 use std::time;
 use std::time::{Duration, Instant};
-use std::thread::{sleep, JoinHandle};
+use std::thread::{JoinHandle};
 use std::thread;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool, Ordering};
 
 // use math::round;
 
@@ -153,8 +152,8 @@ impl SacnSource {
 
     /// Allow sending on ipv6 
     pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
-        // self.socket.set_only_v6(val)
-        Err(Error::new(ErrorKind::Other, "Not impl"))
+        self.internal.lock().unwrap().socket.set_only_v6(val)
+        // Err(Error::new(ErrorKind::Other, "Not impl"))
     }
 
     pub fn register_universes(&mut self, universes: &[u16]){
@@ -265,7 +264,7 @@ impl DmxSource {
 
         let socket: UdpSocket = socket_builder.bind(ip)?;
 
-        Ok(DmxSource {
+        let ds = DmxSource {
             socket: socket,
             addr: ip,
             cid: cid,
@@ -276,7 +275,11 @@ impl DmxSource {
             universes: Vec::new(),
             running: true,
             last_discovery_advert_timestamp: Instant::now()
-        })
+        };
+
+        // ds.send_universe_discovery();
+
+        Ok(ds)
     }
 
     pub fn register_universes(&mut self, universes: &[u16]){
@@ -501,6 +504,7 @@ impl DmxSource {
             sequence += 1;
         }
 
+        self.sequences.borrow_mut().insert(universe, sequence);
         Ok(())
     }
 
