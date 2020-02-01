@@ -1545,6 +1545,82 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
     }
 }
 
+#[test]
+fn test_universe_discovery_multiple_universe_one_source_ipv4(){
+    const SND_THREADS: usize = 1;
+    const BASE_UNIVERSE: u16 = 2;
+    const UNIVERSE_COUNT: usize = 5;
+    const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
+
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+
+    let mut snd_threads = Vec::new();
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+
+            let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
+
+            let mut universes: Vec<u16> = Vec::new();
+            for j in 0 .. UNIVERSE_COUNT {
+                universes.push(((i + j) as u16) + BASE_UNIVERSE);
+            }
+
+            src.register_universes(&universes);
+
+            tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
+
+            // sleep(Duration::from_secs(10)); // Sleep for awhile, this is to allow a universe discovery packet to be sent before the thread finished.
+        
+            // tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has 
+        }));
+    }
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    dmx_recv.set_timeout(Some(Duration::from_secs(2))); // Timeout to give the receiver time to receive a universe discovery packet.
+
+    loop { 
+        let result = dmx_recv.recv();
+        match result { 
+            Err(e) => {
+                if !(e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut) {
+                    assert!(false, "Unexpected error returned");
+                }
+            },
+            Ok(_) => {
+                assert!(false, "No data should have been passed up!");
+            }
+        }
+        
+        let discovered = dmx_recv.get_discovered_sources(); 
+
+        // println!("Discovered: {:?}", discovered);
+
+        if discovered.len() > 0 {
+            assert_eq!(discovered.len(), 1);
+            assert_eq!(discovered[0].name, SOURCE_NAMES[0]);
+            assert_eq!(discovered[0].last_page, 0);
+            assert_eq!(discovered[0].pages.len(), 1);
+            assert_eq!(discovered[0].pages[0].page, 0);
+            assert_eq!(discovered[0].pages[0].universes.len(), UNIVERSE_COUNT);
+            for j in 0 .. UNIVERSE_COUNT {
+                assert_eq!(discovered[0].pages[0].universes[j], (j as u16) + BASE_UNIVERSE);
+            }
+            break;
+        }
+    }
+
+    snd_rx.recv().unwrap();
+
+    for s in snd_threads {
+        s.join().unwrap();
+    }
+}
+
 const TEST_DATA_PARTIAL_CAPACITY_UNIVERSE: [u8; 313] = [0,
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
