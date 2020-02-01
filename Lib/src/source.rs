@@ -161,6 +161,10 @@ impl SacnSource {
         // Err(Error::new(ErrorKind::Other, "Not impl"))
     }
 
+    pub fn set_is_sending_discovery(&mut self, val: bool) {
+        self.internal.lock().unwrap().set_is_sending_discovery(val);
+    }
+
     pub fn register_universes(&mut self, universes: &[u16]){
         self.internal.lock().unwrap().register_universes(universes);
     }
