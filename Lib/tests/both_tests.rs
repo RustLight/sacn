@@ -1640,12 +1640,16 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
 
             let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
 
+            src.set_is_sending_discovery(false); // To stop universe discovery packets being sent until all universes are registered.
+
             let mut universes: Vec<u16> = Vec::new();
             for j in 0 .. UNIVERSE_COUNT {
                 universes.push(((i + j) as u16) + BASE_UNIVERSE);
             }
 
             src.register_universes(&universes);
+
+            src.set_is_sending_discovery(true);
 
             tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
 
@@ -1661,6 +1665,7 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
 
     loop { 
         let result = dmx_recv.recv();
+
         match result { 
             Err(e) => {
                 if !(e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut) {

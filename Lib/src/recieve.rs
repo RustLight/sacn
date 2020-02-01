@@ -96,6 +96,7 @@ impl PartialEq for DMXData {
 impl Eq for DMXData {}
 
 /// Used for receiving dmx or other data on a particular universe using multicast.
+#[derive(Debug)]
 struct DmxReciever{
     socket: UdpSocket,
     addr: SocketAddr
@@ -117,7 +118,9 @@ pub struct UniversePage {
 impl DiscoveredSacnSource {
     pub fn has_all_pages(&mut self) -> bool {
         // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/sorting.html (31/12/2019)
-        self.pages.sort_by(|a, b| b.page.cmp(&a.page));
+        self.pages.sort_by(|a, b| a.page.cmp(&b.page));
+
+        println!("Pages: {:?}", self.pages);
         
         for i in 0 .. (self.last_page + 1) {
             if self.pages[i as usize].page != i {
@@ -452,10 +455,15 @@ impl SacnReceiverInternal {
                 universes: universes.into()
             };
 
+        println!("Universe discovery");
+
         match find_discovered_src(&self.partially_discovered_sources, &discovery_pkt.source_name.to_string()) {
             Some(index) => {
+                println!("Found discovered src");
+
                 self.partially_discovered_sources[index].pages.push(uni_page);
                 if self.partially_discovered_sources[index].has_all_pages() {
+                    println!("Has all pages");
                     let discovered_src: DiscoveredSacnSource = self.partially_discovered_sources.remove(index);
                     self.update_discovered_srcs(discovered_src);
                 }
@@ -493,9 +501,10 @@ impl SacnReceiverInternal {
     // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast).
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
+
         match self.receiver.recv(&mut buf){
             Ok(pkt) => {
-                // println!("PKT RECV: {:?}", pkt);
+                println!("PKT RECV: {:?}", pkt);
                 let pdu: E131RootLayer = pkt.pdu;
                 let data: E131RootLayerData = pdu.data;
                 let res = match data {
