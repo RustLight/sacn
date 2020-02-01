@@ -194,8 +194,8 @@ impl SacnReceiver {
         self.internal.lock().unwrap().listen_universes(universes)
     }
 
-    pub fn set_timeout(&mut self, time: Option<Duration>) {
-        self.internal.lock().unwrap().set_timeout(time);
+    pub fn set_timeout(&mut self, time: Option<Duration>) -> Result<(), Error> {
+        self.internal.lock().unwrap().set_timeout(time)
     }
 
     /// Returns a copy of the Vec of discovered sources by this receiver, note that this isn't kept up to date so these source
@@ -554,7 +554,7 @@ impl DmxReciever {
             return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
         }
 
-        socket.set_read_timeout(DEFAULT_RECV_TIMEOUT);
+        socket.set_read_timeout(DEFAULT_RECV_TIMEOUT)?;
 
         Ok(
             DmxReciever {

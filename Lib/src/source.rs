@@ -88,7 +88,8 @@ pub struct DmxSource {
     sync_delay: Duration,
     universes: Vec<u16>, // A list of the universes registered to send by this source, used for universe discovery. Always sorted with lowest universe first to allow quicker usage.
     running: bool,
-    last_discovery_advert_timestamp: Instant
+    last_discovery_advert_timestamp: Instant,
+    is_sending_discovery: bool,
     // update_thread: JoinHandle<()> // The thread which runs every poll_period to perform various periodic action such as send universe discovery adverts. 
 }
 
@@ -133,7 +134,7 @@ impl SacnSource {
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
         let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
 
-        let mut internal_src = Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?));
+        let internal_src = Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?));
 
         let mut trd_src = internal_src.clone();
 
@@ -142,7 +143,11 @@ impl SacnSource {
             update_thread: Some(trd_builder.spawn(move || {
                 while trd_src.lock().unwrap().running {
                     thread::sleep(DEFAULT_POLL_PERIOD);
-                    perform_periodic_update(&mut trd_src);
+                    match perform_periodic_update(&mut trd_src) {
+                        Err(_e) => {// TODO HANDLE
+                        },
+                        Ok(_) => {}
+                    }
                 }
             }).unwrap()),
         };
@@ -238,7 +243,10 @@ impl Drop for SacnSource {
         // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
         if let Some(thread) = self.update_thread.take() {
             {
-                self.internal.lock().unwrap().terminate(DEFAULT_TERMINATE_START_CODE);
+                match self.internal.lock().unwrap().terminate(DEFAULT_TERMINATE_START_CODE) {
+                    Err(_e) => {},
+                    Ok(_) => {}
+                }
             }
             thread.join().unwrap();
         }
@@ -274,12 +282,19 @@ impl DmxSource {
             sync_delay: DEFAULT_SYNC_DELAY,
             universes: Vec::new(),
             running: true,
-            last_discovery_advert_timestamp: Instant::now()
+            last_discovery_advert_timestamp: Instant::now(),
+            is_sending_discovery: true
         };
 
         // ds.send_universe_discovery();
 
         Ok(ds)
+    }
+
+    /// If is_sending_discovery is set to false then no discovery adverts for this source
+    /// will be sent otherwise (and by default) they will be sent every UNIVERSE_DISCOVERY_INTERVAL.
+    pub fn set_is_sending_discovery(&mut self, val: bool) {
+        self.is_sending_discovery = val;
     }
 
     pub fn register_universes(&mut self, universes: &[u16]){
@@ -523,11 +538,12 @@ impl DmxSource {
 
     /// Terminates the DMX source.
     /// This includes terminating each registered universe with the start_code given.
-    fn terminate(&mut self, start_code: u8) {
+    fn terminate(&mut self, start_code: u8) -> Result<()>{
         self.running = false;
         for u in &self.universes {
-            self.terminate_stream(*u, start_code);
+            self.terminate_stream(*u, start_code)?;
         }
+        Ok(())
     }
 
     /// Sends a universe discovery packet advertising the universes that this source is registered to send.
@@ -626,13 +642,14 @@ impl DmxSource {
     }
 }
 
-fn perform_periodic_update(src: &mut Arc<Mutex<DmxSource>>){
+fn perform_periodic_update(src: &mut Arc<Mutex<DmxSource>>) -> Result<()>{
     let mut unwrap_src = src.lock().unwrap();
-    if Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_E131_UNIVERSE_DISCOVERY_INTERVAL {
-        unwrap_src.send_universe_discovery();
+    if unwrap_src.is_sending_discovery && Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_E131_UNIVERSE_DISCOVERY_INTERVAL {
+        unwrap_src.send_universe_discovery()?;
         println!("Sending discovery");
         unwrap_src.last_discovery_advert_timestamp = Instant::now();
     }
+    Ok(())
 }
 
 #[cfg(test)]
