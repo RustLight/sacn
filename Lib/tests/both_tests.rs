@@ -1479,6 +1479,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 fn test_universe_discovery_one_universe_one_source_ipv4(){
     const SND_THREADS: usize = 1;
     const BASE_UNIVERSE: u16 = 2;
+    const UNIVERSE_COUNT: usize = 1;
     const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
 
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
@@ -1492,10 +1493,13 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
             let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
 
             let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
-    
-            let universe: u16 = (i as u16) + BASE_UNIVERSE;
-    
-            src.register_universe(universe);
+
+            let mut universes: Vec<u16> = Vec::new();
+            for j in 0 .. UNIVERSE_COUNT {
+                universes.push(((i + j) as u16) + BASE_UNIVERSE);
+            }
+
+            src.register_universes(&universes);
 
             tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
 
@@ -1524,16 +1528,13 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
         
         let discovered = dmx_recv.get_discovered_sources(); 
 
-        // println!("Discovered: {:?}", discovered);
-
         if discovered.len() > 0 {
             assert_eq!(discovered.len(), 1);
             assert_eq!(discovered[0].name, SOURCE_NAMES[0]);
-            assert_eq!(discovered[0].last_page, 0);
-            assert_eq!(discovered[0].pages.len(), 1);
-            assert_eq!(discovered[0].pages[0].page, 0);
-            assert_eq!(discovered[0].pages[0].universes.len(), 1);
-            assert_eq!(discovered[0].pages[0].universes[0], BASE_UNIVERSE);
+            assert_eq!(discovered[0].get_universes().len(), UNIVERSE_COUNT);
+            for j in 0 .. UNIVERSE_COUNT {
+                assert_eq!(discovered[0].pages[0].universes[j], (j as u16) + BASE_UNIVERSE);
+            }
             break;
         }
     }
@@ -1598,15 +1599,10 @@ fn test_universe_discovery_multiple_universe_one_source_ipv4(){
         
         let discovered = dmx_recv.get_discovered_sources(); 
 
-        // println!("Discovered: {:?}", discovered);
-
         if discovered.len() > 0 {
             assert_eq!(discovered.len(), 1);
             assert_eq!(discovered[0].name, SOURCE_NAMES[0]);
-            assert_eq!(discovered[0].last_page, 0);
-            assert_eq!(discovered[0].pages.len(), 1);
-            assert_eq!(discovered[0].pages[0].page, 0);
-            assert_eq!(discovered[0].pages[0].universes.len(), UNIVERSE_COUNT);
+            assert_eq!(discovered[0].get_universes().len(), UNIVERSE_COUNT);
             for j in 0 .. UNIVERSE_COUNT {
                 assert_eq!(discovered[0].pages[0].universes[j], (j as u16) + BASE_UNIVERSE);
             }
@@ -1679,15 +1675,12 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
         
         let discovered = dmx_recv.get_discovered_sources(); 
 
-        // println!("Discovered: {:?}", discovered);
+        // TODO, There shouldn't be the concept of pages exposed to the user at this point.
 
         if discovered.len() > 0 {
             assert_eq!(discovered.len(), 1);
             assert_eq!(discovered[0].name, SOURCE_NAMES[0]);
-            assert_eq!(discovered[0].last_page, 0);
-            assert_eq!(discovered[0].pages.len(), 1);
-            assert_eq!(discovered[0].pages[0].page, 0);
-            assert_eq!(discovered[0].pages[0].universes.len(), UNIVERSE_COUNT);
+            assert_eq!(discovered[0].get_universes().len(), UNIVERSE_COUNT);
             for j in 0 .. UNIVERSE_COUNT {
                 assert_eq!(discovered[0].pages[0].universes[j], (j as u16) + BASE_UNIVERSE);
             }
