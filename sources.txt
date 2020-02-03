@@ -22,3 +22,5 @@ https://www.quora.com/Can-a-computer-have-two-IP-addresses (06/01/2020)
 
 Might be useful
 https://www.mikewoodconsulting.com/articles/Protocol%20Fall%202017%20-%20Networking.pdf (26/01/2020)
+
+https://users.rust-lang.org/t/for-loops-and-ownership/1197 (03/02/2020)
