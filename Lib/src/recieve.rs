@@ -105,14 +105,14 @@ struct DmxReciever{
 #[derive(Clone, Debug)]
 pub struct DiscoveredSacnSource {
     pub name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
-    pub last_page: u8, // The last page that will be sent by this source.
-    pub pages: Vec<UniversePage>
+    last_page: u8, // The last page that will be sent by this source.
+    pages: Vec<UniversePage>
 }
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Clone, Debug)]
 pub struct UniversePage {
-    pub page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
-    pub universes: Vec<u16> // The universes that the source is transmitting.
+    page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
+    universes: Vec<u16> // The universes that the source is transmitting.
 }
 
 impl DiscoveredSacnSource {
@@ -129,6 +129,14 @@ impl DiscoveredSacnSource {
         }
 
         return true;
+    }
+
+    pub fn get_all_universes(&self) -> Vec<u16> {
+        let mut uni: Vec<u16> = Vec::new();
+        for p in &self.pages {
+            uni.extend_from_slice(&p.universes);
+        }
+        uni
     }
 }
 
