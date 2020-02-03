@@ -25,8 +25,6 @@ fn main(){
 
     let source_name = &cmd_args[2];
 
-    // let priority: u8 = cmd_args[3].parse().unwrap();
-
     let mut src = SacnSource::with_ip(source_name, SocketAddr::new(IpAddr::V4(interface_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
     loop {
@@ -55,10 +53,26 @@ fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
 
             match split_input[0] {
                 "d" => {
-                    if split_input.len() < 3 {
+                    if split_input.len() < 4 {
                         return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
                     }
-                    // src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+
+                    let sync_uni: u16 = split_input[2].parse().unwrap();
+
+                    let priority: u8 = split_input[3].parse().unwrap();
+
+                    let data_len = split_input.len() - 4;
+                    let mut data: Vec<u8> = Vec::new();
+
+                    for i in 4 .. split_input.len() {
+                        data.push(split_input[i].parse().unwrap());
+                    }
+
+                    if sync_uni == 0 {
+                        src.send(&[universe], &data, Some(priority), None, None)?;
+                    } else {
+                        src.send(&[universe], &data, Some(priority), None, Some(sync_uni))?;
+                    }
                 }
                 "r" => {
                     src.register_universe(universe);
