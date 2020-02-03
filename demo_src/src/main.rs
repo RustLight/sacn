@@ -12,12 +12,19 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
 use std::env;
 
+/// The start code used in terminate packets.
+const TERMINATE_START_CODE: u8 = 0;
+
 /// Usage ./main <interface_ip> <source_name>
 /// Reads data from stdin and sends it using the protocol.
-/// Data must be formatted as: 
-/// d <universe> <sync_uni> <priority> <data as bytes>
+/// Data must be formatted as, a sync_universe of 0 means no synchronisation, this uses multicast: 
+/// d <universe> <sync_uni> <priority> <data_as_u8_space_seperated>
+/// To send data unicast use:
+/// u <universe> <sync_uni> <priority> <dst_addr> <data_as_u8_space_seperated>
 /// Register a sending universe as:
 /// r <universe>
+/// Terminate a universe using, if universe is 0 then will terminate entirely:
+/// q <universe>
 fn main(){
     let cmd_args: Vec<String> = env::args().collect();
 
@@ -74,8 +81,39 @@ fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
                         src.send(&[universe], &data, Some(priority), None, Some(sync_uni))?;
                     }
                 }
+                "u" => {
+                    if split_input.len() < 5 {
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+                    }
+
+                    let sync_uni: u16 = split_input[2].parse().unwrap();
+
+                    let priority: u8 = split_input[3].parse().unwrap();
+
+                    let dst_ip = split_input[4];
+
+                    let data_len = split_input.len() - 5;
+                    let mut data: Vec<u8> = Vec::new();
+
+                    for i in 5 .. split_input.len() {
+                        data.push(split_input[i].parse().unwrap());
+                    }
+
+                    if sync_uni == 0 {
+                        src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), None)?;
+                    } else {
+                        src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), Some(sync_uni))?;
+                    }
+                }
                 "r" => {
                     src.register_universe(universe);
+                }
+                "q" => {
+                    if (universe == 0){
+                        return Ok(())
+                    } else {
+                        src.terminate_stream(universe, TERMINATE_START_CODE);
+                    }
                 }
                 x => {
                     return Err(Error::new(ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
