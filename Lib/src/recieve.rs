@@ -611,6 +611,8 @@ impl DmxReciever {
     fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error>{
         let (_len, _remote_addr) = self.socket.recv_from(&mut buf[0..])?;
 
+        println!("DATA RECV!");
+
         match AcnRootLayerProtocol::parse(buf) {
             Ok(pkt) => {
                 Ok(pkt)
