@@ -586,8 +586,6 @@ impl DmxSource {
             ip = universe_to_ipv4_multicast_addr(DISCOVERY_UNIVERSE)?;
         }
 
-        println!("Universe discovery send to address: {}", ip);
-
         self.socket.send_to(&packet.pack_alloc().unwrap(), ip)?;
 
         Ok(())
@@ -650,7 +648,6 @@ fn perform_periodic_update(src: &mut Arc<Mutex<DmxSource>>) -> Result<()>{
     let mut unwrap_src = src.lock().unwrap();
     if unwrap_src.is_sending_discovery && Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_E131_UNIVERSE_DISCOVERY_INTERVAL {
         unwrap_src.send_universe_discovery()?;
-        println!("Sending discovery");
         unwrap_src.last_discovery_advert_timestamp = Instant::now();
     }
     Ok(())
