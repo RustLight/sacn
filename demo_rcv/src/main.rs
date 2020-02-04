@@ -53,10 +53,12 @@ fn main() {
     }
 
     println!("Listening to universes: {:?}", universes);
-    
+
     if universes.len() > 0 {
         dmx_recv.listen_universes(&universes).unwrap();
     }
+
+    println!("Receiver: {:?}", dmx_recv);
 
     for _ in 0 .. recv_attempts { 
         match dmx_recv.recv(){

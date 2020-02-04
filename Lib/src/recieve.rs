@@ -26,6 +26,8 @@ use std::time;
 use std::time::Duration;
 use std::sync::{Arc, Mutex};
 
+use std::fmt;
+
 /// The default size of the buffer used to recieve E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
 pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
@@ -151,6 +153,19 @@ pub struct SacnReceiverInternal {
     running: bool,
 }
 
+// https://doc.rust-lang.org/std/fmt/trait.Debug.html (04/02/2020)
+impl fmt::Debug for SacnReceiverInternal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.receiver);
+        write!(f, "{:?}", self.waiting_data);
+        write!(f, "{:?}", self.universes);
+        write!(f, "{:?}", self.discovered_sources);
+        write!(f, "{:?}", self.partially_discovered_sources);
+        write!(f, "{:?}", self.running)
+    }
+}
+
+#[derive(Debug)]
 pub struct SacnReceiver {
     internal: Arc<Mutex<SacnReceiverInternal>>,
     update_thread: Option<JoinHandle<()>>,
@@ -686,12 +701,17 @@ fn join_multicast(socket: &UdpSocket, addr: SocketAddr) -> io::Result<()> {
 
     match ip_addr {
         IpAddr::V4(ref mdns_v4) => {
+            // socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(138, 251, 29, 193))?; 
+            // socket.join_multicast_v4(mdns_v4, &socket.local_addr()?.ip());
+            // socket.join_multicast_v4(mdns_v4, &socket.local_addr()?)?;
             socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0))?; // Needs to be set to the IP of the interface/network which the multicast packets are sent on (unless only 1 network)
         }
         IpAddr::V6(ref mdns_v6) => {
             socket.join_multicast_v6(mdns_v6, 0)?;
         }
     };
+
+    println!("Joined Multicast Addr: {}", addr);
 
     Ok(())
 }
