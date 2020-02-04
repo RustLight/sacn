@@ -68,7 +68,6 @@ fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
 
                     let priority: u8 = split_input[3].parse().unwrap();
 
-                    let data_len = split_input.len() - 4;
                     let mut data: Vec<u8> = Vec::new();
 
                     for i in 4 .. split_input.len() {
@@ -92,7 +91,6 @@ fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
 
                     let dst_ip = split_input[4];
 
-                    let data_len = split_input.len() - 5;
                     let mut data: Vec<u8> = Vec::new();
 
                     for i in 5 .. split_input.len() {
@@ -109,10 +107,10 @@ fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
                     src.register_universe(universe);
                 }
                 "q" => {
-                    if (universe == 0){
+                    if universe == 0 {
                         return Ok(())
                     } else {
-                        src.terminate_stream(universe, TERMINATE_START_CODE);
+                        src.terminate_stream(universe, TERMINATE_START_CODE)?;
                     }
                 }
                 x => {

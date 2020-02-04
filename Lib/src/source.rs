@@ -47,6 +47,9 @@ pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 /// The interval between universe discovery packets (adverts) as defined by ANSI E1.31-2018 Appendix A.
 pub const E131_E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from_secs(10);
 
+/// The default TTL for packet sent by this source.
+pub const DEFAULT_SEND_TTL: u32 = 2;
+
 // Report: The first universe for the data to be synchronised across multiple universes is 
 // used as the syncronisation universe by default. This is done as it means that the receiever should
 // be listening for this universe. 
@@ -159,6 +162,11 @@ impl SacnSource {
     pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
         self.internal.lock().unwrap().socket.set_only_v6(val)
         // Err(Error::new(ErrorKind::Other, "Not impl"))
+    }
+    
+    /// Sets the Time To Live for packets sent by this source.
+    pub fn set_ttl(&mut self, ttl: u32) -> Result<()>{
+        self.internal.lock().unwrap().set_ttl(ttl)
     }
 
     pub fn set_is_sending_discovery(&mut self, val: bool) {
@@ -274,7 +282,11 @@ impl DmxSource {
             return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
         }
 
+        socket_builder.ttl(DEFAULT_SEND_TTL)?;
+
         let socket: UdpSocket = socket_builder.bind(ip)?;
+        
+        socket.set_multicast_ttl_v4(DEFAULT_SEND_TTL)?;
 
         let ds = DmxSource {
             socket: socket,
@@ -626,6 +638,11 @@ impl DmxSource {
     /// Sets the multicast time to live.
     fn set_multicast_ttl(&self, multicast_ttl: u32) -> Result<()> {
         self.socket.set_multicast_ttl_v4(multicast_ttl)
+    }
+
+    /// Sets the Time To Live for packets sent by this source.
+    pub fn set_ttl(&mut self, ttl: u32) -> Result<()> {
+        self.socket.set_ttl(ttl)
     }
 
     /// Returns the multicast time to live of the socket.

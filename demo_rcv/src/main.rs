@@ -52,6 +52,8 @@ fn main() {
         }
     }
 
+    println!("Listening to universes: {:?}", universes);
+    
     if universes.len() > 0 {
         dmx_recv.listen_universes(&universes).unwrap();
     }
