@@ -7,69 +7,131 @@ use sacn::recieve::SacnReceiver;
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
-use std::io::{Error};
+use std::io;
+use std::io::{Error, ErrorKind};
 use std::env;
 
 /// Demo receiver, this is used as part of the intergration tests across the network.
 /// This receiver will receive on the universes given as command line arguments.
 /// The receiver will print any received data to act on to std out. 
 
-const USAGE_STR: &'static str = "Usage: ./main <interface_ip> <timeout_secs> <recv_attempts> <universe_1> <universe_2> ...";
+const USAGE_STR: &'static str = "Usage: ./main <interface_ip>\n
+Receive data: \n
+r <timeout, 0 means no timeout>\n
+
+Print discovered sources: \n
+s \n
+
+Quit \n
+q \n
+
+Help \n
+h \n
+
+Listen universe \n
+l <universe> \n
+
+Stop Listening Universe \n
+t <universe> \n
+";
 
 fn main() {
     let cmd_args: Vec<String> = env::args().collect();
 
-    if cmd_args.len() < 4 {
+    if cmd_args.len() < 2 {
         return display_help();
     }
 
     let interface_ip = &cmd_args[1];
 
-    // https://stackoverflow.com/questions/27043268/convert-a-string-to-int-in-rust (03/02/2020)
-    let timeout_secs: u64 = cmd_args[2].parse().unwrap();
-
-    let recv_attempts: usize = cmd_args[3].parse().unwrap();
-
-    let mut universes: Vec<u16> = Vec::new();
-    for i in 4 .. cmd_args.len() {
-        universes.push(cmd_args[i].parse().unwrap()); // All remaining arguments are universes
-    }
-
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(interface_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-    if timeout_secs == 0 {
-        match dmx_recv.set_timeout(None) {
-            Err(e) => {
-                println!("Failed to set timeout: {:?}", e);
-                return;
-            },
+    loop {
+        // https://doc.rust-lang.org/std/io/struct.Stdin.html#method.read_line (03/02/2020)
+        match handle_input(&mut dmx_recv) {
             Ok(_) => {}
-        }
-        
-    } else {
-        match dmx_recv.set_timeout(Some(Duration::from_secs(timeout_secs))) {
             Err(e) => {
-                println!("Failed to set timeout: {:?}", e);
-                return;
-            },
-            Ok(_) => {}
-        }
-    }
-
-    if universes.len() > 0 {
-        dmx_recv.listen_universes(&universes).unwrap();
-    }
-
-    for _ in 0 .. recv_attempts { 
-        match dmx_recv.recv(){
-            Err(e) => {
-                println!("Error Encountered: {:?}", e);
-            },
-            Ok(d) => {
-                println!("{:?}", d);
+                println!("Error: Input data line unusable: {}", e);
             }
         }
+    } 
+}
+
+fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<(), Error> {
+    let mut input = String::new();
+    
+    match io::stdin().read_line(&mut input) {
+        Ok(_) => {
+            // https://www.tutorialspoint.com/rust/rust_string.htm (03/02/2020)
+            let split_input: Vec<&str> = input.split_whitespace().collect();
+
+            match split_input[0] {
+                "h" => { // Display help
+                    display_help();
+                }
+                "r" => { // Receive data
+                    if split_input.len() < 2 {
+                        display_help();
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                    }
+
+                    // https://stackoverflow.com/questions/27043268/convert-a-string-to-int-in-rust (03/02/2020)
+                    let timeout_secs: u64 = split_input[1].parse().unwrap();
+
+                    let timeout = if timeout_secs == 0 { // A timeout value of 0 means no timeout.
+                        None
+                    } else {
+                        Some(Duration::from_secs(timeout_secs))
+                    };
+
+                    dmx_recv.set_timeout(timeout).expect("Failed to set timeout");
+
+                    match dmx_recv.recv(){
+                        Err(e) => {
+                            println!("Error Encountered: {:?}", e);
+                        },
+                        Ok(d) => {
+                            println!("{:?}", d);
+                        }
+                    }
+                }
+                "s" => { // Print discovered sources
+                    print_discovered_sources(dmx_recv);
+                }
+                "q" => { // Quit
+                    // TODO
+                    return Err(Error::new(ErrorKind::InvalidInput, "Not Impl"));
+                }
+                "l" => { // Listen universe
+                    if split_input.len() < 2 {
+                        display_help();
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                    }
+                    let universe: u16 = split_input[1].parse().unwrap();
+                    dmx_recv.listen_universes(&[universe]);
+                }
+                "t" => { // Stop listening to universe
+                    if split_input.len() < 2 {
+                        display_help();
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                    }
+                    // TODO
+                    return Err(Error::new(ErrorKind::InvalidInput, "Not Impl"));
+                }
+                x => {
+                    return Err(Error::new(ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
+                }
+            }
+            Ok(())
+        }
+        Err(e) => {
+            return Err(e);
+        }
     }
+}
+
+fn print_discovered_sources(dmx_recv: &mut SacnReceiver) {
+    println!("{:#?}", dmx_recv.get_discovered_sources());
 }
 
 fn display_help(){
