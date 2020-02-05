@@ -8,8 +8,11 @@
 // - Simultaneous Ipv4 or Ipv6 support (Ipv6 preferred as newer and going to become more standard?)
 // - Support for Windows and Unix
 
-use net2::{UdpBuilder, UdpSocketExt};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
+// use net2::{UdpBuilder, UdpSocketExt};
+
+use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLayerData::DataPacket, 
     E131RootLayerData::SynchronizationPacket, E131RootLayerData::UniverseDiscoveryPacket, UniverseDiscoveryPacketFramingLayer, 
@@ -100,7 +103,7 @@ impl Eq for DMXData {}
 /// Used for receiving dmx or other data on a particular universe using multicast.
 #[derive(Debug)]
 struct DmxReciever{
-    socket: UdpSocket,
+    socket: Socket,
     addr: SocketAddr
 }
 
@@ -594,7 +597,7 @@ impl DmxReciever {
             multicast_addr = universe_to_ipv6_multicast_addr(universe)?;
         }
 
-        join_multicast(&self.socket, multicast_addr.ip())
+        join_multicast(&self.socket, multicast_addr)
     }
 
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
@@ -636,35 +639,49 @@ impl DmxReciever {
     }
 }
 
-pub fn create_socket(ip: SocketAddr) -> Result<UdpSocket, Error> {
-    let socket_builder;
-    let socket;
-
-    if ip.is_ipv4() {
-        socket_builder = UdpBuilder::new_v4()?;
-        socket = socket_builder.bind(ip)?;
-    } else if ip.is_ipv6() {
-        socket_builder = UdpBuilder::new_v6()?;
-        socket_builder.only_v6(true)?;
-        socket = socket_builder.bind(ip)?;
+pub fn create_socket(ip: SocketAddr) -> Result<Socket, Error> {
+    let domain = if ip.is_ipv4() {
+        Domain::ipv4()
     } else {
-        return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
-    }
+        Domain::ipv6()
+    };
 
-    socket.set_read_timeout(DEFAULT_RECV_TIMEOUT)?;
-    println!("Created rcv socket: {:?}", socket);
+    let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
+
     Ok(socket)
+
+
+    // let socket_builder;
+    // let socket;
+
+    // if ip.is_ipv4() {
+    //     socket_builder = UdpBuilder::new_v4()?;
+    //     socket = socket_builder.bind(ip)?;
+    // } else if ip.is_ipv6() {
+    //     socket_builder = UdpBuilder::new_v6()?;
+    //     socket_builder.only_v6(true)?;
+    //     socket = socket_builder.bind(ip)?;
+    // } else {
+    //     return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
+    // }
+
+    // socket.set_read_timeout(DEFAULT_RECV_TIMEOUT)?;
+    // println!("Created rcv socket: {:?}", socket);
+    // Ok(socket)
 }
 
-fn join_multicast(socket: &UdpSocket, addr: IpAddr) -> io::Result<()> {
-    match addr {
+fn join_multicast(socket: &Socket, addr: SocketAddr) -> io::Result<()> {
+    match addr.ip() {
         IpAddr::V4(ref mdns_v4) => {
             socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0))?; // Needs to be set to the IP of the interface/network which the multicast packets are sent on (unless only 1 network)
         }
         IpAddr::V6(ref mdns_v6) => {
             socket.join_multicast_v6(mdns_v6, 0)?;
+            socket.set_only_v6(true)?;
         }
     };
+
+    socket.bind(&SockAddr::from(addr))?;
 
     println!("Joined Multicast Addr: {}", addr);
 
