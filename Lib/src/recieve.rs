@@ -575,27 +575,9 @@ impl DmxReciever {
     /// If the given address is an IPv4 address then communication will only work between IPv4 devices, if the given address is IPv6 then communication
     /// will only work between IPv6 devices by default but IPv4 receiving can be enabled using set_ipv6_only(false).
     pub fn new (ip: SocketAddr) -> Result<DmxReciever, Error> {
-        let socket_builder;
-        let socket;
-
-        if ip.is_ipv4() {
-            socket_builder = UdpBuilder::new_v4()?;
-            socket = socket_builder.bind(ip)?;
-        } else if ip.is_ipv6() {
-            socket_builder = UdpBuilder::new_v6()?;
-            socket_builder.only_v6(true)?;
-            socket = socket_builder.bind(ip)?;
-        } else {
-            return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
-        }
-
-        socket.set_read_timeout(DEFAULT_RECV_TIMEOUT)?;
-
-        println!("Created rcv socket: {:?}", socket);
-
         Ok(
             DmxReciever {
-                socket: socket,
+                socket: create_socket(ip)?,
                 addr: ip
             }
         )
@@ -654,6 +636,41 @@ impl DmxReciever {
     }
 }
 
+pub fn create_socket(ip: SocketAddr) -> Result<UdpSocket, Error> {
+    let socket_builder;
+    let socket;
+
+    if ip.is_ipv4() {
+        socket_builder = UdpBuilder::new_v4()?;
+        socket = socket_builder.bind(ip)?;
+    } else if ip.is_ipv6() {
+        socket_builder = UdpBuilder::new_v6()?;
+        socket_builder.only_v6(true)?;
+        socket = socket_builder.bind(ip)?;
+    } else {
+        return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
+    }
+
+    socket.set_read_timeout(DEFAULT_RECV_TIMEOUT)?;
+    println!("Created rcv socket: {:?}", socket);
+    Ok(socket)
+}
+
+fn join_multicast(socket: &UdpSocket, addr: IpAddr) -> io::Result<()> {
+    match addr {
+        IpAddr::V4(ref mdns_v4) => {
+            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0))?; // Needs to be set to the IP of the interface/network which the multicast packets are sent on (unless only 1 network)
+        }
+        IpAddr::V6(ref mdns_v6) => {
+            socket.join_multicast_v6(mdns_v6, 0)?;
+        }
+    };
+
+    println!("Joined Multicast Addr: {}", addr);
+
+    Ok(())
+}
+
 // Performs a HTP DMX merge of data.
 // The first argument (i) is the existing data, n is the new data.
 // This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
@@ -705,25 +722,6 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
 //     Ok(socket.into_udp_socket())
 // }
 
-fn join_multicast(socket: &UdpSocket, addr: IpAddr) -> io::Result<()> {
-    // let ip_addr = addr.ip();
-
-    match addr {
-        IpAddr::V4(ref mdns_v4) => {
-            // socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(138, 251, 29, 193))?; 
-            // socket.join_multicast_v4(mdns_v4, &socket.local_addr()?.ip());
-            // socket.join_multicast_v4(mdns_v4, &socket.local_addr()?)?;
-            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0))?; // Needs to be set to the IP of the interface/network which the multicast packets are sent on (unless only 1 network)
-        }
-        IpAddr::V6(ref mdns_v6) => {
-            socket.join_multicast_v6(mdns_v6, 0)?;
-        }
-    };
-
-    println!("Joined Multicast Addr: {}", addr);
-
-    Ok(())
-}
 
 // #[cfg(windows)]
 // fn bind_socket(addr: SocketAddr) -> io::Result<UdpSocket>{
