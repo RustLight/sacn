@@ -167,8 +167,7 @@ impl fmt::Debug for SacnReceiverInternal {
 
 #[derive(Debug)]
 pub struct SacnReceiver {
-    internal: Arc<Mutex<SacnReceiverInternal>>,
-    update_thread: Option<JoinHandle<()>>,
+    internal: Arc<Mutex<SacnReceiverInternal>>
 }
 
 impl SacnReceiver {
@@ -191,13 +190,7 @@ impl SacnReceiver {
 
         let mut internal = Arc::new(Mutex::new(SacnReceiverInternal::with_ip(ip)?));
         Ok(SacnReceiver {
-            internal: internal.clone(),
-            update_thread: Some(trd_builder.spawn(move || {
-                while internal.lock().unwrap().running {
-                    thread::sleep(DEFAULT_RECV_POLL_PERIOD);
-                    perform_periodic_update(&mut internal);
-                }
-            }).unwrap()),
+            internal: internal.clone()
         })
     }
 
@@ -263,22 +256,17 @@ impl SacnReceiver {
     }
 }
 
-impl Drop for SacnReceiver {
-    fn drop(&mut self){
-        // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
-        if let Some(thread) = self.update_thread.take() {
-            {
-                self.internal.lock().unwrap().terminate();
-            }
-            thread.join().unwrap();
-        }
-    }
-}
-
-
-fn perform_periodic_update(_rcv: &mut Arc<Mutex<SacnReceiverInternal>>) {
-
-}
+// impl Drop for SacnReceiver {
+//     fn drop(&mut self){
+//         // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
+//         // if let Some(thread) = self.update_thread.take() {
+//         //     {
+//         //         self.internal.lock().unwrap().terminate();
+//         //     }
+//         //     thread.join().unwrap();
+//         // }
+//     }
+// }
 
 impl SacnReceiverInternal {
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).

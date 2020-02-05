@@ -65,6 +65,11 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<(), Error> {
             // https://www.tutorialspoint.com/rust/rust_string.htm (03/02/2020)
             let split_input: Vec<&str> = input.split_whitespace().collect();
 
+            if split_input.len() < 1 {
+                display_help();
+                return Ok(());
+            }
+
             match split_input[0] {
                 "h" => { // Display help
                     display_help();
@@ -95,7 +100,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<(), Error> {
                         }
                     }
                 }
-                "s" => { // Print discovered sources
+                "s" => { // Print discovered sources, note that no sources will be discovered unless you try and recv first.
                     print_discovered_sources(dmx_recv);
                 }
                 "q" => { // Quit
