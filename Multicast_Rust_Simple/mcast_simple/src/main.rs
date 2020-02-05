@@ -40,6 +40,11 @@ fn main() {
     let message = &cmd_args[1];
     let message2 = &cmd_args[2];
 
+    // Background:
+    // https://stackoverflow.com/questions/2741611/receiving-multiple-multicast-feeds-on-the-same-port-c-linux/2741989#2741989 (05/02/2020)
+    // https://www.reddit.com/r/networking/comments/7nketv/proper_use_of_bind_for_multicast_receive_on_linux/ (05/02/2020)
+
+    
     loop {
         socket.send_to(message.as_bytes(), &SockAddr::from(addr)).unwrap();
         socket.send_to(message2.as_bytes(), &SockAddr::from(addr2)).unwrap();
