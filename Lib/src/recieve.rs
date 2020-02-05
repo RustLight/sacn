@@ -124,9 +124,6 @@ impl DiscoveredSacnSource {
     pub fn has_all_pages(&mut self) -> bool {
         // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/sorting.html (31/12/2019)
         self.pages.sort_by(|a, b| a.page.cmp(&b.page));
-
-        println!("Pages: {:?}", self.pages);
-        
         for i in 0 .. (self.last_page + 1) {
             if self.pages[i as usize].page != i {
                 return false;
@@ -256,7 +253,6 @@ impl SacnReceiver {
     // the set_nonblocking method has been called with a Some value.
     // If a universe discovery packet is received it will be handled and the list of discovered universes will be updated.
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
-        println!("Attempting to recv");
         self.internal.lock().unwrap().recv()
     }
 
@@ -482,15 +478,10 @@ impl SacnReceiverInternal {
                 universes: universes.into()
             };
 
-        println!("Universe discovery");
-
         match find_discovered_src(&self.partially_discovered_sources, &discovery_pkt.source_name.to_string()) {
             Some(index) => {
-                println!("Found discovered src");
-
                 self.partially_discovered_sources[index].pages.push(uni_page);
                 if self.partially_discovered_sources[index].has_all_pages() {
-                    println!("Has all pages");
                     let discovered_src: DiscoveredSacnSource = self.partially_discovered_sources.remove(index);
                     self.update_discovered_srcs(discovered_src);
                 }
@@ -529,11 +520,8 @@ impl SacnReceiverInternal {
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE ] = [0; RCV_BUF_DEFAULT_SIZE];
 
-        println!("Recv buffer created");
-
         match self.receiver.recv(&mut buf){
             Ok(pkt) => {
-                println!("PKT RECV: {:?}", pkt);
                 let pdu: E131RootLayer = pkt.pdu;
                 let data: E131RootLayerData = pdu.data;
                 let res = match data {
@@ -613,14 +601,8 @@ impl DmxReciever {
     // Returns a packet if there is one available. The packet may not be ready to transmit if it is awaiting synchronisation.
     // Will only block if set_timeout was called with a timeout of None so otherwise (and by default) it won't 
     // block so may return a WouldBlock error to indicate that there was no data ready.
-    fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error>{
-        println!("About to receive from");
-
-        // let (_len, _remote_addr) = self.socket.recv_from(&mut buf[0..])?;
-        // let (_len, _remote_addr) = self.socket.recv_from(&mut buf[0..]).unwrap();
+    fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error> {
         let (_len) = self.socket.recv(&mut buf[0..]).unwrap();
-
-        println!("DATA RECV!");
 
         match AcnRootLayerProtocol::parse(buf) {
             Ok(pkt) => {

@@ -25,6 +25,18 @@ const TERMINATE_START_CODE: u8 = 0;
 /// r <universe>
 /// Terminate a universe using, if universe is 0 then will terminate entirely:
 /// q <universe>
+
+const USAGE_STR: &'static str = "Usage ./main <interface_ip> <source_name>\n
+    Reads data from stdin and sends it using the protocol. \n
+    Data must be formatted as, a sync_universe of 0 means no synchronisation, this uses multicast: \n
+    d <universe> <sync_uni> <priority> <data_as_u8_space_seperated> \n
+    To send data unicast use: \n
+    u <universe> <sync_uni> <priority> <dst_addr> <data_as_u8_space_seperated> \n
+    Register a sending universe as: \n
+    r <universe> \n
+    Terminate a universe using, if universe is 0 then will terminate entirely: \n
+    q <universe> \n";
+
 fn main(){
     let cmd_args: Vec<String> = env::args().collect();
 
@@ -50,18 +62,7 @@ fn main(){
 }
 
 fn display_help(){
-    println!("
-Usage ./main <interface_ip> <source_name>\n
-Reads data from stdin and sends it using the protocol. \n
-Data must be formatted as, a sync_universe of 0 means no synchronisation, this uses multicast: \n
-d <universe> <sync_uni> <priority> <data_as_u8_space_seperated> \n
-To send data unicast use: \n
-u <universe> <sync_uni> <priority> <dst_addr> <data_as_u8_space_seperated> \n
-Register a sending universe as: \n
-r <universe> \n
-Terminate a universe using, if universe is 0 then will terminate entirely: \n
-q <universe> \n
-    ");
+    println!("{}", USAGE_STR);
 }
 
 fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
