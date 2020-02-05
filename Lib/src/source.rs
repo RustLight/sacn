@@ -48,7 +48,7 @@ pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 pub const E131_E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from_secs(10);
 
 /// The default TTL for packet sent by this source.
-pub const DEFAULT_SEND_TTL: u32 = 2;
+pub const DEFAULT_SEND_TTL: u32 = 10;
 
 // Report: The first universe for the data to be synchronised across multiple universes is 
 // used as the syncronisation universe by default. This is done as it means that the receiever should
@@ -282,11 +282,11 @@ impl DmxSource {
             return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
         }
 
-        socket_builder.ttl(DEFAULT_SEND_TTL)?;
+        // socket_builder.ttl(DEFAULT_SEND_TTL)?;
 
         let socket: UdpSocket = socket_builder.bind(ip)?;
         
-        socket.set_multicast_ttl_v4(DEFAULT_SEND_TTL)?;
+        // socket.set_multicast_ttl_v4(DEFAULT_SEND_TTL)?;
 
         let ds = DmxSource {
             socket: socket,
