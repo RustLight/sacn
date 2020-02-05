@@ -253,6 +253,7 @@ impl SacnReceiver {
     // the set_nonblocking method has been called with a Some value.
     // If a universe discovery packet is received it will be handled and the list of discovered universes will be updated.
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
+        println!("Attempting to recv");
         self.internal.lock().unwrap().recv()
     }
 
@@ -525,6 +526,8 @@ impl SacnReceiverInternal {
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
 
+        println!("Recv buffer created");
+
         match self.receiver.recv(&mut buf){
             Ok(pkt) => {
                 println!("PKT RECV: {:?}", pkt);
@@ -588,6 +591,8 @@ impl DmxReciever {
 
         socket.set_read_timeout(DEFAULT_RECV_TIMEOUT)?;
 
+        println!("Created rcv socket: {:?}", socket);
+
         Ok(
             DmxReciever {
                 socket: socket,
@@ -607,7 +612,7 @@ impl DmxReciever {
             multicast_addr = universe_to_ipv6_multicast_addr(universe)?;
         }
 
-        join_multicast(&self.socket, multicast_addr)
+        join_multicast(&self.socket, multicast_addr.ip())
     }
 
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
@@ -624,7 +629,11 @@ impl DmxReciever {
     // Will only block if set_timeout was called with a timeout of None so otherwise (and by default) it won't 
     // block so may return a WouldBlock error to indicate that there was no data ready.
     fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error>{
-        let (_len, _remote_addr) = self.socket.recv_from(&mut buf[0..])?;
+        println!("About to receive from");
+
+        // let (_len, _remote_addr) = self.socket.recv_from(&mut buf[0..])?;
+        // let (_len, _remote_addr) = self.socket.recv_from(&mut buf[0..]).unwrap();
+        let (_len) = self.socket.recv(&mut buf[0..]).unwrap();
 
         println!("DATA RECV!");
 
@@ -696,10 +705,10 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
 //     Ok(socket.into_udp_socket())
 // }
 
-fn join_multicast(socket: &UdpSocket, addr: SocketAddr) -> io::Result<()> {
-    let ip_addr = addr.ip();
+fn join_multicast(socket: &UdpSocket, addr: IpAddr) -> io::Result<()> {
+    // let ip_addr = addr.ip();
 
-    match ip_addr {
+    match addr {
         IpAddr::V4(ref mdns_v4) => {
             // socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(138, 251, 29, 193))?; 
             // socket.join_multicast_v4(mdns_v4, &socket.local_addr()?.ip());
