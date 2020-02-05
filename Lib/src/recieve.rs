@@ -640,37 +640,18 @@ impl DmxReciever {
 }
 
 pub fn create_socket(ip: SocketAddr) -> Result<Socket, Error> {
-    let domain = if ip.is_ipv4() {
-        Domain::ipv4()
+    if ip.is_ipv4() {
+        let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
+        // Bind to the unspecified address - allows receiving from any multicast address joined with the right port.
+        socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), ACN_SDT_MULTICAST_PORT))).unwrap();
+        Ok(socket)
+
     } else {
-        Domain::ipv6()
-    };
-
-    let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
-
-    // This can be shortened
-    socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), 5568))).unwrap();
-
-    Ok(socket)
-
-
-    // let socket_builder;
-    // let socket;
-
-    // if ip.is_ipv4() {
-    //     socket_builder = UdpBuilder::new_v4()?;
-    //     socket = socket_builder.bind(ip)?;
-    // } else if ip.is_ipv6() {
-    //     socket_builder = UdpBuilder::new_v6()?;
-    //     socket_builder.only_v6(true)?;
-    //     socket = socket_builder.bind(ip)?;
-    // } else {
-    //     return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
-    // }
-
-    // socket.set_read_timeout(DEFAULT_RECV_TIMEOUT)?;
-    // println!("Created rcv socket: {:?}", socket);
-    // Ok(socket)
+        let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
+        // Bind to the unspecified address - allows receiving from any multicast address joined with the right port.
+        socket.bind(&SockAddr::from(SocketAddr::new(Ipv6Addr::UNSPECIFIED.into(), ACN_SDT_MULTICAST_PORT))).unwrap();
+        Ok(socket)
+    }
 }
 
 fn join_multicast(socket: &Socket, addr: SocketAddr) -> io::Result<()> {
@@ -683,10 +664,6 @@ fn join_multicast(socket: &Socket, addr: SocketAddr) -> io::Result<()> {
             socket.set_only_v6(true)?;
         }
     };
-
-    // socket.bind(&SockAddr::from(addr))?;
-
-    println!("Joined Multicast Addr: {}", addr);
 
     Ok(())
 }
