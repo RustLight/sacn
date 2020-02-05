@@ -648,6 +648,9 @@ pub fn create_socket(ip: SocketAddr) -> Result<Socket, Error> {
 
     let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
 
+    // This can be shortened
+    socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), 5568))).unwrap();
+
     Ok(socket)
 
 
@@ -681,7 +684,7 @@ fn join_multicast(socket: &Socket, addr: SocketAddr) -> io::Result<()> {
         }
     };
 
-    socket.bind(&SockAddr::from(addr))?;
+    // socket.bind(&SockAddr::from(addr))?;
 
     println!("Joined Multicast Addr: {}", addr);
 
