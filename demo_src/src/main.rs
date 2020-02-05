@@ -28,6 +28,10 @@ const TERMINATE_START_CODE: u8 = 0;
 fn main(){
     let cmd_args: Vec<String> = env::args().collect();
 
+    if cmd_args.len() < 3 {
+        return display_help();
+    }
+
     let interface_ip = &cmd_args[1];
 
     let source_name = &cmd_args[2];
@@ -45,6 +49,21 @@ fn main(){
     } 
 }
 
+fn display_help(){
+    println!("
+Usage ./main <interface_ip> <source_name>\n
+Reads data from stdin and sends it using the protocol. \n
+Data must be formatted as, a sync_universe of 0 means no synchronisation, this uses multicast: \n
+d <universe> <sync_uni> <priority> <data_as_u8_space_seperated> \n
+To send data unicast use: \n
+u <universe> <sync_uni> <priority> <dst_addr> <data_as_u8_space_seperated> \n
+Register a sending universe as: \n
+r <universe> \n
+Terminate a universe using, if universe is 0 then will terminate entirely: \n
+q <universe> \n
+    ");
+}
+
 fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
     let mut input = String::new();
     
@@ -53,6 +72,7 @@ fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
             // https://www.tutorialspoint.com/rust/rust_string.htm (03/02/2020)
             let split_input: Vec<&str> = input.split_whitespace().collect();
             if split_input.len() < 2 {
+                display_help();
                 return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
             }
 

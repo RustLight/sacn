@@ -14,10 +14,14 @@ use std::env;
 /// This receiver will receive on the universes given as command line arguments.
 /// The receiver will print any received data to act on to std out. 
 
-/// Usage: ./main <interface_ip> <timeout_secs> <recv_attempts> <universe_1> <universe_2> ...
+const USAGE_STR: &'static str = "Usage: ./main <interface_ip> <timeout_secs> <recv_attempts> <universe_1> <universe_2> ...";
 
 fn main() {
     let cmd_args: Vec<String> = env::args().collect();
+
+    if cmd_args.len() < 4 {
+        return display_help();
+    }
 
     let interface_ip = &cmd_args[1];
 
@@ -70,6 +74,10 @@ fn main() {
             }
         }
     }
+}
+
+fn display_help(){
+    println!("{}", USAGE_STR);
 }
 
 fn _display_data(data: Vec<DMXData>){
