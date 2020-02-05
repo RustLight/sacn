@@ -15,7 +15,7 @@ fn main() {
 
     println!("Started");
 
-    let addr = SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568);
+    let addr = SocketAddr::new(Ipv4Addr::new(239,255,0,2).into(), 5568);
 
     let socket = join_multicast(addr).unwrap();
 
@@ -42,7 +42,7 @@ fn main() {
                 println!("");
             }
         }
-        
+
     }
 }
 
