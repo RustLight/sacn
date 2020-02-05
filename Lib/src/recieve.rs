@@ -524,7 +524,7 @@ impl SacnReceiverInternal {
     // is already handled.
     // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast).
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
-        let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
+        let mut buf: [u8; RCV_BUF_DEFAULT_SIZE ] = [0; RCV_BUF_DEFAULT_SIZE];
 
         println!("Recv buffer created");
 
