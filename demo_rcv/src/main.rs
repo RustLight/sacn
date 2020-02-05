@@ -56,13 +56,9 @@ fn main() {
         }
     }
 
-    println!("Listening to universes: {:?}", universes);
-
     if universes.len() > 0 {
         dmx_recv.listen_universes(&universes).unwrap();
     }
-
-    println!("Receiver: {:?}", dmx_recv);
 
     for _ in 0 .. recv_attempts { 
         match dmx_recv.recv(){
@@ -78,20 +74,4 @@ fn main() {
 
 fn display_help(){
     println!("{}", USAGE_STR);
-}
-
-fn _display_data(data: Vec<DMXData>){
-    println!("START RECEIVED DATA");
-    for d in data {
-        println!("Universe: {}", d.universe);
-        for v in d.values {
-            print!("{}", v);
-        }
-        println!("");
-    }
-    println!("END RECEIVED DATA");
-}
-
-fn _display_err(err: Error){
-    println!("Error Encountered: {}", err);
 }
