@@ -639,16 +639,24 @@ impl DmxReciever {
     }
 }
 
+// For create_socket and join_multicast methods.
+// Code adapted from:
+// https://bluejekyll.github.io/blog/rust/2018/03/18/multicasting-in-rust.html (05/02/2020)
+// https://github.com/bluejekyll/multicast-example (05/02/2020)
+// 
+// With background reading from:
+// https://stackoverflow.com/questions/2741611/receiving-multiple-multicast-feeds-on-the-same-port-c-linux/2741989#2741989 (05/02/2020)
+// https://www.reddit.com/r/networking/comments/7nketv/proper_use_of_bind_for_multicast_receive_on_linux/ (05/02/2020)
+
 pub fn create_socket(ip: SocketAddr) -> Result<Socket, Error> {
     if ip.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
-        // Bind to the unspecified address - allows receiving from any multicast address joined with the right port.
+        // Bind to the unspecified address - allows receiving from any multicast address joined with the right port - as described in background.
         socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), ACN_SDT_MULTICAST_PORT))).unwrap();
         Ok(socket)
 
     } else {
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
-        // Bind to the unspecified address - allows receiving from any multicast address joined with the right port.
         socket.bind(&SockAddr::from(SocketAddr::new(Ipv6Addr::UNSPECIFIED.into(), ACN_SDT_MULTICAST_PORT))).unwrap();
         Ok(socket)
     }
