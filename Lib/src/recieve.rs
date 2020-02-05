@@ -508,6 +508,9 @@ impl SacnReceiverInternal {
     pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE ] = [0; RCV_BUF_DEFAULT_SIZE];
 
+        // TODO, BECAUSE RECV IS CALLED AGAIN RECURSIVELY IF A NON-RETURNING PACKET IS RECEIVIED
+        // e.g. a univers discovery it will reset the timeout, need a way to keep a track of this.
+
         match self.receiver.recv(&mut buf){
             Ok(pkt) => {
                 let pdu: E131RootLayer = pkt.pdu;
@@ -590,7 +593,7 @@ impl DmxReciever {
     // Will only block if set_timeout was called with a timeout of None so otherwise (and by default) it won't 
     // block so may return a WouldBlock error to indicate that there was no data ready.
     fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error> {
-        let (_len) = self.socket.recv(&mut buf[0..]).unwrap();
+        let (_len) = self.socket.recv(&mut buf[0..])?;
 
         match AcnRootLayerProtocol::parse(buf) {
             Ok(pkt) => {
