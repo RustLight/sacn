@@ -49,7 +49,11 @@ fn main() {
     loop {
         // https://doc.rust-lang.org/std/io/struct.Stdin.html#method.read_line (03/02/2020)
         match handle_input(&mut dmx_recv) {
-            Ok(_) => {}
+            Ok(should_continue) => {
+                if !should_continue {
+                    break;
+                }
+            }
             Err(e) => {
                 println!("Error: Input data line unusable: {}", e);
             }
@@ -57,11 +61,16 @@ fn main() {
     } 
 }
 
-fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<(), Error> {
+fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
     let mut input = String::new();
     
     match io::stdin().read_line(&mut input) {
-        Ok(_) => {
+        Ok(n) => {
+            if n == 0 {
+                // Means EOF is reached so terminate
+                return Ok(false)
+            }
+
             // https://www.tutorialspoint.com/rust/rust_string.htm (03/02/2020)
             let split_input: Vec<&str> = input.split_whitespace().collect();
 
@@ -127,7 +136,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<(), Error> {
                     return Err(Error::new(ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
                 }
             }
-            Ok(())
+            Ok(true
         }
         Err(e) => {
             return Err(e);
