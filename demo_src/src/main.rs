@@ -53,7 +53,11 @@ fn main(){
     loop {
         // https://doc.rust-lang.org/std/io/struct.Stdin.html#method.read_line (03/02/2020)
         match handle_input(&mut src) {
-            Ok(_) => {}
+            Ok(should_continue) => {
+                if !should_continue {
+                    break;
+                }
+            }
             Err(e) => {
                 println!("Error: Input data line unusable: {}", e);
             }
@@ -65,11 +69,17 @@ fn display_help(){
     println!("{}", USAGE_STR);
 }
 
-fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
+/// Returns Ok(true) to continue or Ok(false) if no more input.
+fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
     let mut input = String::new();
     
     match io::stdin().read_line(&mut input) {
-        Ok(_) => {
+        Ok(n) => {
+            if n == 0 {
+                // Means EOF is reached so terminate
+                return Ok(false)
+            }
+
             // https://www.tutorialspoint.com/rust/rust_string.htm (03/02/2020)
             let split_input: Vec<&str> = input.split_whitespace().collect();
             if split_input.len() < 2 {
@@ -129,7 +139,7 @@ fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
                 }
                 "q" => {
                     if universe == 0 {
-                        return Ok(())
+                        return Ok(false)
                     } else {
                         src.terminate_stream(universe, TERMINATE_START_CODE)?;
                     }
@@ -138,7 +148,7 @@ fn handle_input(src: &mut SacnSource) -> Result <(), Error>{
                     return Err(Error::new(ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
                 }
             }
-            Ok(())
+            Ok(true)
         }
         Err(e) => {
             return Err(e);
