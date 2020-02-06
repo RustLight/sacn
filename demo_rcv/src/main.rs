@@ -68,7 +68,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
         Ok(n) => {
             if n == 0 {
                 // Means EOF is reached so terminate
-                return Ok(false)
+                return Ok(false);
             }
 
             // https://www.tutorialspoint.com/rust/rust_string.htm (03/02/2020)
@@ -76,7 +76,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
 
             if split_input.len() < 1 {
                 display_help();
-                return Ok(());
+                return Ok(true);
             }
 
             match split_input[0] {
@@ -136,7 +136,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                     return Err(Error::new(ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
                 }
             }
-            Ok(true
+            Ok(true)
         }
         Err(e) => {
             return Err(e);
