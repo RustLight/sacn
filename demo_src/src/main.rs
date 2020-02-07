@@ -11,6 +11,7 @@ use sacn::packet::ACN_SDT_MULTICAST_PORT;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
 use std::env;
+use std::thread::sleep;
 
 /// The start code used in terminate packets.
 const TERMINATE_START_CODE: u8 = 0;
@@ -35,7 +36,9 @@ const USAGE_STR: &'static str = "Usage ./main <interface_ip> <source_name>\n
     Register a sending universe as: \n
     r <universe> \n
     Terminate a universe using, if universe is 0 then will terminate entirely: \n
-    q <universe> \n";
+    q <universe> 
+    Sleep for x seconds \n
+    w <secs>\n";
 
 fn main(){
     let cmd_args: Vec<String> = env::args().collect();
@@ -143,6 +146,15 @@ fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
                     } else {
                         src.terminate_stream(universe, TERMINATE_START_CODE)?;
                     }
+                }
+                "w" => {
+                    if split_input.len() < 2 {
+                        display_help();
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                    }
+                    let secs: u64 = split_input[1].parse().unwrap();
+                    sleep(Duration::from_secs(secs));
+
                 }
                 x => {
                     return Err(Error::new(ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));

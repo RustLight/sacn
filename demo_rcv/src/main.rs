@@ -10,6 +10,7 @@ use std::time::Duration;
 use std::io;
 use std::io::{Error, ErrorKind};
 use std::env;
+use std::thread::sleep;
 
 /// Demo receiver, this is used as part of the intergration tests across the network.
 /// This receiver will receive on the universes given as command line arguments.
@@ -33,6 +34,9 @@ l <universe> \n
 
 Stop Listening Universe \n
 t <universe> \n
+
+Sleep for x seconds \n
+w <secs>\n
 ";
 
 fn main() {
@@ -115,6 +119,15 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                 "q" => { // Quit
                     // TODO
                     return Err(Error::new(ErrorKind::InvalidInput, "Not Impl"));
+                }
+                "w" => {
+                    if split_input.len() < 2 {
+                        display_help();
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                    }
+                    let secs: u64 = split_input[1].parse().unwrap();
+                    sleep(Duration::from_secs(secs));
+
                 }
                 "l" => { // Listen universe
                     if split_input.len() < 2 {
