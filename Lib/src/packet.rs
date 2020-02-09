@@ -63,6 +63,8 @@ use uuid::Uuid;
 use std::io::{Error, ErrorKind};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
+use std::time::Duration;
+
 use error::{PackError, ParseError};
 
 /// The maximum number of universes per page in a universe discovery packet.
@@ -100,6 +102,12 @@ pub const NO_SYNC_UNIVERSE: u16 = 0;
 
 // Could be anything, implementation dependent, default universe used as the syncronisation universe.
 pub const DEFAULT_SYNC_UNIVERSE: u16 = 1;
+
+// The timeout before data loss is assumed for an E131 source, as defined in Apendix A of ANSI E1.31-2018.
+pub const E131_NETWORK_DATA_LOSS_TIMEOUT: Duration = Duration::from_millis(2500);
+
+// The timeout before a discovered source is assumed to be lost as defined in section 12.2 of ANSI E1.31-2018.
+pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_TIMEOUT;
 
 /// Converts given universe number in range 1 - 63999 inclusive into an u8 array of length 4 with the first byte being
 /// the highest byte in the multicast IP for that universe, the second byte being the second highest and so on.

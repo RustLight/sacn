@@ -17,17 +17,17 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLayerData::DataPacket, 
     E131RootLayerData::SynchronizationPacket, E131RootLayerData::UniverseDiscoveryPacket, UniverseDiscoveryPacketFramingLayer, 
     SynchronizationPacketFramingLayer, DataPacketFramingLayer, UniverseDiscoveryPacketUniverseDiscoveryLayer, ACN_SDT_MULTICAST_PORT,
-    universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr, HIGHEST_ALLOWED_UNIVERSE, DISCOVERY_UNIVERSE};
+    universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr, HIGHEST_ALLOWED_UNIVERSE, DISCOVERY_UNIVERSE, UNIVERSE_DISCOVERY_SOURCE_TIMEOUT};
 
 use std::io;
 use std::io::{Error, ErrorKind};
 
 use std::cmp::{max, Ordering};
-use std::thread::{JoinHandle};
-use std::thread;
 use std::time;
 use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
+
+use std::borrow::Cow;
 
 use std::fmt;
 
@@ -55,6 +55,9 @@ pub const CHECK_BROADCAST_DEFAULT: bool = false;
 pub const RCV_UPDATE_THREAD_NAME: &'static str = "rust_sacn_rcv_update_thread"; 
 
 pub const DEFAULT_RECV_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
+
+// The default value of the process_preview_data flag.
+const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 
 // The default value for the reading timeout for a DmxReceiver.
 pub const DEFAULT_RECV_TIMEOUT: Option<Duration> = Some(time::Duration::from_millis(500));
@@ -111,7 +114,8 @@ struct DmxReciever{
 pub struct DiscoveredSacnSource {
     pub name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
     last_page: u8, // The last page that will be sent by this source.
-    pages: Vec<UniversePage>
+    pages: Vec<UniversePage>,
+    last_updated: Instant
 }
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Clone, Debug)]
@@ -140,6 +144,12 @@ impl DiscoveredSacnSource {
         }
         uni
     }
+
+    pub fn terminate_universe(&mut self, universe: u16) {
+        for p in &mut self.pages {
+            p.universes.retain(|x| *x != universe)
+        }
+    }
 }
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
@@ -151,16 +161,17 @@ pub struct SacnReceiverInternal {
     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
     partially_discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
     running: bool,
+    process_preview_data: bool
 }
 
 // https://doc.rust-lang.org/std/fmt/trait.Debug.html (04/02/2020)
 impl fmt::Debug for SacnReceiverInternal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self.receiver);
-        write!(f, "{:?}", self.waiting_data);
-        write!(f, "{:?}", self.universes);
-        write!(f, "{:?}", self.discovered_sources);
-        write!(f, "{:?}", self.partially_discovered_sources);
+        write!(f, "{:?}", self.receiver)?;
+        write!(f, "{:?}", self.waiting_data)?;
+        write!(f, "{:?}", self.universes)?;
+        write!(f, "{:?}", self.discovered_sources)?;
+        write!(f, "{:?}", self.partially_discovered_sources)?;
         write!(f, "{:?}", self.running)
     }
 }
@@ -186,9 +197,7 @@ impl SacnReceiver {
 
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
-        let trd_builder = thread::Builder::new().name(RCV_UPDATE_THREAD_NAME.into());
-
-        let mut internal = Arc::new(Mutex::new(SacnReceiverInternal::with_ip(ip)?));
+        let internal = Arc::new(Mutex::new(SacnReceiverInternal::with_ip(ip)?));
         Ok(SacnReceiver {
             internal: internal.clone()
         })
@@ -219,21 +228,6 @@ impl SacnReceiver {
         self.internal.lock().unwrap().get_discovered_sources()
     }
 
-    // pub fn set_nonblocking(&mut self, timeout: Option<Duration>) -> Result<(), Error> {
-    //     // match timeout {
-    //     //     Some(t) => {
-    //     //         let internal = self.internal.lock().unwrap();
-    //     //         // internal.set_nonblocking(true);
-    //     //         internal.set_timeout(t);
-    //     //     },
-    //     //     None => {
-    //     //         self.internal.lock().unwrap().set_nonblocking(false);
-    //     //     }
-    //     // }
-    //     self.internal.lock().unwrap().set_timeout(timeout);
-    //     Ok(())
-    // }
-
     // Attempt to recieve data from any of the registered universes.
     // This is the main method for receiving data.
     // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
@@ -241,25 +235,7 @@ impl SacnReceiver {
     pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>, Error> {
         self.internal.lock().unwrap().recv(timeout)
     }
-
-    
-    // pub fn attempt_discover_sources(&mut self) -> Result<u16, Error> {
-    //     // NOT IMPL
-    //     Ok(0)
-    // }
 }
-
-// impl Drop for SacnReceiver {
-//     fn drop(&mut self){
-//         // https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
-//         // if let Some(thread) = self.update_thread.take() {
-//         //     {
-//         //         self.internal.lock().unwrap().terminate();
-//         //     }
-//         //     thread.join().unwrap();
-//         // }
-//     }
-// }
 
 impl SacnReceiverInternal {
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
@@ -271,7 +247,8 @@ impl SacnReceiverInternal {
                 discovered_sources: Vec::new(),
                 merge_func: htp_dmx_merge,
                 partially_discovered_sources: Vec::new(),
-                running: true
+                running: true,
+                process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT
         };
 
         sri.listen_universes(&[DISCOVERY_UNIVERSE])?;
@@ -279,7 +256,7 @@ impl SacnReceiverInternal {
         Ok(sri)
     }
 
-    // TODO
+    
     pub fn set_merge_fn(&mut self, func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>) -> Result<(), Error> {
         self.merge_func = func;
         Ok(())
@@ -317,15 +294,32 @@ impl SacnReceiverInternal {
         Ok(())
     }
 
+    fn set_process_preview_data(&mut self, val: bool) {
+        self.process_preview_data = val;
+    }
+
+    fn terminate_stream<'a>(&mut self, source_name: Cow<'a, str>, universe: u16){
+        match find_discovered_src(&self.discovered_sources, &source_name.to_string()){
+            Some(index) => {
+                self.discovered_sources[index].terminate_universe(universe);
+            },
+            None => {}
+        }
+    }
+
     // Handles the given data packet for this DMX reciever.
     // Returns the universe data if successful.
     // If the returned value is None it indicates that the data was received successfully but isn't ready to act on.
     // Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
     fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>, Error>{
-        // TODO, handle other options, sequence numbers etc.
+        if data_pkt.preview_data && !self.process_preview_data {
+            // Don't process preview data unless receiver has process_preview_data flag set.
+            return Ok(None);
+        }
+
         if data_pkt.stream_terminated {
-            // TODO, handle termination of stream
-            return Ok(None)
+            self.terminate_stream(data_pkt.source_name, data_pkt.universe);
+            return Ok(None); // TODO, do we want to return an error here to indicate a stream was terminated?
         }
 
         if data_pkt.synchronization_address == NO_SYNC_ADDR {
@@ -451,9 +445,6 @@ impl SacnReceiverInternal {
         #[cfg(feature = "std")]
         let universes = data.universes;
 
-        #[cfg(not(feature = "std"))]
-        let universes: Vec<u16, [u16; 512]> = data.universes;
-
         let uni_page: UniversePage = UniversePage {
                 page: page,
                 universes: universes.into()
@@ -462,6 +453,7 @@ impl SacnReceiverInternal {
         match find_discovered_src(&self.partially_discovered_sources, &discovery_pkt.source_name.to_string()) {
             Some(index) => {
                 self.partially_discovered_sources[index].pages.push(uni_page);
+                self.partially_discovered_sources[index].last_updated = Instant::now();
                 if self.partially_discovered_sources[index].has_all_pages() {
                     let discovered_src: DiscoveredSacnSource = self.partially_discovered_sources.remove(index);
                     self.update_discovered_srcs(discovered_src);
@@ -472,6 +464,7 @@ impl SacnReceiverInternal {
                     name: discovery_pkt.source_name.to_string(),
                     last_page: last_page,
                     pages: vec![uni_page],
+                    last_updated: Instant::now()
                 };
 
                 if page == 0 && page == last_page { // Indicates that this is a single page universe discovery packet.
@@ -484,14 +477,6 @@ impl SacnReceiverInternal {
 
         Ok(None)
     }
-
-    // pub fn set_nonblocking(&mut self, is_nonblocking: bool) -> Result<(), Error> {
-    //     self.receiver.set_nonblocking(is_nonblocking)
-    // }
-
-    // pub fn set_timeout(&mut self, time: Option<Duration>) -> Result<(), Error> {
-    //     self.receiver.set_timeout(time)
-    // }
 
     // Attempt to recieve data from any of the registered universes.
     // This is the main method for receiving data.
@@ -507,9 +492,8 @@ impl SacnReceiverInternal {
             return Err(Error::new(ErrorKind::WouldBlock, "No data avaliable in given timeout"));
         }
 
-        self.receiver.set_timeout(timeout);
-
-            let mut start_time = Instant::now();
+        self.receiver.set_timeout(timeout)?;
+            let start_time = Instant::now();
 
             match self.receiver.recv(&mut buf){
                 Ok(pkt) => {
@@ -556,8 +540,15 @@ impl SacnReceiverInternal {
         self.running = false;
     }
 
-    pub fn get_discovered_sources(&self) -> Vec<DiscoveredSacnSource>{
+    pub fn get_discovered_sources(&mut self) -> Vec<DiscoveredSacnSource>{
+        self.remove_expired_sources();
         self.discovered_sources.clone()
+    }
+
+    /// Goes through all discovered sources and removes any that have timed out
+    fn remove_expired_sources(&mut self) {
+        self.partially_discovered_sources.retain(|s| s.last_updated.elapsed() < UNIVERSE_DISCOVERY_SOURCE_TIMEOUT);
+        self.discovered_sources.retain(|s| s.last_updated.elapsed() < UNIVERSE_DISCOVERY_SOURCE_TIMEOUT);
     }
 }
 
@@ -613,7 +604,7 @@ impl DmxReciever {
     // Will only block if set_timeout was called with a timeout of None so otherwise (and by default) it won't 
     // block so may return a WouldBlock error to indicate that there was no data ready.
     fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error> {
-        let (_len) = self.socket.recv(&mut buf[0..])?;
+        self.socket.recv(&mut buf[0..])?;
 
         match AcnRootLayerProtocol::parse(buf) {
             Ok(pkt) => {
@@ -712,40 +703,6 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
 
     Ok(r)
 }
-
-// fn new_socket(addr: &SocketAddr) -> io::Result<UdpSocket> {
-//     let domain = if addr.is_ipv4(){
-//         Domain::ipv4()
-//     } else {
-//         Domain::ipv6()
-//     };
-
-//     let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
-//     socket.set_nonblocking(true)?;
-
-//     Ok(socket.into_udp_socket())
-// }
-
-
-// #[cfg(windows)]
-// fn bind_socket(addr: SocketAddr) -> io::Result<UdpSocket>{
-//     let addr = match addr {
-//         SocketAddr::V4(addr) => {
-//             SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), addr.port())
-//         }
-//         SocketAddr::V6(addr) => {
-//             SocketAddr::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).into(), addr.port())
-//         }
-//     };
-
-//     UdpSocket::bind(addr)
-// }
-
-
-// #[cfg(unix)]
-// fn bind_socket(socket: &Socket, addr: &SocketAddr) -> io::Result<()> {
-//     socket.bind(&SockAddr::from(addr))?;
-// }
 
 #[test]
 fn test_handle_single_page_discovery_packet() {

@@ -50,6 +50,8 @@ fn main() {
 
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(interface_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
+    println!("Started");
+
     loop {
         // https://doc.rust-lang.org/std/io/struct.Stdin.html#method.read_line (03/02/2020)
         match handle_input(&mut dmx_recv) {
@@ -133,7 +135,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                         return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
                     let universe: u16 = split_input[1].parse().unwrap();
-                    dmx_recv.listen_universes(&[universe]);
+                    dmx_recv.listen_universes(&[universe])?;
                 }
                 "t" => { // Stop listening to universe
                     if split_input.len() < 2 {

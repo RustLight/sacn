@@ -47,9 +47,6 @@ pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 /// The interval between universe discovery packets (adverts) as defined by ANSI E1.31-2018 Appendix A.
 pub const E131_E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from_secs(10);
 
-/// The default TTL for packet sent by this source.
-pub const DEFAULT_SEND_TTL: u32 = 10;
-
 // Report: The first universe for the data to be synchronised across multiple universes is 
 // used as the syncronisation universe by default. This is done as it means that the receiever should
 // be listening for this universe. 
@@ -274,7 +271,6 @@ impl DmxSource {
 
         if ip.is_ipv4() {
             socket_builder = UdpBuilder::new_v4()?;
-            // socket.set_multicast_ttl_v4(1).expect("Failed to set ipv4 multicast TTL"); // Keep packets within the local network by default.
         } else if ip.is_ipv6() {
             socket_builder = UdpBuilder::new_v6()?;
             socket_builder.only_v6(true)?;
@@ -282,12 +278,8 @@ impl DmxSource {
             return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
         }
 
-        // socket_builder.ttl(DEFAULT_SEND_TTL)?;
-
         let socket: UdpSocket = socket_builder.bind(ip)?;
         
-        // socket.set_multicast_ttl_v4(DEFAULT_SEND_TTL)?;
-
         let ds = DmxSource {
             socket: socket,
             addr: ip,
@@ -301,8 +293,6 @@ impl DmxSource {
             last_discovery_advert_timestamp: Instant::now(),
             is_sending_discovery: true
         };
-
-        // ds.send_universe_discovery();
 
         Ok(ds)
     }

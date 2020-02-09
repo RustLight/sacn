@@ -1458,10 +1458,6 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
             src.register_universes(&universes);
 
             tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
-
-            // sleep(Duration::from_secs(10)); // Sleep for awhile, this is to allow a universe discovery packet to be sent before the thread finished.
-        
-            // tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has 
         }));
     }
 
@@ -1528,10 +1524,6 @@ fn test_universe_discovery_multiple_universe_one_source_ipv4(){
             src.register_universes(&universes);
 
             tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
-
-            // sleep(Duration::from_secs(10)); // Sleep for awhile, this is to allow a universe discovery packet to be sent before the thread finished.
-        
-            // tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has 
         }));
     }
 
@@ -1603,10 +1595,6 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
             src.set_is_sending_discovery(true);
 
             tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
-
-            // sleep(Duration::from_secs(10)); // Sleep for awhile, this is to allow a universe discovery packet to be sent before the thread finished.
-        
-            // tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has 
         }));
     }
 
@@ -1627,8 +1615,6 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
         }
         
         let discovered = dmx_recv.get_discovered_sources(); 
-
-        // TODO, There shouldn't be the concept of pages exposed to the user at this point.
 
         if discovered.len() > 0 {
             assert_eq!(discovered.len(), 1);

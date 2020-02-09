@@ -4,7 +4,7 @@ use std::io;
 use std::time::Duration;
 
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use std::thread::sleep;
 
@@ -18,9 +18,6 @@ fn main() {
     let addr = SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568);
     let addr2 = SocketAddr::new(Ipv4Addr::new(239,255,0,2).into(), 5568);
 
-
-    let ip_addr = addr.ip();
-
     let socket = new_socket(&addr).unwrap();
 
     socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,1), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
@@ -29,13 +26,8 @@ fn main() {
 
     socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), 5568))).unwrap();
 
-    // println!("Local: {:?}", socket2.local_addr());
+    socket.set_multicast_loop_v4(false).unwrap();
 
-    // let socket = join_multicast(addr).unwrap();
-
-    socket.set_multicast_loop_v4(false);
-
-    // let message: [u8; 5] = [0, 1, 2, 3, 4];
     // https://stackoverflow.com/questions/31289588/converting-a-str-to-a-u8 (05/02/2020)
     let message = &cmd_args[1];
     let message2 = &cmd_args[2];
@@ -52,13 +44,12 @@ fn main() {
 
         let mut buf = [0u8; 64];
 
-        // socket.bind(&SockAddr::from(addr)).unwrap();
         let res = socket.recv(&mut buf);
         match res{
             Err(e) => {
                 println!("Err: {}", e);
             }
-            Ok(x) => {
+            Ok(_) => {
                 print!("Res: ");
                 print!("{}", std::str::from_utf8(&buf).unwrap());
                 println!("");
@@ -88,7 +79,7 @@ fn new_socket(addr: &SocketAddr) -> io::Result<Socket> {
     Ok(socket)
 }
 
-fn join_multicast(addr: SocketAddr) -> io::Result<Socket> {
+fn _join_multicast(addr: SocketAddr) -> io::Result<Socket> {
     let ip_addr = addr.ip();
 
     let socket = new_socket(&addr)?;

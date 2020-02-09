@@ -53,6 +53,8 @@ fn main(){
 
     let mut src = SacnSource::with_ip(source_name, SocketAddr::new(IpAddr::V4(interface_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
 
+    println!("Started");
+
     loop {
         // https://doc.rust-lang.org/std/io/struct.Stdin.html#method.read_line (03/02/2020)
         match handle_input(&mut src) {
