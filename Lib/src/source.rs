@@ -441,7 +441,9 @@ impl DmxSource {
         Ok(())
     }
 
-    // Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.
+    /// Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.
+    /// A dst_ip of None indicates that the sync packet should be sent using the multicast address for that universe,
+    /// otherwise the sync packet will be sent to the given ip.
     fn send_sync_packet(&self, universe: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
         let ip;
 

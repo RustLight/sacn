@@ -12,6 +12,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
 use std::env;
 use std::thread::sleep;
+use std::str::FromStr;
 
 /// The start code used in terminate packets.
 const TERMINATE_START_CODE: u8 = 0;
@@ -35,10 +36,15 @@ const USAGE_STR: &'static str = "Usage ./main <interface_ip> <source_name>\n
     u <universe> <sync_uni> <priority> <dst_addr> <data_as_u8_space_seperated> \n
     Register a sending universe as: \n
     r <universe> \n
-    Terminate a universe using, if universe is 0 then will terminate entirely: \n
-    q <universe> 
-    Sleep for x seconds \n
-    w <secs>\n";
+    Terminate a universe, if universe is 0 then will terminate entirely: \n
+    q <universe> \n
+    Sleep for x milliseconds \n
+    w <milliseconds> \n
+    Send a synchronisation packet for the given universe \n
+    s <universe> \n
+    Send a synchronisation packet for the given universe to the given address \n
+    us <universe> <dst_addr>\n
+    ";
 
 fn main(){
     let cmd_args: Vec<String> = env::args().collect();
@@ -92,10 +98,10 @@ fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
                 return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
             }
 
-            let universe: u16 = split_input[1].parse().unwrap();
-
             match split_input[0] {
                 "d" => {
+                    let universe: u16 = split_input[1].parse().unwrap();
+
                     if split_input.len() < 4 {
                         return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
                     }
@@ -117,8 +123,10 @@ fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
                     }
                 }
                 "u" => {
+                    let universe: u16 = split_input[1].parse().unwrap();
+
                     if split_input.len() < 5 {
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 5 )"));
                     }
 
                     let sync_uni: u16 = split_input[2].parse().unwrap();
@@ -139,10 +147,25 @@ fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
                         src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), Some(sync_uni))?;
                     }
                 }
+                "s" => {
+                    let universe: u16 = split_input[1].parse().unwrap();
+                    src.send_sync_packet(universe, &None)?;
+                }
+                "us" => {
+                    if split_input.len() < 3 {
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+                    }
+
+                    let universe: u16 = split_input[1].parse().unwrap();
+                    let dst_ip = split_input[2];
+                    src.send_sync_packet(universe, &Some(SocketAddr::from_str(dst_ip).unwrap()))?;
+                }
                 "r" => {
+                    let universe: u16 = split_input[1].parse().unwrap();
                     src.register_universe(universe);
                 }
                 "q" => {
+                    let universe: u16 = split_input[1].parse().unwrap();
                     if universe == 0 {
                         return Ok(false)
                     } else {
@@ -154,8 +177,8 @@ fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
                         display_help();
                         return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
-                    let secs: u64 = split_input[1].parse().unwrap();
-                    sleep(Duration::from_secs(secs));
+                    let millis: u64 = split_input[1].parse().unwrap();
+                    sleep(Duration::from_millis(millis));
 
                 }
                 x => {

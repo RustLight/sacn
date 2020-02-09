@@ -2,8 +2,7 @@
 #![allow(unused_imports)]
 
 extern crate sacn;
-use sacn::recieve::DMXData;
-use sacn::recieve::SacnReceiver;
+use sacn::recieve::{DMXData, SacnReceiver, DiscoveredSacnSource};
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
@@ -18,10 +17,13 @@ use std::thread::sleep;
 
 const USAGE_STR: &'static str = "Usage: ./main <interface_ip>\n
 Receive data: \n
-r <timeout, 0 means no timeout>\n
+r <timeout in secs, 0 means no timeout>\n
 
 Print discovered sources: \n
 s \n
+
+Print discovered sources without checking if they are timed out: \n
+x \n
 
 Quit \n
 q \n
@@ -67,6 +69,8 @@ fn main() {
     } 
 }
 
+/// Handle a line of input on stdin to the program.
+/// Returns true if there is more input expected and false if not.
 fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
     let mut input = String::new();
     
@@ -114,11 +118,13 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                     }
                 }
                 "s" => { // Print discovered sources, note that no sources will be discovered unless you try and recv first.
-                    print_discovered_sources(dmx_recv);
+                    print_discovered_sources(&dmx_recv.get_discovered_sources());
+                }
+                "x" => { // Print discovered sources without checking if they are timed out already.
+                    print_discovered_sources(&dmx_recv.get_discovered_sources_no_check());
                 }
                 "q" => { // Quit
-                    // TODO
-                    return Err(Error::new(ErrorKind::InvalidInput, "Not Impl"));
+                    return Ok(false)
                 }
                 "w" => {
                     if split_input.len() < 2 {
@@ -157,8 +163,10 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
     }
 }
 
-fn print_discovered_sources(dmx_recv: &mut SacnReceiver) {
-    println!("{:#?}", dmx_recv.get_discovered_sources());
+fn print_discovered_sources(srcs: &Vec<DiscoveredSacnSource>) {
+    for s in srcs {
+        println!("Name: {}, Universes: {:?}", s.name, s.get_all_universes());
+    }
 }
 
 fn display_help(){

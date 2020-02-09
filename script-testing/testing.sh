@@ -9,10 +9,11 @@ SRC_TEST_INPUT=$4
 RCV_TEST_INPUT=$5
 SRC_EXPECTED_OUTPUT=$6
 RCV_EXPECTED_OUTPUT=$7
+KILL_WAIT=$8 # How long should the testing program wait before killing both receiver and sender forcefully (seconds).
 
 # host where server is running
 REMOTE_PC=pc3-062-l
-REMOTE_PC_2=pc3-025-l
+REMOTE_PC_2=pc3-027-l
 
 PORT=5568
 
@@ -24,7 +25,7 @@ echo "Running rcv at ${REMOTE_PC_2}"
 ssh -n -f ${REMOTE_PC_2} "sh -c 'cd ${CURRENT_DIR}; nohup ./rcv.sh > ${RCV_OUTPUT_PATH} < ${RCV_TEST_INPUT} 2>/dev/null'"
 
 # Give the receiver a chance to startup.
-sleep 1
+sleep 2
 
 # Startup a sender on the first remote pc
 echo "Running src at ${REMOTE_PC}"
@@ -32,7 +33,7 @@ ssh -n -f ${REMOTE_PC} "sh -c 'cd ${CURRENT_DIR}; nohup ./src.sh > ${SRC_OUTPUT_
 
 # Wait to allow both processes the chance to run, this has no specific guarantee that they will 
 #	as it depends on scheduling but it is hoped this will be long enough.
-sleep 1
+sleep ${KILL_WAIT}
 
 # Kill stuff running on both PC's
 ssh ${REMOTE_PC} fuser -k -n udp ${PORT}

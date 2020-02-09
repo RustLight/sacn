@@ -228,6 +228,10 @@ impl SacnReceiver {
         self.internal.lock().unwrap().get_discovered_sources()
     }
 
+    pub fn get_discovered_sources_no_check(&mut self) -> Vec<DiscoveredSacnSource> {
+        self.internal.lock().unwrap().get_discovered_sources_no_check()
+    }
+
     // Attempt to recieve data from any of the registered universes.
     // This is the main method for receiving data.
     // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
@@ -547,6 +551,13 @@ impl SacnReceiverInternal {
         self.discovered_sources.clone()
     }
 
+    /// Gets all discovered sources without checking if any are timed out. 
+    /// As the sources may be timed out get_discovered_sources is the preferred method but this is included 
+    /// to allow receivers to disable source timeouts which may be useful in very high latency networks.
+    pub fn get_discovered_sources_no_check(&mut self) -> Vec<DiscoveredSacnSource> {
+        self.discovered_sources.clone()
+    }
+
     /// Goes through all discovered sources and removes any that have timed out
     fn remove_expired_sources(&mut self) {
         self.partially_discovered_sources.retain(|s| s.last_updated.elapsed() < UNIVERSE_DISCOVERY_SOURCE_TIMEOUT);
@@ -718,7 +729,7 @@ fn test_handle_single_page_discovery_packet() {
     let discovery_pkt: UniverseDiscoveryPacketFramingLayer = UniverseDiscoveryPacketFramingLayer {
         source_name: name.into(),
 
-        /// Universe dicovery layer.
+        /// Universe discovery layer.
         data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
             page: page,
 
