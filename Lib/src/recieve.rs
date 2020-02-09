@@ -312,6 +312,8 @@ impl SacnReceiverInternal {
     // If the returned value is None it indicates that the data was received successfully but isn't ready to act on.
     // Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
     fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>, Error>{
+        // TODO - Sequence numbering is not supported by this receiver, it has been left for if there is sufficient time later.
+
         if data_pkt.preview_data && !self.process_preview_data {
             // Don't process preview data unless receiver has process_preview_data flag set.
             return Ok(None);
