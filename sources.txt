@@ -36,3 +36,8 @@ https://www.cyberciti.biz/faq/linux-unix-osx-bsd-ssh-run-command-on-remote-machi
 https://unix.stackexchange.com/questions/345832/how-can-i-start-a-remote-process-on-a-remote-machine-via-ssh (06/02/2020)
 https://www.devdungeon.com/content/taking-command-line-arguments-bash (07/02/2020)
 https://www.cyberciti.biz/faq/linux-unix-sleep-bash-scripting/ (07/02/2020)
+http://man7.org/linux/man-pages/man1/diff.1.html (09/02/2020)
+https://stackoverflow.com/questions/12137431/test-if-a-command-outputs-an-empty-string (09/02/2020)
+https://ryanstutorials.net/bash-scripting-tutorial/bash-if-statements.php (09/02/2020)
+https://doc.rust-lang.org/cargo/commands/cargo-run.html (09/02/2020)
+
