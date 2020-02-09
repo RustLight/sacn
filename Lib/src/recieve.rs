@@ -26,7 +26,7 @@ use std::cmp::{max, Ordering};
 use std::thread::{JoinHandle};
 use std::thread;
 use std::time;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
 
 use std::fmt;
@@ -213,10 +213,6 @@ impl SacnReceiver {
         self.internal.lock().unwrap().listen_universes(universes)
     }
 
-    pub fn set_timeout(&mut self, time: Option<Duration>) -> Result<(), Error> {
-        self.internal.lock().unwrap().set_timeout(time)
-    }
-
     /// Returns a copy of the Vec of discovered sources by this receiver, note that this isn't kept up to date so these source
     /// may have timed out / changed etc. since this method returned.
     pub fn get_discovered_sources(&self) -> Vec<DiscoveredSacnSource>{
@@ -242,18 +238,15 @@ impl SacnReceiver {
     // This is the main method for receiving data.
     // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
     // is already handled.
-    // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast) and 
-    // the set_nonblocking method has been called with a Some value.
-    // If a universe discovery packet is received it will be handled and the list of discovered universes will be updated.
-    pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
-        self.internal.lock().unwrap().recv()
+    pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>, Error> {
+        self.internal.lock().unwrap().recv(timeout)
     }
 
     
-    pub fn attempt_discover_sources(&mut self) -> Result<u16, Error> {
-        // NOT IMPL
-        Ok(0)
-    }
+    // pub fn attempt_discover_sources(&mut self) -> Result<u16, Error> {
+    //     // NOT IMPL
+    //     Ok(0)
+    // }
 }
 
 // impl Drop for SacnReceiver {
@@ -496,39 +489,66 @@ impl SacnReceiverInternal {
     //     self.receiver.set_nonblocking(is_nonblocking)
     // }
 
-    pub fn set_timeout(&mut self, time: Option<Duration>) -> Result<(), Error> {
-        self.receiver.set_timeout(time)
-    }
+    // pub fn set_timeout(&mut self, time: Option<Duration>) -> Result<(), Error> {
+    //     self.receiver.set_timeout(time)
+    // }
 
     // Attempt to recieve data from any of the registered universes.
     // This is the main method for receiving data.
     // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
     // is already handled.
-    // This method will return a WouldBlock error if there is no data available on any of the enabled receive modes (uni-, multi- or broad- cast).
-    pub fn recv(&mut self) -> Result<Vec<DMXData>, Error> {
+    // This method will return a WouldBlock error if there is no data ready within the given timeout.
+    // Due to the underlying socket a timeout of duration 0 will instantly return a WouldBlock error without
+    // checking for data.
+    pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>, Error> {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE ] = [0; RCV_BUF_DEFAULT_SIZE];
 
-        // TODO, BECAUSE RECV IS CALLED AGAIN RECURSIVELY IF A NON-RETURNING PACKET IS RECEIVIED
-        // e.g. a univers discovery it will reset the timeout, need a way to keep a track of this.
+        if timeout == Some(Duration::from_secs(0)) {
+            return Err(Error::new(ErrorKind::WouldBlock, "No data avaliable in given timeout"));
+        }
 
-        match self.receiver.recv(&mut buf){
-            Ok(pkt) => {
-                let pdu: E131RootLayer = pkt.pdu;
-                let data: E131RootLayerData = pdu.data;
-                let res = match data {
-                    DataPacket(d) => self.handle_data_packet(d)?,
-                    SynchronizationPacket(s) => self.handle_sync_packet(s)?,
-                    UniverseDiscoveryPacket(u) => self.handle_universe_discovery_packet(u)?
-                };
-                match res {
-                    Some(r) => Ok(r),
-                    None => self.recv() // Indicates that there is no data ready to pass up yet so don't return.
+        self.receiver.set_timeout(timeout);
+
+            let mut start_time = Instant::now();
+
+            match self.receiver.recv(&mut buf){
+                Ok(pkt) => {
+                    let pdu: E131RootLayer = pkt.pdu;
+                    let data: E131RootLayerData = pdu.data;
+                    let res = match data {
+                        DataPacket(d) => self.handle_data_packet(d)?,
+                        SynchronizationPacket(s) => self.handle_sync_packet(s)?,
+                        UniverseDiscoveryPacket(u) => self.handle_universe_discovery_packet(u)?
+                    };
+                    match res {
+                        Some(r) => {
+                            Ok(r)
+                        },
+                        None => { // Indicates that there is no data ready to pass up yet even if a packet was received.
+                            // To stop recv blocking forever with a non-None timeout due to packets being received consistently (that reset the timeout)
+                            // within the receive timeout (e.g. universe discovery packets if the discovery interval < timeout) the timeout needs to be 
+                            // adjusted to account for the time already taken.
+                            if !timeout.is_none() {
+                                let elapsed = start_time.elapsed();
+                                match timeout.unwrap().checked_sub(elapsed) {
+                                    None => { // Indicates that elapsed is bigger than timeout so its time to return.
+                                        return Err(Error::new(ErrorKind::WouldBlock, "No data avaliable in given timeout"));
+                                    }
+                                    Some(new_timeout) => {
+                                        return self.recv(Some(new_timeout))
+                                    }
+                                }
+                            } else {
+                                // If the timeout was none then would keep looping till data is returned as the method should keep blocking till then.
+                                self.recv(timeout)
+                            }
+                        } 
+                    }
+                }
+                Err(err) => {
+                    Err(err)
                 }
             }
-            Err(err) => {
-                Err(err)
-            }
-        }
     }
     
     /// Terminates the SacnReceiver including cleaning up all used resources as necessary.
@@ -609,6 +629,12 @@ impl DmxReciever {
     // A timeout with Duration 0 will cause an error.
     pub fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<(), Error> {
         self.socket.set_read_timeout(timeout)
+    }
+
+    /// Returns the current read timeout for the receiver.
+    /// A timeout of None indicates infinite blocking behaviour.
+    pub fn read_timeout(&self) -> Result<Option<Duration>, Error> {
+        self.socket.read_timeout()
     }
 }
 

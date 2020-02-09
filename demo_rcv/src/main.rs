@@ -102,9 +102,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                         Some(Duration::from_secs(timeout_secs))
                     };
 
-                    dmx_recv.set_timeout(timeout).expect("Failed to set timeout");
-
-                    match dmx_recv.recv(){
+                    match dmx_recv.recv(timeout){
                         Err(e) => {
                             println!("Error Encountered: {:?}", e);
                         },
