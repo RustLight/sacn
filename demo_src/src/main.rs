@@ -17,6 +17,9 @@ use std::str::FromStr;
 /// The start code used in terminate packets.
 const TERMINATE_START_CODE: u8 = 0;
 
+// Approximately 30 updates per second
+const SHAPE_DATA_SEND_PERIOD: Duration = Duration::from_millis(33);
+
 /// Usage ./main <interface_ip> <source_name>
 /// Reads data from stdin and sends it using the protocol.
 /// Data must be formatted as, a sync_universe of 0 means no synchronisation, this uses multicast: 
@@ -43,7 +46,9 @@ const USAGE_STR: &'static str = "Usage ./main <interface_ip> <source_name>\n
     Send a synchronisation packet for the given universe \n
     s <universe> \n
     Send a synchronisation packet for the given universe to the given address \n
-    us <universe> <dst_addr>\n
+    us <universe> <dst_addr> \n
+    Start a demo shape which continuously sends data to the given universe for the given number of seconds \n
+    t <universe> <seconds> <priority>\n
     ";
 
 fn main(){
@@ -145,6 +150,30 @@ fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
                         src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), None)?;
                     } else {
                         src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), Some(sync_uni))?;
+                    }
+                }
+                "t" => {
+                    if split_input.len() < 4 {
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 5 )"));
+                    }
+
+                    let universe: u16 = split_input[1].parse().unwrap();
+                    let duration_millis: u64 = split_input[2].parse().unwrap();
+                    let priority: u8 = split_input[3].parse().unwrap();
+
+                    let duration: Duration = Duration::from_millis(duration_millis);
+
+                    let start_time = Instant::now();
+
+                    while (start_time.elapsed() < duration) {
+                        let x: f64 = start_time.elapsed();
+                        let d: u8 = 255 * x.sin();
+
+                        let mut data: [u8; 512] = [d; 512];
+
+                        src.send(&[universe], &data, Some(priority), None, None)?;
+
+                        sleep(SHAPE_DATA_SEND_PERIOD);
                     }
                 }
                 "s" => {
