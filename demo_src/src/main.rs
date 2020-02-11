@@ -5,11 +5,11 @@ extern crate lazy_static;
 extern crate sacn;
 use sacn::SacnSource;
 use std::{time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
+use std::time::{Duration, Instant};
 use std::io;
 use std::io::{Error, ErrorKind};
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::time::Duration;
 use std::env;
 use std::thread::sleep;
 use std::str::FromStr;
@@ -47,8 +47,8 @@ const USAGE_STR: &'static str = "Usage ./main <interface_ip> <source_name>\n
     s <universe> \n
     Send a synchronisation packet for the given universe to the given address \n
     us <universe> <dst_addr> \n
-    Start a demo shape which continuously sends data to the given universe for the given number of seconds \n
-    t <universe> <seconds> <priority>\n
+    Start a demo shape which continuously sends data to the given universe for the given number of milliseconds \n
+    t <universe> <duration_millis> <priority>\n
     ";
 
 fn main(){
@@ -154,7 +154,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
                 }
                 "t" => {
                     if split_input.len() < 4 {
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 5 )"));
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
                     }
 
                     let universe: u16 = split_input[1].parse().unwrap();
@@ -165,9 +165,9 @@ fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
 
                     let start_time = Instant::now();
 
-                    while (start_time.elapsed() < duration) {
-                        let x: f64 = start_time.elapsed();
-                        let d: u8 = 255 * x.sin();
+                    while start_time.elapsed() < duration {
+                        let x: f64 = start_time.elapsed().as_secs_f64();
+                        let d: u8 = (255.0 * x.sin()) as u8;
 
                         let mut data: [u8; 512] = [d; 512];
 
