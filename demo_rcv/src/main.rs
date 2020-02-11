@@ -19,6 +19,9 @@ const USAGE_STR: &'static str = "Usage: ./main <interface_ip>\n
 Receive data: \n
 r <timeout in secs, 0 means no timeout>\n
 
+Attempt to receive data with the given timeout for each receive for the given number of times: \n
+a <timeout in secs> <count> \n
+
 Print discovered sources: \n
 s \n
 
@@ -108,13 +111,27 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                         Some(Duration::from_secs(timeout_secs))
                     };
 
-                    match dmx_recv.recv(timeout){
-                        Err(e) => {
-                            println!("Error Encountered: {:?}", e);
-                        },
-                        Ok(d) => {
-                            println!("{:?}", d);
-                        }
+                    print_recv(dmx_recv.recv(timeout));
+                }
+                "a" => { // Receive data continously.
+                    if split_input.len() < 3 {
+                        display_help();
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 3 )"));
+                    }
+
+                     // https://stackoverflow.com/questions/27043268/convert-a-string-to-int-in-rust (03/02/2020)
+                     let timeout_secs: u64 = split_input[1].parse().unwrap();
+
+                     let count: u64 = split_input[2].parse().unwrap();
+
+                     let timeout = if timeout_secs == 0 { // A timeout value of 0 means no timeout.
+                         None
+                     } else {
+                         Some(Duration::from_secs(timeout_secs))
+                     };
+
+                    for _ in 0 .. count {
+                        print_recv(dmx_recv.recv(timeout));
                     }
                 }
                 "s" => { // Print discovered sources, note that no sources will be discovered unless you try and recv first.
@@ -161,6 +178,22 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
             return Err(e);
         }
     }
+}
+
+fn print_recv(res: Result<Vec<DMXData>, Error>) {
+    match res {
+        Err(e) => {
+            println!("Error Encountered: {:?}", e);
+        },
+        Ok(d) => {
+            print_data(d);
+        }
+    }
+}
+
+fn print_data(d: Vec<DMXData>) {
+    println!("{:?}", d);
+    println!("")
 }
 
 fn print_discovered_sources(srcs: &Vec<DiscoveredSacnSource>) {
