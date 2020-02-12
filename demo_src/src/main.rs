@@ -35,6 +35,9 @@ const USAGE_STR: &'static str = "Usage ./main <interface_ip> <source_name>\n
     Reads data from stdin and sends it using the protocol. \n
     Data must be formatted as, a sync_universe of 0 means no synchronisation, this uses multicast: \n
     d <universe> <sync_uni> <priority> <data_as_u8_space_seperated> \n
+    Sends a full universe of data (512 channels + 0 startcode) with the first bytes of the data as specified 
+    below (remainder is 0's) \n
+    f <universe> <sync_uni> <priority> <data_as_u8_space_seperate> \n
     To send data unicast use: \n
     u <universe> <sync_uni> <priority> <dst_addr> <data_as_u8_space_seperated> \n
     Register a sending universe as: \n
@@ -119,6 +122,29 @@ fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
 
                     for i in 4 .. split_input.len() {
                         data.push(split_input[i].parse().unwrap());
+                    }
+
+                    if sync_uni == 0 {
+                        src.send(&[universe], &data, Some(priority), None, None)?;
+                    } else {
+                        src.send(&[universe], &data, Some(priority), None, Some(sync_uni))?;
+                    }
+                }
+                "f" => {
+                    let universe: u16 = split_input[1].parse().unwrap();
+
+                    if split_input.len() < 4 {
+                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+                    }
+
+                    let sync_uni: u16 = split_input[2].parse().unwrap();
+
+                    let priority: u8 = split_input[3].parse().unwrap();
+
+                    let mut data: [u8; 513] = [0; 513];
+
+                    for i in 4 .. split_input.len() {
+                        data[i - 4] = split_input[i].parse().unwrap();
                     }
 
                     if sync_uni == 0 {
