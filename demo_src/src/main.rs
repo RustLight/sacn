@@ -166,10 +166,11 @@ fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
                     let start_time = Instant::now();
 
                     while start_time.elapsed() < duration {
-                        let x: f64 = start_time.elapsed().as_secs_f64();
+                        let x: f64 = (start_time.elapsed().as_millis() as f64) / (1000 as f64);
                         let d: u8 = (255.0 * x.sin()) as u8;
 
-                        let mut data: [u8; 512] = [d; 512];
+                        let mut data: [u8; 513] = [d; 513];
+                        data[0] = 0; // Use 0 startcode
 
                         src.send(&[universe], &data, Some(priority), None, None)?;
 
