@@ -1,0 +1,181 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2019.4.22)  25 FEB 2020 10:27
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**title-page.tex
+(./title-page.tex
+LaTeX2e <2018-04-01> patch level 5
+
+! LaTeX Error: Environment titlepage undefined.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1 \begin{titlepage}
+                     
+Your command was ignored.
+Type  I <command> <return>  to replace it with another command,
+or  <return>  to continue without it.
+
+
+! LaTeX Error: Missing \begin{document}.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.2 	\begin{center}
+                   
+You're in trouble here.  Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+
+Overfull \hbox (20.0pt too wide) in paragraph at lines 2--2
+[] 
+ []
+
+
+Overfull \hbox (24.02208pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 Rust 
+ []
+
+
+Overfull \hbox (17.77768pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 Im- 
+ []
+
+
+Overfull \hbox (18.68741pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 ple- 
+ []
+
+
+Overfull \hbox (25.07626pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 men- 
+ []
+
+
+Overfull \hbox (13.89574pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 ta- 
+ []
+
+
+Overfull \hbox (19.80545pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 tion 
+ []
+
+
+Overfull \hbox (9.26384pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 of 
+ []
+
+
+Overfull \hbox (16.13187pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 the 
+ []
+
+
+Overfull \hbox (28.44429pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 ANSI 
+ []
+
+
+Overfull \hbox (31.83316pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 E1.31- 
+ []
+
+
+Overfull \hbox (22.99988pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 2018 
+ []
+
+
+Overfull \hbox (30.21649pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 sACN 
+ []
+
+
+Overfull \hbox (22.18045pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 Pro- 
+ []
+
+
+Overfull \hbox (14.05548pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 to- 
+ []
+
+
+Overfull \hbox (14.05548pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 col 
+ []
+
+
+Overfull \hbox (22.71513pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 Paul 
+ []
+
+
+Overfull \hbox (22.72902pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 Lan- 
+ []
+
+
+Overfull \hbox (29.71649pt too wide) in paragraph at lines 4--6
+ \OT1/cmr/bx/n/10 caster 
+ []
+
+
+Overfull \hbox (52.14pt too wide) in paragraph at lines 8--9
+ []\OT1/cmr/bx/n/10 University 
+ []
+
+
+Overfull \hbox (9.26384pt too wide) in paragraph at lines 8--9
+ \OT1/cmr/bx/n/10 of 
+ []
+
+
+Overfull \hbox (10.86105pt too wide) in paragraph at lines 8--9
+ \OT1/cmr/bx/n/10 St 
+ []
+
+
+Overfull \hbox (18.91656pt too wide) in paragraph at lines 8--9
+ \OT1/cmr/bx/n/10 An- 
+ []
+
+
+Overfull \hbox (29.23735pt too wide) in paragraph at lines 8--9
+ \OT1/cmr/bx/n/10 drews 
+ []
+
+
+! LaTeX Error: \begin{document} ended by \end{titlepage}.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.10 \end{titlepage}
+                    
+Your command was ignored.
+Type  I <command> <return>  to replace it with another command,
+or  <return>  to continue without it.
+
+)
+! Emergency stop.
+<*> title-page.tex
+                  
+*** (job aborted, no legal \end found)
+
+ 
+Here is how much of TeX's memory you used:
+ 9 strings out of 492701
+ 176 string characters out of 6134504
+ 57120 words of memory out of 5000000
+ 3983 multiletter control sequences out of 15000+600000
+ 3948 words of font info for 15 fonts, out of 8000000 for 9000
+ 1137 hyphenation exceptions out of 8191
+ 13i,1n,10p,100b,118s stack positions out of 5000i,500n,10000p,200000b,80000s
+!  ==> Fatal error occurred, no output PDF file produced!

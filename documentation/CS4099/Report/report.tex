@@ -1,26 +1,16 @@
-\documentclass[11pt,a4paper,notitlepage]{report}
+\documentclass[11pt,a4paper]{report}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{graphicx}
-\author{160007345}
+\author{Paul Lancaster}
 \title{Rust Implementation of the ANSI E1.31-2018 sACN Protocol}
 
-\setcounter{secnumdepth}{0}
-
 \begin{document}
-	\maketitle
-	\section{Rough notes}
-	Title page
-	Containing the title of the project, the names of the
-	student(s), "University of St Andrews" and the date of
-	submission. You may add the name of your supervisor
-	if you wish.
+	\input{title-page.tex}
 	
 	\section{Abstract}
-	Abstract Outline of the project using at most 250 words.
-	
 	The project expands on an existing implementation [2] of the streaming architecture for control networks (sACN) protocol [3] in rust with the aim to make a library that is avaliable in rust that allows ANSI E1.31-2018 sACN data transfer, universe synchronisation, universe discovery and that supports Ipv4, Ipv6, Unix and Windows.
 	
 	\section{Declaration}
@@ -91,10 +81,19 @@ The project was split into the following list of primary and secondary objective
 	\subsubsection{sACN}
 	One solution to solve some of the problems with DMX is to send it using UDP over a standard IP based network and one of the protocols created to do this is sACN. This allows many DMX packets (and so many universes) to be simultaneously sent using a single network cable from the console and then to be received by the devices. Often for backwards compatibility reasons the sACN is converted back into DMX packets before being sent to the device as most devices older than a few years do not support direct sACN communication but this is rapidly increasing - particularly with higher end professional fixtures. 
 	
-	\subsubsection{Rust}
-	Rust \cite{RUST_LANG} is a compiled memory safe language with no garbage collector. It is extremely fast with near C/C++ like performance \cite{RUST_C_COMPARISON} but with a much stricter compiler that guarantees memory safety. As Rust has no runtime due to no garbage collector it is applicable to embedded devices or high performance .. 
+	\subsubsection{sACN - Universe Synchronisation}
+	A potential problem with multiplexing multiple universes down a single network line is that two universes of data cannot be sent simultaneously, this is often not a problem but for receiving devices that span multiple universes receiving one packet before the another may put the device into an inconsistent state. A similar problem arises if two different devices on different universes want to be controlled simultaneously. ANSI E1.31-2018 provides a solution to this problem in the form of the universe synchronisation feature. This works by data packets containing a synchronisation universe field which can be set to a specific universe. On receipt of a sACN packet with a non-zero universe synchronisation field a compliant receiver won't act on the packet immediately and instead will hold the data for that universe. This data will then be acted upon on receipt of a universe synchronisation packet with the corresponding universe. As data packets for multiple different universes can specify a single synchronisation universe this allows data for multiple universes to be acted upon simultaneously on receipt of a universe synchronisation packet.
 	
-	https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust.html
+	\subsection{Critical Analysis of the sACN protocol}
+	ANSI E1.31-2018 sACN over a purely DMX network provides a solution to a number of problems as discussed above but also introduces its own flaws.\\		
+	One flaw comes with the concept of universe synchronisation as it relies on all receivers to receive a universe synchronisation packet simultaneously. In real-world networks however this may not be the case and depending on the complexity of the network varying transmission latencies between devices may mean that even with synchronisation multiple sources act on data at different times. Another potential issue with the protocol is that it provides no protection from malicious or malfunctioning sources taking control of the system. This makes isolation, preferably physical, of the network vital and so ANSI E1.31 sACN is commonly used on networks dedicated to lighting protocols. This also helps reduce the issue of variable transmission latencies as these networks are likely to be fairly simple. 
+	
+	\subsection{Rust}
+	Rust \cite{RUST_LANG} is a compiled memory safe language with no garbage collector. It is extremely fast with near C/C++ like performance \cite{RUST_C_COMPARISON} but with a much stricter compiler that guarantees memory safety. As Rust has no runtime due to no garbage collector it is applicable to embedded devices and high performance applications making it an ideal language for an ANSI E1.31-2018 sACN device which are often embedded (e.g. in lighting fixtures) or controlling multiple steams of data in real-time where minimal latency is vitally important (e.g. lighting controllers).
+	
+	
+	
+	
 	https://www.techrepublic.com/article/rust-programming-language-seven-reasons-why-you-should-learn-it-in-2019/
 	
 	
@@ -107,7 +106,7 @@ The project was split into the following list of primary and secondary objective
 	\subsection{Related Work}
 	The ANSI E1.31 sACN protocol was originally specified in the document ANSI E1.31-2009 \cite{ANSI_E1.31_2009}. This represented the base version of the protocol without any universe synchronisation, universe discovery or discussion of operation with Ipv6. Since then it has been revised in 2016 (universe sync and discovery) \cite{ANSI_E1.31_2016} and again to its current latest version in 2018 (Ipv6). The future of ANSI E1.31 is still being actively developed and discussed \cite{WHAT_COMES_AFTER_SACN} with the direction of the ACN eco-system of lighting control data over IP being focused on supporting communication from receivers back to sources. Within traditional DMX systems this is supported using the remote device management protocol (RDM) as described in ANSI E1.20-2010 \cite{ANSI_E1.20_2010}. An IP version of the RDM protocol was then created (RDMnet) \cite{ANSI_E1.33_2019} which is ACN based and allows discovery and control of receivers over a network. RDMnet as a fairly new protocol is still in the process of being taken up by vendors but has strong support from ETC (a large lighting company \cite{ETC}) in the form of a maintained open source implementation of RDMnet in C++ \cite{ANSI_E1.33_IMPL}.\\
 	
-	The ACN based family of lighting control protocols aren't the only protocols that allow sending DMX data over an IP network. Another widely adopted protocol is ArtNet which at time of writing is in its 4th version. Unlike sACN on its own ArtNet allows discovery of receivers, remote configuration and transporting RDM data \cite{ARNET} in addition to sending data. ArtNet therefore has taken the strategy of being a larger protocol which covers many use-cases as opposed to the ACN strategy of many protocols each doing a specific area that inter-operate. While they are developed independently the ArtNet v4 standard does allow managing sACN devices which means that it can be used to configure/control sACN devices but with the data still sent over sACN \cite[Pg. 3]{ARTNET}. \\
+	The ACN based family of lighting control protocols aren't the only protocols that allow sending DMX data over an IP network. Another widely adopted protocol is ArtNet which at time of writing is in its 4th version. Unlike sACN on its own ArtNet allows discovery of receivers, remote configuration and transporting RDM data \cite{ARNET} in addition to sending data. ArtNet therefore has taken the strategy of being a larger protocol which covers many use-cases as opposed to the ACN strategy of many protocols each doing a specific area that inter-operate. While they are developed independently the ArtNet v4 standard does allow managing sACN devices which means that it can be used to configure/control sACN devices but with the data still sent over sACN \cite[Pg. 3]{ARTNET}. \\https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust.html]
 	
 	There are a number of existing implementations of sACN in rust however none are fully compliant with the protocol as specified in ANSI E1.31-2018. One of the most complete is \cite{ORIGNIAL_IMPL} which was used as the base for this project. As this is hosted on github it can be seen that while there are a number of forks (6 at time of writing) no public fork has any further progress which leads to the conclusion that this is the most complete open source rust implementation available. Note that this implementation appears in a number of places such as \cite{ORIGINAL_IMPL_RUST_DOC} but this is still the same implementation.\\
 	
