@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2019.4.22)  25 FEB 2020 10:18
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2019.4.22)  25 FEB 2020 10:27
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -123,18 +123,18 @@ File: pdftex.def 2018/01/08 v1.0l Graphics/color driver for pdftex
 (./report.aux)
 \openout1 = `report.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 12.
-LaTeX Font Info:    ... okay on input line 12.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 12.
-LaTeX Font Info:    ... okay on input line 12.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 12.
-LaTeX Font Info:    ... okay on input line 12.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 12.
-LaTeX Font Info:    ... okay on input line 12.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 12.
-LaTeX Font Info:    ... okay on input line 12.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 12.
-LaTeX Font Info:    ... okay on input line 12.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
 
 (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
@@ -205,140 +205,136 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Font Info:    Try loading font information for U+msa on input line 13.
+(./title-page.tex [1
+
+{/usr/share/texlive/texmf-dist/fonts/map/pdftex/updmap/pdftex.map}]) [1] (./rep
+ort.toc
+LaTeX Font Info:    Try loading font information for U+msa on input line 1.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 13.
+LaTeX Font Info:    Try loading font information for U+msb on input line 1.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-) [1
-
-{/usr/share/texlive/texmf-dist/fonts/map/pdftex/updmap/pdftex.map}] (./report.t
-oc)
+))
 \tf@toc=\write3
 \openout3 = `report.toc'.
 
  [2
 
 ]
-Underfull \hbox (badness 10000) in paragraph at lines 47--55
+Underfull \hbox (badness 10000) in paragraph at lines 37--45
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 56--57
+Underfull \hbox (badness 10000) in paragraph at lines 46--47
 
  []
 
 [3] [4]
-
-LaTeX Warning: Citation `RUST_C_COMPARISON' on page 5 undefined on input line 9
-5.
-
-
-Overfull \hbox (60.53844pt too wide) in paragraph at lines 97--99
+Overfull \hbox (60.53844pt too wide) in paragraph at lines 89--91
 []\OT1/cmr/m/n/10.95 https://benchmarksgame-team.pages.debian.net/benchmarksgam
 e/fastest/rust.html
  []
 
 
-Overfull \hbox (30.42876pt too wide) in paragraph at lines 97--99
+Overfull \hbox (30.42876pt too wide) in paragraph at lines 89--91
 \OT1/cmr/m/n/10.95 https://www.techrepublic.com/article/rust-programming-langua
 ge-seven-reasons-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 108--109
+Underfull \hbox (badness 10000) in paragraph at lines 100--101
 
  []
 
 [5]
 
-LaTeX Warning: Citation `ARNET' on page 6 undefined on input line 110.
+LaTeX Warning: Citation `ARNET' on page 6 undefined on input line 102.
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 110--111
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 112--113
+Underfull \hbox (badness 10000) in paragraph at lines 102--103
 
  []
 
 
-LaTeX Warning: Reference `C++_IMPL' on page 6 undefined on input line 114.
+Underfull \hbox (badness 10000) in paragraph at lines 104--105
 
-<E131-Repo-Search.png, id=23, 545.78906pt x 441.52454pt>
+ []
+
+
+LaTeX Warning: Reference `C++_IMPL' on page 6 undefined on input line 106.
+
+<E131-Repo-Search.png, id=24, 545.78906pt x 441.52454pt>
 File: E131-Repo-Search.png Graphic file (type png)
 <use E131-Repo-Search.png>
-Package pdftex.def Info: E131-Repo-Search.png  used on input line 118.
+Package pdftex.def Info: E131-Repo-Search.png  used on input line 110.
 (pdftex.def)             Requested size: 360.0pt x 291.22519pt.
 [6] [7 <./E131-Repo-Search.png>]
-<sdlc_waterfall_model.jpg, id=33, 451.6875pt x 301.8778pt>
+<sdlc_waterfall_model.jpg, id=34, 451.6875pt x 301.8778pt>
 File: sdlc_waterfall_model.jpg Graphic file (type jpg)
 <use sdlc_waterfall_model.jpg>
-Package pdftex.def Info: sdlc_waterfall_model.jpg  used on input line 148.
+Package pdftex.def Info: sdlc_waterfall_model.jpg  used on input line 140.
 (pdftex.def)             Requested size: 360.0pt x 240.61356pt.
 
 
 LaTeX Warning: Citation `waterfall-diagram' on page 8 undefined on input line 1
-49.
+41.
 
 [8 <./sdlc_waterfall_model.jpg>] [9]
 
 LaTeX Warning: Reference `waterfall-diagram' on page 10 undefined on input line
- 194.
+ 186.
 
 
-Overfull \hbox (38.12727pt too wide) in paragraph at lines 194--196
+Overfull \hbox (38.12727pt too wide) in paragraph at lines 186--188
 [][] \OT1/cmr/m/n/10.95 https://www.tutorialspoint.com/sdlc/sdlc[]waterfall[]mo
 del.htm (01/01/2020) 
  []
 
 
-Overfull \hbox (10.96207pt too wide) in paragraph at lines 229--234
+Overfull \hbox (10.96207pt too wide) in paragraph at lines 221--226
 \OT1/cmr/m/n/10.95 Conclusions You should sum-marise your project, em-pha-sis-i
 ng your key achieve-
  []
 
 [10] [11]
-Underfull \hbox (badness 10000) in paragraph at lines 271--272
+Underfull \hbox (badness 10000) in paragraph at lines 263--264
 []\OT1/cmr/m/n/10.95 https://www.element14.com/community/groups/open-source-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 271--272
+Underfull \hbox (badness 10000) in paragraph at lines 263--264
 \OT1/cmr/m/n/10.95 hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 277--278
+Underfull \hbox (badness 10000) in paragraph at lines 269--270
 []\OT1/cmr/m/n/10.95 http://artisticlicence.com/WebSiteMaster/User%20Guides/art
 -net.pdf
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 285--287
+Underfull \hbox (badness 10000) in paragraph at lines 277--279
 []\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31[]2009.pdf
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 288--290
+Underfull \hbox (badness 10000) in paragraph at lines 280--282
 []\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31-2016.pdf
  []
 
 
-Overfull \hbox (144.9842pt too wide) in paragraph at lines 291--292
+Overfull \hbox (144.9842pt too wide) in paragraph at lines 283--284
 []\OT1/cmr/m/n/10.95 http://www.rdmprotocol.org/files/What[]Comes[]After[]Strea
 ming[]DMX[]over[]ACN[]%20%284%29.pdf
  []
 
 
-Overfull \hbox (66.0468pt too wide) in paragraph at lines 301--302
+Overfull \hbox (66.0468pt too wide) in paragraph at lines 293--294
 []\OT1/cmr/m/n/10.95 https://benchmarksgame-team.pages.debian.net/benchmarksgam
 e/fastest/rust.html
  []
@@ -349,27 +345,22 @@ e/fastest/rust.html
 
 LaTeX Warning: There were undefined references.
 
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
  ) 
 Here is how much of TeX's memory you used:
- 2409 strings out of 492701
- 31879 string characters out of 6134504
- 97239 words of memory out of 5000000
- 6250 multiletter control sequences out of 15000+600000
- 11958 words of font info for 45 fonts, out of 8000000 for 9000
+ 2404 strings out of 492701
+ 31817 string characters out of 6134504
+ 97161 words of memory out of 5000000
+ 6243 multiletter control sequences out of 15000+600000
+ 10412 words of font info for 39 fonts, out of 8000000 for 9000
  1137 hyphenation exceptions out of 8191
- 41i,6n,25p,1507b,220s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 41i,5n,25p,1507b,220s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/shar
-e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texli
-ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb>
-Output written on report.pdf (13 pages, 228361 bytes).
+e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb>
+Output written on report.pdf (14 pages, 210946 bytes).
 PDF statistics:
- 71 PDF objects out of 1000 (max. 8388607)
- 47 compressed objects within 1 object stream
+ 66 PDF objects out of 1000 (max. 8388607)
+ 43 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  11 words of extra memory for PDF output out of 10000 (max. 10000000)
 

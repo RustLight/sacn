@@ -1,25 +1,25 @@
-\contentsline {section}{Rough notes}{1}
-\contentsline {section}{Abstract}{1}
-\contentsline {section}{Declaration}{1}
-\contentsline {section}{Introduction}{3}
-\contentsline {section}{Context Survey}{4}
-\contentsline {subsection}{DMX, SACN and ACN}{4}
+\contentsline {section}{\numberline {0.1}Abstract}{1}
+\contentsline {section}{\numberline {0.2}Declaration}{1}
+\contentsline {section}{\numberline {0.3}Introduction}{3}
+\contentsline {section}{\numberline {0.4}Context Survey}{4}
+\contentsline {subsection}{\numberline {0.4.1}DMX, SACN and ACN}{4}
 \contentsline {subsubsection}{DMX512}{4}
 \contentsline {subsubsection}{sACN}{5}
+\contentsline {subsubsection}{}{5}
 \contentsline {subsubsection}{Rust}{5}
-\contentsline {subsection}{Related Work}{5}
-\contentsline {section}{Requirement specification}{6}
-\contentsline {section}{Software Engineering Process}{6}
-\contentsline {section}{Design}{10}
-\contentsline {subsection}{ANSI E1.31-2018}{10}
-\contentsline {subsection}{Critique of the protocol}{10}
-\contentsline {section}{Implementation}{10}
-\contentsline {subsection}{Implementation dependent specifics}{10}
-\contentsline {section}{Evaluation and Critical Appraisal}{10}
-\contentsline {section}{Conclusions}{10}
-\contentsline {section}{Appendices}{11}
-\contentsline {section}{Testing}{11}
-\contentsline {subsection}{Automated Testing}{11}
-\contentsline {subsection}{Real-world Testing}{11}
-\contentsline {section}{User Manual}{11}
-\contentsline {section}{Other Appendices}{11}
+\contentsline {subsection}{\numberline {0.4.2}Related Work}{5}
+\contentsline {section}{\numberline {0.5}Requirement specification}{6}
+\contentsline {section}{\numberline {0.6}Software Engineering Process}{8}
+\contentsline {section}{\numberline {0.7}Design}{10}
+\contentsline {subsection}{\numberline {0.7.1}ANSI E1.31-2018}{10}
+\contentsline {subsection}{\numberline {0.7.2}Critique of the protocol}{10}
+\contentsline {section}{\numberline {0.8}Implementation}{10}
+\contentsline {subsection}{\numberline {0.8.1}Implementation dependent specifics}{10}
+\contentsline {section}{\numberline {0.9}Evaluation and Critical Appraisal}{10}
+\contentsline {section}{\numberline {0.10}Conclusions}{10}
+\contentsline {section}{\numberline {0.11}Appendices}{11}
+\contentsline {section}{\numberline {0.12}Testing}{11}
+\contentsline {subsection}{\numberline {0.12.1}Automated Testing}{11}
+\contentsline {subsection}{\numberline {0.12.2}Real-world Testing}{11}
+\contentsline {section}{\numberline {0.13}User Manual}{11}
+\contentsline {section}{\numberline {0.14}Other Appendices}{11}
