@@ -1,0 +1,1568 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass report
+\begin_preamble
+\usepackage{amsfonts}
+\author{160007345}
+\title{Rust Implementation of the ANSI E1.31-2018 sACN Protocol}
+\end_preamble
+\options notitlepage
+\use_default_options false
+\maintain_unincluded_children false
+\language english
+\language_package none
+\inputencoding utf8
+\fontencoding default
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 11
+\spacing single
+\use_hyperref false
+\papersize a4paper
+\use_geometry false
+\use_package amsmath 2
+\use_package amssymb 2
+\use_package cancel 0
+\use_package esint 1
+\use_package mathdots 0
+\use_package mathtools 0
+\use_package mhchem 0
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 0
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+maketitle
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Section
+Rough notes
+\end_layout
+
+\begin_layout Standard
+Title page Containing the title of the project, the names of the student(s),
+ 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+University of St Andrews
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+ and the date of submission.
+ You may add the name of your supervisor if you wish.
+\end_layout
+
+\begin_layout Section
+Abstract
+\end_layout
+
+\begin_layout Standard
+Abstract Outline of the project using at most 250 words.
+\end_layout
+
+\begin_layout Standard
+The project expands on an existing implementation 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ORIGNIAL_IMPL"
+literal "false"
+
+\end_inset
+
+ of the streaming architecture for control networks (sACN) protocol 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ANSI_E1.31"
+literal "false"
+
+\end_inset
+
+ in rust with the aim to make a library that is avaliable in rust that allows
+ ANSI E1.31-2018 sACN data transfer, universe synchronisation, universe discovery
+ and that supports Ipv4, Ipv6, Unix and Windows.
+\end_layout
+
+\begin_layout Section
+Declaration
+\end_layout
+
+\begin_layout Standard
+I declare that the material submitted for assessment is my own work except
+ where credit is explicitly given to others by citation or acknowledgement.
+ This work was performed during the current academic year except where otherwise
+ stated.
+ 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+The main text of this project report is NN,NNN words long, including project
+ specification and plan.
+ 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+In submitting this project report to the University of St Andrews, I give
+ permission for it to be made available for use in accordance with the regulatio
+ns of the University Library.
+ I also give permission for the title and abstract to be published and for
+ copies of the report to be made and supplied at cost to any bonafide library
+ or research worker, and to be made available on the World Wide Web.
+ I retain the copyright in this work.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+Introduction Describe the problem you set out to solve and the extent of
+ your success in solving it.
+ You should include the aims and objectives of the project in order of importanc
+e and try to outline key aspects of your project for the reader to look
+ for in the rest of your report.
+\end_layout
+
+\begin_layout Standard
+The goal of this project was to create a rust library for sending and receiving
+ sACN data that is fully compliant with the protocol specification as defined
+ in ANSI E1.31-2018 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ANSI_E1.31"
+literal "false"
+
+\end_inset
+
+.
+ This project is based on an existing but incomplete implementation of the
+ protocol 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ORIGNIAL_IMPL"
+literal "false"
+
+\end_inset
+
+ which was then expanded upon.
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The project was split into the following list of primary and secondary objective
+s.
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{list}
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{}
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{
+\end_layout
+
+\end_inset
+
+Primary
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Introduce more through testing - There is only a small amount of existing
+ testing which needs to be expanded on to verify all the elements of the
+ system 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Allow receiving DMX through sACN 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Allow sending DMX using universe synchronisation - This involves both data
+ packets and sync packets.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Allow universe discovery - Sources of data can be discovered using adverts.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Add support for the options field - This includes things such as termination
+ of streams and forced synchronisation.
+ 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{list}
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{list}
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{}
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{
+\end_layout
+
+\end_inset
+
+Secondary
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Analyse the performance of the protocol implementation verses other implementati
+ons in other languages - Using metrics such as data throughput, performance
+ as number of universes increases.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Analyse the performance of the protocol versus other similar protocols such
+ as ArtNet 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ArtNet"
+literal "false"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Test the implementation in a real-world environment with real devices -
+ Involves creating a small demo program.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Windows and Unix support - Windows 10 and the lab machine Fedora version.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Unicast, Multicast and Broadcast Support - The protocol works over all these
+ with multicast being the preferred.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+Ipv4 and Ipv6 support 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{list}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Context Survey
+\end_layout
+
+\begin_layout Standard
+Context survey Surveying the context, the background literature and any
+ recent work with similar aims.
+ The context survey describes the work already done in this area, either
+ as described in textbooks, research papers, or in publicly available software.
+ You may also describe potentially useful tools and technologies here but
+ do not go into project-specific decisions.
+\end_layout
+
+\begin_layout Subsection
+DMX, SACN and ACN
+\end_layout
+
+\begin_layout Subsubsection
+DMX512
+\end_layout
+
+\begin_layout Standard
+DMX512 is an protocol used in the entertainment industry for the control
+ of lighting, effects and other devices.
+ It works by daisy chaining devices together into distinct physical chains
+ (called universes) and is a one way protocol.
+ This means that the devices in the line cannot communicate their presence
+ back to the controller so the controller must know about the devices ahead
+ of time and their addresses so it can broadcast packets down the line which
+ the devices then receive and use.
+ The DMX packets are a fixed size and contain five hundred and twelve 8-byte
+ channel (+ a start code) which allows them to control up to 512 different
+ devices on a singular line.
+ A device may support the use of multiple channels to control different
+ functionalities so for example a light with RGB colour mixing may use 3
+ channels to allow control of the Red, Green and Blue individually.
+ Since there are only 512 channels available on a single universe this quickly
+ imposes a limitation to the number of devices that can be connected together,
+ especially as modern lighting fixtures commonly use upwards of 30 channels
+ each for a moving light with usage of many more not uncommon.
+ The solution to this was previously to simply have more physical lines
+ (universes) and in this way allow more devices to be controlled simultaneously.
+ This comes with a number of problems however as each new physical line
+ means a new cable coming directly from the control desk.
+\end_layout
+
+\begin_layout Paragraph*
+DMX512 Problems
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{list}
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{}
+\end_layout
+
+\end_inset
+
+
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{}
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+As the control desk is often far from the devices themselves (at the back
+ of the venue whereas the lights/devices are above the stage) it means that
+ many cables need to be run which can be expensive and time consuming.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+The length of the cable runs can cause signal interference / degradation
+ and DMX as a 1 way protocol does not have any error correction (bad frames
+ if detected are thrown out).
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+item 
+\end_layout
+
+\end_inset
+
+The protocol only allowing 512 channels per physical line means that a device
+ cannot have more channels than this.
+ This is particularly a problem recently with the advent of complex fixtures
+ which may have many LED's with individual colour control.
+ 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{list}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+sACN
+\end_layout
+
+\begin_layout Standard
+One solution to solve some of the problems with DMX is to send it using
+ UDP over a standard IP based network and one of the protocols created to
+ do this is sACN.
+ This allows many DMX packets (and so many universes) to be simultaneously
+ sent using a single network cable from the console and then to be received
+ by the devices.
+ Often for backwards compatibility reasons the sACN is converted back into
+ DMX packets before being sent to the device as most devices older than
+ a few years do not support direct sACN communication but this is rapidly
+ increasing - particularly with higher end professional fixtures.
+\end_layout
+
+\begin_layout Subsubsection
+Rust
+\end_layout
+
+\begin_layout Standard
+Rust 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "RUST_LANG"
+literal "false"
+
+\end_inset
+
+ is a compiled memory safe language with no garbage collector.
+ It is extremely fast with near C/C++ like performance 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "RUST_C_COMPARISON"
+literal "false"
+
+\end_inset
+
+ but with a much stricter compiler that guarantees memory safety.
+ As Rust has no runtime due to no garbage collector it is applicable to
+ embedded devices or high performance ..
+\end_layout
+
+\begin_layout Standard
+https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust.html
+ https://www.techrepublic.com/article/rust-programming-language-seven-reasons-why-
+you-should-learn-it-in-2019/
+\end_layout
+
+\begin_layout Standard
+Rust 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "RUST_LANG"
+literal "false"
+
+\end_inset
+
+ is a language designed to be used for writing fast, memory efficient systems
+ code.
+ It has relatively low overhead and because it doesn't require the additional
+ overhead of a garbage collector it is perfect for usage in embedded or
+ high performance systems.
+\end_layout
+
+\begin_layout Standard
+This makes it an ideal language for usage with sACN as responding quickly
+ to control events is vital to a lighting system (imagine a sound effect
+ goes off but the lighting doesn't until a second later).
+\end_layout
+
+\begin_layout Subsection
+Related Work
+\end_layout
+
+\begin_layout Standard
+The ANSI E1.31 sACN protocol was originally specified in the document ANSI
+ E1.31-2009 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ANSI_E1.31_2009"
+literal "false"
+
+\end_inset
+
+.
+ This represented the base version of the protocol without any universe
+ synchronisation, universe discovery or discussion of operation with Ipv6.
+ Since then it has been revised in 2016 (universe sync and discovery) 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ANSI_E1.31_2016"
+literal "false"
+
+\end_inset
+
+ and again to its current latest version in 2018 (Ipv6).
+ The future of ANSI E1.31 is still being actively developed and discussed
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "WHAT_COMES_AFTER_SACN"
+literal "false"
+
+\end_inset
+
+ with the direction of the ACN eco-system of lighting control data over
+ IP being focused on supporting communication from receivers back to sources.
+ Within traditional DMX systems this is supported using the remote device
+ management protocol (RDM) as described in ANSI E1.20-2010 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ANSI_E1.20_2010"
+literal "false"
+
+\end_inset
+
+.
+ An IP version of the RDM protocol was then created (RDMnet) 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ANSI_E1.33_2019"
+literal "false"
+
+\end_inset
+
+ which is ACN based and allows discovery and control of receivers over a
+ network.
+ RDMnet as a fairly new protocol is still in the process of being taken
+ up by vendors but has strong support from ETC (a large lighting company
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ETC"
+literal "false"
+
+\end_inset
+
+) in the form of a maintained open source implementation of RDMnet in C++
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ANSI_E1.33_IMPL"
+literal "false"
+
+\end_inset
+
+.
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The ACN based family of lighting control protocols aren't the only protocols
+ that allow sending DMX data over an IP network.
+ Another widely adopted protocol is ArtNet which at time of writing is in
+ its 4th version.
+ Unlike sACN on its own ArtNet allows discovery of receivers, remote configurati
+on and transporting RDM data 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ARNET"
+literal "false"
+
+\end_inset
+
+ in addition to sending data.
+ ArtNet therefore has taken the strategy of being a larger protocol which
+ covers many use-cases as opposed to the ACN strategy of many protocols
+ each doing a specific area that inter-operate.
+ While they are developed independently the ArtNet v4 standard does allow
+ managing sACN devices which means that it can be used to configure/control
+ sACN devices but with the data still sent over sACN 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "Pg. 3"
+key "ARTNET"
+literal "false"
+
+\end_inset
+
+.
+ 
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+There are a number of existing implementations of sACN in rust however none
+ are fully compliant with the protocol as specified in ANSI E1.31-2018.
+ One of the most complete is 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ORIGNIAL_IMPL"
+literal "false"
+
+\end_inset
+
+ which was used as the base for this project.
+ As this is hosted on github it can be seen that while there are a number
+ of forks (6 at time of writing) no public fork has any further progress
+ which leads to the conclusion that this is the most complete open source
+ rust implementation available.
+ Note that this implementation appears in a number of places such as 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "ORIGINAL_IMPL_RUST_DOC"
+literal "false"
+
+\end_inset
+
+ but this is still the same implementation.
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Implementations of sACN exist in multiple languages, at the time of writing
+ (Jan 2020) a cursory search for E1.31 repositories on github reveals repositorie
+s in multiple languages with the most prevalent being C++ and C as shown
+ by Figure: 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "E131_REPO_SEARCH"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ An example of one of these projects is 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "C++_IMPL"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ which allows both sending and receiving of sACN packets.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "E131_REPO_SEARCH"
+
+\end_inset
+
+ 
+\begin_inset Graphics
+	filename E131-Repo-Search.png
+	width 100text%
+
+\end_inset
+
+ 
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+A search of repositories on github with the search term 
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+E1.31
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+"
+\end_layout
+
+\end_inset
+
+ as of Jan 2020
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Requirement specification
+\end_layout
+
+\begin_layout Standard
+Requirements specification Capturing the properties the software solution
+ must have in the form of requirements specification.
+ You may wish to specify different types of requirements and given them
+ priorities if applicable.
+\end_layout
+
+\begin_layout Section
+Software Engineering Process
+\end_layout
+
+\begin_layout Standard
+Software engineering process The development approach taken and justification
+ for its adoption.
+\end_layout
+
+\begin_layout Standard
+A waterfall based process model was used for the development of the program.
+ In the waterfall method there are several distinct phases of the project
+ as shown in figure: 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "waterfall-diag"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ This development approach was chosen as it has a very clear structure which
+ allows easy to manage distinct milestones so progress through the project
+ can be more easily tracked.
+ This process method has a number of disadvantages aswell with the main
+ one being the inflexibility - if something major needed to change it would
+ be difficult to adapt the project.
+ As this project is based on a clearly defined specification provided by
+ the protocal specification and the domains were clearly defined at the
+ start it means that this inflexibility isn't a major issue and so therefore
+ choosing the waterfall method for its advantages makes sense.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "waterfall-diag"
+
+\end_inset
+
+ 
+\begin_inset Graphics
+	filename sdlc_waterfall_model.jpg
+	width 100text%
+
+\end_inset
+
+ 
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+A diagram showing the waterfall development process, [
+\begin_inset CommandInset citation
+LatexCommand cite
+key "waterfall-diagram"
+literal "false"
+
+\end_inset
+
+]
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+
+\end_layout
+
+\begin_layout Standard
+The waterfall model can be clearly seen throughout the development of the
+ program.
+ The first phase of 'requirement analysis' is the protocol specification
+ itself as it clearly lays out the goals of the protocol and what it is
+ required to do.
+ On top of this there is the project goals which were defined around the
+ protocol specifically for how much of the protocol this specification should
+ implement for example universe-syncronisation, IPv4/IPv6 support, Unix/Windows
+ support etc.
+ When take together this gives a clear list of requirements as so allows
+ moving onto the 'system design' phase.
+\end_layout
+
+\begin_layout Paragraph*
+
+\end_layout
+
+\begin_layout Standard
+The system design phase is where the requirements are turned into a technical
+ plan for how they will be implemented.
+ Alot of this also comes from the protocol specification itself as it describes
+ how each bit of a compliant implementation should behave and so therefore
+ the design can be based of this.
+\end_layout
+
+\begin_layout Paragraph*
+
+\end_layout
+
+\begin_layout Standard
+The 'implementation' phase was done
+\end_layout
+
+\begin_layout Standard
+One of the requirements of the project that was defined was that the implementat
+ion should be in rust.
+ This combined with the existing base incomplete implementation that was
+ used meant that the general system design was built around this.
+ In general the system was designed around there being distinct receivers
+ and senders with communication being mostly one-way.
+ This meant that the two different sides could be developed in relative
+ isolation as all their communication must be done in a way that is compliant
+ with the protocol which provides the interface between them.
+\end_layout
+
+\begin_layout Paragraph*
+
+\end_layout
+
+\begin_layout Standard
+The 'testing' phase is the combining of the various bits of the implementation.
+ This is marked by the passing of the various intergration tests where the
+ sender and the receiver were passing information back and forth.
+ Also part of this phase is the overall compliance tests which are detailed
+ later which show that the implementation of the protocol as a whole conforms
+ to the design and requirements.
+\end_layout
+
+\begin_layout Paragraph*
+
+\end_layout
+
+\begin_layout Standard
+Once the testing phase has finished the implementation can move onto the
+ 'deployment' phase.
+ In an industry project this would mean distributing the implementation
+ to users and then later moving to the maintenance stage to fix issues or
+ improve various parts of the project as opportunities or problems are reported.
+ Within this project the deployment took the form of the development of
+ 2 small programs, one which transmits data specified by the user in the
+ form of various dynamic patterns and a receiver which logs all received
+ input.
+ Theses programs followed a waterfall development methodolgy as described
+ later.
+ These programs were then used with various other sACN devices in a real-world
+ environment to show real usage/deployment of the protocol.
+ Issues that are discovered at this point can then be fixed through patches
+ which represent the 'maintenance' phase of the program.
+\end_layout
+
+\begin_layout Paragraph*
+
+\end_layout
+
+\begin_layout Standard
+Reflection on the methonolody used In general the approach used worked well
+ for the project as it fit the natural development stratergy meaning there
+ weren't any points where the development felt like it was 'fighting' the
+ approach chosen.
+ There were a few potential problems that were identified however.
+ One of these was that the model forced rigid time constraints.
+ This is because if too long is spent on any one stage all the subsequent
+ stages would suffer.
+ This was taken as a fairly minor issue for this project because the constraints
+ of fixed submissions deadlines already meant that there some rigid time
+ constraints in place.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "waterfall-diagram"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ https://www.tutorialspoint.com/sdlc/sdlc_waterfall_model.htm (01/01/2020)
+\end_layout
+
+\begin_layout Section*
+Ethics
+\end_layout
+
+\begin_layout Standard
+This project has no ethical considerations that require notification in
+ this section.
+\end_layout
+
+\begin_layout Section
+Design
+\end_layout
+
+\begin_layout Standard
+Design Indicating the structure of the system, with particular focus on
+ main ideas of the design, unusual design features, etc.
+ 
+\end_layout
+
+\begin_layout Subsection
+ANSI E1.31-2018
+\end_layout
+
+\begin_layout Subsection
+Critique of the protocol
+\end_layout
+
+\begin_layout Section
+Implementation
+\end_layout
+
+\begin_layout Standard
+Implementation How the implementation was done and tested, with particular
+ focus on important / novel algorithms and/or data structures, unusual implement
+ation decisions, novel user interface features, etc.
+\end_layout
+
+\begin_layout Subsection
+Implementation dependent specifics
+\end_layout
+
+\begin_layout Section
+Evaluation and Critical Appraisal
+\end_layout
+
+\begin_layout Standard
+Evaluation and critical appraisal You should evaluate your own work with
+ respect to your original objectives.
+ You should also critically evaluate your work with respect to related work
+ done by others.
+ You should compare and contrast the project to similar work in the public
+ domain, for example as written about in published papers, or as distributed
+ in software available to you.
+\end_layout
+
+\begin_layout Section
+Conclusions
+\end_layout
+
+\begin_layout Standard
+Conclusions You should summarise your project, emphasising your key achievements
+ and significant drawbacks to your work, and discuss future directions your
+ work could be taken in.
+\end_layout
+
+\begin_layout Section
+Appendices
+\end_layout
+
+\begin_layout Standard
+The appendices to your report will normally be as follows.
+ Testing summary This should describe the steps taken to debug, test, verify
+ or otherwise confirm the correctness of the various modules and their combinati
+on.
+\end_layout
+
+\begin_layout Section
+Testing
+\end_layout
+
+\begin_layout Subsection
+Automated Testing
+\end_layout
+
+\begin_layout Subsection
+Real-world Testing
+\end_layout
+
+\begin_layout Section
+User Manual
+\end_layout
+
+\begin_layout Standard
+User manual Instructions on installing, executing and using the system where
+ appropriate.
+\end_layout
+
+\begin_layout Section
+Other Appendices
+\end_layout
+
+\begin_layout Standard
+Other appendices If appropriate, you may include other material in appendices
+ which are not suitable for inclusion in the main body of your report, such
+ as the ethical approval document.
+ You should not include software listings in your project report, unless
+ it is appropriate to discuss small sections in the main body of your report.
+ Instead, you will submit via MMS your code and associated material such
+ as JavaDoc documentation and detailed UML diagrams
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ANSI_E1.17"
+literal "false"
+
+\end_inset
+
+ ANSI E1.17 - 2015 Entertainment Technology?Architecture for Control Networks
+ 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ORIGNIAL_IMPL"
+literal "false"
+
+\end_inset
+
+ https://github.com/lschmierer/sacn (September 2019) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ANSI_E1.31"
+literal "false"
+
+\end_inset
+
+ ANSI E1.31 ? 2018 Entertainment Technology Lightweight streaming protocol
+ for transport of DMX512 using ACN 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "DMX_INFO"
+literal "false"
+
+\end_inset
+
+ https://www.element14.com/community/groups/open-source-hardware/blog/2017/08/24/d
+mx-explained-dmx512-and-rs-485-protocol-detail-for-lighting-applications
+ (17/09/2019) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "C_IMPL"
+literal "false"
+
+\end_inset
+
+ https://github.com/hhromic/libe131 (17/09/2019) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "RUST_LANG"
+literal "false"
+
+\end_inset
+
+ https://www.rust-lang.org/ (17/09/2019) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ARTNET"
+literal "false"
+
+\end_inset
+
+ http://artisticlicence.com/WebSiteMaster/User%20Guides/art-net.pdf (17/09/2019)
+ 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ORIGINAL_IMPL_RUST_DOC"
+literal "false"
+
+\end_inset
+
+ https://docs.rs/sacn/0.4.4/sacn/index.html (26/01/2020) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "C++_IMPL"
+literal "false"
+
+\end_inset
+
+ https://github.com/hhromic/libe131 (26/01/2020) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ANSI_E1.31_2009"
+literal "false"
+
+\end_inset
+
+ https://tsp.esta.org/tsp/documents/docs/E1-31_2009.pdf (26/01/2020) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ANSI_E1.31_2016"
+literal "false"
+
+\end_inset
+
+ https://tsp.esta.org/tsp/documents/docs/E1-31-2016.pdf (26/01/2020) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "WHAT_COMES_AFTER_SACN"
+literal "false"
+
+\end_inset
+
+ http://www.rdmprotocol.org/files/What_Comes_After_Streaming_DMX_over_ACN_%20%284%
+29.pdf (26/01/2020) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ANSI_E1.33_2019"
+literal "false"
+
+\end_inset
+
+ RDM-NET 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ANSI_E1.33_IMPL"
+literal "false"
+
+\end_inset
+
+ https://github.com/ETCLabs/RDMnet (26/01/2020) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ANSI_E1.20_2010"
+literal "false"
+
+\end_inset
+
+ RDM 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "ETC"
+literal "false"
+
+\end_inset
+
+ https://www.etcconnect.com/About/ (26/01/2020) 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+key "RUST_C_COMPARISON"
+literal "false"
+
+\end_inset
+
+ https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust.html
+ (28/01/2020)
+\end_layout
+
+\end_body
+\end_document

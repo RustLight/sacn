@@ -21,7 +21,7 @@
 	\section{Abstract}
 	Abstract Outline of the project using at most 250 words.
 	
-	The project expands on an existing implementation \cite{ORIGNIAL_IMPL} of the streaming architecture for control networks (sACN) protocol \cite{ANSI_E1.31} in rust with the aim to make a fully compliant library that allows sending and receiving DMX payload data without having to handle E1.31 specifics directly. This library is made to support Ipv4, Ipv6, unix and windows and is tested to show compliance with the protocol.
+	The project expands on an existing implementation [2] of the streaming architecture for control networks (sACN) protocol [3] in rust with the aim to make a library that is avaliable in rust that allows ANSI E1.31-2018 sACN data transfer, universe synchronisation, universe discovery and that supports Ipv4, Ipv6, Unix and Windows.
 	
 	\section{Declaration}
 	I declare that the material submitted for
@@ -51,26 +51,22 @@
 		importance and try to outline key aspects of your
 		project for the reader to look for in the rest of your
 		report.
-		
-	The goal of this project was to create a rust library for sending and receiving sACN data that is fully compliant with the protocol specification as defined in ANSI E1.31-2018 \cite{ANSI_E1.31}. This project is based on an existing but incomplete implementation of the protocol \cite{ORIGNIAL_IMPL} which was then expanded upon.\\
+	At the time of starting this project there did not exist a native, open-source ANSI E1.31-2018 sACN library for rust which allowed data sending, receiving, universe synchronisation and universe discovery.  The library that did exist was incomplete and only supported sending data and parsing packets.\\
 	
-	The project was split into the following list of primary and secondary objectives.\\
+	This project therefore aims to create a library for rust users which supports ANSI E1.31-2018 sACN sending, receiving, universe synchronisation and discovery. This project is based on the existing library to give a starting point. As sACN is commonly used in heterogeneous device environments with a mix of embedded systems and operating systems such as Windows and Unix to provide support for as many devices as possible a few additional non-functional requirements were made; The library must have support for both Ipv4 and Ipv6 as well as unicast, multicast and broadcast in both windows and unix environments.\\
+	
+The project was split into the following list of primary and secondary objectives.\\
 	\begin{list}{}{Primary}
-		\item Introduce more through testing - There is only a small amount of existing testing which needs to be expanded on to verify all the elements of the system
-		\item Allow receiving DMX through sACN
-		\item Allow sending DMX using universe synchronisation - This involves both data packets and sync packets.
-		\item Allow universe discovery - Sources of data can be discovered using adverts.
-		\item Add support for the options field - This includes things such as termination of streams and forced synchronisation.
+		\item Allow sending and receiving DMX data over sACN.
+		\item Support the sending and receiving of cross universe DMX data through the 				universe synchronisation feature.
+		\item Support universe discovery with adverts for sources and discovery for 					receivers.
 	\end{list}
 	\begin{list}{}{Secondary}
-		\item Analyse the performance of the protocol implementation verses other implementations in other languages - Using metrics such as data throughput, performance as number of universes increases.
-		\item Analyse the performance of the protocol versus other similar protocols such as ArtNet \cite{ArtNet}
-		\item Test the implementation in a real-world environment with real devices - Involves creating a small demo program.
-		\item Windows and Unix support - Windows 10 and the lab machine Fedora version.
-		\item Unicast, Multicast and Broadcast Support - The protocol works over all these with multicast being the preferred.
-		\item Ipv4 and Ipv6 support
+		\item Demonstrate a deployment of the library into a real-world system to show its compliance with the protocol by showing interoperability with other compliant devices.
+		\item Provide support for Windows 10 and Fedora Linux systems.
+		\item Support multiple IP transmission modes - Unicast, Multicast and 			Broadcast.
+		\item Support multiple IP versions - Ipv4 and Ipv6.
 	\end{list}
-	
 	
 	\section{Context Survey}
 	Context survey
