@@ -6,12 +6,17 @@
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
+//
+// Partially created as part of a University of St Andrews Computer Science Senior Honours Dissertation.
 
 
 // Report note:
 // One of the problems with the existing SACN sending is how it didn't treat the payload transparently because it 
 // would add on the start code. As this is part of the DMX protocol and not the SACN protocol this was removed as it 
 // violated the extends of SACN.
+// Report: The first universe for the data to be synchronised across multiple universes is 
+// used as the syncronisation universe by default. This is done as it means that the receiever should
+// be listening for this universe. 
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -23,39 +28,27 @@ use std::time::{Duration, Instant};
 use std::thread::{JoinHandle};
 use std::thread;
 use std::sync::{Arc, Mutex};
-
-// use math::round;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
 use net2::{UdpBuilder, UdpSocketExt};
 use uuid::Uuid;
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
-
-use packet::{AcnRootLayerProtocol, DataPacketDmpLayer, DataPacketFramingLayer, SynchronizationPacketFramingLayer, E131RootLayer,
-             E131RootLayerData, UNIVERSE_CHANNEL_CAPACITY, NO_SYNC_UNIVERSE, UniverseDiscoveryPacketUniverseDiscoveryLayer, 
-             UniverseDiscoveryPacketFramingLayer, ACN_SDT_MULTICAST_PORT, DISCOVERY_UNIVERSE, DEFAULT_PRIORITY, LOWEST_ALLOWED_UNIVERSE,
-             universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr, DISCOVERY_UNI_PER_PAGE, HIGHEST_ALLOWED_UNIVERSE}; // As defined in ANSI E1.31-2018};
+use packet::*;
 
 /// The default delay between sending data packets and sending a synchronisation packet, used as advised by ANSI-E1.31-2018 Appendix B.1
 pub const DEFAULT_SYNC_DELAY: Duration = time::Duration::from_millis(10);
 
-pub const SND_UPDATE_THREAD_NAME: &'static str = "rust_sacn_snd_update_thread"; // The name of the thread which runs periodically to perform various actions such as universe discovery adverts for the source.
+/// The name of the thread which runs periodically to perform various actions such as universe discovery adverts for the source.
+pub const SND_UPDATE_THREAD_NAME: &'static str = "rust_sacn_snd_update_thread"; 
 
-pub const DEFAULT_TERMINATE_START_CODE: u8 = 0; // The default startcode used to send stream termination packets when the SacnSource is dropped.
+/// The default startcode used to send stream termination packets when the SacnSource is closed.
+pub const DEFAULT_TERMINATE_START_CODE: u8 = 0; 
 
-// The poll rate of the update thread.
+/// The poll rate of the update thread.
 pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 
 /// The interval between universe discovery packets (adverts) as defined by ANSI E1.31-2018 Appendix A.
 pub const E131_E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from_secs(10);
-
-// Report: The first universe for the data to be synchronised across multiple universes is 
-// used as the syncronisation universe by default. This is done as it means that the receiever should
-// be listening for this universe. 
-
-// TODO, Write live code examples like the one below:
-
-// Note the test below is depreciated so won't work without the sections being commented out.
 
 /// A DMX over sACN sender.
 ///
@@ -67,39 +60,81 @@ pub const E131_E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from
 /// # Examples
 ///
 /// ```
-/// // THIS EXAMPLE IS DEPRECIATED
-/// // use sacn::DmxSource;
+/// // Example showing creation of a source and then sending some data.
+/// use sacn::DmxSource;
+/// use sacn::packet::ACN_SDT_MULTICAST_PORT;
 ///
-/// // let mut dmx_source = DmxSource::new("Controller").unwrap();
+/// let interface_ip = "127.0.0.1"; // Example ip.
 ///
-/// // dmx_source.send(1, &[0, 100, 100, 100, 100, 100, 100]);
-/// // dmx_source.terminate_stream(1, 0);
+/// let source_name = "Controller"; // Example source name.
+///
+/// let addr = SocketAddr::new(IpAddr::V4(interface_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT); 
+/// 
+/// let mut src = SacnSource::with_ip(source_name, addr).unwrap();
+/// 
+/// let universe: u16 = 1;    // Universe the data is to be sent on.
+/// let sync_uni: u16 = None; // Don't want the packet to be delayed awaiting synchronisation.
+/// let priority: u8 = 100;   // The priority for the sending data, must be 1-200 inclusive.
+/// let dst_ip = None;
+
+/// let mut data: Vec<u8> = vec![0, 0, 0, 0, 255, 255, 128, 128];
+/// src.send(&[universe], &data, Some(priority), dst_ip, sync_uni)?;
 /// ```
 
-// General info / concept of running flag.
-// https://www.reddit.com/r/rust/comments/b4ys9j/is_there_a_way_to_force_thread_to_join/ (12/01/2020)
-
-#[derive(Debug)]
-pub struct DmxSource {
-    socket: UdpSocket,
-    addr: SocketAddr,
-    cid: Uuid,
-    name: String,
-    preview_data: bool,
-    sequences: RefCell<HashMap<u16, u8>>,
-    sync_delay: Duration,
-    universes: Vec<u16>, // A list of the universes registered to send by this source, used for universe discovery. Always sorted with lowest universe first to allow quicker usage.
-    running: bool,
-    last_discovery_advert_timestamp: Instant,
-    is_sending_discovery: bool,
-    // update_thread: JoinHandle<()> // The thread which runs every poll_period to perform various periodic action such as send universe discovery adverts. 
-}
-
+/// An ANSI E1.31-2018 sACN source.
+///
+/// Allows sending DMX data over an IPv4 or IPv6 network using sACN.
 #[derive(Debug)]
 pub struct SacnSource {
-    // internal: Arc<Mutex<DmxSource>>
+    /// The DMX source used for actually sending the sACN packets.
+    /// Protected by a Mutex lock to allow concurrent access between user threads and the update thread below.
     internal: Arc<Mutex<DmxSource>>,
+
+    /// Update thread which performs actions every DEFAULT_POLL_PERIOD such as checking if a universe 
+    /// discovery packet should be sent.
     update_thread: Option<JoinHandle<()>>
+}
+
+/// Internal sACN sender, this does most of the work however is encapsulated within SacnSource
+/// to allow access by the update_thread which is used to manage sending periodic universe discovery packets.
+#[derive(Debug)]
+struct DmxSource {
+    /// Underlying UDP socket used for sending sACN packets on the network.
+    socket: UdpSocket,
+
+    /// The address of this DmxSource on the network.
+    addr: SocketAddr,
+
+    /// The unique ID of this DmxSource.
+    /// It is the job of the user of the library to ensure that the cid is given on creation of the DmxSource is unique.
+    cid: Uuid,
+
+    /// The human readable name of this source.
+    name: String,
+
+    /// Flag which is included in sACN packets to indicate that the data shouldn't be used for live output 
+    /// (ie. on actual lighting fixtures). A receiver may or may not be compliant with this so it should not be relied
+    /// upon.
+    preview_data: bool,
+
+    /// 
+    sequences: RefCell<HashMap<u16, u8>>,
+
+    /// 
+    sync_delay: Duration,
+
+    /// A list of the universes registered to send by this source, used for universe discovery. 
+    /// Always sorted with lowest universe first to allow quicker usage.
+    universes: Vec<u16>, 
+
+    /// Flag that indicates if the DmxSource is running (the update thread should be triggering periodic discovery packets).
+    running: bool,
+
+    /// The time that the last universe discovery advert was send.
+    last_discovery_advert_timestamp: Instant,
+
+    /// Flag that is set to True to indicate that the source is sending periodic universe discovery packets.
+    is_sending_discovery: bool,
 }
 
 impl SacnSource {
@@ -133,6 +168,7 @@ impl SacnSource {
         SacnSource::with_cid_ip(name, Uuid::new_v4(), ip)
     }
 
+
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
         let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
 
@@ -160,7 +196,6 @@ impl SacnSource {
     /// Allow sending on ipv6 
     pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
         self.internal.lock().unwrap().socket.set_only_v6(val)
-        // Err(Error::new(ErrorKind::Other, "Not impl"))
     }
     
     /// Sets the Time To Live for packets sent by this source.
