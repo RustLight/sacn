@@ -42,3 +42,6 @@ https://ryanstutorials.net/bash-scripting-tutorial/bash-if-statements.php (09/02
 https://doc.rust-lang.org/cargo/commands/cargo-run.html (09/02/2020)
 https://users.rust-lang.org/t/suppress-warnings-from-the-cargo-command/10536/7 (09/02/2020)
 
+// General info / concept of running flag.
+// https://www.reddit.com/r/rust/comments/b4ys9j/is_there_a_way_to_force_thread_to_join/ (12/01/2020)
+
