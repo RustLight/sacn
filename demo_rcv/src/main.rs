@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
+#![warn(missing_docs)]
 
 extern crate sacn;
 use sacn::recieve::{DMXData, SacnReceiver, DiscoveredSacnSource};
@@ -191,9 +192,12 @@ fn print_recv(res: Result<Vec<DMXData>, Error>) {
     }
 }
 
-fn print_data(d: Vec<DMXData>) {
-    println!("{:?}", d);
-    println!("")
+fn print_data(data: Vec<DMXData>) {
+    print!("[");
+    for d in data {
+        print!("{{ {}, {}, {:?} }}, ", d.universe, d.sync_uni, d.values);
+    }
+    println!("]");
 }
 
 fn print_discovered_sources(srcs: &Vec<DiscoveredSacnSource>) {
