@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
+#![warn(missing_docs)]
 
 extern crate lazy_static;
 extern crate sacn;

@@ -7,6 +7,8 @@
 
 //! Errors used through the sacn crate.
 
+#![warn(missing_docs)]
+
 use core::fmt;
 use core::str::Utf8Error;
 

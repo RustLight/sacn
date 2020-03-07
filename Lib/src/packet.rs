@@ -5,6 +5,8 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
+#![warn(missing_docs)]
+
 //! Parsing of sacn network packets.
 //!
 //! The packets live within the scope of the ACN protocol suite.

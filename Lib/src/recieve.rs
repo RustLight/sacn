@@ -2,6 +2,7 @@
 // https://bluejekyll.github.io/blog/rust/2018/03/18/multicasting-in-rust.html September 2019
 // https://blog.abby.md/2019/05/16/multicasting-in-rust/ September 2019
 
+#![warn(missing_docs)]
 
 // Objective ideas:
 // - Ipv4 or Ipv6 Support

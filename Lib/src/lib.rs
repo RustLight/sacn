@@ -14,6 +14,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![doc(html_root_url = "https://docs.rs/sacn/")]
+#![warn(missing_docs)]
 
 #[cfg(feature = "std")]
 extern crate core;

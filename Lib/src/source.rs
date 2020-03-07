@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 // Copyright 2018 sacn Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
