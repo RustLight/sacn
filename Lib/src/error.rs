@@ -17,8 +17,36 @@ use std::error;
 
 use uuid;
 
-mod errors {
-    error_chain! {}
+// https://github.com/rust-lang-nursery/error-chain/issues/112 (08/03/2020)
+/// The errors used within the SacnLibrary.
+/// 
+/// Uses the error-chain crate to allow errors to allow more informative backtraces through error chaining.
+/// https://docs.rs/error-chain/0.12.2/error_chain/
+pub mod errors {
+    error_chain! {
+        foreign_links {
+            Io(::std::io::Error); // Allow IO errors to be used with the error-chain system.
+            Parse(::error::ParseError); // Allow the existing ParseError's to be used with the error-chain system.
+        }
+
+        errors {
+            IllegalUniverse(msg: String) {
+                description("illegal universe used, outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE 
+                - E131_MAX_MULTICAST_UNIVERSE] + E131_DISCOVERY_UNIVERSE inclusive"),
+                display("illegal universe used, outwith allowed range, msg: {}", msg)
+            }
+
+            IpVersionError(msg: String) {
+                description("Ip version (ipv4 or ipv6) used when the other is expected"),
+                display("Ip version (ipv4 or ipv6) used when the other is expected, msg: {}", msg)
+            }
+
+            DmxMergeError(msg: String) {
+                description("Error when merging DMX data"),
+                display("Error when merging DMX data, msg: {}", msg)
+            }
+        }
+    }
 }
 
 /// Errors for parsing of sACN network packets.

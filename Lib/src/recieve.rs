@@ -1,5 +1,8 @@
 #![warn(missing_docs)]
 
+use error::errors::*;
+use error::errors::ErrorKind::*;
+
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
@@ -8,7 +11,6 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use packet::{*, E131RootLayerData::*};
 
 use std::io;
-use std::io::{Error, ErrorKind};
 
 use std::cmp::{max, Ordering};
 use std::time;
@@ -144,7 +146,7 @@ pub struct SacnReceiver {
     waiting_data: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
     universes: Vec<u16>, // Universes that this receiver is currently listening for
     discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been discovered by this receiver through universe discovery packets.
-    merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
+    merge_func: fn(&DMXData, &DMXData) -> Result<DMXData>,
     partially_discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
     process_preview_data: bool
 }
@@ -178,18 +180,9 @@ impl SacnReceiver {
     /// Will return an error if the created SacnReceiver fails to listen to the E1.31_DISCOVERY_UNIVERSE.
     /// For more details see SacnReceiver::listen_universes().
     /// 
-    pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
-        let snr;
-        match SacnNetworkReceiver::new(ip) {
-            Ok(res) => {snr = res},
-            Err(e) => {
-                println!("Failed to create SacnNetworkReceiver: {}", e);
-                return Err(e);
-            }
-        };
-
+    pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver> {
         let mut sri = SacnReceiver {
-                receiver: snr,
+                receiver: SacnNetworkReceiver::new(ip).chain_err(|| "Failed to create SacnNetworkReceiver")?,
                 waiting_data: Vec::new(),
                 universes: Vec::new(),
                 discovered_sources: Vec::new(),
@@ -204,13 +197,13 @@ impl SacnReceiver {
         Ok(sri)
     }
     
-    pub fn set_merge_fn(&mut self, func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>) -> Result<(), Error> {
+    pub fn set_merge_fn(&mut self, func: fn(&DMXData, &DMXData) -> Result<DMXData>) -> Result<()> {
         self.merge_func = func;
         Ok(())
     }
 
     /// Allow sending on ipv6 
-    pub fn set_ipv6_only(&mut self, val: bool) -> Result<(), Error>{
+    pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
         self.receiver.set_only_v6(val)
     }
 
@@ -228,12 +221,10 @@ impl SacnReceiver {
     /// 
     /// Will also return an Error if there is an issue listening to the multicast universe, see SacnNetworkReceiver::listen_multicast_universe().
     /// 
-    pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
+    pub fn listen_universes(&mut self, universes: &[u16]) -> Result<()>{
         for u in universes {
             if (*u != E131_DISCOVERY_UNIVERSE) && (*u < E131_MIN_MULTICAST_UNIVERSE || *u > E131_MAX_MULTICAST_UNIVERSE) {
-                return Err(Error::new(ErrorKind::InvalidInput, 
-                    format!("Attempted to listen on a universe outwith the allowed range of [E131_MIN_MULTICAST_UNIVERSE 
-                    - E131_MAX_MULTICAST_UNIVERSE] + E131_DISCOVERY_UNIVERSE inclusive: {}", u)));
+                bail!(ErrorKind::IllegalUniverse( format!("Universe {} is out of range", *u)));
             }
         }
 
@@ -268,7 +259,7 @@ impl SacnReceiver {
     // Returns the universe data if successful.
     // If the returned value is None it indicates that the data was received successfully but isn't ready to act on.
     // Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
-    fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>, Error>{
+    fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
         // TODO - Sequence numbering is not supported by this receiver, it has been left for if there is sufficient time later.
 
         if data_pkt.preview_data && !self.process_preview_data {
@@ -323,7 +314,7 @@ impl SacnReceiver {
     }
 
     /// Store given data in this receive by adding it to the waiting buffer.
-    fn store_waiting_data(&mut self, data: DMXData) -> Result<(), Error>{
+    fn store_waiting_data(&mut self, data: DMXData) -> Result<()>{
         for i in 0 .. self.waiting_data.len() {
             if self.waiting_data[i].universe == data.universe && self.waiting_data[i].sync_uni == data.sync_uni { 
                 // Implementation detail: Multiple bits of data for the same universe can 
@@ -350,7 +341,7 @@ impl SacnReceiver {
         it shall hold that E1.31 Data Packet until the arrival of the appropriate E1.31 Synchronization Packet before acting on it.
 
 */
-    fn handle_sync_packet(&mut self, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Option<Vec<DMXData>>, Error>{
+    fn handle_sync_packet(&mut self, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
         let res = self.rtrv_waiting_data(sync_pkt.synchronization_address)?;
         if res.len() == 0 {
             Ok(None)
@@ -360,7 +351,7 @@ impl SacnReceiver {
     }
 
     // Retrieves and removes the DMX data of all waiting data with a synchronisation address matching the one provided.
-    fn rtrv_waiting_data(&mut self, sync_uni: u16) -> Result<Vec<DMXData>, Error>{
+    fn rtrv_waiting_data(&mut self, sync_uni: u16) -> Result<Vec<DMXData>>{
         let mut res: Vec<DMXData> = Vec::new();
 
         let mut i: usize = 0;
@@ -395,7 +386,7 @@ impl SacnReceiver {
     // receieved, if a discovery packet is receieved but there are more pages the source won't be discovered until all the pages are receieved.
     // If a page is lost this therefore means the source update / discovery in its entirety will be lost - implementation detail.
 
-    fn handle_universe_discovery_packet(&mut self, discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Result<Option<Vec<DMXData>>, Error>{
+    fn handle_universe_discovery_packet(&mut self, discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
         let data: UniverseDiscoveryPacketUniverseDiscoveryLayer = discovery_pkt.data;
 
         let page: u8 = data.page;
@@ -444,11 +435,11 @@ impl SacnReceiver {
     // This method will return a WouldBlock error if there is no data ready within the given timeout.
     // Due to the underlying socket a timeout of duration 0 will instantly return a WouldBlock error without
     // checking for data.
-    pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>, Error> {
+    pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>> {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE ] = [0; RCV_BUF_DEFAULT_SIZE];
 
         if timeout == Some(Duration::from_secs(0)) {
-            return Err(Error::new(ErrorKind::WouldBlock, "No data avaliable in given timeout"));
+            bail!(std::io::Error::new(std::io::ErrorKind::WouldBlock, "No data avaliable in given timeout"));
         }
 
         self.receiver.set_timeout(timeout)?;
@@ -475,7 +466,7 @@ impl SacnReceiver {
                                 let elapsed = start_time.elapsed();
                                 match timeout.unwrap().checked_sub(elapsed) {
                                     None => { // Indicates that elapsed is bigger than timeout so its time to return.
-                                        return Err(Error::new(ErrorKind::WouldBlock, "No data avaliable in given timeout"));
+                                        bail!(std::io::Error::new(std::io::ErrorKind::WouldBlock, "No data avaliable in given timeout"));
                                     }
                                     Some(new_timeout) => {
                                         return self.recv(Some(new_timeout))
@@ -534,7 +525,7 @@ impl SacnNetworkReceiver {
     /// Will return an error if the SacnReceiver fails to bind to a socket with the given ip. 
     /// For more details see socket2::Socket::new().
     /// 
-    pub fn new (ip: SocketAddr) -> Result<SacnNetworkReceiver, Error> {
+    pub fn new (ip: SocketAddr) -> Result<SacnNetworkReceiver> {
         Ok(
             SacnNetworkReceiver {
                 socket: create_socket(ip)?,
@@ -550,7 +541,7 @@ impl SacnNetworkReceiver {
     /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an 
     /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
     /// 
-    pub fn listen_multicast_universe(&self, universe: u16) -> Result<(), Error> {
+    pub fn listen_multicast_universe(&self, universe: u16) -> Result<()> {
         let multicast_addr;
 
         if self.addr.is_ipv4() {
@@ -559,50 +550,43 @@ impl SacnNetworkReceiver {
             multicast_addr = universe_to_ipv6_multicast_addr(universe)?;
         }
 
-        join_multicast(&self.socket, multicast_addr)
+        Ok(join_multicast(&self.socket, multicast_addr)?)
     }
 
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
     /// This will return an error if the SacnReceiver wasn't created using an IPv6 address to bind to.
-    pub fn set_only_v6(&mut self, val: bool) -> Result<(), Error>{
+    pub fn set_only_v6(&mut self, val: bool) -> Result<()>{
         if self.addr.is_ipv4() {
-            Err(Error::new(ErrorKind::Other, "Attempted to set IPv6 only when set to use an IPv4 address"))
+            bail!(IpVersionError("No data avaliable in given timeout".to_string()))
         } else {
-            self.socket.set_only_v6(val)
+            Ok(self.socket.set_only_v6(val)?)
         }
     }
 
     // Returns a packet if there is one available. The packet may not be ready to transmit if it is awaiting synchronisation.
     // Will only block if set_timeout was called with a timeout of None so otherwise (and by default) it won't 
     // block so may return a WouldBlock error to indicate that there was no data ready.
-    fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>, Error> {
+    fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>> {
         self.socket.recv(&mut buf[0..])?;
 
-        match AcnRootLayerProtocol::parse(buf) {
-            Ok(pkt) => {
-                Ok(pkt)
-            }
-            Err(err) => {
-                Err(Error::new(ErrorKind::Other, err))
-            }
-        }
+        Ok(AcnRootLayerProtocol::parse(buf)?)
     }
 
     // Set the timeout for the recv operation, if this is called with a value of None then the recv operation will become blocking.
     // A timeout with Duration 0 will cause an error.
-    pub fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<(), Error> {
-        self.socket.set_read_timeout(timeout)
+    pub fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
+        Ok(self.socket.set_read_timeout(timeout)?)
     }
 
     /// Returns the current read timeout for the receiver.
     /// A timeout of None indicates infinite blocking behaviour.
-    pub fn read_timeout(&self) -> Result<Option<Duration>, Error> {
-        self.socket.read_timeout()
+    pub fn read_timeout(&self) -> Result<Option<Duration>> {
+        Ok(self.socket.read_timeout()?)
     }
 }
 
 /// Creates a new Socket2 socket bound to the 
-pub fn create_socket(ip: SocketAddr) -> Result<Socket, Error> {
+pub fn create_socket(ip: SocketAddr) -> Result<Socket> {
     if ip.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
         socket.bind(&SockAddr::from(ip))?;
@@ -633,9 +617,13 @@ fn join_multicast(socket: &Socket, addr: SocketAddr) -> io::Result<()> {
 // This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
 // If this doesn't hold an error will be returned.
 // Other merge functions may allow merging different start codes or not check for them.
-pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
-    if i.values.len() < 1 || n.values.len() < 1 || i.universe != n.universe || i.values[0] != n.values[0] || i.sync_uni != n.sync_uni {
-        return Err(Error::new(ErrorKind::InvalidInput, "Attempted DMX merge on dmx data with different universes, syncronisation universes or data with no values"))
+pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData>{
+    if i.values.len() < 1 || 
+        n.values.len() < 1 || 
+        i.universe != n.universe || 
+        i.values[0] != n.values[0] || 
+        i.sync_uni != n.sync_uni {
+            bail!(DmxMergeError("Attempted DMX merge on dmx data with different universes, syncronisation universes or data with no values".to_string()));
     }
 
     let mut r: DMXData = DMXData{
