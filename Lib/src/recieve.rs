@@ -659,7 +659,9 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData, Error>{
 
 #[test]
 fn test_handle_single_page_discovery_packet() {
-    let mut dmx_rcv = SacnReceiver::new_v4().unwrap();
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); 
+
+    let mut dmx_rcv = SacnReceiver::with_ip(addr).unwrap();
 
     let name = "Test Src 1";
     let page: u8 = 0;
@@ -680,25 +682,25 @@ fn test_handle_single_page_discovery_packet() {
             universes: universes.clone().into(),
         },
     };
-
-    let mut internal = dmx_rcv.internal.lock().unwrap();
     
-    let res: Option<Vec<DMXData>> = internal.handle_universe_discovery_packet(discovery_pkt).unwrap();
+    let res: Option<Vec<DMXData>> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt).unwrap();
 
     assert!(res.is_none());
 
-    assert_eq!(internal.discovered_sources.len(), 1);
+    assert_eq!(dmx_rcv.discovered_sources.len(), 1);
 
-    assert_eq!(internal.discovered_sources[0].name, name);
-    assert_eq!(internal.discovered_sources[0].last_page, last_page);
-    assert_eq!(internal.discovered_sources[0].pages.len(), 1);
-    assert_eq!(internal.discovered_sources[0].pages[0].page, page);
-    assert_eq!(internal.discovered_sources[0].pages[0].universes, universes);
+    assert_eq!(dmx_rcv.discovered_sources[0].name, name);
+    assert_eq!(dmx_rcv.discovered_sources[0].last_page, last_page);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages.len(), 1);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].page, page);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].universes, universes);
 }
 
 #[test]
 fn test_store_retrieve_waiting_data(){
-    let mut dmx_rcv = SacnReceiver::new_v4().unwrap();
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); 
+
+    let mut dmx_rcv = SacnReceiver::with_ip(addr).unwrap();
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
@@ -710,11 +712,9 @@ fn test_store_retrieve_waiting_data(){
         sync_uni: sync_uni 
     };
 
-    let mut internal = dmx_rcv.internal.lock().unwrap();
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
 
-    internal.store_waiting_data(dmx_data).unwrap();
-
-    let res: Vec<DMXData> = internal.rtrv_waiting_data(sync_uni).unwrap();
+    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
@@ -724,7 +724,9 @@ fn test_store_retrieve_waiting_data(){
 
 #[test]
 fn test_store_2_retrieve_1_waiting_data(){
-    let mut dmx_rcv = SacnReceiver::new_v4().unwrap();
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); 
+
+    let mut dmx_rcv = SacnReceiver::with_ip(addr).unwrap();
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
@@ -742,12 +744,10 @@ fn test_store_2_retrieve_1_waiting_data(){
         sync_uni: sync_uni + 1 
     };
 
-    let mut internal = dmx_rcv.internal.lock().unwrap();
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
 
-    internal.store_waiting_data(dmx_data).unwrap();
-    internal.store_waiting_data(dmx_data2).unwrap();
-
-    let res: Vec<DMXData> = internal.rtrv_waiting_data(sync_uni).unwrap();
+    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
@@ -757,7 +757,9 @@ fn test_store_2_retrieve_1_waiting_data(){
 
 #[test]
 fn test_store_2_retrieve_2_waiting_data(){
-    let mut dmx_rcv = SacnReceiver::new_v4().unwrap();
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); 
+
+    let mut dmx_rcv = SacnReceiver::with_ip(addr).unwrap();
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
@@ -777,19 +779,17 @@ fn test_store_2_retrieve_2_waiting_data(){
         sync_uni: sync_uni + 1 
     };
 
-    let mut internal = dmx_rcv.internal.lock().unwrap();
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
 
-    internal.store_waiting_data(dmx_data).unwrap();
-    internal.store_waiting_data(dmx_data2).unwrap();
-
-    let res: Vec<DMXData> = internal.rtrv_waiting_data(sync_uni).unwrap();
+    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
     assert_eq!(res[0].sync_uni, sync_uni);
     assert_eq!(res[0].values, vals);
 
-    let res2: Vec<DMXData> = internal.rtrv_waiting_data(sync_uni + 1).unwrap();
+    let res2: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni + 1).unwrap();
 
     assert_eq!(res2.len(), 1);
     assert_eq!(res2[0].universe, universe + 1);
