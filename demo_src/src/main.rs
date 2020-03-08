@@ -9,7 +9,7 @@ pub mod error;
 
 extern crate sacn;
 
-use sacn::SacnSource;
+use sacn::source::SacnSource;
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 
 use error::errors::*;

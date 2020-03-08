@@ -54,7 +54,7 @@ pub const E131_E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from
 
 /// A DMX over sACN sender.
 ///
-/// DmxSource is used for sending sACN packets over ethernet.
+/// SacnSourceInternal is used for sending sACN packets over ethernet.
 ///
 /// Each universe will be sent to a dedicated multicast address
 /// "239.255.{universe_high_byte}.{universe_low_byte}".
@@ -63,7 +63,7 @@ pub const E131_E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from
 ///
 /// ```
 /// // Example showing creation of a source and then sending some data.
-/// use sacn::DmxSource;
+/// use sacn::SacnSourceInternal;
 /// use sacn::packet::ACN_SDT_MULTICAST_PORT;
 ///
 /// let interface_ip = "127.0.0.1"; // Example ip.
@@ -90,7 +90,7 @@ pub const E131_E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from
 pub struct SacnSource {
     /// The DMX source used for actually sending the sACN packets.
     /// Protected by a Mutex lock to allow concurrent access between user threads and the update thread below.
-    internal: Arc<Mutex<DmxSource>>,
+    internal: Arc<Mutex<SacnSourceInternal>>,
 
     /// Update thread which performs actions every DEFAULT_POLL_PERIOD such as checking if a universe 
     /// discovery packet should be sent.
@@ -100,15 +100,15 @@ pub struct SacnSource {
 /// Internal sACN sender, this does most of the work however is encapsulated within SacnSource
 /// to allow access by the update_thread which is used to manage sending periodic universe discovery packets.
 #[derive(Debug)]
-struct DmxSource {
+struct SacnSourceInternal {
     /// Underlying UDP socket used for sending sACN packets on the network.
     socket: UdpSocket,
 
-    /// The address of this DmxSource on the network.
+    /// The address of this SacnSourceInternal on the network.
     addr: SocketAddr,
 
-    /// The unique ID of this DmxSource.
-    /// It is the job of the user of the library to ensure that the cid is given on creation of the DmxSource is unique.
+    /// The unique ID of this SacnSourceInternal.
+    /// It is the job of the user of the library to ensure that the cid is given on creation of the SacnSourceInternal is unique.
     cid: Uuid,
 
     /// The human readable name of this source.
@@ -129,7 +129,7 @@ struct DmxSource {
     /// Always sorted with lowest universe first to allow quicker usage.
     universes: Vec<u16>, 
 
-    /// Flag that indicates if the DmxSource is running (the update thread should be triggering periodic discovery packets).
+    /// Flag that indicates if the SacnSourceInternal is running (the update thread should be triggering periodic discovery packets).
     running: bool,
 
     /// The time that the last universe discovery advert was send.
@@ -174,7 +174,7 @@ impl SacnSource {
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
         let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
 
-        let internal_src = Arc::new(Mutex::new(DmxSource::with_cid_ip(name, cid, ip)?));
+        let internal_src = Arc::new(Mutex::new(SacnSourceInternal::with_cid_ip(name, cid, ip)?));
 
         let mut trd_src = internal_src.clone();
 
@@ -233,7 +233,7 @@ impl SacnSource {
         self.internal.lock().unwrap().send_universe_discovery()
     }
 
-     /// Returns the ACN CID device identifier of the DmxSource.
+     /// Returns the ACN CID device identifier of the SacnSourceInternal.
     pub fn cid(&self) -> Uuid {
         *self.internal.lock().unwrap().cid()
     }
@@ -253,12 +253,12 @@ impl SacnSource {
         self.internal.lock().unwrap().set_name(name);
     }
 
-    /// Returns if DmxSource is in preview mode.
+    /// Returns if SacnSourceInternal is in preview mode.
     pub fn preview_mode(&self) -> bool {
         self.internal.lock().unwrap().preview_mode()
     }
 
-    /// Sets the DmxSource to preview mode.
+    /// Sets the SacnSourceInternal to preview mode.
     ///
     /// All packets will be sent with Preview_Data flag set to 1.
     pub fn set_preview_mode(&mut self, preview_mode: bool) {
@@ -301,11 +301,11 @@ impl Drop for SacnSource {
     }
 }
 
-impl DmxSource {
-    /// Constructs a new DmxSource with DMX START code set to 0 with specified CID and IP address.
+impl SacnSourceInternal {
+    /// Constructs a new SacnSourceInternal with DMX START code set to 0 with specified CID and IP address.
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     /// By default the TTL for ipv4 packets is 1 to keep them within the local network.
-    fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<DmxSource> {
+    fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSourceInternal> {
         let socket_builder;
 
         if ip.is_ipv4() {
@@ -319,7 +319,7 @@ impl DmxSource {
 
         let socket: UdpSocket = socket_builder.bind(ip)?;
         
-        let ds = DmxSource {
+        let ds = SacnSourceInternal {
             socket: socket,
             addr: ip,
             cid: cid,
@@ -631,7 +631,7 @@ impl DmxSource {
         Ok(())
     }
 
-    /// Returns the ACN CID device identifier of the DmxSource.
+    /// Returns the ACN CID device identifier of the SacnSourceInternal.
     fn cid(&self) -> &Uuid {
         &self.cid
     }
@@ -651,12 +651,12 @@ impl DmxSource {
         self.name = name.to_string();
     }
 
-    /// Returns if DmxSource is in preview mode.
+    /// Returns if SacnSourceInternal is in preview mode.
     fn preview_mode(&self) -> bool {
         self.preview_data
     }
 
-    /// Sets the DmxSource to preview mode.
+    /// Sets the SacnSourceInternal to preview mode.
     ///
     /// All packets will be sent with Preview_Data flag set to 1.
     fn set_preview_mode(&mut self, preview_mode: bool) {
@@ -689,7 +689,7 @@ impl DmxSource {
     }
 }
 
-fn perform_periodic_update(src: &mut Arc<Mutex<DmxSource>>) -> Result<()>{
+fn perform_periodic_update(src: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<()>{
     let mut unwrap_src = src.lock().unwrap();
     if unwrap_src.is_sending_discovery && Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_E131_UNIVERSE_DISCOVERY_INTERVAL {
         unwrap_src.send_universe_discovery()?;
@@ -781,7 +781,7 @@ mod test {
         packet.extend(&dmx_data);
 
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-        let mut source = DmxSource::with_cid_ip(&source_name, Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
+        let mut source = SacnSourceInternal::with_cid_ip(&source_name, Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
 
         source.set_preview_mode(preview_data);
         source.set_multicast_loop(true).unwrap();
@@ -806,7 +806,7 @@ mod test {
         let cid = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-        let source = DmxSource::with_cid_ip(&"Source", Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
+        let source = SacnSourceInternal::with_cid_ip(&"Source", Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
 
         source.set_multicast_loop(true).unwrap();
 
