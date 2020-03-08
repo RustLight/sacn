@@ -51,3 +51,19 @@ https://users.rust-lang.org/t/suppress-warnings-from-the-cargo-command/10536/7 (
 
 // https://doc.rust-lang.org/std/fmt/trait.Debug.html (04/02/2020)
 
+// For create_socket and join_multicast methods.
+// Code adapted from:
+// https://bluejekyll.github.io/blog/rust/2018/03/18/multicasting-in-rust.html (05/02/2020)
+// https://github.com/bluejekyll/multicast-example (05/02/2020)
+// 
+// With background reading from:
+// https://stackoverflow.com/questions/2741611/receiving-multiple-multicast-feeds-on-the-same-port-c-linux/2741989#2741989 (05/02/2020)
+// https://www.reddit.com/r/networking/comments/7nketv/proper_use_of_bind_for_multicast_receive_on_linux/ (05/02/2020)
+
+Getting error chain working (08/03/2020):
+https://github.com/rust-lang/cargo/issues/3821
+https://crates.io/crates/cargo-edit
+https://crates.io/crates/error-chain
+https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html
+http://brson.github.io/2016/11/30/starting-with-error-chain
+

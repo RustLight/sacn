@@ -16,6 +16,7 @@ heapless = { version = "0.2.7", optional = true }
 socket2 = { version = "0.3.4", features = ["reuseport"] }
 
 lazy_static = "1.4.0"
+error-chain = "0.12.2"
 
 [target.'cfg(feature = "std")'.dependencies]
 uuid = { version = "0.6.3", features = ["use_std", "v4"] }

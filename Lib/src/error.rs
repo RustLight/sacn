@@ -17,6 +17,10 @@ use std::error;
 
 use uuid;
 
+mod errors {
+    error_chain! {}
+}
+
 /// Errors for parsing of sACN network packets.
 #[derive(Debug)]
 pub enum ParseError {

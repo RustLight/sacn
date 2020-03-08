@@ -160,7 +160,7 @@ impl fmt::Debug for SacnReceiver {
 }
 
 impl SacnReceiver {
-    /// Creates a new SacnReceiverInternal. 
+    /// Creates a new SacnReceiver.
     /// 
     /// SacnReceiverInternal is used for actually receiving the sACN data but is wrapped in SacnReceiver to allow the update thread to handle
     /// timeout etc.
@@ -168,15 +168,28 @@ impl SacnReceiver {
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     /// A receiver with an IPv4 address will only receive IPv4 data.
     /// 
+    /// Bind to the unspecified address - allows receiving from any multicast address joined with the right port - as described in background.
+    /// let addr = SocketAddr::new(IpAddr::UNSPECIFIED, ACN_SDT_MULTICAST_PORT)
+    /// 
     /// # Errors
     /// Will return an error if the SacnReceiver fails to bind to a socket with the given ip. 
     /// For more details see socket2::Socket::new().
     /// 
-    /// 
+    /// Will return an error if the created SacnReceiver fails to listen to the E1.31_DISCOVERY_UNIVERSE.
+    /// For more details see SacnReceiver::listen_universes().
     /// 
     pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
+        let snr;
+        match SacnNetworkReceiver::new(ip) {
+            Ok(res) => {snr = res},
+            Err(e) => {
+                println!("Failed to create SacnNetworkReceiver: {}", e);
+                return Err(e);
+            }
+        };
+
         let mut sri = SacnReceiver {
-                receiver: SacnNetworkReceiver::new(ip)?,
+                receiver: snr,
                 waiting_data: Vec::new(),
                 universes: Vec::new(),
                 discovered_sources: Vec::new(),
@@ -187,9 +200,9 @@ impl SacnReceiver {
 
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])?;
 
+        
         Ok(sri)
     }
-
     
     pub fn set_merge_fn(&mut self, func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>) -> Result<(), Error> {
         self.merge_func = func;
@@ -588,25 +601,15 @@ impl SacnNetworkReceiver {
     }
 }
 
-// For create_socket and join_multicast methods.
-// Code adapted from:
-// https://bluejekyll.github.io/blog/rust/2018/03/18/multicasting-in-rust.html (05/02/2020)
-// https://github.com/bluejekyll/multicast-example (05/02/2020)
-// 
-// With background reading from:
-// https://stackoverflow.com/questions/2741611/receiving-multiple-multicast-feeds-on-the-same-port-c-linux/2741989#2741989 (05/02/2020)
-// https://www.reddit.com/r/networking/comments/7nketv/proper_use_of_bind_for_multicast_receive_on_linux/ (05/02/2020)
-
+/// Creates a new Socket2 socket bound to the 
 pub fn create_socket(ip: SocketAddr) -> Result<Socket, Error> {
     if ip.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
-        // Bind to the unspecified address - allows receiving from any multicast address joined with the right port - as described in background.
-        socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), ACN_SDT_MULTICAST_PORT))).unwrap();
+        socket.bind(&SockAddr::from(ip))?;
         Ok(socket)
-
     } else {
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
-        socket.bind(&SockAddr::from(SocketAddr::new(Ipv6Addr::UNSPECIFIED.into(), ACN_SDT_MULTICAST_PORT))).unwrap();
+        socket.bind(&SockAddr::from(ip))?;
         Ok(socket)
     }
 }
