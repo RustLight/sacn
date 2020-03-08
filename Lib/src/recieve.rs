@@ -196,7 +196,12 @@ impl SacnReceiver {
         SacnReceiver::with_ip(ip)        
     }
 
-    /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    /// Creates a new SacnReceiver for receiving ANSI E1.31-2018 sACN data. 
+    /// 
+    /// 
+    ///
+    /// # Errors
+    /// See SacnReceiverInternal::with_ip().
     pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
         let internal = Arc::new(Mutex::new(SacnReceiverInternal::with_ip(ip)?));
         Ok(SacnReceiver {
@@ -214,6 +219,7 @@ impl SacnReceiver {
         self.internal.lock().unwrap().set_ipv6_only(val)
     }
 
+    /// Forces any data currently waiting for universe synchronisation to be deleted.
     pub fn clear_waiting_data(&mut self){
         self.internal.lock().unwrap().clear_waiting_data()
     }
@@ -233,17 +239,26 @@ impl SacnReceiver {
         self.internal.lock().unwrap().get_discovered_sources_no_check()
     }
 
-    // Attempt to recieve data from any of the registered universes.
-    // This is the main method for receiving data.
-    // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
-    // is already handled.
+    /// Attempt to recieve data from any of the registered universes.
+    /// This is the main method for receiving data.
+    /// Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
+    /// is already handled.
     pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>, Error> {
         self.internal.lock().unwrap().recv(timeout)
     }
 }
 
 impl SacnReceiverInternal {
+    /// Creates a new SacnReceiverInternal. 
+    /// 
+    /// SacnReceiverInternal is used for actually receiving the sACN data but is wrapped in SacnReceiver to allow the update thread to handle
+    /// timeout etc.
+    /// 
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    /// A receiver with an IPv4 address will only receive IPv4 data.
+    /// 
+    /// # Errors
+    /// 
     pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiverInternal, Error> {
         let mut sri = SacnReceiverInternal {
                 receiver: DmxReciever::new(ip)?,

@@ -138,7 +138,9 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+        let addr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_recv = SacnReceiver::with_ip(addr).unwrap();
 
         dmx_recv.listen_universes(&UNIVERSES).unwrap();
 
