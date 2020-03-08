@@ -27,7 +27,7 @@ use sacn::error::errors::ErrorKind::*;
 /// Theses must be changed depending on the network that the test machine is on.
 // const TEST_NETWORK_INTERFACE_IPV4: [&'static str; 3] = ["192.168.1.9", "192.168.1.10", "192.168.1.8"];
 const TEST_NETWORK_INTERFACE_IPV4: [&'static str; 3] = ["138.251.29.246", "138.251.29.246", "138.251.29.246"];
-const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 1] = ["fe80::fa32:e4ff:febf:7a4"];
+const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 1] = ["0::0:0:0:0"];
 
 /// 
 #[test]
@@ -138,7 +138,9 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let addr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT);
+        // let addr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT);
+
+        let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
 
         // let mut dmx_recv = SacnReceiver::with_ip(addr).ok_or({|e| 
         //         for e in e.iter() {
