@@ -28,9 +28,14 @@ use std::time;
 use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
 
+use std::thread::{JoinHandle};
+use std::thread;
+
 use std::borrow::Cow;
 
 use std::fmt;
+
+use std::sync::atomic::AtomicBool;
 
 /// The default size of the buffer used to recieve E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
@@ -62,6 +67,9 @@ const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 
 // The default value for the reading timeout for a DmxReceiver.
 pub const DEFAULT_RECV_TIMEOUT: Option<Duration> = Some(time::Duration::from_millis(500));
+
+/// The period between update thread calls.
+pub const DEFAULT_UPDATE_THREAD_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 
 #[derive(Debug)]
 pub struct DMXData{
@@ -161,7 +169,6 @@ pub struct SacnReceiverInternal {
     discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been discovered by this receiver through universe discovery packets.
     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>,
     partially_discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
-    running: bool,
     process_preview_data: bool
 }
 
@@ -172,14 +179,31 @@ impl fmt::Debug for SacnReceiverInternal {
         write!(f, "{:?}", self.waiting_data)?;
         write!(f, "{:?}", self.universes)?;
         write!(f, "{:?}", self.discovered_sources)?;
-        write!(f, "{:?}", self.partially_discovered_sources)?;
-        write!(f, "{:?}", self.running)
+        write!(f, "{:?}", self.partially_discovered_sources)
     }
 }
 
 #[derive(Debug)]
 pub struct SacnReceiver {
-    internal: Arc<Mutex<SacnReceiverInternal>>
+    internal: Arc<Mutex<SacnReceiverInternal>>,
+    running: Arc<AtomicBool>,
+    update_thread: Option<JoinHandle<()>>
+}
+
+fn perform_periodic_update(mut trd_rcv: &Arc<Mutex<SacnReceiverInternal>>) -> Result<(), Error> {
+        Ok(())
+}
+
+fn update_thread_poll(running: &AtomicBool, mut trd_rcv: &Arc<Mutex<SacnReceiverInternal>>){
+    while (running.load(std::sync::atomic::Ordering::SeqCst)) {
+        thread::sleep(DEFAULT_UPDATE_THREAD_POLL_PERIOD);
+        match perform_periodic_update(&mut trd_rcv){
+            Err(e) => {
+                println!("Receiver: Error encountered in update thread {}", e)
+            },
+            Ok(_) => {}
+        }
+    }
 }
 
 impl SacnReceiver {
@@ -203,10 +227,28 @@ impl SacnReceiver {
     /// # Errors
     /// See SacnReceiverInternal::with_ip().
     pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
+        let trd_builder = thread::Builder::new().name(RCV_UPDATE_THREAD_NAME.into());
+
         let internal = Arc::new(Mutex::new(SacnReceiverInternal::with_ip(ip)?));
-        Ok(SacnReceiver {
-            internal: internal.clone()
-        })
+        let running = Arc::new(AtomicBool::new(true));
+
+        let mut trd_rcv = internal.clone();
+        let mut trd_running = running.clone();
+
+        let update_thread = trd_builder.spawn(move || update_thread_poll(&trd_running, &mut trd_rcv))?;
+
+        let rcv = SacnReceiver {
+            internal: internal,
+            running: running,
+            update_thread: None
+        };
+
+        Ok(rcv)
+    }
+
+    /// Terminates the SacnReceiver including cleaning up all used resources as necessary.
+    pub fn terminate(&mut self){
+        self.running.store(false, std::sync::atomic::Ordering::SeqCst);
     }
 
     // TODO
@@ -267,7 +309,6 @@ impl SacnReceiverInternal {
                 discovered_sources: Vec::new(),
                 merge_func: htp_dmx_merge,
                 partially_discovered_sources: Vec::new(),
-                running: true,
                 process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT
         };
 
@@ -555,11 +596,6 @@ impl SacnReceiverInternal {
                     Err(err)
                 }
             }
-    }
-    
-    /// Terminates the SacnReceiver including cleaning up all used resources as necessary.
-    pub fn terminate(&mut self){
-        self.running = false;
     }
 
     pub fn get_discovered_sources(&mut self) -> Vec<DiscoveredSacnSource>{
