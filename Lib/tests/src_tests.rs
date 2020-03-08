@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-extern crate lazy_static;
 extern crate sacn;
+
+use sacn::error::errors::*;
+use sacn::error::errors::ErrorKind::*;
+
 use sacn::SacnSource;
-use std::io::{Error, ErrorKind};
 use std::option;
 
 #[test]
@@ -15,7 +17,11 @@ fn test_send_without_registering(){
 
     match src.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
         Ok(_) => {assert!(false, "Source didn't prevent sending without registering")},
-        Err(e) => assert_eq!(e.kind(), ErrorKind::Other, "")
+        Err(e) => 
+            match e.kind() {
+                &ErrorKind::UniverseNotRegistered(ref s) => assert!(true),
+                _ => assert!(false, "Unexpected error type returned")
+            }
     }
 }
 
