@@ -191,7 +191,7 @@ impl SacnReceiver {
                 process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT
         };
 
-        sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])?;
+        sri.listen_universes(&[E131_DISCOVERY_UNIVERSE]).chain_err(|| "Failed to listen to discovery universe")?;
 
         
         Ok(sri)
@@ -232,7 +232,7 @@ impl SacnReceiver {
             match self.universes.binary_search(u) { 
                 Err(i) => { // Value not found, i is the position it should be inserted
                     self.universes.insert(i, *u);
-                    self.receiver.listen_multicast_universe(*u)?
+                    self.receiver.listen_multicast_universe(*u).chain_err(|| "Failed to listen to multicast universe")?;
                 }
                 Ok(_) => { // If value found then don't insert to avoid duplicates.
                 }
@@ -545,12 +545,12 @@ impl SacnNetworkReceiver {
         let multicast_addr;
 
         if self.addr.is_ipv4() {
-            multicast_addr = universe_to_ipv4_multicast_addr(universe)?;
+            multicast_addr = universe_to_ipv4_multicast_addr(universe).chain_err(|| "Failed to convert universe to IPv4 multicast addr")?;
         } else {
-            multicast_addr = universe_to_ipv6_multicast_addr(universe)?;
+            multicast_addr = universe_to_ipv6_multicast_addr(universe).chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
         }
 
-        Ok(join_multicast(&self.socket, multicast_addr)?)
+        Ok(join_multicast(&self.socket, multicast_addr).chain_err(|| "Failed to join multicast")?)
     }
 
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
@@ -598,14 +598,13 @@ pub fn create_socket(ip: SocketAddr) -> Result<Socket> {
     }
 }
 
-fn join_multicast(socket: &Socket, addr: SocketAddr) -> io::Result<()> {
+fn join_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
     match addr.ip() {
         IpAddr::V4(ref mdns_v4) => {
-            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0))?; // Needs to be set to the IP of the interface/network which the multicast packets are sent on (unless only 1 network)
+            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to join IPv4 multicast")?; // Needs to be set to the IP of the interface/network which the multicast packets are sent on (unless only 1 network)
         }
         IpAddr::V6(ref mdns_v6) => {
-            socket.join_multicast_v6(mdns_v6, 0)?;
-            socket.set_only_v6(true)?;
+            socket.join_multicast_v6(mdns_v6, 0).chain_err(|| "Failed to join IPv6 multicast")?;
         }
     };
 
