@@ -114,6 +114,13 @@ pub mod errors {
                 description("Error parsing received UTF8 string"),
                 display("Error parsing received UTF8 string, msg: {}", msg)
             }
+
+            // /// An action wasn't able to complete within the given time and timed out.
+            // /// 
+            // /// This was created rather than just the io WouldBlock or TimedOut as both the errors are the same 
+            // TimedOut(msg: String) {
+
+            // }
         }
     }
 }

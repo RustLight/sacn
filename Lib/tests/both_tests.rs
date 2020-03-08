@@ -32,7 +32,7 @@ const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 1] = ["fe80::fa32:e4ff:febf:7a
 /// 
 #[test]
 fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -62,7 +62,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
 
     src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
 
-    let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -82,7 +82,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
 /// 
 #[test]
 fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -112,7 +112,7 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
 
     src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, None).unwrap();
 
-    let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -131,7 +131,7 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
 
 #[test]
 fn test_across_alternative_startcode_universe_multicast_ipv6(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -171,7 +171,7 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
     src.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
-    let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -200,7 +200,7 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 #[test]
 fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -229,7 +229,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
     src.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
-    let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -259,7 +259,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 // depending on the environment.
 #[test]
 fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread1_tx = tx.clone();
     let thread2_tx = tx.clone();
@@ -299,8 +299,8 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
 
     src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
-    let received_result1: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
-    let received_result2: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let received_result1: Result<Vec<DMXData>> = rx.recv().unwrap();
+    let received_result2: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread1.join().unwrap();
     rcv_thread2.join().unwrap();
@@ -322,7 +322,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
 
 #[test]
 fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread1_tx = tx.clone();
     let thread2_tx = tx.clone();
@@ -411,7 +411,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
 
 #[test]
 fn test_send_recv_single_universe_unicast_ipv6(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -440,7 +440,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
 
     let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
 
-    let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -459,7 +459,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
 
 #[test]
 fn test_send_recv_single_universe_unicast_ipv4(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -488,7 +488,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
 
     let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
 
-    let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -507,7 +507,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
 
 #[test]
 fn test_send_recv_single_universe_multicast_ipv6(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -537,7 +537,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
 
     let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
-    let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -556,7 +556,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
 
 #[test]
 fn test_send_recv_single_universe_multicast_ipv4(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -583,7 +583,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
 
     src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
-    let received_result: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -604,7 +604,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 #[test]
 fn test_send_recv_across_universe_multicast_ipv6(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -633,7 +633,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
     src.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
-    let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -662,7 +662,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 #[test]
 fn test_send_recv_across_universe_multicast_ipv4(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -691,7 +691,7 @@ fn test_send_recv_across_universe_multicast_ipv4(){
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
     src.send_sync_packet(UNIVERSES[0], &None).unwrap();
 
-    let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -720,7 +720,7 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 #[test]
 fn test_send_recv_across_universe_unicast_ipv6(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -751,7 +751,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
     src.send_sync_packet(UNIVERSES[0], &Some(dst_ip)).unwrap();
 
-    let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -780,7 +780,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 #[test]
 fn test_send_recv_across_universe_unicast_ipv4(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>, Error>>, Receiver<Result<Vec<DMXData>, Error>>) = mpsc::channel();
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
     let thread_tx = tx.clone();
 
@@ -811,7 +811,7 @@ fn test_send_recv_across_universe_unicast_ipv4(){
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
     src.send_sync_packet(UNIVERSES[0], &Some(dst_ip)).unwrap();
 
-    let sync_pkt_res: Result<Vec<DMXData>, Error> = rx.recv().unwrap();
+    let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
     rcv_thread.join().unwrap();
 
@@ -1019,7 +1019,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
     let mut snd_threads = Vec::new();
     let mut rcv_threads = Vec::new();
 
-    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
+    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>>>>, Receiver<Vec<Result<Vec<DMXData>>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
     assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
@@ -1060,7 +1060,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
                 dmx_recv.listen_universes(&[i]).unwrap();
             }
 
-            let mut res: Vec<Result<Vec<DMXData>, Error>> = Vec::new();
+            let mut res: Vec<Result<Vec<DMXData>>> = Vec::new();
 
             tx.send(Vec::new()).unwrap(); // Receiver notifies controlling thread it is ready.
 
@@ -1080,7 +1080,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
     }
 
     for _i in 0 .. RCV_THREADS {
-        let res: Vec<Result<Vec<DMXData>, Error>> = rcv_rx.recv().unwrap();
+        let res: Vec<Result<Vec<DMXData>>> = rcv_rx.recv().unwrap();
 
         assert_eq!(res.len(), SND_THREADS);
 
@@ -1129,7 +1129,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
     let mut snd_threads = Vec::new();
     let mut rcv_threads = Vec::new();
 
-    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
+    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>>>>, Receiver<Vec<Result<Vec<DMXData>>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
     assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
@@ -1170,7 +1170,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
                 dmx_recv.listen_universes(&[i]).unwrap();
             }
 
-            let mut res: Vec<Result<Vec<DMXData>, Error>> = Vec::new();
+            let mut res: Vec<Result<Vec<DMXData>>> = Vec::new();
 
             tx.send(Vec::new()).unwrap(); // Receiver notifies controlling thread it is ready.
 
@@ -1190,7 +1190,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
     }
 
     for _i in 0 .. RCV_THREADS {
-        let res: Vec<Result<Vec<DMXData>, Error>> = rcv_rx.recv().unwrap();
+        let res: Vec<Result<Vec<DMXData>>> = rcv_rx.recv().unwrap();
 
         assert_eq!(res.len(), SND_THREADS);
 
@@ -1239,7 +1239,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
     let mut snd_threads = Vec::new();
     let mut rcv_threads = Vec::new();
 
-    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
+    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>>>>, Receiver<Vec<Result<Vec<DMXData>>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
     assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
@@ -1280,7 +1280,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
                 dmx_recv.listen_universes(&[i]).unwrap();
             }
 
-            let mut res: Vec<Result<Vec<DMXData>, Error>> = Vec::new();
+            let mut res: Vec<Result<Vec<DMXData>>> = Vec::new();
 
             tx.send(Vec::new()).unwrap(); // Receiver notifies controlling thread it is ready.
 
@@ -1300,7 +1300,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
     }
 
     for _i in 0 .. RCV_THREADS {
-        let res: Vec<Result<Vec<DMXData>, Error>> = rcv_rx.recv().unwrap();
+        let res: Vec<Result<Vec<DMXData>>> = rcv_rx.recv().unwrap();
 
         assert_eq!(res.len(), SND_THREADS);
 
@@ -1349,7 +1349,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
     let mut snd_threads = Vec::new();
     let mut rcv_threads = Vec::new();
 
-    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>, Error>>>, Receiver<Vec<Result<Vec<DMXData>, Error>>>) = mpsc::sync_channel(0);
+    let (rcv_tx, rcv_rx): (SyncSender<Vec<Result<Vec<DMXData>>>>, Receiver<Vec<Result<Vec<DMXData>>>>) = mpsc::sync_channel(0);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
 
     assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
@@ -1390,7 +1390,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
                 dmx_recv.listen_universes(&[i]).unwrap();
             }
 
-            let mut res: Vec<Result<Vec<DMXData>, Error>> = Vec::new();
+            let mut res: Vec<Result<Vec<DMXData>>> = Vec::new();
 
             tx.send(Vec::new()).unwrap(); // Receiver notifies controlling thread it is ready.
 
@@ -1410,7 +1410,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
     }
 
     for _i in 0 .. RCV_THREADS {
-        let res: Vec<Result<Vec<DMXData>, Error>> = rcv_rx.recv().unwrap();
+        let res: Vec<Result<Vec<DMXData>>> = rcv_rx.recv().unwrap();
 
         assert_eq!(res.len(), SND_THREADS);
 
@@ -1478,8 +1478,22 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
         let result = dmx_recv.recv(Some(Duration::from_secs(2)));
         match result { 
             Err(e) => {
-                if !(e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut) {
-                    assert!(false, "Unexpected error returned");
+                match e.kind() {
+                    &ErrorKind::Io(ref s) => {
+                        match s.kind() {
+                            std::io::ErrorKind::WouldBlock => {
+                                // Expected to timeout / would block.
+                                // The different errors are due to windows and unix returning different errors for the same thing.
+                            },
+                            std::io::ErrorKind::TimedOut => {},
+                            _ => {
+                                assert!(false, "Unexpected error returned");
+                            }
+                        }
+                    },
+                    _ => {
+                        assert!(false, "Unexpected error returned");
+                    }
                 }
             },
             Ok(_) => {
@@ -1544,8 +1558,22 @@ fn test_universe_discovery_multiple_universe_one_source_ipv4(){
         let result = dmx_recv.recv(Some(Duration::from_secs(2)));
         match result { 
             Err(e) => {
-                if !(e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut) {
-                    assert!(false, "Unexpected error returned");
+                match e.kind() {
+                    &ErrorKind::Io(ref s) => {
+                        match s.kind() {
+                            std::io::ErrorKind::WouldBlock => {
+                                // Expected to timeout / would block.
+                                // The different errors are due to windows and unix returning different errors for the same thing.
+                            },
+                            std::io::ErrorKind::TimedOut => {},
+                            _ => {
+                                assert!(false, "Unexpected error returned");
+                            }
+                        }
+                    },
+                    _ => {
+                        assert!(false, "Unexpected error returned");
+                    }
                 }
             },
             Ok(_) => {
@@ -1616,8 +1644,22 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
 
         match result { 
             Err(e) => {
-                if !(e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut) {
-                    assert!(false, "Unexpected error returned");
+                match e.kind() {
+                    &ErrorKind::Io(ref s) => {
+                        match s.kind() {
+                            std::io::ErrorKind::WouldBlock => {
+                                // Expected to timeout / would block.
+                                // The different errors are due to windows and unix returning different errors for the same thing.
+                            },
+                            std::io::ErrorKind::TimedOut => {},
+                            _ => {
+                                assert!(false, "Unexpected error returned");
+                            }
+                        }
+                    },
+                    _ => {
+                        assert!(false, "Unexpected error returned");
+                    }
                 }
             },
             Ok(_) => {
