@@ -1,17 +1,19 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 #![warn(missing_docs)]
+#![recursion_limit="1024"] // Recursion limit for error-chain.
 
-#![recursion_limit="1024"]
 #[macro_use]
 extern crate error_chain;
-
-use errors::*;
-use errors::ErrorKind::*;
+pub mod error;
 
 extern crate sacn;
+
 use sacn::SacnSource;
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
+
+use error::errors::*;
+use error::errors::ErrorKind::*;
 
 use std::{time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
 use std::time::{Duration, Instant};
@@ -110,7 +112,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
             let split_input: Vec<&str> = input.split_whitespace().collect();
             if split_input.len() < 2 {
                 display_help();
-                return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
             }
 
             match split_input[0] {
@@ -118,7 +120,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     let universe: u16 = split_input[1].parse().unwrap();
 
                     if split_input.len() < 4 {
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
                     }
 
                     let sync_uni: u16 = split_input[2].parse().unwrap();
@@ -141,7 +143,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     let universe: u16 = split_input[1].parse().unwrap();
 
                     if split_input.len() < 4 {
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
                     }
 
                     let sync_uni: u16 = split_input[2].parse().unwrap();
@@ -164,7 +166,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     let universe: u16 = split_input[1].parse().unwrap();
 
                     if split_input.len() < 5 {
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 5 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 5 )"));
                     }
 
                     let sync_uni: u16 = split_input[2].parse().unwrap();
@@ -187,7 +189,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                 }
                 "t" => {
                     if split_input.len() < 4 {
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
                     }
 
                     let universe: u16 = split_input[1].parse().unwrap();
@@ -216,7 +218,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                 }
                 "us" => {
                     if split_input.len() < 3 {
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
                     }
 
                     let universe: u16 = split_input[1].parse().unwrap();
@@ -238,20 +240,20 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                 "w" => {
                     if split_input.len() < 2 {
                         display_help();
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
                     let millis: u64 = split_input[1].parse().unwrap();
                     sleep(Duration::from_millis(millis));
 
                 }
                 x => {
-                    return Err(Error::new(ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
+                    bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
                 }
             }
             Ok(true)
         }
         Err(e) => {
-            return Err(e);
+            bail!(e);
         }
     }
 }
