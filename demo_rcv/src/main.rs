@@ -1,9 +1,12 @@
 #![warn(missing_docs)]      // Used during development to warn about a lack of documentation.
 #![recursion_limit="1024"]  // Recursion limit for error-chain, value used as recommended by the crates documentation.
 
-//! Demo receiver, this is used as part of the intergration tests across the network.
-//! This receiver will receive on the universes given as command line arguments.
-//! The receiver will print any received data to act on to std out. 
+//! An example demo sACN receiver which utilises the sACN library.
+//! 
+//! Primarily used for testing the library including real-world conformance, compliance, integration and acceptance tests.
+//! 
+//! Usage instructions are described below.
+//! 
 
 #[macro_use]
 extern crate error_chain;
@@ -11,20 +14,21 @@ extern crate error_chain;
 /// Import the error-chain handling into the module.
 pub mod error;
 use error::errors::*;
-use error::errors::ErrorKind::*;
 
 extern crate sacn;
 
 use sacn::recieve::{DMXData, SacnReceiver, DiscoveredSacnSource};
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
 use std::io;
 use std::env;
 use std::thread::sleep;
 
 
+/// Describes the various commands / command-line arguments avaliable and what they do.
+/// Displayed to the user if they ask for help or enter an unrecognised input.
 const USAGE_STR: &'static str = "Usage: ./main <interface_ip>\n
 Receive data: \n
 r <timeout in secs, 0 means no timeout>\n

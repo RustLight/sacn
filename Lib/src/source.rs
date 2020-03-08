@@ -18,8 +18,7 @@
 // used as the syncronisation universe by default. This is done as it means that the receiever should
 // be listening for this universe. 
 
-use error::errors::*;
-use error::errors::ErrorKind::*;
+use error::errors::{*, ErrorKind::*};
 use packet::*;
 
 use std::cell::RefCell;

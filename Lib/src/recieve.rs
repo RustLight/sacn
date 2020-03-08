@@ -1,21 +1,17 @@
 #![warn(missing_docs)]
 
-use error::errors::*;
-use error::errors::ErrorKind::*;
+use error::errors::{*, ErrorKind::*};
 
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 // Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
 use packet::{*, E131RootLayerData::*};
 
-use std::io;
-
 use std::cmp::{max, Ordering};
 use std::time;
 use std::time::{Duration, Instant};
-use std::sync::{Arc, Mutex};
 
 use std::borrow::Cow;
 
@@ -50,11 +46,18 @@ const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 /// The default value for the reading timeout for a SacnNetworkReceiver.
 pub const DEFAULT_RECV_TIMEOUT: Option<Duration> = Some(time::Duration::from_millis(500));
 
+/// Holds a universes worth of DMX data.
 #[derive(Debug)]
 pub struct DMXData{
+    /// The universe that the data was sent to.
     pub universe: u16,
+    
+    /// The actual universe data, if less than 512 values in length then implies trailing 0's to pad to a full-universe of data.
     pub values: Vec<u8>,
-    pub sync_uni: u16 // The universe the data is waiting for a synchronisation packet from, 0 indicates it isn't waiting for a universe. 
+
+    /// The universe the data is (or was if now acted upon) waiting for a synchronisation packet from.
+    /// 0 indicates it isn't waiting for a universe synchronisation packet. 
+    pub sync_uni: u16 
 }
 
 impl Clone for DMXData {
@@ -98,18 +101,35 @@ struct SacnNetworkReceiver{
     addr: SocketAddr
 }
 
+/// Represents an sACN source/sender on the network that has been discovered by this sACN receiver by receiving universe discovery packets.
 #[derive(Clone, Debug)]
 pub struct DiscoveredSacnSource {
-    pub name: String, // The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
-    last_page: u8, // The last page that will be sent by this source.
+    /// The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
+    pub name: String,
+
+    /// The time at which the discovered source was last updated / a discovery packet was received by the source.
+    pub last_updated: Instant,
+
+    /// The pages that have been sent so far by this source when enumerating the universes it is currently sending on.   
     pages: Vec<UniversePage>,
-    last_updated: Instant
+    
+    /// The last page that will be sent by this source.
+    last_page: u8,
 }
 
+/// Universe discovery packets are broken down into pages to allow sending a large list of universes, each page contains a list of universes and
+/// which page it is. The receiver then puts the pages together to get the complete list of universes that the discovered source is sending on.
+/// 
+/// The concept of pages is intentionally hidden from the end-user of the library as they are a network realisation of what is just an
+/// abstract list of universes and don't play any part out-side of the protocol.
 #[derive(Eq, Ord, PartialEq, PartialOrd, Clone, Debug)]
-pub struct UniversePage {
-    page: u8, // The most recent page receieved by this source when receiving a universe discovery packet. 
-    universes: Vec<u16> // The universes that the source is transmitting.
+struct UniversePage {
+    /// The page number of this page.
+    page: u8,
+
+    /// The universes that the source is transmitting that are on this page, this may or may-not be a complete list of all universes being sent 
+    /// depending on if there are more pages.
+    universes: Vec<u16>
 }
 
 impl DiscoveredSacnSource {

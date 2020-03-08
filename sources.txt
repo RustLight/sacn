@@ -60,6 +60,8 @@ https://users.rust-lang.org/t/suppress-warnings-from-the-cargo-command/10536/7 (
 // https://stackoverflow.com/questions/2741611/receiving-multiple-multicast-feeds-on-the-same-port-c-linux/2741989#2741989 (05/02/2020)
 // https://www.reddit.com/r/networking/comments/7nketv/proper_use_of_bind_for_multicast_receive_on_linux/ (05/02/2020)
 
+// https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
+
 Getting error chain working (08/03/2020):
 https://github.com/rust-lang/cargo/issues/3821
 https://crates.io/crates/cargo-edit
