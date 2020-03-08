@@ -5,6 +5,10 @@ https://doc.rust-lang.org/book/
 https://doc.rust-lang.org/cargo/
 https://doc.rust-lang.org/rust-by-example/
 
+// Used for learning how to write Rust Multicast code.
+// https://bluejekyll.github.io/blog/rust/2018/03/18/multicasting-in-rust.html September 2019
+// https://blog.abby.md/2019/05/16/multicasting-in-rust/ September 2019
+
 Some syntax for code found from
 September 2019:
 https://stackoverflow.com/questions/45519176/how-do-i-use-or-import-a-local-rust-file
@@ -44,4 +48,6 @@ https://users.rust-lang.org/t/suppress-warnings-from-the-cargo-command/10536/7 (
 
 // General info / concept of running flag.
 // https://www.reddit.com/r/rust/comments/b4ys9j/is_there_a_way_to_force_thread_to_join/ (12/01/2020)
+
+// https://doc.rust-lang.org/std/fmt/trait.Debug.html (04/02/2020)
 

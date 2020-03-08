@@ -73,14 +73,10 @@ use error::{PackError, ParseError};
 pub const DISCOVERY_UNI_PER_PAGE: usize = 512;
 
 /// The universe used for universe discovery as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative)
-pub const DISCOVERY_UNIVERSE: u16 = 64214;
+pub const E131_DISCOVERY_UNIVERSE: u16 = 64214;
 
 /// The default priority used for the E1.31 packet priority field, as per ANSI E1.31 Section 4.1 Table 4-1
 pub const DEFAULT_PRIORITY: u8 = 100;
-
-pub const LOWEST_ALLOWED_UNIVERSE: u16 = 1; // The lowest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
-
-pub const HIGHEST_ALLOWED_UNIVERSE: u16 = 63999; // The highest valued universe allowed as per ANSI E1.31-2018 Section 6.2.7
 
 /// Value of the highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
 pub const E131_MULTICAST_IPV4_HIGHEST_BYTE: u8 = 239;
@@ -94,34 +90,41 @@ pub const E131_MAX_MULTICAST_UNIVERSE: u16 = 63999;
 /// The lowest / minimum universe number that can be used with the E1.31 protocol as specified in section 9.1.1 of ANSI E1.31-2018.
 pub const E131_MIN_MULTICAST_UNIVERSE: u16 = 1;
 
-pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; // As defined in ANSI E1.31-2018
+/// The port number used for the ACN family of protocols and therefore the sACN protocol.
+/// 
+/// As defined in ANSI E1.31-2018
+pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; 
 
-// The payload capacity for a sacn packet, for DMX data this would translate to 512 frames + a startcode byte.
+/// The payload capacity for a sacn packet, for DMX data this would translate to 512 frames + a startcode byte.
 pub const UNIVERSE_CHANNEL_CAPACITY: usize = 513;
 
-// The synchronisation universe/address of packets which do not require synchronisation as specified in section 6.2.4.1 of ANSI E1.31-2018.
+/// The synchronisation universe/address of packets which do not require synchronisation as specified in section 6.2.4.1 of ANSI E1.31-2018.
 pub const NO_SYNC_UNIVERSE: u16 = 0;
 
-// Could be anything, implementation dependent, default universe used as the syncronisation universe.
+/// Could be anything, implementation dependent, default universe used as the syncronisation universe.
 pub const DEFAULT_SYNC_UNIVERSE: u16 = 1;
 
-// The timeout before data loss is assumed for an E131 source, as defined in Apendix A of ANSI E1.31-2018.
+/// The timeout before data loss is assumed for an E131 source, as defined in Apendix A of ANSI E1.31-2018.
 pub const E131_NETWORK_DATA_LOSS_TIMEOUT: Duration = Duration::from_millis(2500);
 
-// The timeout before a discovered source is assumed to be lost as defined in section 12.2 of ANSI E1.31-2018.
+/// The timeout before a discovered source is assumed to be lost as defined in section 12.2 of ANSI E1.31-2018.
 pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_TIMEOUT;
 
-/// Converts given universe number in range 1 - 63999 inclusive into an u8 array of length 4 with the first byte being
-/// the highest byte in the multicast IP for that universe, the second byte being the second highest and so on.
+/// Converts the given ANSI E1.31-2018 universe into an Ipv4 multicast address with the port set to the acn multicast port as defined 
+/// in packet::ACN_SDT_MULTICAST_PORT.
 /// 
 /// Converstion done as specified in section 9.3.1 of ANSI E1.31-2018
 ///
-/// Returns as a Result with the OK value being the array and the Err value being an Error.
+/// Returns the multicast address.
+/// 
+/// # Errors
+/// Returns an ErrorKind::InvalidInput error if the given universe is outwith the allowed range of universes which is
+/// [1 - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
 pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr, Error>{
-    if (universe != DISCOVERY_UNIVERSE) && (universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE) {
+    if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
         return Err(Error::new(
             ErrorKind::InvalidInput,
-            "universe is limited to the range 1 to 63999",
+            "Attempted to convert universe outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE to E131_MAX_MULTICAST_UNIVERSE] + E131_DISCOVERY_UNIVERSE",
         ));
     }
 
@@ -132,17 +135,23 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr, Erro
     Ok(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, high_byte, low_byte)), ACN_SDT_MULTICAST_PORT))
 }
 
+/// Converts the given ANSI E1.31-2018 universe into an Ipv6 multicast address with the port set to the acn multicast port as defined 
+/// in packet::ACN_SDT_MULTICAST_PORT.
+/// 
+/// Converstion done as specified in section 9.3.2 of ANSI E1.31-2018
+/// 
+/// Returns the multicast address.
+/// 
+/// # Errors
+/// Returns an ErrorKind::InvalidInput error if the given universe is outwith the allowed range of universes which is
+/// [1 - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
 pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr, Error>{
-    if (universe != DISCOVERY_UNIVERSE) && (universe == 0 || universe > E131_MAX_MULTICAST_UNIVERSE) {
+    if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
         return Err(Error::new(
             ErrorKind::InvalidInput,
-            "universe is limited to the range 1 to 63999",
+            "Attempted to convert universe outwith allowed range of 1 to E131_MAX_MULTICAST_UNIVERSE + E131_DISCOVERY_UNIVERSE",
         ));
     }
-
-    // let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
-    // let low_byte: u8 = (universe & 0xff) as u8;
-    // let low_16: u16 = ((high_byte as u16) << 8) | (low_byte as u16);
 
     // As per ANSI E1.31-2018 Section 9.3.2 Table 9-12.
     Ok(SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, universe)), ACN_SDT_MULTICAST_PORT))
