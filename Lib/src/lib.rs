@@ -16,6 +16,11 @@
 #![doc(html_root_url = "https://docs.rs/sacn/")]
 #![warn(missing_docs)]
 
+// Recursion limit for error_chain.
+#![recursion_limit="1024"]
+#[macro_use]
+extern crate error_chain;
+
 #[cfg(feature = "std")]
 extern crate core;
 
