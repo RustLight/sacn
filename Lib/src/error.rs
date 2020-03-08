@@ -25,8 +25,9 @@ use uuid;
 pub mod errors {
     error_chain! {
         foreign_links {
-            Io(::std::io::Error); // Allow IO errors to be used with the error-chain system.
-            Parse(::error::ParseError); // Allow the existing ParseError's to be used with the error-chain system.
+            Io(::std::io::Error);       // Allow IO errors to be used with the error-chain system.
+            Str(::std::str::Utf8Error); // Allow standard string library errors to be used with the error-chain system.
+            Uuid(uuid::ParseError);     // Allow UUID library to be used with error-chain system.
         }
 
         errors {
@@ -77,7 +78,7 @@ pub mod errors {
             }
 
             /// Received PDU length is invalid.
-            PduInvalidLength(length: usize) {
+            PduInvalidLength(len: usize) {
                 description("Received PDU length is invalid"),
                 display("PDU Length {} is invalid", len)
             }
@@ -89,17 +90,16 @@ pub mod errors {
             }
 
             /// Error parsing the received UUID.
-            UuidError() {
+            UuidError(msg: String) {
                 description("Error parsing the received UUID"),
-                display("Error parsing the received UUID")
+                display("Error parsing the received UUID, msg: {}", msg)
             }
 
             /// Error parsing received UTF8 string.
-            Utf8Error() {
+            Utf8Error(msg: String) {
                 description("Error parsing received UTF8 string"),
-                display("Error parsing received UTF8 string")
+                display("Error parsing received UTF8 string, msg: {}", msg)
             }
-
         }
     }
 }

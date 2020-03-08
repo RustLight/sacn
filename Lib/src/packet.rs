@@ -65,7 +65,6 @@ use byteorder::{ByteOrder, NetworkEndian};
 use heapless::{String, Vec};
 use uuid::Uuid;
 
-use std::io::{Error, ErrorKind};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use std::time::Duration;
@@ -123,7 +122,7 @@ pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_T
 /// [1 - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
 pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr>{
     if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
-        bail!(ErrorKind::IllegalUniverse( format!("Universe to convert: {} is out of allowed range", *u)));
+        bail!(ErrorKind::IllegalUniverse( format!("Universe to convert: {} is out of allowed range", universe)));
     }
 
     let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
@@ -145,7 +144,7 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr>{
 /// [1 - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
 pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr>{
     if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
-        bail!(ErrorKind::IllegalUniverse( format!("Universe to convert: {} is out of allowed range", *u)));
+        bail!(ErrorKind::IllegalUniverse( format!("Universe to convert: {} is out of allowed range", universe)));
     }
 
     // As per ANSI E1.31-2018 Section 9.3.2 Table 9-12.
@@ -182,20 +181,20 @@ macro_rules! impl_acn_root_layer_protocol {
 
         impl$( $lt )* AcnRootLayerProtocol$( $lt )* {
             /// Parse the packet from the given buffer.
-            pub fn parse(buf: &[u8]) -> Result<AcnRootLayerProtocol, ParseError> {
+            pub fn parse(buf: &[u8]) -> Result<AcnRootLayerProtocol> {
                 // Preamble Size
                 if NetworkEndian::read_u16(&buf[0..2]) != 0x0010 {
-                    bail!(ErrorKind::InvalidData("invalid Preamble Size".to_string()));
+                    bail!(ErrorKind::ParseInvalidData("invalid Preamble Size".to_string()));
                 }
 
                 // Post-amble Size
                 if NetworkEndian::read_u16(&buf[2..4]) != 0 {
-                    bail!(ErrorKind::InvalidData("invalid Post-amble Size".to_string()));
+                    bail!(ErrorKind::ParseInvalidData("invalid Post-amble Size".to_string()));
                 }
 
                 // ACN Packet Identifier
                 if &buf[4..16] != b"ASC-E1.17\x00\x00\x00" {
-                    bail!(ErrorKind::InvalidData("invalid ACN packet indentifier".to_string()));
+                    bail!(ErrorKind::ParseInvalidData("invalid ACN packet indentifier".to_string()));
                 }
 
                 // PDU block
@@ -278,12 +277,12 @@ fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo> {
     // Flags
     let flags = buf[0] & 0xf0;
     if flags != 0x70 {
-        return Err(ParseError::PduInvalidFlags(flags));
+        bail!(ErrorKind::ParsePduInvalidFlags(flags));
     }
     // Length
     let length = (NetworkEndian::read_u16(&buf[0..2]) & 0x0fff) as usize;
     if buf.len() < length {
-        return Err(ParseError::NotEnoughData);
+        bail!(ErrorKind::ParseInsufficientData("Insufficient data when parsing pdu_info".to_string()));
     }
 
     // Vector
@@ -293,9 +292,9 @@ fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo> {
 }
 
 trait Pdu: Sized {
-    fn parse(buf: &[u8]) -> Result<Self, ParseError>;
+    fn parse(buf: &[u8]) -> Result<Self>;
 
-    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError>;
+    fn pack(&self, buf: &mut [u8]) -> Result<()>;
 
     fn len(&self) -> usize;
 }
@@ -328,11 +327,11 @@ macro_rules! impl_e131_root_layer {
         }
 
         impl$( $lt )* Pdu for E131RootLayer$( $lt )* {
-            fn parse(buf: &[u8]) -> Result<E131RootLayer$( $lt )*, ParseError> {
+            fn parse(buf: &[u8]) -> Result<E131RootLayer$( $lt )*> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
                 if vector != VECTOR_ROOT_E131_DATA && vector != VECTOR_ROOT_E131_EXTENDED {
-                    return Err(ParseError::PduInvalidVector(vector));
+                    bail!(ErrorKind::PduInvalidVector(vector));
                 }
 
                 // CID
@@ -357,10 +356,10 @@ macro_rules! impl_e131_root_layer {
                                 UniverseDiscoveryPacketFramingLayer::parse(data_buf)?,
                             ),
 
-                            vector => return Err(ParseError::PduInvalidVector(vector)),
+                            vector => bail!(ErrorKind::PduInvalidVector(vector)),
                         }
                     }
-                    vector => return Err(ParseError::PduInvalidVector(vector)),
+                    vector => bail!(ErrorKind::PduInvalidVector(vector)),
                 };
 
                 Ok(E131RootLayer {
@@ -369,9 +368,9 @@ macro_rules! impl_e131_root_layer {
                 })
             }
 
-            fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+            fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if buf.len() < self.len() {
-                    return Err(PackError::BufferNotLargeEnough);
+                    bail!(ErrorKind::PackBufferInsufficient("".to_string()));
                 }
 
                 // Flags and Length
@@ -463,11 +462,11 @@ macro_rules! impl_data_packet_framing_layer {
         }
 
         impl$( $lt )* Pdu for DataPacketFramingLayer$( $lt )* {
-            fn parse(buf: &[u8]) -> Result<DataPacketFramingLayer$( $lt )*, ParseError> {
+            fn parse(buf: &[u8]) -> Result<DataPacketFramingLayer$( $lt )*> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
                 if vector != VECTOR_E131_DATA_PACKET {
-                    return Err(ParseError::PduInvalidVector(vector));
+                    bail!(ErrorKind::PduInvalidVector(vector));
                 }
 
                 // Source Name
@@ -509,9 +508,9 @@ macro_rules! impl_data_packet_framing_layer {
                 })
             }
 
-            fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+            fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if buf.len() < self.len() {
-                    return Err(PackError::BufferNotLargeEnough);
+                    bail!(ErrorKind::PackBufferInsufficient("".to_string()));
                 }
 
                 // Flags and Length
@@ -640,37 +639,37 @@ macro_rules! impl_data_packet_dmp_layer {
         }
 
         impl$( $lt )* Pdu for DataPacketDmpLayer$( $lt )* {
-            fn parse(buf: &[u8]) -> Result<DataPacketDmpLayer$( $lt )*, ParseError> {
+            fn parse(buf: &[u8]) -> Result<DataPacketDmpLayer$( $lt )*> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 1)?;
                 if vector != u32::from(VECTOR_DMP_SET_PROPERTY) {
-                    return Err(ParseError::PduInvalidVector(vector));
+                    bail!(ErrorKind::PduInvalidVector(vector));
                 }
 
                 // Address and Data Type
                 if buf[3] != 0xa1 {
-                    return Err(ParseError::InvalidData("invalid Address and Data Type"));
+                    bail!(ErrorKind::ParseInvalidData("invalid Address and Data Type".to_string()));
                 }
 
                 // First Property Address
                 if NetworkEndian::read_u16(&buf[4..6]) != 0 {
-                    return Err(ParseError::InvalidData("invalid First Property Address"));
+                    bail!(ErrorKind::ParseInvalidData("invalid First Property Address".to_string()));
                 }
 
                 // Address Increment
                 if NetworkEndian::read_u16(&buf[6..8]) != 0x0001 {
-                    return Err(ParseError::InvalidData("invalid Address Increment"));
+                    bail!(ErrorKind::ParseInvalidData("invalid Address Increment".to_string()));
                 }
 
                 // Property value count
                 if NetworkEndian::read_u16(&buf[8..10]) as usize + 10 != length {
-                    return Err(ParseError::InvalidData("invalid Property value count"));
+                    bail!(ErrorKind::ParseInvalidData("invalid Property value count".to_string()));
                 }
 
                 // Property values
                 let property_values_length = length - 10;
                 if property_values_length > 513 {
-                    return Err(ParseError::InvalidData("only 512 DMX slots allowed"));
+                    bail!(ErrorKind::ParseInvalidData("only 512 DMX slots allowed".to_string()));
                 }
 
                 #[cfg(feature = "std")]
@@ -691,13 +690,13 @@ macro_rules! impl_data_packet_dmp_layer {
                 })
             }
 
-            fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+            fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if self.property_values.len() > 513 {
-                    return Err(PackError::InvalidData("only 512 DMX values allowed"));
+                    bail!(ErrorKind::PackInvalidData("only 512 DMX values allowed".to_string()));
                 }
 
                 if buf.len() < self.len() {
-                    return Err(PackError::BufferNotLargeEnough);
+                    bail!(ErrorKind::PackBufferInsufficient("".to_string()));
                 }
 
                 // Flags and Length
@@ -734,7 +733,7 @@ macro_rules! impl_data_packet_dmp_layer {
                 1 +
                 // First Property Address
                 2 +
-                // Address Increment
+                // Address Increment, PackError>
                 2 +
                 // Property value count
                 2 +
@@ -788,11 +787,11 @@ pub struct SynchronizationPacketFramingLayer {
 }
 
 impl Pdu for SynchronizationPacketFramingLayer {
-    fn parse(buf: &[u8]) -> Result<SynchronizationPacketFramingLayer, ParseError> {
+    fn parse(buf: &[u8]) -> Result<SynchronizationPacketFramingLayer> {
         // Length and Vector
         let PduInfo { vector, .. } = pdu_info(&buf, 4)?;
         if vector != VECTOR_E131_EXTENDED_SYNCHRONIZATION {
-            return Err(ParseError::PduInvalidVector(vector));
+            bail!(ErrorKind::PduInvalidVector(vector));
         }
 
         // Sequence Number
@@ -803,7 +802,7 @@ impl Pdu for SynchronizationPacketFramingLayer {
 
         // Reserved
         if buf[9..11] != [0, 0] {
-            return Err(ParseError::InvalidData("invalid Reserved"));
+            bail!(ErrorKind::ParseInvalidData("Reserved data is invalid and couldn't be parsed".to_string()));
         }
 
         Ok(SynchronizationPacketFramingLayer {
@@ -812,9 +811,9 @@ impl Pdu for SynchronizationPacketFramingLayer {
         })
     }
 
-    fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+    fn pack(&self, buf: &mut [u8]) -> Result<()> {
         if buf.len() < self.len() {
-            return Err(PackError::BufferNotLargeEnough);
+            bail!(ErrorKind::PackBufferInsufficient("".to_string()));
         }
 
         // Flags and Length
@@ -868,11 +867,11 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
         }
 
         impl$( $lt )* Pdu for UniverseDiscoveryPacketFramingLayer$( $lt )* {
-            fn parse(buf: &[u8]) -> Result<UniverseDiscoveryPacketFramingLayer$( $lt )*, ParseError> {
+            fn parse(buf: &[u8]) -> Result<UniverseDiscoveryPacketFramingLayer$( $lt )*> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
                 if vector != VECTOR_E131_EXTENDED_DISCOVERY {
-                    return Err(ParseError::PduInvalidVector(vector));
+                    bail!(ErrorKind::PduInvalidVector(vector));
                 }
 
                 // Source Name
@@ -880,7 +879,7 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
 
                 // Reserved
                 if buf[70..74] != [0, 0, 0, 0] {
-                    return Err(ParseError::InvalidData("invalid Reserved"));
+                    bail!(ErrorKind::ParseInvalidData("Reserved data invalid and couldn't be parsed".to_string()));
                 }
 
                 // Data
@@ -895,9 +894,9 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                 })
             }
 
-            fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+            fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if buf.len() < self.len() {
-                    return Err(PackError::BufferNotLargeEnough);
+                    bail!(ErrorKind::PackBufferInsufficient("".to_string()));
                 }
 
                 // Flags and Length
@@ -981,11 +980,11 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
         }
 
         impl$( $lt )* Pdu for UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )* {
-            fn parse(buf: &[u8]) -> Result<UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )*, ParseError> {
+            fn parse(buf: &[u8]) -> Result<UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )*> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
                 if vector != VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST {
-                    return Err(ParseError::PduInvalidVector(vector));
+                    bail!(ErrorKind::PduInvalidVector(vector));
                 }
 
                 // Page
@@ -1018,13 +1017,13 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 })
             }
 
-            fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+            fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if self.universes.len() > 512 {
-                    return Err(PackError::InvalidData("only 512 universes allowed"));
+                    bail!(ErrorKind::PackInvalidData("only 512 universes allowed".to_string()));
                 }
 
                 if buf.len() < self.len() {
-                    return Err(PackError::BufferNotLargeEnough);
+                    bail!(ErrorKind::PackBufferInsufficient("".to_string()));
                 }
 
                 // Flags and Length
@@ -1043,10 +1042,10 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 // Universes
                 for i in 1..self.universes.len() {
                     if self.universes[i] == self.universes[i - 1] {
-                        return Err(PackError::InvalidData("Universes are not unique"));
+                        bail!(ErrorKind::PackInvalidData("Universes are not unique".to_string()));
                     }
                     if self.universes[i] <= self.universes[i - 1] {
-                        return Err(PackError::InvalidData("Universes are not sorted"));
+                        bail!(ErrorKind::PackInvalidData("Universes are not sorted".to_string()));
                     }
                 }
                 NetworkEndian::write_u16_into(
