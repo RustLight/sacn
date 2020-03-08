@@ -362,8 +362,8 @@ impl DmxSource {
     }
 
     fn universe_allowed(&self, u: &u16) -> Result<()>{
-        if *u < LOWEST_ALLOWED_UNIVERSE || *u > HIGHEST_ALLOWED_UNIVERSE{
-            return Err(Error::new(ErrorKind::InvalidInput, format!("Universes must be in the range [{} - {}]", LOWEST_ALLOWED_UNIVERSE, HIGHEST_ALLOWED_UNIVERSE)));
+        if *u < E131_MIN_MULTICAST_UNIVERSE || *u > E131_MAX_MULTICAST_UNIVERSE{
+            return Err(Error::new(ErrorKind::InvalidInput, format!("Universes must be in the range [{} - {}]", E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE)));
         }
 
         if !self.universes.contains(u) {
@@ -622,9 +622,9 @@ impl DmxSource {
 
         let ip;
         if self.addr.is_ipv6(){
-            ip = universe_to_ipv6_multicast_addr(DISCOVERY_UNIVERSE)?;
+            ip = universe_to_ipv6_multicast_addr(E131_DISCOVERY_UNIVERSE)?;
         } else {
-            ip = universe_to_ipv4_multicast_addr(DISCOVERY_UNIVERSE)?;
+            ip = universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE)?;
         }
 
         self.socket.send_to(&packet.pack_alloc().unwrap(), ip)?;

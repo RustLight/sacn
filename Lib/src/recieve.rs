@@ -1,24 +1,11 @@
-// Code taken and based on tutorial 
-// https://bluejekyll.github.io/blog/rust/2018/03/18/multicasting-in-rust.html September 2019
-// https://blog.abby.md/2019/05/16/multicasting-in-rust/ September 2019
-
 #![warn(missing_docs)]
-
-// Objective ideas:
-// - Ipv4 or Ipv6 Support
-// - Simultaneous Ipv4 or Ipv6 support (Ipv6 preferred as newer and going to become more standard?)
-// - Support for Windows and Unix
-
-// use net2::{UdpBuilder, UdpSocketExt};
 
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
-use packet::{AcnRootLayerProtocol, E131RootLayer, E131RootLayerData, E131RootLayerData::DataPacket, 
-    E131RootLayerData::SynchronizationPacket, E131RootLayerData::UniverseDiscoveryPacket, UniverseDiscoveryPacketFramingLayer, 
-    SynchronizationPacketFramingLayer, DataPacketFramingLayer, UniverseDiscoveryPacketUniverseDiscoveryLayer, ACN_SDT_MULTICAST_PORT,
-    universe_to_ipv4_multicast_addr, universe_to_ipv6_multicast_addr, HIGHEST_ALLOWED_UNIVERSE, DISCOVERY_UNIVERSE, UNIVERSE_DISCOVERY_SOURCE_TIMEOUT};
+// Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
+use packet::{*, E131RootLayerData::*};
 
 use std::io;
 use std::io::{Error, ErrorKind};
@@ -36,35 +23,30 @@ use std::fmt;
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
 pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
 
-// The synchronisation address used to indicate that there is no synchronisation required for the data packet.
-// As defined in ANSI E1.31-2018 Section 6.2.4.1
+/// The synchronisation address used to indicate that there is no synchronisation required for the data packet.
+/// As defined in ANSI E1.31-2018 Section 6.2.4.1
 pub const NO_SYNC_ADDR: u16 = 0;
 
-// DMX payload size in bytes (512 bytes of data + 1 byte start code).
+/// DMX payload size in bytes (512 bytes of data + 1 byte start code).
 pub const DMX_PAYLOAD_SIZE: usize = 513;
 
-// By default shouldn't check for packets send over the network using unicast.
+/// By default shouldn't check for packets send over the network using unicast.
 pub const CHECK_UNICAST_DEFAULT: bool = false;
 
-// By default should check for packets sent over the network using multicast.
+/// By default should check for packets sent over the network using multicast.
 pub const CHECK_MUTLICAST_DEFAULT: bool = true;
 
-// By default shouldn't check for packets sent over the network using broadcast.
+/// By default shouldn't check for packets sent over the network using broadcast.
 pub const CHECK_BROADCAST_DEFAULT: bool = false;
 
-// The name of the thread which runs periodically to perform actions on the receiver such as update discovered universes.
+/// The name of the thread which runs periodically to perform actions on the receiver such as update discovered universes.
 pub const RCV_UPDATE_THREAD_NAME: &'static str = "rust_sacn_rcv_update_thread"; 
 
-pub const DEFAULT_RECV_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
-
-// The default value of the process_preview_data flag.
+/// The default value of the process_preview_data flag.
 const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 
-// The default value for the reading timeout for a DmxReceiver.
+/// The default value for the reading timeout for a SacnNetworkReceiver.
 pub const DEFAULT_RECV_TIMEOUT: Option<Duration> = Some(time::Duration::from_millis(500));
-
-/// The period between update thread calls.
-pub const DEFAULT_UPDATE_THREAD_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 
 #[derive(Debug)]
 pub struct DMXData{
@@ -109,7 +91,7 @@ impl Eq for DMXData {}
 
 /// Used for receiving dmx or other data on a particular universe using multicast.
 #[derive(Debug)]
-struct DmxReciever{
+struct SacnNetworkReceiver{
     socket: Socket,
     addr: SocketAddr
 }
@@ -158,7 +140,7 @@ impl DiscoveredSacnSource {
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
-    receiver: DmxReciever,
+    receiver: SacnNetworkReceiver,
     waiting_data: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
     universes: Vec<u16>, // Universes that this receiver is currently listening for
     discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been discovered by this receiver through universe discovery packets.
@@ -167,7 +149,6 @@ pub struct SacnReceiver {
     process_preview_data: bool
 }
 
-// https://doc.rust-lang.org/std/fmt/trait.Debug.html (04/02/2020)
 impl fmt::Debug for SacnReceiver {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.receiver)?;
@@ -188,10 +169,14 @@ impl SacnReceiver {
     /// A receiver with an IPv4 address will only receive IPv4 data.
     /// 
     /// # Errors
+    /// Will return an error if the SacnReceiver fails to bind to a socket with the given ip. 
+    /// For more details see socket2::Socket::new().
+    /// 
+    /// 
     /// 
     pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
         let mut sri = SacnReceiver {
-                receiver: DmxReciever::new(ip)?,
+                receiver: SacnNetworkReceiver::new(ip)?,
                 waiting_data: Vec::new(),
                 universes: Vec::new(),
                 discovered_sources: Vec::new(),
@@ -200,7 +185,7 @@ impl SacnReceiver {
                 process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT
         };
 
-        sri.listen_universes(&[DISCOVERY_UNIVERSE])?;
+        sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])?;
 
         Ok(sri)
     }
@@ -221,10 +206,21 @@ impl SacnReceiver {
     }
 
     /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
+    /// 
+    /// If 1 or more universes in the list are already being listened to this method will have no effect for those universes only.
+    /// 
+    /// # Errors
+    /// Will return an Error of ErrorKind::InvalidInput if a given universe is outwith the allowed range by the protocol of 
+    /// [1 to packet::E131_MAX_MULTICAST_UNIVERSE] inclusive (excludes packet::E131_DISCOVERY_UNIVERSE which is allowed).
+    /// 
+    /// Will also return an Error if there is an issue listening to the multicast universe, see SacnNetworkReceiver::listen_multicast_universe().
+    /// 
     pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
         for u in universes {
-            if (*u != DISCOVERY_UNIVERSE) && (*u == 0 || *u > HIGHEST_ALLOWED_UNIVERSE) {
-                return Err(Error::new(ErrorKind::InvalidInput, format!("Attempted to listen on a universe outwith the allowed range: {}", u)));
+            if (*u != E131_DISCOVERY_UNIVERSE) && (*u < E131_MIN_MULTICAST_UNIVERSE || *u > E131_MAX_MULTICAST_UNIVERSE) {
+                return Err(Error::new(ErrorKind::InvalidInput, 
+                    format!("Attempted to listen on a universe outwith the allowed range of [E131_MIN_MULTICAST_UNIVERSE 
+                    - E131_MAX_MULTICAST_UNIVERSE] + E131_DISCOVERY_UNIVERSE inclusive: {}", u)));
             }
         }
 
@@ -234,8 +230,7 @@ impl SacnReceiver {
                     self.universes.insert(i, *u);
                     self.receiver.listen_multicast_universe(*u)?
                 }
-                Ok(_) => {
-                    // If value found then don't insert to avoid duplicates.
+                Ok(_) => { // If value found then don't insert to avoid duplicates.
                 }
             }
         }
@@ -515,14 +510,20 @@ fn find_discovered_src(srcs: &Vec<DiscoveredSacnSource>, name: &String) -> Optio
     None
 }
 
-/// In general all lower level transport layer and below stuff is handled by DmxReciever . 
-impl DmxReciever {
-    // Creates a new DMX receiver on the interface specified by the given address.
+/// In general all lower level transport layer and below stuff is handled by SacnNetworkReceiver . 
+impl SacnNetworkReceiver {
+    /// Creates a new DMX receiver on the interface specified by the given address.
+    /// 
     /// If the given address is an IPv4 address then communication will only work between IPv4 devices, if the given address is IPv6 then communication
     /// will only work between IPv6 devices by default but IPv4 receiving can be enabled using set_ipv6_only(false).
-    pub fn new (ip: SocketAddr) -> Result<DmxReciever, Error> {
+    /// 
+    /// # Errors
+    /// Will return an error if the SacnReceiver fails to bind to a socket with the given ip. 
+    /// For more details see socket2::Socket::new().
+    /// 
+    pub fn new (ip: SocketAddr) -> Result<SacnNetworkReceiver, Error> {
         Ok(
-            DmxReciever {
+            SacnNetworkReceiver {
                 socket: create_socket(ip)?,
                 addr: ip
             }
@@ -530,7 +531,12 @@ impl DmxReciever {
     }
 
     /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
-    /// Returns as a Result containing a DmxReciever if Ok which recieves multicast packets for the given universe.
+    /// Returns as a Result containing a SacnNetworkReceiver if Ok which recieves multicast packets for the given universe.
+    /// 
+    /// # Errors
+    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an 
+    /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
+    /// 
     pub fn listen_multicast_universe(&self, universe: u16) -> Result<(), Error> {
         let multicast_addr;
 
