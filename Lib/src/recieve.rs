@@ -133,6 +133,9 @@ struct UniversePage {
 }
 
 impl DiscoveredSacnSource {
+    /// Returns true if all the pages sent by this DiscoveredSacnSource have been receieved. 
+    /// 
+    /// This is based on each page containing a last-page value which indicates the number of the last page expected.
     pub fn has_all_pages(&mut self) -> bool {
         // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/sorting.html (31/12/2019)
         self.pages.sort_by(|a, b| a.page.cmp(&b.page));
@@ -145,6 +148,9 @@ impl DiscoveredSacnSource {
         return true;
     }
 
+    /// Returns all the universes being send by this SacnSource as discovered through the universe discovery mechanism.
+    /// 
+    /// Intentionally abstracts over the underlying concept of pages as this is purely an E1.31 Universe Discovery concept and is otherwise transparent.
     pub fn get_all_universes(&self) -> Vec<u16> {
         let mut uni: Vec<u16> = Vec::new();
         for p in &self.pages {
@@ -153,6 +159,7 @@ impl DiscoveredSacnSource {
         uni
     }
 
+    /// Removes the given universe from the list of universes being sent by this discovered source.
     pub fn terminate_universe(&mut self, universe: u16) {
         for p in &mut self.pages {
             p.universes.retain(|x| *x != universe)
@@ -217,16 +224,21 @@ impl SacnReceiver {
         Ok(sri)
     }
     
+    /// Sets the merge function to be used by this receiver.
+    /// 
+    /// This merge function is called if data is waiting for a universe e.g. for syncronisation and then further data for that universe with the same
+    /// syncronisation address arrives.
     pub fn set_merge_fn(&mut self, func: fn(&DMXData, &DMXData) -> Result<DMXData>) -> Result<()> {
         self.merge_func = func;
         Ok(())
     }
 
-    /// Allow sending on ipv6 
+    /// Allow only receiving on Ipv6. 
     pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
         self.receiver.set_only_v6(val)
     }
 
+    /// Deletes all data currently waiting to be passed up - e.g. waiting for a synchronisation packet.
     pub fn clear_waiting_data(&mut self){
         self.waiting_data.clear();
     }
@@ -448,13 +460,21 @@ impl SacnReceiver {
         Ok(None)
     }
 
-    // Attempt to recieve data from any of the registered universes.
-    // This is the main method for receiving data.
-    // Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
-    // is already handled.
-    // This method will return a WouldBlock error if there is no data ready within the given timeout.
-    // Due to the underlying socket a timeout of duration 0 will instantly return a WouldBlock error without
-    // checking for data.
+    /// Attempt to recieve data from any of the registered universes.
+    /// This is the main method for receiving data.
+    /// Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
+    /// is already handled.
+    /// 
+    /// # Errors
+    /// This method will return a WouldBlock error if there is no data ready within the given timeout.
+    /// A timeout of duration 0 will instantly return a WouldBlock error without checking for data.
+    /// 
+    /// The method may also return an error if there is an issue setting a timeout on the receiver. See 
+    /// SacnNetworkReceiver::set_timeout for details.
+    /// 
+    /// The method may also return an error if there is an issue handling the data as either a Data, Syncronisation or Discovery packet.
+    /// See the SacnReceiver::handle_data_packet, SacnReceiver::handle_sync_packet and SacnReceiver::handle_universe_discovery_packet methods 
+    /// for details. 
     pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>> {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE ] = [0; RCV_BUF_DEFAULT_SIZE];
 
@@ -462,7 +482,7 @@ impl SacnReceiver {
             bail!(std::io::Error::new(std::io::ErrorKind::WouldBlock, "No data avaliable in given timeout"));
         }
 
-        self.receiver.set_timeout(timeout)?;
+        self.receiver.set_timeout(timeout).chain_err(|| "Failed to sent a timeout value for the receiver")?;
             let start_time = Instant::now();
 
             match self.receiver.recv(&mut buf){
@@ -470,9 +490,9 @@ impl SacnReceiver {
                     let pdu: E131RootLayer = pkt.pdu;
                     let data: E131RootLayerData = pdu.data;
                     let res = match data {
-                        DataPacket(d) => self.handle_data_packet(d)?,
-                        SynchronizationPacket(s) => self.handle_sync_packet(s)?,
-                        UniverseDiscoveryPacket(u) => self.handle_universe_discovery_packet(u)?
+                        DataPacket(d) => self.handle_data_packet(d).chain_err(|| "Failed to handle data packet")?,
+                        SynchronizationPacket(s) => self.handle_sync_packet(s).chain_err(|| "Failed to handle synchronisation packet")?,
+                        UniverseDiscoveryPacket(u) => self.handle_universe_discovery_packet(u).chain_err(|| "Failed to handle universe discovery packet")?
                     };
                     match res {
                         Some(r) => {
@@ -505,6 +525,7 @@ impl SacnReceiver {
             }
     }
 
+    /// Returns a list of the sources that have been discovered on the network by this receiver through the E1.31 universe discovery mechanism.
     pub fn get_discovered_sources(&mut self) -> Vec<DiscoveredSacnSource>{
         self.remove_expired_sources();
         self.discovered_sources.clone()
@@ -631,11 +652,11 @@ fn join_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
     Ok(())
 }
 
-// Performs a HTP DMX merge of data.
-// The first argument (i) is the existing data, n is the new data.
-// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
-// If this doesn't hold an error will be returned.
-// Other merge functions may allow merging different start codes or not check for them.
+/// Performs a HTP DMX merge of data.
+/// The first argument (i) is the existing data, n is the new data.
+/// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
+/// If this doesn't hold an error will be returned.
+/// Other merge functions may allow merging different start codes or not check for them.
 pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData>{
     if i.values.len() < 1 || 
         n.values.len() < 1 || 

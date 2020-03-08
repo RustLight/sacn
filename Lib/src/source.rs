@@ -18,7 +18,7 @@
 // used as the syncronisation universe by default. This is done as it means that the receiever should
 // be listening for this universe. 
 
-use error::errors::{*, ErrorKind::*};
+use error::errors::{*};
 use packet::*;
 
 use std::cell::RefCell;
@@ -169,11 +169,15 @@ impl SacnSource {
         SacnSource::with_cid_ip(name, Uuid::new_v4(), ip)
     }
 
-
+    /// Constructs a new SacnSource with the given name, cid and binding to the supplied ip.
+    /// 
+    /// # Errors
+    /// Will return an Error if the internal SacnSourceInternal fails to be created with the reasoning error-chained.
+    /// See source::SacnSourceInternal::with_cid_ip() for more details.
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
         let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
 
-        let internal_src = Arc::new(Mutex::new(SacnSourceInternal::with_cid_ip(name, cid, ip)?));
+        let internal_src = Arc::new(Mutex::new(SacnSourceInternal::with_cid_ip(name, cid, ip).chain_err(|| "Failed to create SacnSourceInternal")?));
 
         let mut trd_src = internal_src.clone();
 
@@ -204,14 +208,26 @@ impl SacnSource {
         self.internal.lock().unwrap().set_ttl(ttl)
     }
 
+    /// Sets the is_sending_discovery flag to the given value.
+    /// 
+    /// If set to true then the source will send universe discovery packets periodically.
+    /// If set to false then it won't.
     pub fn set_is_sending_discovery(&mut self, val: bool) {
         self.internal.lock().unwrap().set_is_sending_discovery(val);
     }
 
+    /// Registers the given universes on this source in addition to already registered universes.
+    /// 
+    /// This allows sending data to those universes aswell as adding them to the list of universes
+    /// that appear in universe discovery packets that are sent (depending on set_is_sending_discovery flag) periodically. 
     pub fn register_universes(&mut self, universes: &[u16]){
         self.internal.lock().unwrap().register_universes(universes);
     }
 
+    /// Registers a single universe on this source in addition to already registered universes.
+    /// 
+    /// This allows sending data to those universes aswell as adding them to the list of universes
+    /// that appear in universe discovery packets that are sent (depending on set_is_sending_discovery flag) periodically. 
     pub fn register_universe(&mut self, universe: u16) {
         self.internal.lock().unwrap().register_universe(universe);
     }
