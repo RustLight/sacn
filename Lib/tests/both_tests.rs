@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-extern crate lazy_static;
 extern crate sacn;
 
 use std::{thread};
@@ -17,7 +16,8 @@ use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
 
 use std::time::Duration;
 
-use std::io::{Error, ErrorKind};
+use sacn::error::errors::*;
+use sacn::error::errors::ErrorKind::*;
 
 // Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
 // - Decided it shouldn't be seperated.

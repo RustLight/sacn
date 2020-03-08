@@ -1149,7 +1149,11 @@ fn test_universe_to_ip_ipv4_limit_low(){
 fn test_universe_to_ip_ipv4_out_range_low(){
     match universe_to_ipv4_multicast_addr(0) {
         Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed below minimum allowed universe")},
-        Err(e) => assert_eq!(e.kind(), ErrorKind::InvalidInput, "")
+        Err(e) => 
+            match e.kind() {
+                &ErrorKind::IllegalUniverse(ref s) => assert!(true),
+                _ => assert!(false, "Unexpected error type returned")
+            }
     }
 }
 
@@ -1157,7 +1161,11 @@ fn test_universe_to_ip_ipv4_out_range_low(){
 fn test_universe_to_ip_ipv4_out_range_high(){
     match universe_to_ipv4_multicast_addr(E131_MAX_MULTICAST_UNIVERSE + 10) {
         Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed above maximum allowed universe")},
-        Err(e) => assert_eq!(e.kind(), ErrorKind::InvalidInput, "")
+        Err(e) => 
+            match e.kind() {
+                &ErrorKind::IllegalUniverse(ref s) => assert!(true),
+                _ => assert!(false, "Unexpected error type returned")
+            }
     }
 }
 
@@ -1211,7 +1219,11 @@ fn test_universe_to_ip_ipv6_limit_low(){
 fn test_universe_to_ip_ipv6_out_range_low(){
     match universe_to_ipv6_multicast_addr(0) {
         Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed below minimum allowed universe")},
-        Err(e) => assert_eq!(e.kind(), ErrorKind::InvalidInput, "")
+        Err(e) => 
+            match e.kind() {
+                &ErrorKind::IllegalUniverse(ref s) => assert!(true),
+                _ => assert!(false, "Unexpected error type returned")
+            }
     }
 }
 
@@ -1219,7 +1231,11 @@ fn test_universe_to_ip_ipv6_out_range_low(){
 fn test_universe_to_ip_ipv6_out_range_high(){
     match universe_to_ipv6_multicast_addr(E131_MAX_MULTICAST_UNIVERSE + 10) {
         Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed above maximum allowed universe")},
-        Err(e) => assert_eq!(e.kind(), ErrorKind::InvalidInput, "")
+        Err(e) => 
+            match e.kind() {
+                &ErrorKind::IllegalUniverse(ref s) => assert!(true),
+                _ => assert!(false, "Unexpected error type returned")
+            }
     }
 }
 
