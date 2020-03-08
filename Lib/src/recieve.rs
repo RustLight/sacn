@@ -28,14 +28,9 @@ use std::time;
 use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
 
-use std::thread::{JoinHandle};
-use std::thread;
-
 use std::borrow::Cow;
 
 use std::fmt;
-
-use std::sync::atomic::AtomicBool;
 
 /// The default size of the buffer used to recieve E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
@@ -162,7 +157,7 @@ impl DiscoveredSacnSource {
 }
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
-pub struct SacnReceiverInternal {
+pub struct SacnReceiver {
     receiver: DmxReciever,
     waiting_data: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
     universes: Vec<u16>, // Universes that this receiver is currently listening for
@@ -173,7 +168,7 @@ pub struct SacnReceiverInternal {
 }
 
 // https://doc.rust-lang.org/std/fmt/trait.Debug.html (04/02/2020)
-impl fmt::Debug for SacnReceiverInternal {
+impl fmt::Debug for SacnReceiver {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.receiver)?;
         write!(f, "{:?}", self.waiting_data)?;
@@ -183,114 +178,7 @@ impl fmt::Debug for SacnReceiverInternal {
     }
 }
 
-#[derive(Debug)]
-pub struct SacnReceiver {
-    internal: Arc<Mutex<SacnReceiverInternal>>,
-    running: Arc<AtomicBool>,
-    update_thread: Option<JoinHandle<()>>
-}
-
-fn perform_periodic_update(mut trd_rcv: &Arc<Mutex<SacnReceiverInternal>>) -> Result<(), Error> {
-        Ok(())
-}
-
-fn update_thread_poll(running: &AtomicBool, mut trd_rcv: &Arc<Mutex<SacnReceiverInternal>>){
-    while (running.load(std::sync::atomic::Ordering::SeqCst)) {
-        thread::sleep(DEFAULT_UPDATE_THREAD_POLL_PERIOD);
-        match perform_periodic_update(&mut trd_rcv){
-            Err(e) => {
-                println!("Receiver: Error encountered in update thread {}", e)
-            },
-            Ok(_) => {}
-        }
-    }
-}
-
 impl SacnReceiver {
-     /// Constructs a new SacnReceiver binding to an IPv4 address.
-     pub fn new_v4() -> Result<SacnReceiver, Error> {
-        let ip = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
-        SacnReceiver::with_ip(ip)
-    }
-
-    /// Constructs a new SacnReceiver binding to an IPv6 address.
-    /// By default this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
-    pub fn new_v6() -> Result<SacnReceiver, Error> {
-        let ip = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
-        SacnReceiver::with_ip(ip)        
-    }
-
-    /// Creates a new SacnReceiver for receiving ANSI E1.31-2018 sACN data. 
-    /// 
-    /// 
-    ///
-    /// # Errors
-    /// See SacnReceiverInternal::with_ip().
-    pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
-        let trd_builder = thread::Builder::new().name(RCV_UPDATE_THREAD_NAME.into());
-
-        let internal = Arc::new(Mutex::new(SacnReceiverInternal::with_ip(ip)?));
-        let running = Arc::new(AtomicBool::new(true));
-
-        let mut trd_rcv = internal.clone();
-        let mut trd_running = running.clone();
-
-        let update_thread = trd_builder.spawn(move || update_thread_poll(&trd_running, &mut trd_rcv))?;
-
-        let rcv = SacnReceiver {
-            internal: internal,
-            running: running,
-            update_thread: None
-        };
-
-        Ok(rcv)
-    }
-
-    /// Terminates the SacnReceiver including cleaning up all used resources as necessary.
-    pub fn terminate(&mut self){
-        self.running.store(false, std::sync::atomic::Ordering::SeqCst);
-    }
-
-    // TODO
-    pub fn set_merge_fn(&mut self, func: fn(&DMXData, &DMXData) -> Result<DMXData, Error>) -> Result<(), Error> {
-        self.internal.lock().unwrap().set_merge_fn(func)
-    }
-
-    /// Allow sending on ipv6 
-    pub fn set_ipv6_only(&mut self, val: bool) -> Result<(), Error>{
-        self.internal.lock().unwrap().set_ipv6_only(val)
-    }
-
-    /// Forces any data currently waiting for universe synchronisation to be deleted.
-    pub fn clear_waiting_data(&mut self){
-        self.internal.lock().unwrap().clear_waiting_data()
-    }
-
-    /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
-    pub fn listen_universes(&mut self, universes: &[u16]) -> Result<(), Error>{
-        self.internal.lock().unwrap().listen_universes(universes)
-    }
-
-    /// Returns a copy of the Vec of discovered sources by this receiver, note that this isn't kept up to date so these source
-    /// may have timed out / changed etc. since this method returned.
-    pub fn get_discovered_sources(&self) -> Vec<DiscoveredSacnSource>{
-        self.internal.lock().unwrap().get_discovered_sources()
-    }
-
-    pub fn get_discovered_sources_no_check(&mut self) -> Vec<DiscoveredSacnSource> {
-        self.internal.lock().unwrap().get_discovered_sources_no_check()
-    }
-
-    /// Attempt to recieve data from any of the registered universes.
-    /// This is the main method for receiving data.
-    /// Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
-    /// is already handled.
-    pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>, Error> {
-        self.internal.lock().unwrap().recv(timeout)
-    }
-}
-
-impl SacnReceiverInternal {
     /// Creates a new SacnReceiverInternal. 
     /// 
     /// SacnReceiverInternal is used for actually receiving the sACN data but is wrapped in SacnReceiver to allow the update thread to handle
@@ -301,8 +189,8 @@ impl SacnReceiverInternal {
     /// 
     /// # Errors
     /// 
-    pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiverInternal, Error> {
-        let mut sri = SacnReceiverInternal {
+    pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver, Error> {
+        let mut sri = SacnReceiver {
                 receiver: DmxReciever::new(ip)?,
                 waiting_data: Vec::new(),
                 universes: Vec::new(),
