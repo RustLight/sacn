@@ -4,6 +4,8 @@
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
+//
+// This file was modified as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
 #![warn(missing_docs)]
 
@@ -50,24 +52,24 @@
 //! # }}
 //! ```
 
+// Uses the sACN error-chain errors.
 use error::errors::*;
 use error::errors::ErrorKind::*;
 
+/// The core crate is used for string processing during packet parsing/packing aswell as to provide access to the Hash trait.
 use core::hash::{self, Hash};
 use core::str;
-#[cfg(feature = "std")]
+
 use std::borrow::Cow;
-#[cfg(feature = "std")]
 use std::vec::Vec;
-
-use byteorder::{ByteOrder, NetworkEndian};
-#[cfg(not(feature = "std"))]
-use heapless::{String, Vec};
-use uuid::Uuid;
-
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
-
 use std::time::Duration;
+
+/// The byteorder crate is used for marshalling data on/off the network in Network Byte Order.
+use byteorder::{ByteOrder, NetworkEndian};
+
+/// The uuid crate is used for working with/generating UUIDs which sACN uses as part of the cid field in the protocol.
+use uuid::Uuid;
 
 /// The maximum number of universes per page in a universe discovery packet.
 pub const DISCOVERY_UNI_PER_PAGE: usize = 512;
@@ -93,9 +95,45 @@ pub const E131_MAX_MULTICAST_UNIVERSE: u16 = 63999;
 /// The lowest / minimum universe number that can be used with the E1.31 protocol as specified in section 9.1.1 of ANSI E1.31-2018.
 pub const E131_MIN_MULTICAST_UNIVERSE: u16 = 1;
 
+/// The vector field value used to identify the ACN packet as an ANSI E1.31 data packet.
+/// This is used at the ACN packet layer not the E1.31 layer.
+/// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
+const VECTOR_ROOT_E131_DATA: u32 = 0x0000_0004;
+
+/// The vector field value used to identify the packet as an ANSI E1.31 universe discovery or synchronisation packet.
+/// This is used at the ACN packet layer not the E1.31 layer.
+/// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
+const VECTOR_ROOT_E131_EXTENDED: u32 = 0x0000_0008;
+
+/// The E1.31 packet vector field value used to identify the E1.31 packet as a synchronisation packet.
+/// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. VECTOR_ROOT_E131_DATA and VECTOR_ROOT_E131_EXTENDED).
+/// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
+const VECTOR_E131_EXTENDED_SYNCHRONIZATION: u32 = 0x0000_0001;
+
+/// The E1.31 packet vector field value used to identify the E1.31 packet as a universe discovery packet.
+/// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. VECTOR_ROOT_E131_DATA and VECTOR_ROOT_E131_EXTENDED).
+/// This VECTOR value is shared by E1.31 data packets, distinguished by the value of the ACN ROOT_VECTOR.
+/// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
+const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x0000_0002;
+
+/// The E1.31 packet vector field value used to identify the E1.31 packet as a data packet.
+/// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. VECTOR_ROOT_E131_DATA and VECTOR_ROOT_E131_EXTENDED).
+/// This VECTOR value is shared by E1.31 universe discovery packets, distinguished by the value of the ACN ROOT_VECTOR.
+/// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
+const VECTOR_E131_DATA_PACKET: u32 = 0x0000_0002;
+
+/// Used at the DMP layer in E1.31 data packets to identify the packet as a set property message.
+/// Not to be confused with the other VECTOR values used at the E1.31, ACN etc. layers.
+/// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
+const VECTOR_DMP_SET_PROPERTY: u8 = 0x02;
+
+/// Used at the universe discovery packet universe discovery layer to identify the packet as a universe discovery list of universes.
+/// Not to be confused with the other VECTOR values used at the E1.31, ACN, DMP, etc. layers.
+/// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
+const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x0000_0001;
+
 /// The port number used for the ACN family of protocols and therefore the sACN protocol.
-/// 
-/// As defined in ANSI E1.31-2018
+/// As defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative)
 pub const ACN_SDT_MULTICAST_PORT: u16 = 5568; 
 
 /// The payload capacity for a sacn packet, for DMX data this would translate to 512 frames + a startcode byte.
@@ -103,9 +141,6 @@ pub const UNIVERSE_CHANNEL_CAPACITY: usize = 513;
 
 /// The synchronisation universe/address of packets which do not require synchronisation as specified in section 6.2.4.1 of ANSI E1.31-2018.
 pub const NO_SYNC_UNIVERSE: u16 = 0;
-
-/// Could be anything, implementation dependent, default universe used as the syncronisation universe.
-pub const DEFAULT_SYNC_UNIVERSE: u16 = 1;
 
 /// The timeout before data loss is assumed for an E131 source, as defined in Apendix A of ANSI E1.31-2018.
 pub const E131_NETWORK_DATA_LOSS_TIMEOUT: Duration = Duration::from_millis(2500);
@@ -121,8 +156,8 @@ pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_T
 /// Returns the multicast address.
 /// 
 /// # Errors
-/// Returns an ErrorKind::InvalidInput error if the given universe is outwith the allowed range of universes which is
-/// [1 - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
+/// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes which is
+/// [E131_MIN_MULTICAST_UNIVERSE - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
 pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr>{
     if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
         bail!(ErrorKind::IllegalUniverse( format!("Universe to convert: {} is out of allowed range", universe)));
@@ -143,8 +178,8 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr>{
 /// Returns the multicast address.
 /// 
 /// # Errors
-/// Returns an ErrorKind::InvalidInput error if the given universe is outwith the allowed range of universes which is
-/// [1 - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
+/// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes which is
+/// [E131_MIN_MULTICAST_UNIVERSE - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
 pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr>{
     if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
         bail!(ErrorKind::IllegalUniverse( format!("Universe to convert: {} is out of allowed range", universe)));
@@ -154,6 +189,7 @@ pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr>{
     Ok(SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, universe)), ACN_SDT_MULTICAST_PORT))
 }
 
+/// Fills the given array of bytes with the given length n with bytes of value 0.
 #[inline]
 fn zeros(buf: &mut [u8], n: usize) {
     for b in buf.iter_mut().take(n) {
@@ -161,6 +197,7 @@ fn zeros(buf: &mut [u8], n: usize) {
     }
 }
 
+/// Takes the given byte buffer (e.g. a c char array) and parses it into a rust &str.
 #[inline]
 fn parse_c_str(buf: &[u8]) -> Result<&str> {
     let mut source_name_length = buf.len();
@@ -227,7 +264,7 @@ macro_rules! impl_acn_root_layer_protocol {
                 self.pack(buf)
             }
 
-            /// Packs the packet into the givven buffer.
+            /// Packs the packet into the given buffer.
             pub fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if buf.len() < self.len() {
                     bail!(ErrorKind::PackBufferInsufficient("".to_string()))
@@ -266,7 +303,7 @@ impl_acn_root_layer_protocol!(<'a>);
 
 #[cfg(not(feature = "std"))]
 impl_acn_root_layer_protocol!();
-
+ 
 struct PduInfo {
     length: usize,
     vector: u32,
@@ -301,9 +338,6 @@ trait Pdu: Sized {
 
     fn len(&self) -> usize;
 }
-
-const VECTOR_ROOT_E131_DATA: u32 = 0x0000_0004;
-const VECTOR_ROOT_E131_EXTENDED: u32 = 0x0000_0008;
 
 macro_rules! impl_e131_root_layer {
     ( $( $lt:tt )* ) => {
@@ -425,8 +459,6 @@ impl_e131_root_layer!(<'a>);
 
 #[cfg(not(feature = "std"))]
 impl_e131_root_layer!();
-
-const VECTOR_E131_DATA_PACKET: u32 = 0x0000_0002;
 
 macro_rules! impl_data_packet_framing_layer {
     ( $( $lt:tt )* ) => {
@@ -625,8 +657,6 @@ impl_data_packet_framing_layer!(<'a>);
 #[cfg(not(feature = "std"))]
 impl_data_packet_framing_layer!();
 
-const VECTOR_DMP_SET_PROPERTY: u8 = 0x02;
-
 macro_rules! impl_data_packet_dmp_layer {
     ( $( $lt:tt )* ) => {
         /// Device Management Protocol PDU with SET PROPERTY vector.
@@ -777,8 +807,6 @@ impl_data_packet_dmp_layer!(<'a>);
 #[cfg(not(feature = "std"))]
 impl_data_packet_dmp_layer!();
 
-const VECTOR_E131_EXTENDED_SYNCHRONIZATION: u32 = 0x0000_0001;
-
 /// sACN synchronization packet PDU.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Copy)]
 pub struct SynchronizationPacketFramingLayer {
@@ -851,8 +879,6 @@ impl Pdu for SynchronizationPacketFramingLayer {
         2
     }
 }
-
-const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x0000_0002;
 
 macro_rules! impl_universe_discovery_packet_framing_layer {
     ( $( $lt:tt )* ) => {
@@ -961,8 +987,6 @@ impl_universe_discovery_packet_framing_layer!(<'a>);
 
 #[cfg(not(feature = "std"))]
 impl_universe_discovery_packet_framing_layer!();
-
-const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x0000_0001;
 
 macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
     ( $( $lt:tt )* ) => {

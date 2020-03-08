@@ -31,7 +31,7 @@ pub mod error;
 extern crate socket2;
 extern crate net2;
 
-/// The core crate is used for string processing during packet parsing/packing.
+/// The core crate is used for string processing during packet parsing/packing aswell as to provide access to the Hash trait.
 extern crate core;
 
 /// The byteorder crate is used for marshalling data on/off the network in Network Byte Order.
