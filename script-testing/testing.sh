@@ -12,8 +12,8 @@ RCV_EXPECTED_OUTPUT=$7
 KILL_WAIT=$8 # How long should the testing program wait before killing both receiver and sender forcefully (seconds).
 
 # host where server is running
-REMOTE_PC=pc5-007-l
-REMOTE_PC_2=pc5-006-l
+REMOTE_PC=pc5-006-l
+REMOTE_PC_2=pc5-005-l
 
 PORT=5568
 

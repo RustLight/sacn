@@ -207,7 +207,7 @@ fn print_recv(res: Result<Vec<DMXData>>) {
 fn print_data(data: Vec<DMXData>) {
     print!("[");
     for d in data {
-        print!("{{ {}, {}, {:?} }}, ", d.universe, d.sync_uni, d.values);
+        print!("{{ Universe(s): {}, Sync_Universe: {}, Values: {:?} }}, ", d.universe, d.sync_uni, d.values);
     }
     println!("]");
 }
