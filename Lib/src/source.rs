@@ -18,9 +18,12 @@
 // used as the syncronisation universe by default. This is done as it means that the receiever should
 // be listening for this universe. 
 
+use error::errors::*;
+use error::errors::ErrorKind::*;
+use packet::*;
+
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::io::{Error, ErrorKind, Result};
 use std::cmp;
 use std::cmp::min;
 use std::time;
@@ -33,7 +36,6 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 use net2::{UdpBuilder, UdpSocketExt};
 use uuid::Uuid;
 
-use packet::*;
 
 /// The default delay between sending data packets and sending a synchronisation packet, used as advised by ANSI-E1.31-2018 Appendix B.1
 pub const DEFAULT_SYNC_DELAY: Duration = time::Duration::from_millis(10);
@@ -195,7 +197,7 @@ impl SacnSource {
 
     /// Allow sending on ipv6 
     pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
-        self.internal.lock().unwrap().socket.set_only_v6(val)
+        Ok(self.internal.lock().unwrap().socket.set_only_v6(val)?)
     }
     
     /// Sets the Time To Live for packets sent by this source.
@@ -312,7 +314,7 @@ impl DmxSource {
             socket_builder = UdpBuilder::new_v6()?;
             socket_builder.only_v6(true)?;
         } else {
-            return Err(Error::new(ErrorKind::InvalidInput, "Unrecognised socket address type! Not IPv4 or IPv6"));
+            bail!(ErrorKind::UnsupportedIpVersion("Unrecognised socket address type! Not IPv4 or IPv6".to_string()));
         }
 
         let socket: UdpSocket = socket_builder.bind(ip)?;
@@ -362,12 +364,12 @@ impl DmxSource {
     }
 
     fn universe_allowed(&self, u: &u16) -> Result<()>{
-        if *u < E131_MIN_MULTICAST_UNIVERSE || *u > E131_MAX_MULTICAST_UNIVERSE{
-            return Err(Error::new(ErrorKind::InvalidInput, format!("Universes must be in the range [{} - {}]", E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE)));
+        if *u < E131_MIN_MULTICAST_UNIVERSE || *u > E131_MAX_MULTICAST_UNIVERSE {
+            bail!(ErrorKind::IllegalUniverse(format!("Universes must be in the range [{} - {}]", E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE).to_string()));
         }
 
         if !self.universes.contains(u) {
-            return Err(Error::new(ErrorKind::Other, "Must register universes to send before sending on them"));
+            bail!(ErrorKind::UniverseNotRegistered(format!("Attempted to send on unregistered universe : {}", u).to_string()));
         }
 
         Ok(())
@@ -386,11 +388,11 @@ impl DmxSource {
     ///     synchronisation is required. Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the sync packet.
     fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
         if self.running == false { // Indicates that this sender has been terminated.
-            return Err(Error::new(ErrorKind::NotConnected, "Sender has been terminated / isn't live")); 
+            bail!(ErrorKind::SenderAlreadyTerminated("Attempted to send".to_string())); 
         }
 
         if data.len() == 0 {
-           return Err(Error::new(ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
+           bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
         }
 
         for u in universes {
@@ -405,7 +407,7 @@ impl DmxSource {
         let required_universes = (data.len() as f64 / UNIVERSE_CHANNEL_CAPACITY as f64).ceil() as usize;
 
         if universes.len() < required_universes {
-            return Err(Error::new(ErrorKind::InvalidInput, "Must provide enough universes to send on"));
+            bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Must provide enough universes to send on, universes provided: {}", universes.len())));
         }
         
         for i in 0 .. required_universes {
@@ -413,18 +415,15 @@ impl DmxSource {
             // Safety check to make sure that the end index doesn't exceed the data length
             let end_index = cmp::min((i + 1) * UNIVERSE_CHANNEL_CAPACITY, data.len());
 
-            self.send_universe(universes[i], &data[start_index .. end_index], priority.unwrap_or(DEFAULT_PRIORITY), syncronisation_addr.unwrap_or(NO_SYNC_UNIVERSE), &dst_ip)?;
+            self.send_universe(universes[i], &data[start_index .. end_index], priority.unwrap_or(E131_DEFAULT_PRIORITY), syncronisation_addr.unwrap_or(NO_SYNC_UNIVERSE), &dst_ip)?;
         }
 
         Ok(())
     }
 
     fn send_universe(&self, universe: u16, data: &[u8], priority: u8, sync_address: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
-        if priority > 200 {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "priority must be <= 200",
-            ));
+        if priority > E131_MAX_PRIORITY {
+            bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Priority must be within allowed range of [0-E131_MAX_PRIORITY], priority provided: {}", priority)));
         }
 
         let mut sequence = match self.sequences.borrow().get(&universe) {
@@ -666,27 +665,27 @@ impl DmxSource {
 
     /// Sets the multicast time to live.
     fn set_multicast_ttl(&self, multicast_ttl: u32) -> Result<()> {
-        self.socket.set_multicast_ttl_v4(multicast_ttl)
+        Ok(self.socket.set_multicast_ttl_v4(multicast_ttl)?)
     }
 
     /// Sets the Time To Live for packets sent by this source.
     pub fn set_ttl(&mut self, ttl: u32) -> Result<()> {
-        self.socket.set_ttl(ttl)
+        Ok(self.socket.set_ttl(ttl)?)
     }
 
     /// Returns the multicast time to live of the socket.
     fn multicast_ttl(&self) -> Result<u32> {
-        self.socket.multicast_ttl_v4()
+        Ok(self.socket.multicast_ttl_v4()?)
     }
 
     /// Sets if multicast loop is enabled.
     fn set_multicast_loop(&self, multicast_loop: bool) -> Result<()> {
-        self.socket.set_multicast_loop_v4(multicast_loop)
+        Ok(self.socket.set_multicast_loop_v4(multicast_loop)?)
     }
 
     /// Returns if multicast loop of the socket is enabled.
     fn multicast_loop(&self) -> Result<bool> {
-        self.socket.multicast_loop_v4()
+        Ok(self.socket.multicast_loop_v4()?)
     }
 }
 
