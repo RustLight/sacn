@@ -9,15 +9,6 @@
 
 #![warn(missing_docs)]
 
-use core::fmt;
-use core::str::Utf8Error;
-
-#[cfg(feature = "std")]
-use std::error;
-
-use uuid;
-
-// https://github.com/rust-lang-nursery/error-chain/issues/112 (08/03/2020)
 /// The errors used within the SacnLibrary.
 /// 
 /// Uses the error-chain crate to allow errors to allow more informative backtraces through error chaining.
@@ -31,15 +22,37 @@ pub mod errors {
         }
 
         errors {
+            /// Attempted to use illegal universe, outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE - E131_MAX_MULTICAST_UNIVERSE] 
+            /// + E131_DISCOVERY_UNIVERSE inclusive
             IllegalUniverse(msg: String) {
-                description("illegal universe used, outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE 
+                description("Attempted to use illegal universe, outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE 
                 - E131_MAX_MULTICAST_UNIVERSE] + E131_DISCOVERY_UNIVERSE inclusive"),
                 display("illegal universe used, outwith allowed range, msg: {}", msg)
             }
 
+            /// Attempted to use a universe that wasn't first registered for use.
+            /// To send from a universe with a sender it must first be registered. This allows universe discovery adverts to include the universe.
+            UniverseNotRegistered(msg: String) {
+                description("Attempted to use a universe that wasn't first registered for use"),
+                display("Attempted to use a universe that wasn't first registered for use, msg: {}", msg)
+            }
+
+            /// Ip version (ipv4 or ipv6) used when the other is expected
             IpVersionError(msg: String) {
                 description("Ip version (ipv4 or ipv6) used when the other is expected"),
                 display("Ip version (ipv4 or ipv6) used when the other is expected, msg: {}", msg)
+            }
+
+            /// Attempted to use an unsupported (not Ipv4 or Ipv6) IP version.
+            UnsupportedIpVersion(msg: String) {
+                description("Attempted to use an unsupported (not Ipv4 or Ipv6) IP version"),
+                display("Attempted to use an unsupported (not Ipv4 or Ipv6) IP version, msg: {}", msg)
+            }
+
+            /// Attempted to use a sender which has already been terminated.
+            SenderAlreadyTerminated(msg: String) {
+                description("Attempted to use a sender which has already been terminated"),
+                display("Attempted to use a sender which has already been terminated, msg: {}", msg)
             }
 
             DmxMergeError(msg: String) {

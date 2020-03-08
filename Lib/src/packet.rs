@@ -75,8 +75,11 @@ pub const DISCOVERY_UNI_PER_PAGE: usize = 512;
 /// The universe used for universe discovery as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative)
 pub const E131_DISCOVERY_UNIVERSE: u16 = 64214;
 
-/// The default priority used for the E1.31 packet priority field, as per ANSI E1.31 Section 4.1 Table 4-1
-pub const DEFAULT_PRIORITY: u8 = 100;
+/// The default priority used for the E1.31 packet priority field, as per ANSI E1.31-2018 Section 4.1 Table 4-1
+pub const E131_DEFAULT_PRIORITY: u8 = 100;
+
+/// The maximum allowed priority for a E1.31 packet, as per ANSI E1.31-2018 Section 6.2.3
+pub const E131_MAX_PRIORITY: u8 = 200;
 
 /// Value of the highest byte of the IPV4 multicast address as specified in section 9.3.1 of ANSI E1.31-2018.
 pub const E131_MULTICAST_IPV4_HIGHEST_BYTE: u8 = 239;

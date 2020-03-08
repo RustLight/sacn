@@ -66,4 +66,5 @@ https://crates.io/crates/cargo-edit
 https://crates.io/crates/error-chain
 https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html
 http://brson.github.io/2016/11/30/starting-with-error-chain
+https://github.com/rust-lang-nursery/error-chain/issues/112 (08/03/2020)
 
