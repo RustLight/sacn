@@ -3,19 +3,26 @@
 #![warn(missing_docs)]
 #![recursion_limit="1024"] // Recursion limit for error-chain.
 
+//! An example demo sACN source which utilises the sACN library.
+//! 
+//! Primarily used for testing the library including real-world conformance, compliance, integration and acceptance tests.
+//! 
+//! Usage instructions are described below.
+//! 
+
 #[macro_use]
 extern crate error_chain;
+
+/// Import the error-chain handling into the module.
 pub mod error;
+use error::errors::{*, ErrorKind::*};
 
 extern crate sacn;
 
 use sacn::source::SacnSource;
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 
-use error::errors::*;
-use error::errors::ErrorKind::*;
-
-use std::{time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
+use std::{time};
 use std::time::{Duration, Instant};
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -23,23 +30,15 @@ use std::env;
 use std::thread::sleep;
 use std::str::FromStr;
 
-/// The start code used in terminate packets.
+/// The start code used in termination packets.
 const TERMINATE_START_CODE: u8 = 0;
 
-// Approximately 30 updates per second
+/// The period between updates to the values send during the shape generation command.
+/// Default value is approximately 30 updates per second choosen fairly arbitarily to be less than the DMX refresh rate (44 fps).
 const SHAPE_DATA_SEND_PERIOD: Duration = Duration::from_millis(33);
 
-/// Usage ./main <interface_ip> <source_name>
-/// Reads data from stdin and sends it using the protocol.
-/// Data must be formatted as, a sync_universe of 0 means no synchronisation, this uses multicast: 
-/// d <universe> <sync_uni> <priority> <data_as_u8_space_seperated>
-/// To send data unicast use:
-/// u <universe> <sync_uni> <priority> <dst_addr> <data_as_u8_space_seperated>
-/// Register a sending universe as:
-/// r <universe>
-/// Terminate a universe using, if universe is 0 then will terminate entirely:
-/// q <universe>
-
+/// Describes the various commands / command-line arguments avaliable and what they do.
+/// Displayed to the user if they ask for help or enter an unrecognised input.
 const USAGE_STR: &'static str = "Usage ./main <interface_ip> <source_name>\n
     Reads data from stdin and sends it using the protocol. \n
     Data must be formatted as, a sync_universe of 0 means no synchronisation, this uses multicast: \n
