@@ -140,16 +140,30 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
     let rcv_thread = thread::spawn(move || {
         let addr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT);
 
+        // let mut dmx_recv = SacnReceiver::with_ip(addr).ok_or({|e| 
+        //         for e in e.iter() {
+        //            println!("{}", e);
+        //         }
+        //     }
+        //
+
+        println!("ADDR: {}", addr);
+
         let mut dmx_recv;
         
         match SacnReceiver::with_ip(addr) {
             Ok(sr) => {dmx_recv = sr},
             Err(e) => {
                 println!("Error creating SacnReceiver! Error: {}", e);
+                for e in e.iter() {
+                    println!("Error: {}", e);
+                }
                 assert!(false);
                 return;
             }
         }
+
+
 
         dmx_recv.listen_universes(&UNIVERSES).unwrap();
 
