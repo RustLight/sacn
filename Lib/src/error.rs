@@ -55,6 +55,7 @@ pub mod errors {
                 display("Attempted to use a sender which has already been terminated, msg: {}", msg)
             }
 
+            /// An error was encountered when attempting to merge DMX data together.
             DmxMergeError(msg: String) {
                 description("Error when merging DMX data"),
                 display("Error when merging DMX data, msg: {}", msg)

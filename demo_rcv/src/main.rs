@@ -1,14 +1,23 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 #![warn(missing_docs)]
+#![recursion_limit="1024"] // Recursion limit for error-chain.
+
+#[macro_use]
+extern crate error_chain;
+pub mod error;
 
 extern crate sacn;
+
 use sacn::recieve::{DMXData, SacnReceiver, DiscoveredSacnSource};
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
+
+use error::errors::*;
+use error::errors::ErrorKind::*;
+
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
 use std::io;
-use std::io::{Error, ErrorKind};
 use std::env;
 use std::thread::sleep;
 
@@ -75,7 +84,7 @@ fn main() {
 
 /// Handle a line of input on stdin to the program.
 /// Returns true if there is more input expected and false if not.
-fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
+fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
     let mut input = String::new();
     
     match io::stdin().read_line(&mut input) {
@@ -100,7 +109,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                 "r" => { // Receive data
                     if split_input.len() < 2 {
                         display_help();
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
 
                     // https://stackoverflow.com/questions/27043268/convert-a-string-to-int-in-rust (03/02/2020)
@@ -112,12 +121,14 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                         Some(Duration::from_secs(timeout_secs))
                     };
 
-                    print_recv(dmx_recv.recv(timeout));
+                    // https://docs.rs/error-chain/0.12.2/error_chain/ (08/03/2020)
+                    let res = dmx_recv.recv(timeout).map_err(|e| e.into());
+                    print_recv(res);
                 }
                 "a" => { // Receive data continously.
                     if split_input.len() < 3 {
                         display_help();
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 3 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 3 )"));
                     }
 
                      // https://stackoverflow.com/questions/27043268/convert-a-string-to-int-in-rust (03/02/2020)
@@ -132,7 +143,8 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                      };
 
                     for _ in 0 .. count {
-                        print_recv(dmx_recv.recv(timeout));
+                        let res = dmx_recv.recv(timeout).map_err(|e| e.into());
+                        print_recv(res);
                     }
                 }
                 "s" => { // Print discovered sources, note that no sources will be discovered unless you try and recv first.
@@ -147,7 +159,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                 "w" => {
                     if split_input.len() < 2 {
                         display_help();
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
                     let secs: u64 = split_input[1].parse().unwrap();
                     sleep(Duration::from_secs(secs));
@@ -156,7 +168,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                 "l" => { // Listen universe
                     if split_input.len() < 2 {
                         display_help();
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
                     let universe: u16 = split_input[1].parse().unwrap();
                     dmx_recv.listen_universes(&[universe])?;
@@ -164,24 +176,24 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool, Error> {
                 "t" => { // Stop listening to universe
                     if split_input.len() < 2 {
                         display_help();
-                        return Err(Error::new(ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
                     // TODO
-                    return Err(Error::new(ErrorKind::InvalidInput, "Not Impl"));
+                    bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Not Impl"));
                 }
                 x => {
-                    return Err(Error::new(ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
+                    bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
                 }
             }
             Ok(true)
         }
         Err(e) => {
-            return Err(e);
+            bail!(e);
         }
     }
 }
 
-fn print_recv(res: Result<Vec<DMXData>, Error>) {
+fn print_recv(res: Result<Vec<DMXData>>) {
     match res {
         Err(e) => {
             println!("Error Encountered: {:?}", e);

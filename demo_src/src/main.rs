@@ -2,14 +2,20 @@
 #![allow(unused_imports)]
 #![warn(missing_docs)]
 
-extern crate lazy_static;
+#![recursion_limit="1024"]
+#[macro_use]
+extern crate error_chain;
+
+use errors::*;
+use errors::ErrorKind::*;
+
 extern crate sacn;
 use sacn::SacnSource;
+use sacn::packet::ACN_SDT_MULTICAST_PORT;
+
 use std::{time}; // https://doc.rust-lang.org/std/thread/fn.sleep.html (20/09/2019)
 use std::time::{Duration, Instant};
 use std::io;
-use std::io::{Error, ErrorKind};
-use sacn::packet::ACN_SDT_MULTICAST_PORT;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::env;
 use std::thread::sleep;
@@ -90,7 +96,7 @@ fn display_help(){
 }
 
 /// Returns Ok(true) to continue or Ok(false) if no more input.
-fn handle_input(src: &mut SacnSource) -> Result <bool, Error>{
+fn handle_input(src: &mut SacnSource) -> Result <bool>{
     let mut input = String::new();
     
     match io::stdin().read_line(&mut input) {
