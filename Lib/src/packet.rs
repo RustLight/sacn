@@ -50,6 +50,9 @@
 //! # }}
 //! ```
 
+use error::errors::*;
+use error::errors::ErrorKind::*;
+
 use core::hash::{self, Hash};
 use core::str;
 #[cfg(feature = "std")]
@@ -66,8 +69,6 @@ use std::io::{Error, ErrorKind};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use std::time::Duration;
-
-use error::{PackError, ParseError};
 
 /// The maximum number of universes per page in a universe discovery packet.
 pub const DISCOVERY_UNI_PER_PAGE: usize = 512;
@@ -120,12 +121,9 @@ pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_T
 /// # Errors
 /// Returns an ErrorKind::InvalidInput error if the given universe is outwith the allowed range of universes which is
 /// [1 - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
-pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr, Error>{
+pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr>{
     if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            "Attempted to convert universe outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE to E131_MAX_MULTICAST_UNIVERSE] + E131_DISCOVERY_UNIVERSE",
-        ));
+        bail!(ErrorKind::IllegalUniverse( format!("Universe to convert: {} is out of allowed range", *u)));
     }
 
     let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
@@ -145,12 +143,9 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr, Erro
 /// # Errors
 /// Returns an ErrorKind::InvalidInput error if the given universe is outwith the allowed range of universes which is
 /// [1 - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
-pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr, Error>{
+pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr>{
     if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
-        return Err(Error::new(
-            ErrorKind::InvalidInput,
-            "Attempted to convert universe outwith allowed range of 1 to E131_MAX_MULTICAST_UNIVERSE + E131_DISCOVERY_UNIVERSE",
-        ));
+        bail!(ErrorKind::IllegalUniverse( format!("Universe to convert: {} is out of allowed range", *u)));
     }
 
     // As per ANSI E1.31-2018 Section 9.3.2 Table 9-12.
@@ -165,7 +160,7 @@ fn zeros(buf: &mut [u8], n: usize) {
 }
 
 #[inline]
-fn parse_c_str(buf: &[u8]) -> Result<&str, ParseError> {
+fn parse_c_str(buf: &[u8]) -> Result<&str> {
     let mut source_name_length = buf.len();
     for (i, b) in buf.iter().enumerate() {
         if *b == 0 {
@@ -190,17 +185,17 @@ macro_rules! impl_acn_root_layer_protocol {
             pub fn parse(buf: &[u8]) -> Result<AcnRootLayerProtocol, ParseError> {
                 // Preamble Size
                 if NetworkEndian::read_u16(&buf[0..2]) != 0x0010 {
-                    return Err(ParseError::InvalidData("invalid Preamble Size"));
+                    bail!(ErrorKind::InvalidData("invalid Preamble Size".to_string()));
                 }
 
                 // Post-amble Size
                 if NetworkEndian::read_u16(&buf[2..4]) != 0 {
-                    return Err(ParseError::InvalidData("invalid Post-amble Size"));
+                    bail!(ErrorKind::InvalidData("invalid Post-amble Size".to_string()));
                 }
 
                 // ACN Packet Identifier
                 if &buf[4..16] != b"ASC-E1.17\x00\x00\x00" {
-                    return Err(ParseError::InvalidData("invalid ACN packet indentifier"));
+                    bail!(ErrorKind::InvalidData("invalid ACN packet indentifier".to_string()));
                 }
 
                 // PDU block
@@ -211,7 +206,7 @@ macro_rules! impl_acn_root_layer_protocol {
 
             /// Packs the packet into heap allocated memory.
             #[cfg(feature = "std")]
-            pub fn pack_alloc(&self) -> Result<Vec<u8>, PackError> {
+            pub fn pack_alloc(&self) -> Result<Vec<u8>> {
                 let mut buf = Vec::with_capacity(self.len());
                 self.pack_vec(&mut buf)?;
                 Ok(buf)
@@ -221,7 +216,7 @@ macro_rules! impl_acn_root_layer_protocol {
             ///
             /// Grows the vector `buf` if necessary.
             #[cfg(feature = "std")]
-            pub fn pack_vec(&self, buf: &mut Vec<u8>) -> Result<(), PackError> {
+            pub fn pack_vec(&self, buf: &mut Vec<u8>) -> Result<()> {
                 buf.clear();
                 buf.reserve_exact(self.len());
                 unsafe {
@@ -231,9 +226,9 @@ macro_rules! impl_acn_root_layer_protocol {
             }
 
             /// Packs the packet into the givven buffer.
-            pub fn pack(&self, buf: &mut [u8]) -> Result<(), PackError> {
+            pub fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if buf.len() < self.len() {
-                    return Err(PackError::BufferNotLargeEnough);
+                    bail!(ErrorKind::PackBufferInsufficient("".to_string()))
                 }
 
                 // Preamble Size
@@ -275,9 +270,9 @@ struct PduInfo {
     vector: u32,
 }
 
-fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo, ParseError> {
+fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo> {
     if buf.len() < 2 {
-        return Err(ParseError::NotEnoughData);
+        bail!(ErrorKind::ParseInsufficientData("".to_string()));
     }
 
     // Flags

@@ -45,129 +45,61 @@ pub mod errors {
                 description("Error when merging DMX data"),
                 display("Error when merging DMX data, msg: {}", msg)
             }
+
+            /// When parsing packet invalid data encountered.
+            ParseInvalidData(msg: String) {
+                description("Data provided to parse into a packet is invalid"),
+                display("Error when parsing data into packet, msg: {}", msg)
+            }
+
+            /// When packing a packet into a buffer invalid data encountered.
+            PackInvalidData(msg: String) {
+                description("When packing a packet into a buffer invalid data encountered"),
+                display("When packing a packet into a buffer invalid data encountered, msg: {}", msg)
+            }
+
+            /// Supplied buffer is not large enough to pack packet into.
+            PackBufferInsufficient(msg: String) {
+                description("Supplied buffer is not large enough to pack packet into"),
+                display("Supplied buffer is not large enough to pack packet into, msg: {}", msg)
+            }
+
+            /// Supplied buffer does not contain enough data.
+            ParseInsufficientData(msg: String) {
+                description("Supplied buffer does not contain enough data"),
+                display("Supplied buffer does not contain enough data, msg: {}", msg)
+            }
+
+            /// Received PDU flags are invalid for parsing.
+            ParsePduInvalidFlags(flags: u8) {
+                description("Received PDU flags are invalid"),
+                display("PDU Flags {:#b} are invalid for parsing", flags)
+            }
+
+            /// Received PDU length is invalid.
+            PduInvalidLength(length: usize) {
+                description("Received PDU length is invalid"),
+                display("PDU Length {} is invalid", len)
+            }
+
+            /// Received PDU vector is invalid/unsupported by this library.
+            PduInvalidVector(vec: u32) {
+                description("Received PDU vector is invalid/unsupported by this library"),
+                display("Vector {:#x} not supported", vec)
+            }
+
+            /// Error parsing the received UUID.
+            UuidError() {
+                description("Error parsing the received UUID"),
+                display("Error parsing the received UUID")
+            }
+
+            /// Error parsing received UTF8 string.
+            Utf8Error() {
+                description("Error parsing received UTF8 string"),
+                display("Error parsing received UTF8 string")
+            }
+
         }
-    }
-}
-
-/// Errors for parsing of sACN network packets.
-#[derive(Debug)]
-pub enum ParseError {
-    /// Received PDU flags are invalid.
-    PduInvalidFlags(u8),
-
-    /// Received PDU length is invalid.
-    PduInvalidLength(usize),
-
-    /// Received PDU vector is invalid.
-    PduInvalidVector(u32),
-
-    /// Other invalid data received.
-    InvalidData(&'static str),
-
-    /// Buffer does not contain enough data.
-    NotEnoughData,
-
-    /// Error parsing the received UUID.
-    UuidError(uuid::ParseError),
-
-    /// Error parsing received UTF8 string.
-    Utf8Error(Utf8Error),
-}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ParseError::PduInvalidFlags(flags) => write!(f, "Flags {:#b} are invalid", flags),
-            ParseError::PduInvalidLength(len) => write!(f, "Length {} is invalid", len),
-            ParseError::PduInvalidVector(vec) => write!(f, "Vector {:#x} not supported", vec),
-            ParseError::InvalidData(msg) => write!(f, "Invalid data: {}", msg),
-            ParseError::NotEnoughData => write!(f, "Not enough data supplied"),
-            ParseError::UuidError(err) => write!(f, "UUID parsing error: {}", err),
-            ParseError::Utf8Error(err) => write!(f, "UTF8 error: {}", err),
-        }
-    }
-}
-
-#[cfg(feature = "std")]
-impl error::Error for ParseError {
-    fn description(&self) -> &str {
-        match *self {
-            ParseError::PduInvalidFlags(_) => "PDU invalid flags",
-            ParseError::PduInvalidLength(_) => "PDU invalid length",
-            ParseError::PduInvalidVector(_) => "PDU vector not supported",
-            ParseError::InvalidData(msg) => msg,
-            ParseError::NotEnoughData => "Not enough data supplied",
-            ParseError::UuidError(ref err) => err.description(),
-            ParseError::Utf8Error(ref err) => err.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        match *self {
-            ParseError::UuidError(ref err) => Some(err),
-            ParseError::Utf8Error(ref err) => Some(err),
-            _ => None,
-        }
-    }
-}
-
-impl From<uuid::ParseError> for ParseError {
-    fn from(err: uuid::ParseError) -> ParseError {
-        ParseError::UuidError(err)
-    }
-}
-
-impl From<Utf8Error> for ParseError {
-    fn from(err: Utf8Error) -> ParseError {
-        ParseError::Utf8Error(err)
-    }
-}
-
-/// Errors for packing of sACN network packets.
-#[derive(Debug)]
-pub enum PackError {
-    /// Packet contains invalid data.
-    InvalidData(&'static str),
-
-    /// Supplied buffer is not large enough.
-    BufferNotLargeEnough,
-}
-
-impl fmt::Display for PackError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            PackError::InvalidData(msg) => write!(f, "Invalid data: {}", msg),
-            PackError::BufferNotLargeEnough => write!(f, "Supplied buffer is not large enough"),
-        }
-    }
-}
-
-#[cfg(feature = "std")]
-impl error::Error for PackError {
-    fn description(&self) -> &str {
-        match *self {
-            PackError::InvalidData(msg) => msg,
-            PackError::BufferNotLargeEnough => "Supplied buffer is not large enough",
-        }
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        match *self {
-            _ => None,
-        }
-    }
-}
-
-impl From<ParseError> for PackError {
-    fn from(err: ParseError) -> PackError {
-        PackError::InvalidData(match err {
-            ParseError::PduInvalidFlags(_) => "PDU invalid flags",
-            ParseError::PduInvalidLength(_) => "PDU invalid length",
-            ParseError::PduInvalidVector(_) => "PDU vector not supported",
-            ParseError::InvalidData(msg) => msg,
-            ParseError::NotEnoughData => "Not enough data supplied",
-            ParseError::UuidError(_) => "Invalid UUID",
-            ParseError::Utf8Error(_) => "Invalid UTF-8",
-        })
     }
 }
