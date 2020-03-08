@@ -68,3 +68,5 @@ https://stevedonovan.github.io/rust-gentle-intro/6-error-handling.html
 http://brson.github.io/2016/11/30/starting-with-error-chain
 https://github.com/rust-lang-nursery/error-chain/issues/112 (08/03/2020)
 
+https://doc.rust-lang.org/edition-guide/rust-2018/ownership-and-lifetimes/default-match-bindings.html (08/03/2020)
+
