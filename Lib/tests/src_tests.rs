@@ -12,7 +12,7 @@ extern crate sacn;
 use sacn::error::errors::*;
 use sacn::error::errors::ErrorKind::*;
 
-use sacn::SacnSource;
+use sacn::source::SacnSource;
 use std::option;
 
 #[test]
