@@ -4,7 +4,7 @@ use std::io;
 use std::time::Duration;
 
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use std::thread::sleep;
 
@@ -15,16 +15,17 @@ fn main() {
 
     println!("Started");
 
-    let addr = SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568);
-    let addr2 = SocketAddr::new(Ipv4Addr::new(239,255,0,2).into(), 5568);
+    let addr = SocketAddr::new(Ipv6Addr::new(0xff18, 0, 0, 0, 0, 0, 0x8300, 1).into(), 5568);
+    // let addr = SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568);
+    // let addr2 = SocketAddr::new(Ipv4Addr::new(239,255,0,2).into(), 5568);
 
     let socket = new_socket(&addr).unwrap();
 
-    socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,1), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
+    socket.join_multicast_v6(&Ipv6Addr::new(0xff18, 0, 0, 0, 0, 0, 0x8300, 1), 0).unwrap();
 
-    socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,2), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
+    // socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,2), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
 
-    socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), 5568))).unwrap();
+    socket.bind(&SockAddr::from(SocketAddr::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).into(), 5568))).unwrap();
 
     socket.set_multicast_loop_v4(false).unwrap();
 
@@ -39,7 +40,7 @@ fn main() {
     
     loop {
         socket.send_to(message.as_bytes(), &SockAddr::from(addr)).unwrap();
-        socket.send_to(message2.as_bytes(), &SockAddr::from(addr2)).unwrap();
+        // socket.send_to(message2.as_bytes(), &SockAddr::from(addr2)).unwrap();
         sleep(Duration::from_secs(1));
 
         let mut buf = [0u8; 64];
