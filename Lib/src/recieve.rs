@@ -720,23 +720,42 @@ impl DiscoveredSacnSource {
     }
 }
 
-/// Creates a new Socket2 socket bound to the 
-pub fn create_socket(ip: SocketAddr) -> Result<Socket> {
-    if ip.is_ipv4() {
+/// Creates a new Socket2 socket bound to the given address.
+/// 
+/// Returns the created socket.
+/// 
+/// Arguments:
+/// addr: The address that the newly created socket should bind to.
+/// 
+/// # Errors
+/// Will return an error if the socket cannot be created, see (Socket::new)[fn.new.Socket].
+/// 
+/// Will return an error if the socket cannot be bound to the given address, see (bind)[fn.bind.Socket].
+pub fn create_socket(addr: SocketAddr) -> Result<Socket> {
+    if addr.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
-        socket.bind(&SockAddr::from(ip))?;
+        socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
     } else {
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
-        socket.bind(&SockAddr::from(ip))?;
+        socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
     }
 }
 
+/// Joins the multicast group with the given address using the given socket.
+/// 
+/// Arguments:
+/// socket: The socket to join to the multicast group.
+/// addr:   The address of the multicast group to join.
+/// 
+/// # Errors
+/// Will return an error if the given socket cannot be joined to the given multicast group address.
+///     See join_multicast_v4[fn.join_multicast_v4.Socket] and join_multicast_v6[fn.join_multicast_v6.Socket]
 fn join_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
     match addr.ip() {
         IpAddr::V4(ref mdns_v4) => {
-            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to join IPv4 multicast")?; // Needs to be set to the IP of the interface/network which the multicast packets are sent on (unless only 1 network)
+            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to join IPv4 multicast")?;
         }
         IpAddr::V6(ref mdns_v6) => {
             socket.join_multicast_v6(mdns_v6, 0).chain_err(|| "Failed to join IPv6 multicast")?;
