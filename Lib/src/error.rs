@@ -121,6 +121,12 @@ pub mod errors {
                 description("Error parsing received UTF8 string"),
                 display("Error parsing received UTF8 string, msg: {}", msg)
             }
+
+            /// Packet was received out of sequence and so should be discarded.
+            OutOfSequence(msg: String) {
+                description("Packet was received out of sequence and so should be discarded"),
+                display("Packet was received out of sequence and so should be discarded, msg: {}", msg)
+            }
         }
     }
 }

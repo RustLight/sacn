@@ -118,7 +118,7 @@ struct SacnSourceInternal {
     preview_data: bool,
 
     /// The sequence numbers used for packets, keeps a reference of the next sequence number to use for each universe.
-    /// Sequence numbers are always in the range [0, 255] inclusive.
+    /// Sequence numbers are always in the range [0, 255].
     sequences: RefCell<HashMap<u16, u8>>,
 
     /// A list of the universes registered to send by this source, used for universe discovery. 
