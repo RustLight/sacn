@@ -31,9 +31,9 @@ use sacn::error::errors::ErrorKind::*;
 /// For some tests to work multiple instances of the protocol must be on the same network with the same port for example to test multiple simultaneous receivers, this means multiple IP's are needed.
 /// This is achieved by assigning multiple static IP's to the test machine and theses IP's are specified below.
 /// Theses must be changed depending on the network that the test machine is on.
-// const TEST_NETWORK_INTERFACE_IPV4: [&'static str; 3] = ["192.168.1.9", "192.168.1.10", "192.168.1.8"];
-const TEST_NETWORK_INTERFACE_IPV4: [&'static str; 3] = ["138.251.29.246", "138.251.29.246", "138.251.29.246"];
-const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 1] = ["0::0:0:0:0"];
+const TEST_NETWORK_INTERFACE_IPV4: [&'static str; 3] = ["192.168.1.10", "192.168.1.9", "192.168.1.8"];
+// const TEST_NETWORK_INTERFACE_IPV4: [&'static str; 3] = ["138.251.29.246", "138.251.29.246", "138.251.29.246"];
+const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 1] = ["fe80::2077:cb6:7b9b:a144"];
 
 /// 
 #[test]
