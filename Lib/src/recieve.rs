@@ -246,12 +246,15 @@ impl SacnReceiver {
             return Ok(None);
         }
 
-        check_seq_number(&self.data_sequences, data_pkt.sequence_number, data_pkt.universe)?;
-
         if data_pkt.stream_terminated {
             self.terminate_stream(data_pkt.source_name, data_pkt.universe);
             bail!(ErrorKind::UniverseTerminated("A source terminated a universe and this was detected when trying to receive data".to_string()));
         }
+
+        // Preview data and stream terminated both get precedence over checking the sequence number.
+        // This is as per ANSI E1.31-2018 Section 6.2.6, Stream_Terminated: Bit 6, 'Any property values 
+        // in an E1.31 Data Packet containing this bit shall be ignored'
+        check_seq_number(&self.data_sequences, data_pkt.sequence_number, data_pkt.universe)?;
 
         if data_pkt.synchronization_address == E131_NO_SYNC_ADDR {
             self.clear_waiting_data();
@@ -798,7 +801,7 @@ fn join_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
 fn check_seq_number(sequences: &RefCell<HashMap<u16, u8>>, sequence_number: u8, universe: u16) -> Result<()>{
     let expected_seq = match sequences.borrow().get(&universe) {
         Some(s) => *s,
-        None => 0,
+        None => STARTING_SEQUENCE_NUMBER - 1,
     };
 
     let seq_diff: isize = (sequence_number as isize) - (expected_seq as isize);
