@@ -114,9 +114,13 @@ struct SacnSourceInternal {
     /// upon.
     preview_data: bool,
 
-    /// The sequence numbers used for packets, keeps a reference of the next sequence number to use for each universe.
+    /// The sequence numbers used for data packets, keeps a reference of the next sequence number to use for each universe.
     /// Sequence numbers are always in the range [0, 255].
-    sequences: RefCell<HashMap<u16, u8>>,
+    data_sequences: RefCell<HashMap<u16, u8>>,
+
+    /// The sequence numbers used for sync packets, keeps a reference of the next sequence number to use for each universe.
+    /// Sequence numbers are always in the range [0, 255].
+    sync_sequences: RefCell<HashMap<u16, u8>>,
 
     /// A list of the universes registered to send by this source, used for universe discovery. 
     /// Always sorted with lowest universe first to allow quicker usage.
@@ -366,7 +370,8 @@ impl SacnSourceInternal {
             cid: cid,
             name: name.to_string(),
             preview_data: false,
-            sequences: RefCell::new(HashMap::new()),
+            data_sequences: RefCell::new(HashMap::new()),
+            sync_sequences: RefCell::new(HashMap::new()),
             universes: Vec::new(),
             running: true,
             last_discovery_advert_timestamp: Instant::now(),
@@ -536,9 +541,9 @@ impl SacnSourceInternal {
             bail!(ErrorKind::ExceedUniverseCapacity(format!("Data provided must fit in a single universe, data len: {}", data.len())));
         }
 
-        let mut sequence = match self.sequences.borrow().get(&universe) {
+        let mut sequence = match self.data_sequences.borrow().get(&universe) {
             Some(s) => *s,
-            None => 0,
+            None => STARTING_SEQUENCE_NUMBER,
         };
 
         let packet = AcnRootLayerProtocol {
@@ -583,7 +588,7 @@ impl SacnSourceInternal {
         } else {
             sequence += 1;
         }
-        self.sequences.borrow_mut().insert(universe, sequence);
+        self.data_sequences.borrow_mut().insert(universe, sequence);
         Ok(())
     }
 
@@ -622,9 +627,9 @@ impl SacnSourceInternal {
             ip = dst_ip.unwrap();
         }
 
-        let mut sequence = match self.sequences.borrow().get(&universe) {
+        let mut sequence = match self.sync_sequences.borrow().get(&universe) {
             Some(s) => *s,
-            None => 0,
+            None => STARTING_SEQUENCE_NUMBER,
         };
 
         let packet = AcnRootLayerProtocol {
@@ -643,7 +648,7 @@ impl SacnSourceInternal {
         } else {
             sequence += 1;
         }
-        self.sequences.borrow_mut().insert(universe, sequence);
+        self.sync_sequences.borrow_mut().insert(universe, sequence);
         Ok(())
     }
 
@@ -681,9 +686,9 @@ impl SacnSourceInternal {
             }
         };
 
-        let mut sequence = match self.sequences.borrow_mut().remove(&universe) {
+        let mut sequence = match self.data_sequences.borrow_mut().remove(&universe) {
             Some(s) => s,
-            None => 0,
+            None => STARTING_SEQUENCE_NUMBER,
         };
 
         let packet = AcnRootLayerProtocol {
@@ -714,7 +719,7 @@ impl SacnSourceInternal {
             sequence += 1;
         }
 
-        self.sequences.borrow_mut().insert(universe, sequence);
+        self.data_sequences.borrow_mut().insert(universe, sequence);
         Ok(())
     }
 

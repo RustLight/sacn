@@ -118,6 +118,9 @@ pub const E131_SEQ_DIFF_DISCARD_LOWER_BOUND: isize = -20;
 /// Value as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
 pub const E131_SEQ_DIFF_DISCARD_UPPER_BOUND: isize = 0;
 
+/// The initial/starting sequence number used.
+pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
+
 /// The vector field value used to identify the ACN packet as an ANSI E1.31 data packet.
 /// This is used at the ACN packet layer not the E1.31 layer.
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
