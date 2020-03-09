@@ -801,7 +801,7 @@ fn join_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
 fn check_seq_number(sequences: &RefCell<HashMap<u16, u8>>, sequence_number: u8, universe: u16) -> Result<()>{
     let expected_seq = match sequences.borrow().get(&universe) {
         Some(s) => *s,
-        None => STARTING_SEQUENCE_NUMBER - 1,
+        None => 255, // Should be set to the value before the initial sequence number. Can't do this using underflow as forbidden in rust.
     };
 
     let seq_diff: isize = (sequence_number as isize) - (expected_seq as isize);
