@@ -7,7 +7,7 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 //
-// Partially created as part of a University of St Andrews Computer Science Senior Honours Dissertation.
+// This file was modified as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
 
 // Report note:

@@ -7,7 +7,7 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 //
-// Created as part of a University of St Andrews Computer Science Senior Honours Dissertation.
+// This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
 // Report point: There is no guarantees made by the protocol that different sources will have different names.
     // As names are used to match universe discovery packets this means that if 2 sources have the same name it won't

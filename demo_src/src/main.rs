@@ -3,6 +3,15 @@
 #![warn(missing_docs)]
 #![recursion_limit="1024"] // Recursion limit for error-chain.
 
+// Copyright 2020 sacn Developers
+//
+// Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
+// http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
+// http://opensource.org/licenses/MIT>, at your option. This file may not be
+// copied, modified, or distributed except according to those terms.
+//
+// This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
+
 //! An example demo sACN source which utilises the sACN library.
 //! 
 //! Primarily used for testing the library including real-world conformance, compliance, integration and acceptance tests.
