@@ -127,6 +127,12 @@ pub mod errors {
                 description("Packet was received out of sequence and so should be discarded"),
                 display("Packet was received out of sequence and so should be discarded, msg: {}", msg)
             }
+
+            /// A source terminated a universe and this was detected when trying to receive data.
+            UniverseTerminated(msg: String) {
+                description("A source terminated a universe and this was detected when trying to receive data"),
+                display("A source terminated a universe and this was detected when trying to receive data, msg: {}", msg)
+            }
         }
     }
 }
