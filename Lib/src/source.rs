@@ -1009,7 +1009,7 @@ mod test {
         let cid = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-        let source = SacnSourceInternal::with_cid_ip(&"Source", Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
+        let mut source = SacnSourceInternal::with_cid_ip(&"Source", Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
 
         source.set_multicast_loop(true).unwrap();
 
@@ -1021,6 +1021,8 @@ mod test {
         let mut recv_buf = [0; 1024];
 
         let start_code: u8 = 0;
+
+        source.register_universes(&[1]);
 
         source.terminate_stream(1, start_code).unwrap();
         for _ in 0..2 {

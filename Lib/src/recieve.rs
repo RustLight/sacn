@@ -885,7 +885,7 @@ fn test_handle_single_page_discovery_packet() {
         },
     };
     
-    let res: Option<Vec<DMXData>> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt).unwrap();
+    let res: Option<Vec<DMXData>> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt);
 
     assert!(res.is_none());
 
@@ -914,9 +914,9 @@ fn test_store_retrieve_waiting_data(){
         sync_uni: sync_uni 
     };
 
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data);
 
-    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
+    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
@@ -946,10 +946,10 @@ fn test_store_2_retrieve_1_waiting_data(){
         sync_uni: sync_uni + 1 
     };
 
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
-    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data);
+    dmx_rcv.store_waiting_data(dmx_data2);
 
-    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
+    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
@@ -981,17 +981,17 @@ fn test_store_2_retrieve_2_waiting_data(){
         sync_uni: sync_uni + 1 
     };
 
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
-    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data);
+    dmx_rcv.store_waiting_data(dmx_data2);
 
-    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni).unwrap();
+    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
 
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].universe, universe);
     assert_eq!(res[0].sync_uni, sync_uni);
     assert_eq!(res[0].values, vals);
 
-    let res2: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni + 1).unwrap();
+    let res2: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni + 1);
 
     assert_eq!(res2.len(), 1);
     assert_eq!(res2[0].universe, universe + 1);
