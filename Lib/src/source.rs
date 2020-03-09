@@ -232,6 +232,9 @@ impl SacnSource {
         self.internal.lock().unwrap().register_universe(universe);
     }
 
+    ///
+    /// 
+    /// See [send](fn.send.SacnSourceInternal) for more details
     pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
         self.internal.lock().unwrap().send(universes, data, priority, dst_ip, syncronisation_addr)
     }
@@ -378,6 +381,12 @@ impl SacnSourceInternal {
         }
     }
 
+    /// Checks if the given universe is a valid universe to send on (within allowed range) and that it is registered with this SacnSourceInternal.
+    /// 
+    /// # Errors
+    /// Returns an IllegalUniverse error if the universe is outwith the allowed range of data universes [E131_MIN_MULTICAST_UNIVERSE - E131_MAX_MULTICAST_UNIVERSE].
+    /// 
+    /// Returns an UniverseNotRegistered error if the universe is not registered on the given SacnSourceInternal.
     fn universe_allowed(&self, u: &u16) -> Result<()>{
         if *u < E131_MIN_MULTICAST_UNIVERSE || *u > E131_MAX_MULTICAST_UNIVERSE {
             bail!(ErrorKind::IllegalUniverse(format!("Universes must be in the range [{} - {}]", E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE).to_string()));
@@ -390,17 +399,34 @@ impl SacnSourceInternal {
         Ok(())
     }
 
-    /// Sends DMX data that spans multiple universes using universe synchronization.
-    /// Will fail if the universes haven't been previously registered with this SacnSource.
-    /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate
-    /// than specified in ANSI E1.11 [DMX] unless configured by the user to do so in an environment 
-    /// which doesn't contain any E1.31 to DMX512-A converters.
-    /// If dst_ip is None then multicast is used otherwise unicast is used to the given ip. Broadcast is achieved by giving the broadcast IP.
-    /// If priority is None then the default priority is used (100).
-    /// If syncronisation_addr is Some() then the data will be sent with the given synchronisation address meaning it won't be acted on by receivers until a corresponding
-    ///     synchronisation packet is sent using send_sync_packet(). If it is None then the data won't be synchronised and so will be acted upon by recievers immediately. This means
-    ///     if sending more than 1 universe of data it may be acted upon at different times for each universe. A reasonable default for this is to use the first of the universes if 
-    ///     synchronisation is required. Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the sync packet.
+    /// Sends the given data to the given universes with the given priority, syncronisation address (universe) and destination ip.
+    /// 
+    /// Arguments
+    /// universe:     The sACN universes that the data should be set on, the data will be split over these universes with each UNIVERSE_CHANNEL_CAPACITY
+    ///                 sized chunk sent to the next universe.
+    /// data:         The data that should be sent, must have a length greater than 0.
+    /// priority:     The E131 priority that the data should be sent with, must be less than E131_MAX_PRIORITY (const.E131_MAX_PRIORITY.packet), 
+    ///                 if a value of None is provided then the default of E131_DEFAULT_PRIORITY (const.E131_DEFAULT_PRIORITY.packet) is used.
+    /// dst_ip:       The destination IP, can be Ipv4 or Ipv6, None if should be sent using ip multicast.
+    /// sync_address: The address to use for synchronisation, must be a valid universe, None indicates no synchronisation. If synchronisation is required a
+    ///                 reasonable default address to use is the first universe that this data is being sent to.
+    /// 
+    /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate than specified in ANSI E1.11 [DMX] unless 
+    ///     configured by the user to do so in an environment which doesn't contain any E1.31 to DMX512-A converters.
+    /// 
+    /// Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the followup sync packet.
+    /// 
+    /// # Errors
+    /// Will return a SenderAlreadyTerminated error if this method is called on an SacnReceiverInternal that has already terminated.
+    /// 
+    /// Will return an InvalidInput error if the data array has length 0 or if an insufficient number of universes for the given data are provided. The sufficient number
+    /// of universes = ceiling(data.len() / UNIVERSE_CHANNEL_CAPACITY). 
+    /// 
+    /// Will return an error if any of the universes including the synchronisation universe are outwith the allowed range, see (universe_allowed)[fn.universe_allowed.source] or 
+    ///     if a universe is not already registered with this source.
+    /// 
+    /// Will return an error if the data fails to send, see (send_universe)[fn.send_universe.source]
+    /// 
     fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
         if self.running == false { // Indicates that this sender has been terminated.
             bail!(ErrorKind::SenderAlreadyTerminated("Attempted to send".to_string())); 
@@ -410,12 +436,15 @@ impl SacnSourceInternal {
            bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
         }
 
+        // Check all the given universes are valid before doing any action.
+        // This prevents leaving the source in an inconsistent state if later a universe is found to be invalid.
         for u in universes {
-            self.universe_allowed(u)?;
+            self.universe_allowed(u).chain_err("Data universe {} not allowed", u)?;
         }
 
+        // Check that the synchronisation universe is also valid.
         if syncronisation_addr.is_some() {
-            self.universe_allowed(&syncronisation_addr.unwrap())?;
+            self.universe_allowed(&syncronisation_addr.unwrap()).chain_err("Synchronisation universe not allowed")?;
         }
 
         // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
@@ -430,15 +459,40 @@ impl SacnSourceInternal {
             // Safety check to make sure that the end index doesn't exceed the data length
             let end_index = cmp::min((i + 1) * UNIVERSE_CHANNEL_CAPACITY, data.len());
 
-            self.send_universe(universes[i], &data[start_index .. end_index], priority.unwrap_or(E131_DEFAULT_PRIORITY), syncronisation_addr.unwrap_or(NO_SYNC_UNIVERSE), &dst_ip)?;
+            self.send_universe(universes[i], &data[start_index .. end_index], 
+                priority.unwrap_or(E131_DEFAULT_PRIORITY), &dst_ip, syncronisation_addr.unwrap_or(NO_SYNC_UNIVERSE))
+                .chain_err("Failed to send universe of data")?;
         }
 
         Ok(())
     }
 
-    fn send_universe(&self, universe: u16, data: &[u8], priority: u8, sync_address: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
+    /// Sends the given data to the given universe with the given priority, syncronisation address (universe) and destination ip.
+    /// 
+    /// Arguments
+    /// universe:     The sACN universe that the data should be set on.
+    /// data:         The data that should be sent, must be less than or equal in length to UNIVERSE_CHANNEL_CAPACITY(const.UNIVERSE_CHANNEL_CAPACITY.packet).
+    /// priority:     The E131 priority that the data should be sent with, must be less than E131_MAX_PRIORITY (const.E131_MAX_PRIORITY.packet), default E131_DEFAULT_PRIORITY.
+    /// dst_ip:       The destination IP, can be Ipv4 or Ipv6, None if should be sent using ip multicast.
+    /// sync_address: The address to use for synchronisation, must be a valid universe, 0 indicates no synchronisation.
+    /// 
+    /// # Errors
+    /// Will return an InvalidInput error if the priority is greater than the allowed maximum priority of E131_MAX_PRIORITY.
+    /// 
+    /// Will return an ExceedUniverseCapacity error if the data has a length greater than the maximum allowed within a universe (packet::UNIVERSE_CHANNEL_CAPACITY).
+    /// 
+    /// Will return an error if sending using multicast and the universe cannot be converted to a multicast address, 
+    /// see universe_to_ipv4_multicast_addr(fn.universe_to_ipv4_multicast_addr.packet) and universe_to_ipv6_multicast_addr(fn.universe_to_ipv6_multicast_addr.packet).
+    /// 
+    /// Will return an error if the data fails to be sent on the socket. See send_to(fn.send_to.Socket).
+    /// 
+    fn send_universe(&self, universe: u16, data: &[u8], priority: u8, dst_ip: &Option<SocketAddr>, sync_address: u16) -> Result<()> {
         if priority > E131_MAX_PRIORITY {
             bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Priority must be within allowed range of [0-E131_MAX_PRIORITY], priority provided: {}", priority)));
+        }
+
+        if (data.len() > UNIVERSE_CHANNEL_CAPACITY) {
+            bail!(ErrorKind::ExceedUniverseCapacity("Data provided must fit in a single universe, data len: {}", data.len()));
         }
 
         let mut sequence = match self.sequences.borrow().get(&universe) {
@@ -470,17 +524,17 @@ impl SacnSourceInternal {
         };
 
         if dst_ip.is_some() {
-            self.socket.send_to(&packet.pack_alloc().unwrap(), dst_ip.unwrap())?;
+            self.socket.send_to(&packet.pack_alloc().unwrap(), dst_ip.unwrap()).chain_err("Failed to send data unicast on socket")?;
         } else {
             let dst;
 
             if self.addr.is_ipv6(){
-                dst = universe_to_ipv6_multicast_addr(universe)?;
+                dst = universe_to_ipv6_multicast_addr(universe).chain_err("Failed to convert universe to Ipv6 multicast address")?;
             } else {
-                dst = universe_to_ipv4_multicast_addr(universe)?;
+                dst = universe_to_ipv4_multicast_addr(universe).chain_err("Failed to convert universe to Ipv4 multicast address")?;
             }
 
-            self.socket.send_to(&packet.pack_alloc().unwrap(), dst)?;
+            self.socket.send_to(&packet.pack_alloc().unwrap(), dst).chain_err("Failed to send data multicast on socket")?;
         }
 
         if sequence == 255 {
