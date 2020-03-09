@@ -16,7 +16,7 @@ https://users.rust-lang.org/t/returning-an-empty-array-from-a-function/26217
 https://stackoverflow.com/questions/26469715/how-do-i-write-a-rust-unit-test-that-ensures-that-a-panic-has-occurred
 
 https://www.reddit.com/r/rust/comments/314zts/storing_functions/ (29/12/2019)
-
+// https://doc.rust-lang.org/1.22.1/book/second-edition/ch20-06-graceful-shutdown-and-cleanup.html (12/01/2020)
 
 ANSI Documents downloaded from
 https://tsp.esta.org/tsp/documents/published_docs.php (22/09/2019)
