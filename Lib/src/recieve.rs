@@ -245,9 +245,6 @@ impl SacnReceiver {
         }
     }
 
-/// TODO
-/// Sequence numbering, error on stream termination.
-/// Documentation for handle_data_packet.
     /// Handles the given data packet for this DMX reciever.
     /// 
     /// Returns the universe data if successful.
@@ -262,6 +259,9 @@ impl SacnReceiver {
     /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between 
     /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     /// 
+    /// Returns a UniversesTerminated error if a packet is received with the stream_terminated flag set indicating that the source is no longer
+    /// sending on that universe.
+    /// 
     fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
         if data_pkt.preview_data && !self.process_preview_data {
             // Don't process preview data unless receiver has process_preview_data flag set.
@@ -272,7 +272,7 @@ impl SacnReceiver {
 
         if data_pkt.stream_terminated {
             self.terminate_stream(data_pkt.source_name, data_pkt.universe);
-            return Ok(None); // TODO, do we want to return an error here to indicate a stream was terminated?
+            bail!(ErrorKind::UniverseTerminated("A source terminated a universe and this was detected when trying to receive data".to_string()));
         }
 
         if data_pkt.synchronization_address == NO_SYNC_ADDR {
