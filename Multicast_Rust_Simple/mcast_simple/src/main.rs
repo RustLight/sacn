@@ -18,7 +18,8 @@ fn main() {
     // let addr = SocketAddr::new(Ipv6Addr::new(0xff18, 0, 0, 0, 0, 0, 0x8300, 1).into(), 5568);
     let addr = SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568);
     let addr2 = SocketAddr::new(Ipv4Addr::new(239,255,0,2).into(), 5568);
-    let interface_addr = SocketAddr::new(Ipv4Addr::new(192, 168, 1, 11).into(), 5568);
+    let interface_addr = SocketAddr::new(Ipv4Addr::new(192, 168, 1, 8).into(), 5568);
+    let unix_interface_addr = SocketAddr::new(Ipv4Addr::new(0, 0 , 0, 0).into(), 5568);
 
     ///https://stackoverflow.com/questions/43292357/detect-platform-in-rust
     let socket;
@@ -26,7 +27,7 @@ fn main() {
     if cfg!(windows) {
         socket = new_win_socket(&interface_addr).unwrap();
     } else { // if cfg!(unix)
-        socket = new_unix_socket(&addr).unwrap();
+        socket = new_unix_socket(&unix_interface_addr, &addr2).unwrap();
     }
 
 
@@ -34,14 +35,14 @@ fn main() {
 
     // // socket.join_multicast_v6(&Ipv6Addr::new(0xff18, 0, 0, 0, 0, 0, 0x8300, 1), 0).unwrap();
 
-    // socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,1), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
+    socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,1), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
 
-    // socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,2), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
+    socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,2), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
 
     
-    // // socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568))).unwrap();
+    // socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568))).unwrap();
 
-    // socket.set_multicast_loop_v4(false).unwrap();
+    socket.set_multicast_loop_v4(false).unwrap();
 
     // https://stackoverflow.com/questions/31289588/converting-a-str-to-a-u8 (05/02/2020)
     let message = &cmd_args[1];
@@ -54,7 +55,7 @@ fn main() {
     
     loop {
         socket.send_to(message.as_bytes(), &SockAddr::from(addr)).unwrap();
-        // socket.send_to(message2.as_bytes(), &SockAddr::from(addr2)).unwrap();
+        socket.send_to(message2.as_bytes(), &SockAddr::from(addr2)).unwrap();
         sleep(Duration::from_secs(1));
 
         let mut buf = [0u8; 64];
@@ -105,9 +106,11 @@ fn new_win_socket(addr: &SocketAddr) -> io::Result<Socket> {
     Ok(socket)
 }
 
-/// multicast_addr: The multicast address to bind to.
-fn new_unix_socket(multicast_addr: &SocketAddr) -> io::Result<Socket> {
-    let domain = if multicast_addr.is_ipv4() {
+/// addr: The multicast address to bind to.
+fn new_unix_socket(addr: &SocketAddr, addr2: &SocketAddr) -> io::Result<Socket> {
+
+// fn new_unix_socket(addr: &SocketAddr) -> io::Result<Socket> {  
+    let domain = if addr.is_ipv4() {
         Domain::ipv4()
     } else {
         Domain::ipv6()
@@ -115,7 +118,8 @@ fn new_unix_socket(multicast_addr: &SocketAddr) -> io::Result<Socket> {
 
     let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
 
-    socket.bind(&SockAddr::from(*multicast_addr)).unwrap();
+    socket.bind(&SockAddr::from(*addr)).unwrap();
+    // socket.bind(&SockAddr::from(*addr2)).unwrap();
 
     // we're going to use read timeouts so that we don't hang waiting for packets
     socket.set_read_timeout(Some(Duration::from_millis(1000)))?;
