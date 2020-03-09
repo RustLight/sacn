@@ -62,7 +62,8 @@ use core::str;
 use std::borrow::Cow;
 use std::vec::Vec;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
-use std::time::Duration;
+use std::{time, time::Duration};
+
 
 /// The byteorder crate is used for marshalling data on/off the network in Network Byte Order.
 use byteorder::{ByteOrder, NetworkEndian};
@@ -94,42 +95,65 @@ pub const E131_MAX_MULTICAST_UNIVERSE: u16 = 63999;
 /// The lowest / minimum universe number that can be used with the E1.31 protocol as specified in section 9.1.1 of ANSI E1.31-2018.
 pub const E131_MIN_MULTICAST_UNIVERSE: u16 = 1;
 
+/// The synchronisation address used to indicate that there is no synchronisation required for the data packet.
+/// As defined in ANSI E1.31-2018 Section 6.2.4.1
+pub const E131_NO_SYNC_ADDR: u16 = 0;
+
+/// The interval between universe discovery packets (adverts) as defined by ANSI E1.31-2018 Appendix A.
+pub const E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from_secs(10);
+
+/// The exclusive lower bound on the different between the received and expected sequence numbers within which a 
+/// packet will be discarded. Outside of the range specified by (E131_SEQ_DIFF_DISCARD_LOWER_BOUND, E131_SEQ_DIFF_DISCARD_UPPER_BOUND]
+/// the packet won't be discarded.
+/// 
+/// Having a range allows receivers to catch up if packets are lost.
+/// Value as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+pub const E131_SEQ_DIFF_DISCARD_LOWER_BOUND: isize = -20;
+
+/// The inclusive upper bound on the different between the received and expected sequence numbers within which a 
+/// packet will be discarded. Outside of the range specified by (E131_SEQ_DIFF_DISCARD_LOWER_BOUND, E131_SEQ_DIFF_DISCARD_UPPER_BOUND]
+/// the packet won't be discarded.
+/// 
+/// Having a range allows receivers to catch up if packets are lost.
+/// Value as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+pub const E131_SEQ_DIFF_DISCARD_UPPER_BOUND: isize = 0;
+
 /// The vector field value used to identify the ACN packet as an ANSI E1.31 data packet.
 /// This is used at the ACN packet layer not the E1.31 layer.
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
-const VECTOR_ROOT_E131_DATA: u32 = 0x0000_0004;
+pub const VECTOR_ROOT_E131_DATA: u32 = 0x0000_0004;
 
 /// The vector field value used to identify the packet as an ANSI E1.31 universe discovery or synchronisation packet.
 /// This is used at the ACN packet layer not the E1.31 layer.
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
-const VECTOR_ROOT_E131_EXTENDED: u32 = 0x0000_0008;
+pub const VECTOR_ROOT_E131_EXTENDED: u32 = 0x0000_0008;
 
 /// The E1.31 packet vector field value used to identify the E1.31 packet as a synchronisation packet.
 /// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. VECTOR_ROOT_E131_DATA and VECTOR_ROOT_E131_EXTENDED).
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
-const VECTOR_E131_EXTENDED_SYNCHRONIZATION: u32 = 0x0000_0001;
+pub const VECTOR_E131_EXTENDED_SYNCHRONIZATION: u32 = 0x0000_0001;
 
 /// The E1.31 packet vector field value used to identify the E1.31 packet as a universe discovery packet.
 /// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. VECTOR_ROOT_E131_DATA and VECTOR_ROOT_E131_EXTENDED).
 /// This VECTOR value is shared by E1.31 data packets, distinguished by the value of the ACN ROOT_VECTOR.
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
-const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x0000_0002;
+pub const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x0000_0002;
 
 /// The E1.31 packet vector field value used to identify the E1.31 packet as a data packet.
 /// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. VECTOR_ROOT_E131_DATA and VECTOR_ROOT_E131_EXTENDED).
 /// This VECTOR value is shared by E1.31 universe discovery packets, distinguished by the value of the ACN ROOT_VECTOR.
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
-const VECTOR_E131_DATA_PACKET: u32 = 0x0000_0002;
+pub const VECTOR_E131_DATA_PACKET: u32 = 0x0000_0002;
 
 /// Used at the DMP layer in E1.31 data packets to identify the packet as a set property message.
 /// Not to be confused with the other VECTOR values used at the E1.31, ACN etc. layers.
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
-const VECTOR_DMP_SET_PROPERTY: u8 = 0x02;
+pub const VECTOR_DMP_SET_PROPERTY: u8 = 0x02;
 
 /// Used at the universe discovery packet universe discovery layer to identify the packet as a universe discovery list of universes.
 /// Not to be confused with the other VECTOR values used at the E1.31, ACN, DMP, etc. layers.
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
-const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x0000_0001;
+pub const VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST: u32 = 0x0000_0001;
 
 /// The port number used for the ACN family of protocols and therefore the sACN protocol.
 /// As defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative)
@@ -155,12 +179,10 @@ pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_T
 /// Returns the multicast address.
 /// 
 /// # Errors
-/// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes which is
-/// [E131_MIN_MULTICAST_UNIVERSE - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
+/// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
+/// see (is_universe_in_range)[fn.is_universe_in_range.packet].
 pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr>{
-    if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
-        bail!(ErrorKind::IllegalUniverse( format!("Universe to convert: {} is out of allowed range", universe)));
-    }
+    is_universe_in_range(universe)?;
 
     let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
     let low_byte: u8 = (universe & 0xff) as u8;
@@ -177,15 +199,30 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr>{
 /// Returns the multicast address.
 /// 
 /// # Errors
-/// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes which is
-/// [E131_MIN_MULTICAST_UNIVERSE - E131_MAX_MULTICAST_UNIVERSE] inclusive excluding the discovery universe, E131_DISCOVERY_UNIVERSE.
+/// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
+/// see (is_universe_in_range)[fn.is_universe_in_range.packet].
 pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr>{
-    if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
-        bail!(ErrorKind::IllegalUniverse( format!("Universe to convert: {} is out of allowed range", universe)));
-    }
+    is_universe_in_range(universe)?;
 
     // As per ANSI E1.31-2018 Section 9.3.2 Table 9-12.
     Ok(SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, universe)), ACN_SDT_MULTICAST_PORT))
+}
+
+/// Checks if the given universe is a valid universe to send on (within allowed range).
+///
+/// # Errors
+/// Returns an IllegalUniverse error if the universe is outwith the allowed range of universes 
+///     [E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE] + E131_DISCOVERY_UNIVERSE. 
+/// 
+pub fn is_universe_in_range(universe: u16) -> Result<()> {
+    if (universe != E131_DISCOVERY_UNIVERSE) && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE) {
+        bail!(ErrorKind::IllegalUniverse(
+            format!("Universe must be in the range [{} - {}], universe: {}", 
+            E131_MIN_MULTICAST_UNIVERSE, 
+            E131_MAX_MULTICAST_UNIVERSE, 
+            universe).to_string()));
+    }
+    Ok(())
 }
 
 /// Fills the given array of bytes with the given length n with bytes of value 0.

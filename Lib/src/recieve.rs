@@ -39,10 +39,6 @@ use std::fmt;
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
 pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
 
-/// The synchronisation address used to indicate that there is no synchronisation required for the data packet.
-/// As defined in ANSI E1.31-2018 Section 6.2.4.1
-pub const NO_SYNC_ADDR: u16 = 0;
-
 /// DMX payload size in bytes (512 bytes of data + 1 byte start code).
 pub const DMX_PAYLOAD_SIZE: usize = 513;
 
@@ -63,22 +59,6 @@ const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 
 /// The default value for the reading timeout for a SacnNetworkReceiver.
 pub const DEFAULT_RECV_TIMEOUT: Option<Duration> = Some(time::Duration::from_millis(500));
-
-/// The exclusive lower bound on the different between the received and expected sequence numbers within which a 
-/// packet will be discarded. Outside of the range specified by (E131_SEQ_DIFF_DISCARD_LOWER_BOUND, E131_SEQ_DIFF_DISCARD_UPPER_BOUND]
-/// the packet won't be discarded.
-/// 
-/// Having a range allows receivers to catch up if packets are lost.
-/// Value as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
-const E131_SEQ_DIFF_DISCARD_LOWER_BOUND: isize = -20;
-
-/// The inclusive upper bound on the different between the received and expected sequence numbers within which a 
-/// packet will be discarded. Outside of the range specified by (E131_SEQ_DIFF_DISCARD_LOWER_BOUND, E131_SEQ_DIFF_DISCARD_UPPER_BOUND]
-/// the packet won't be discarded.
-/// 
-/// Having a range allows receivers to catch up if packets are lost.
-/// Value as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
-const E131_SEQ_DIFF_DISCARD_UPPER_BOUND: isize = 0;
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
@@ -192,16 +172,14 @@ impl SacnReceiver {
     /// If 1 or more universes in the list are already being listened to this method will have no effect for those universes only.
     /// 
     /// # Errors
-    /// Will return an Error of ErrorKind::InvalidInput if a given universe is outwith the allowed range by the protocol of 
-    /// [1 to packet::E131_MAX_MULTICAST_UNIVERSE] inclusive (excludes packet::E131_DISCOVERY_UNIVERSE which is allowed).
+    /// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
+    /// see (is_universe_in_range)[fn.is_universe_in_range.packet].
     /// 
     /// Will also return an Error if there is an issue listening to the multicast universe, see SacnNetworkReceiver::listen_multicast_universe().
     /// 
     pub fn listen_universes(&mut self, universes: &[u16]) -> Result<()>{
         for u in universes {
-            if (*u != E131_DISCOVERY_UNIVERSE) && (*u < E131_MIN_MULTICAST_UNIVERSE || *u > E131_MAX_MULTICAST_UNIVERSE) {
-                bail!(ErrorKind::IllegalUniverse( format!("Universe {} is out of range", *u)));
-            }
+            is_universe_in_range(*u)?;
         }
 
         for u in universes {
@@ -275,7 +253,7 @@ impl SacnReceiver {
             bail!(ErrorKind::UniverseTerminated("A source terminated a universe and this was detected when trying to receive data".to_string()));
         }
 
-        if data_pkt.synchronization_address == NO_SYNC_ADDR {
+        if data_pkt.synchronization_address == E131_NO_SYNC_ADDR {
             self.clear_waiting_data();
 
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();

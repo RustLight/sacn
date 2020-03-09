@@ -29,7 +29,7 @@ pub mod errors {
                 display("Attempted to exceed the capacity of a single universe, msg: {}", msg)
             }
 
-            /// Attempted to use illegal universe, outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE - E131_MAX_MULTICAST_UNIVERSE] 
+            /// Attempted to use illegal universe, outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE] 
             /// + E131_DISCOVERY_UNIVERSE inclusive
             IllegalUniverse(msg: String) {
                 description("Attempted to use illegal universe, outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE 

@@ -47,9 +47,6 @@ pub const DEFAULT_TERMINATE_START_CODE: u8 = 0;
 /// The poll rate of the update thread.
 pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 
-/// The interval between universe discovery packets (adverts) as defined by ANSI E1.31-2018 Appendix A.
-pub const E131_E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from_secs(10);
-
 /// A DMX over sACN sender.
 ///
 /// SacnSourceInternal is used for sending sACN packets over ethernet.
@@ -407,11 +404,10 @@ impl SacnSourceInternal {
     /// If a universe is already registered then this method has no effect.
     /// 
     /// # Errors
-    /// Will return an error if the universe is an invalid universe for sending. 
-    ///     See universe_allowed(fn.universe_allowed.source) for details.
+    /// Returns an IllegalUniverse error if the universe is outwith the allowed range, see (is_universe_in_range)[fn.is_universe_in_range.packet].
     /// 
     fn register_universe(&mut self, universe: u16) -> Result<()> {
-        self.universe_allowed(&universe).chain_err(|| "Not a valid universe so cannot register")?;
+        is_universe_in_range(universe)?;
 
         if self.universes.len() == 0 {
             self.universes.push(universe);
@@ -431,13 +427,11 @@ impl SacnSourceInternal {
     /// Checks if the given universe is a valid universe to send on (within allowed range) and that it is registered with this SacnSourceInternal.
     /// 
     /// # Errors
-    /// Returns an IllegalUniverse error if the universe is outwith the allowed range of data universes [E131_MIN_MULTICAST_UNIVERSE - E131_MAX_MULTICAST_UNIVERSE].
+    /// Returns an IllegalUniverse error if the universe is outwith the allowed range, see (is_universe_in_range)[fn.is_universe_in_range.packet]
     /// 
     /// Returns an UniverseNotRegistered error if the universe is not registered on the given SacnSourceInternal.
     fn universe_allowed(&self, u: &u16) -> Result<()>{
-        if *u < E131_MIN_MULTICAST_UNIVERSE || *u > E131_MAX_MULTICAST_UNIVERSE {
-            bail!(ErrorKind::IllegalUniverse(format!("Universes must be in the range [{} - {}]", E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE).to_string()));
-        }
+        is_universe_in_range(*u)?;
 
         if !self.universes.contains(u) {
             bail!(ErrorKind::UniverseNotRegistered(format!("Attempted to send on unregistered universe : {}", u).to_string()));
@@ -895,7 +889,7 @@ impl SacnSourceInternal {
 /// 
 fn perform_periodic_update(src: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<()>{
     let mut unwrap_src = src.lock().unwrap();
-    if unwrap_src.is_sending_discovery && Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_E131_UNIVERSE_DISCOVERY_INTERVAL {
+    if unwrap_src.is_sending_discovery && Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_UNIVERSE_DISCOVERY_INTERVAL {
         unwrap_src.send_universe_discovery().chain_err(|| "Failed to send universe discovery packet")?;
         unwrap_src.last_discovery_advert_timestamp = Instant::now();
     }
