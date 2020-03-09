@@ -18,18 +18,30 @@ fn main() {
     // let addr = SocketAddr::new(Ipv6Addr::new(0xff18, 0, 0, 0, 0, 0, 0x8300, 1).into(), 5568);
     let addr = SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568);
     let addr2 = SocketAddr::new(Ipv4Addr::new(239,255,0,2).into(), 5568);
+    let interface_addr = SocketAddr::new(Ipv4Addr::new(192, 168, 1, 11).into(), 5568);
 
-    let socket = new_socket(&addr).unwrap();
+    ///https://stackoverflow.com/questions/43292357/detect-platform-in-rust
+    let socket;
 
-    // socket.join_multicast_v6(&Ipv6Addr::new(0xff18, 0, 0, 0, 0, 0, 0x8300, 1), 0).unwrap();
+    if cfg!(windows) {
+        socket = new_win_socket(&interface_addr).unwrap();
+    } else { // if cfg!(unix)
+        socket = new_unix_socket(&addr).unwrap();
+    }
 
-    socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,1), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
 
-    socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,2), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
+    // let socket = new_socket(&addr).unwrap();
 
-    socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568))).unwrap();
+    // // socket.join_multicast_v6(&Ipv6Addr::new(0xff18, 0, 0, 0, 0, 0, 0x8300, 1), 0).unwrap();
 
-    socket.set_multicast_loop_v4(false).unwrap();
+    // socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,1), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
+
+    // socket.join_multicast_v4(&Ipv4Addr::new(239,255,0,2), &Ipv4Addr::new(0, 0, 0, 0)).unwrap();
+
+    
+    // // socket.bind(&SockAddr::from(SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568))).unwrap();
+
+    // socket.set_multicast_loop_v4(false).unwrap();
 
     // https://stackoverflow.com/questions/31289588/converting-a-str-to-a-u8 (05/02/2020)
     let message = &cmd_args[1];
@@ -67,7 +79,9 @@ fn main() {
 // I CLAIM NO OWNERSHIP
 
 // this will be common for all our sockets
-fn new_socket(addr: &SocketAddr) -> io::Result<Socket> {
+
+/// addr: Bind address.
+fn new_win_socket(addr: &SocketAddr) -> io::Result<Socket> {
     let domain = if addr.is_ipv4() {
         Domain::ipv4()
     } else {
@@ -76,31 +90,58 @@ fn new_socket(addr: &SocketAddr) -> io::Result<Socket> {
 
     let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
 
+    let winAddr = match addr {
+        SocketAddr::V4(addr) => SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), addr.port()),
+        SocketAddr::V6(addr) => {
+            SocketAddr::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).into(), addr.port())
+        }
+    };
+    
+    socket.bind(&socket2::SockAddr::from(winAddr));
+
     // we're going to use read timeouts so that we don't hang waiting for packets
     socket.set_read_timeout(Some(Duration::from_millis(1000)))?;
 
     Ok(socket)
 }
 
-fn _join_multicast(addr: SocketAddr) -> io::Result<Socket> {
-    let ip_addr = addr.ip();
-
-    let socket = new_socket(&addr)?;
-
-    // depending on the IP protocol we have slightly different work
-    match ip_addr {
-        IpAddr::V4(ref mdns_v4) => {
-            // join to the multicast address, with all interfaces
-            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0, 0, 0, 0))?;
-        }
-        IpAddr::V6(ref mdns_v6) => {
-            // join to the multicast address, with all interfaces (ipv6 uses indexes not addresses)
-            socket.join_multicast_v6(mdns_v6, 0)?;
-            socket.set_only_v6(true)?;
-        }
+/// multicast_addr: The multicast address to bind to.
+fn new_unix_socket(multicast_addr: &SocketAddr) -> io::Result<Socket> {
+    let domain = if multicast_addr.is_ipv4() {
+        Domain::ipv4()
+    } else {
+        Domain::ipv6()
     };
 
-    // bind us to the socket address.
-    socket.bind(&SockAddr::from(addr))?;
+    let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
+
+    socket.bind(&SockAddr::from(*multicast_addr)).unwrap();
+
+    // we're going to use read timeouts so that we don't hang waiting for packets
+    socket.set_read_timeout(Some(Duration::from_millis(1000)))?;
+
     Ok(socket)
 }
+
+// fn _join_multicast(addr: SocketAddr) -> io::Result<Socket> {
+//     let ip_addr = addr.ip();
+
+//     let socket = new_socket(&addr)?;
+
+//     // depending on the IP protocol we have slightly different work
+//     match ip_addr {
+//         IpAddr::V4(ref mdns_v4) => {
+//             // join to the multicast address, with all interfaces
+//             socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0, 0, 0, 0))?;
+//         }
+//         IpAddr::V6(ref mdns_v6) => {
+//             // join to the multicast address, with all interfaces (ipv6 uses indexes not addresses)
+//             socket.join_multicast_v6(mdns_v6, 0)?;
+//             socket.set_only_v6(true)?;
+//         }
+//     };
+
+//     // bind us to the socket address.
+//     socket.bind(&SockAddr::from(addr))?;
+//     Ok(socket)
+// }
