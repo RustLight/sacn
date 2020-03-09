@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
 #![warn(missing_docs)]
 #![recursion_limit="1024"] // Recursion limit for error-chain.
 
