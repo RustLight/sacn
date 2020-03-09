@@ -1,2 +1,0 @@
-Started
-Error Encountered: Error(Sacn(Error(Msg("Failed to handle data packet"), State { next_error: Some(Error(OutOfSequence("Packet recieved with sequence number 0 is out of sequence, expected 0"), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })
