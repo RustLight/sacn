@@ -22,17 +22,16 @@ extern crate error_chain;
 
 /// Import the error-chain handling into the module.
 pub mod error;
-use error::errors::{*, ErrorKind::*};
+use error::errors::*;
 
 extern crate sacn;
 
 use sacn::source::SacnSource;
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 
-use std::{time};
 use std::time::{Duration, Instant};
 use std::io;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::env;
 use std::thread::sleep;
 use std::str::FromStr;
@@ -233,7 +232,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                 }
                 "r" => {
                     let universe: u16 = split_input[1].parse().unwrap();
-                    src.register_universe(universe);
+                    src.register_universe(universe)?;
                 }
                 "q" => {
                     let universe: u16 = split_input[1].parse().unwrap();
