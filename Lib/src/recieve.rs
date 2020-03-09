@@ -26,6 +26,8 @@ use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 // Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
 use packet::{*, E131RootLayerData::*};
 
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::cmp::{max, Ordering};
 use std::time;
 use std::time::{Duration, Instant};
@@ -62,15 +64,57 @@ const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 /// The default value for the reading timeout for a SacnNetworkReceiver.
 pub const DEFAULT_RECV_TIMEOUT: Option<Duration> = Some(time::Duration::from_millis(500));
 
+/// The exclusive lower bound on the different between the received and expected sequence numbers within which a 
+/// packet will be discarded. Outside of the range specified by (E131_SEQ_DIFF_DISCARD_LOWER_BOUND, E131_SEQ_DIFF_DISCARD_UPPER_BOUND]
+/// the packet won't be discarded.
+/// 
+/// Having a range allows receivers to catch up if packets are lost.
+/// Value as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+const E131_SEQ_DIFF_DISCARD_LOWER_BOUND: isize = -20;
+
+/// The inclusive upper bound on the different between the received and expected sequence numbers within which a 
+/// packet will be discarded. Outside of the range specified by (E131_SEQ_DIFF_DISCARD_LOWER_BOUND, E131_SEQ_DIFF_DISCARD_UPPER_BOUND]
+/// the packet won't be discarded.
+/// 
+/// Having a range allows receivers to catch up if packets are lost.
+/// Value as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+const E131_SEQ_DIFF_DISCARD_UPPER_BOUND: isize = 0;
+
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
+
+    /// The SacnNetworkReceiver used for handling communication with UDP / Network / Transport layer.
     receiver: SacnNetworkReceiver,
-    waiting_data: Vec<DMXData>, // Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
-    universes: Vec<u16>, // Universes that this receiver is currently listening for
-    discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been discovered by this receiver through universe discovery packets.
+    
+    /// Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
+    waiting_data: Vec<DMXData>, 
+    
+    /// Universes that this receiver is currently listening for
+    universes: Vec<u16>, 
+    
+    /// Sacn sources that have been discovered by this receiver through universe discovery packets.
+    discovered_sources: Vec<DiscoveredSacnSource>, 
+
+    /// The merge function used by this receiver if DMXData for the same universe and synchronisation universe is received while there
+    /// is already DMXData waiting for that universe and synchronisation address.
     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData>,
-    partially_discovered_sources: Vec<DiscoveredSacnSource>, // Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
-    process_preview_data: bool
+    
+    /// Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
+    partially_discovered_sources: Vec<DiscoveredSacnSource>, 
+    
+    /// Flag that indicates if this receiver should process packets marked as preview data. 
+    /// If true then the receiver will process theses packets.
+    process_preview_data: bool,
+
+    /// The sequence numbers used for data packets, keeps a reference of the next sequence number expected for each universe.
+    /// Sequence numbers are always in the range [0, 255] inclusive.
+    /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+    data_sequences: RefCell<HashMap<u16, u8>>,
+
+    /// The sequence numbers used for synchronisation packets, keeps a reference of the next sequence number expected for each universe.
+    /// Sequence numbers are always in the range [0, 255] inclusive.
+    /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+    sync_sequences: RefCell<HashMap<u16, u8>>,
 }
 
 impl fmt::Debug for SacnReceiver {
@@ -110,7 +154,9 @@ impl SacnReceiver {
                 discovered_sources: Vec::new(),
                 merge_func: htp_dmx_merge,
                 partially_discovered_sources: Vec::new(),
-                process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT
+                process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT,
+                data_sequences: RefCell::new(HashMap::new()),
+                sync_sequences: RefCell::new(HashMap::new()),
         };
 
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE]).chain_err(|| "Failed to listen to discovery universe")?;
@@ -199,22 +245,30 @@ impl SacnReceiver {
         }
     }
 
-
 /// TODO
 /// Sequence numbering, error on stream termination.
 /// Documentation for handle_data_packet.
-
     /// Handles the given data packet for this DMX reciever.
+    /// 
     /// Returns the universe data if successful.
     /// If the returned value is None it indicates that the data was received successfully but isn't ready to act on.
+    /// 
     /// Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
+    /// 
+    /// Arguments:
+    /// data_pkt: The sACN data packet to handle.
+    /// 
+    /// # Errors
+    /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between 
+    /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+    /// 
     fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
-        // TODO - Sequence numbering is not supported by this receiver, it has been left for if there is sufficient time later.
-
         if data_pkt.preview_data && !self.process_preview_data {
             // Don't process preview data unless receiver has process_preview_data flag set.
             return Ok(None);
         }
+
+        check_seq_number(&self.data_sequences, data_pkt.sequence_number, data_pkt.universe)?;
 
         if data_pkt.stream_terminated {
             self.terminate_stream(data_pkt.source_name, data_pkt.universe);
@@ -224,7 +278,6 @@ impl SacnReceiver {
         if data_pkt.synchronization_address == NO_SYNC_ADDR {
             self.clear_waiting_data();
 
-            #[cfg(feature = "std")]
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
             let dmx_data: DMXData = DMXData {
                 universe: data_pkt.universe, 
@@ -232,16 +285,8 @@ impl SacnReceiver {
                 sync_uni: data_pkt.synchronization_address
             };
 
-            #[cfg(not(feature = "std"))]
-            let dmx_data: DMXData = DMXData {
-                universe: data_pkt.universe,
-                values: data_pkt.data.property_values,
-                sync_uni: data_pkt.synchronization_address
-            };
-
             return Ok(Some(vec![dmx_data]));
         } else {
-            #[cfg(feature = "std")]
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
             let dmx_data: DMXData = DMXData {
                 universe: data_pkt.universe,
@@ -249,14 +294,7 @@ impl SacnReceiver {
                 sync_uni: data_pkt.synchronization_address
             };
 
-            #[cfg(not(feature = "std"))]
-            let dmx_data: DMXData = DMXData {
-                universe: data_pkt.universe,
-                values: data_pkt.data.property_values,
-                sync_uni: data_pkt.synchronization_address
-            };
-
-            self.store_waiting_data(dmx_data)?;
+            self.store_waiting_data(dmx_data);
             
             Ok(None)
         }
@@ -268,17 +306,16 @@ impl SacnReceiver {
     /// waiting for different synchronisation universes. Only if the data is for the same universe and is waiting 
     /// for the same synchronisation universe is it merged.
     /// 
-    fn store_waiting_data(&mut self, data: DMXData) -> Result<()>{
+    fn store_waiting_data(&mut self, data: DMXData){
         for i in 0 .. self.waiting_data.len() {
             if self.waiting_data[i].universe == data.universe && self.waiting_data[i].sync_uni == data.sync_uni { 
                 
                 self.waiting_data[i] = ((self.merge_func)(&self.waiting_data[i], &data)).unwrap();
-                return Ok(())
+                return;
             }
         }
 
         self.waiting_data.push(data);
-        Ok(())
     }
 
     /// Handles the given synchronisation packet for this DMX receiver. 
@@ -298,12 +335,18 @@ impl SacnReceiver {
     /// Arguments:
     /// sync_pkt: The E1.31 synchronisation part of the synchronisation packet to handle.
     /// 
-    fn handle_sync_packet(&mut self, sync_pkt: SynchronizationPacketFramingLayer) -> Option<Vec<DMXData>>{
+    /// # Errors
+    /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between 
+    /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+    /// 
+    fn handle_sync_packet(&mut self, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
+        check_seq_number(&self.sync_sequences, sync_pkt.sequence_number, sync_pkt.synchronization_address)?;
+
         let res = self.rtrv_waiting_data(sync_pkt.synchronization_address);
         if res.len() == 0 {
-            None
+            Ok(None)
         } else {
-            Some(res)
+            Ok(Some(res))
         }
     }
 
@@ -354,6 +397,7 @@ impl SacnReceiver {
     /// 
     /// Arguments:
     /// discovery_pkt: The universe discovery part of the universe discovery packet to handle.
+    /// 
     fn handle_universe_discovery_packet(&mut self, discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Option<Vec<DMXData>>{
         let data: UniverseDiscoveryPacketUniverseDiscoveryLayer = discovery_pkt.data;
 
@@ -427,7 +471,7 @@ impl SacnReceiver {
                     let data: E131RootLayerData = pdu.data;
                     let res = match data {
                         DataPacket(d) => self.handle_data_packet(d).chain_err(|| "Failed to handle data packet")?,
-                        SynchronizationPacket(s) => self.handle_sync_packet(s),
+                        SynchronizationPacket(s) => self.handle_sync_packet(s).chain_err(|| "Failed to handle sync packet")?,
                         UniverseDiscoveryPacket(u) => self.handle_universe_discovery_packet(u)
                     };
                     match res {
@@ -762,6 +806,40 @@ fn join_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
         }
     };
 
+    Ok(())
+}
+
+/// Checks the given sequence number for the given universe against the given expected sequence numbers.
+/// 
+/// Returns Ok(()) if the packet is detected in-order.
+/// 
+/// # Errors
+/// Returns an OutOfSequence error if a packet is received out of order as detected by the different between 
+/// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+///
+fn check_seq_number(sequences: &RefCell<HashMap<u16, u8>>, sequence_number: u8, universe: u16) -> Result<()>{
+    let expected_seq = match sequences.borrow().get(&universe) {
+        Some(s) => *s,
+        None => 0,
+    };
+
+    let seq_diff: isize = (sequence_number as isize) - (expected_seq as isize);
+
+    if seq_diff <= E131_SEQ_DIFF_DISCARD_UPPER_BOUND && seq_diff > E131_SEQ_DIFF_DISCARD_LOWER_BOUND {
+        // Reject the out of order packet as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+        bail!(ErrorKind::OutOfSequence(
+            format!("Packet recieved with sequence number {} is out of sequence, expected {}", 
+            sequence_number, expected_seq).to_string()));
+    }
+
+    let new_seq;
+    if sequence_number == 255 {
+        new_seq = 0;
+    } else {
+        new_seq = sequence_number + 1;
+    }
+
+    sequences.borrow_mut().insert(universe, new_seq);
     Ok(())
 }
 
