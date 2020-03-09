@@ -86,12 +86,12 @@ pub struct SacnReceiver {
     /// If true then the receiver will process theses packets.
     process_preview_data: bool,
 
-    /// The sequence numbers used for data packets, keeps a reference of the next sequence number expected for each universe.
+    /// The sequence numbers used for data packets, keeps a reference of the last sequence number received for each universe.
     /// Sequence numbers are always in the range [0, 255] inclusive.
     /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     data_sequences: RefCell<HashMap<u16, u8>>,
 
-    /// The sequence numbers used for synchronisation packets, keeps a reference of the next sequence number expected for each universe.
+    /// The sequence numbers used for synchronisation packets, keeps a reference of the last sequence number received for each universe.
     /// Sequence numbers are always in the range [0, 255] inclusive.
     /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     sync_sequences: RefCell<HashMap<u16, u8>>,
@@ -809,18 +809,11 @@ fn check_seq_number(sequences: &RefCell<HashMap<u16, u8>>, sequence_number: u8, 
     if seq_diff <= E131_SEQ_DIFF_DISCARD_UPPER_BOUND && seq_diff > E131_SEQ_DIFF_DISCARD_LOWER_BOUND {
         // Reject the out of order packet as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
         bail!(ErrorKind::OutOfSequence(
-            format!("Packet recieved with sequence number {} is out of sequence, expected {}", 
-            sequence_number, expected_seq).to_string()));
+            format!("Packet recieved with sequence number {} is out of sequence, last {}, seq-diff {}", 
+            sequence_number, expected_seq, seq_diff).to_string()));
     }
 
-    let new_seq;
-    if sequence_number == 255 {
-        new_seq = 0;
-    } else {
-        new_seq = sequence_number + 1;
-    }
-
-    sequences.borrow_mut().insert(universe, new_seq);
+    sequences.borrow_mut().insert(universe, sequence_number);
     Ok(())
 }
 
