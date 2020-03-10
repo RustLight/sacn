@@ -539,7 +539,7 @@ impl SacnNetworkReceiver {
     pub fn new (ip: SocketAddr) -> Result<SacnNetworkReceiver> {
         Ok(
             SacnNetworkReceiver {
-                socket: create_socket(ip)?,
+                socket: create_win_socket(ip)?,
                 addr: ip
             }
         )
@@ -560,7 +560,7 @@ impl SacnNetworkReceiver {
             multicast_addr = universe_to_ipv6_multicast_addr(universe).chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
         }
 
-        Ok(join_multicast(&self.socket, multicast_addr).chain_err(|| "Failed to join multicast")?)
+        Ok(join_win_multicast(&self.socket, multicast_addr).chain_err(|| "Failed to join multicast")?)
     }
 
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
@@ -855,7 +855,8 @@ impl DiscoveredSacnSource {
 /// Will return an error if the socket cannot be created, see (Socket::new)[fn.new.Socket].
 /// 
 /// Will return an error if the socket cannot be bound to the given address, see (bind)[fn.bind.Socket].
-pub fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
+#[cfg(target_os = "linux")]
+fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
         
@@ -879,6 +880,7 @@ pub fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 /// # Errors
 /// Will return an error if the given socket cannot be joined to the given multicast group address.
 ///     See join_multicast_v4[fn.join_multicast_v4.Socket] and join_multicast_v6[fn.join_multicast_v6.Socket]
+#[cfg(target_os = "linux")]
 fn join_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.ip() {
         IpAddr::V4(ref mdns_v4) => {
@@ -912,7 +914,8 @@ fn join_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr
 /// Will return an error if the socket cannot be created, see (Socket::new)[fn.new.Socket].
 /// 
 /// Will return an error if the socket cannot be bound to the given address, see (bind)[fn.bind.Socket].
-pub fn create_socket(addr: SocketAddr) -> Result<Socket> {
+#[cfg(target_os = "windows")]
+fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
         socket.bind(&SockAddr::from(addr))?;
@@ -933,7 +936,8 @@ pub fn create_socket(addr: SocketAddr) -> Result<Socket> {
 /// # Errors
 /// Will return an error if the given socket cannot be joined to the given multicast group address.
 ///     See join_multicast_v4[fn.join_multicast_v4.Socket] and join_multicast_v6[fn.join_multicast_v6.Socket]
-fn join_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
+#[cfg(target_os = "windows")]
+fn join_win_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
     match addr.ip() {
         IpAddr::V4(ref mdns_v4) => {
             socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to join IPv4 multicast")?;
