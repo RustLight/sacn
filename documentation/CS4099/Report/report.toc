@@ -1,25 +1,27 @@
 \contentsline {section}{\numberline {0.1}Abstract}{1}
 \contentsline {section}{\numberline {0.2}Declaration}{1}
 \contentsline {section}{\numberline {0.3}Introduction}{3}
-\contentsline {section}{\numberline {0.4}Context Survey}{4}
-\contentsline {subsection}{\numberline {0.4.1}DMX, SACN and ACN}{4}
-\contentsline {subsubsection}{DMX512}{4}
-\contentsline {subsubsection}{sACN}{5}
-\contentsline {subsubsection}{}{5}
-\contentsline {subsubsection}{Rust}{5}
-\contentsline {subsection}{\numberline {0.4.2}Related Work}{5}
-\contentsline {section}{\numberline {0.5}Requirement specification}{6}
+\contentsline {section}{\numberline {0.4}Context Survey}{3}
+\contentsline {subsection}{\numberline {0.4.1}DMX, SACN and ACN}{3}
+\contentsline {subsubsection}{DMX512}{3}
+\contentsline {subsubsection}{sACN}{4}
+\contentsline {subsubsection}{sACN - Universe Synchronisation}{4}
+\contentsline {subsection}{\numberline {0.4.2}Critical Analysis of the sACN protocol}{5}
+\contentsline {subsection}{\numberline {0.4.3}Rust}{5}
+\contentsline {subsection}{\numberline {0.4.4}Related Work}{6}
+\contentsline {section}{\numberline {0.5}Requirement specification}{8}
 \contentsline {section}{\numberline {0.6}Software Engineering Process}{8}
-\contentsline {section}{\numberline {0.7}Design}{10}
-\contentsline {subsection}{\numberline {0.7.1}ANSI E1.31-2018}{10}
-\contentsline {subsection}{\numberline {0.7.2}Critique of the protocol}{10}
-\contentsline {section}{\numberline {0.8}Implementation}{10}
-\contentsline {subsection}{\numberline {0.8.1}Implementation dependent specifics}{10}
-\contentsline {section}{\numberline {0.9}Evaluation and Critical Appraisal}{10}
-\contentsline {section}{\numberline {0.10}Conclusions}{10}
-\contentsline {section}{\numberline {0.11}Appendices}{11}
-\contentsline {section}{\numberline {0.12}Testing}{11}
-\contentsline {subsection}{\numberline {0.12.1}Automated Testing}{11}
-\contentsline {subsection}{\numberline {0.12.2}Real-world Testing}{11}
-\contentsline {section}{\numberline {0.13}User Manual}{11}
-\contentsline {section}{\numberline {0.14}Other Appendices}{11}
+\contentsline {subsection}{\numberline {0.6.1}Implementation, Testing and Deployment Phases}{10}
+\contentsline {section}{\numberline {0.7}Design}{14}
+\contentsline {subsection}{\numberline {0.7.1}ANSI E1.31-2018}{14}
+\contentsline {subsection}{\numberline {0.7.2}Critique of the protocol}{14}
+\contentsline {section}{\numberline {0.8}Implementation}{14}
+\contentsline {subsection}{\numberline {0.8.1}Implementation dependent specifics}{14}
+\contentsline {section}{\numberline {0.9}Evaluation and Critical Appraisal}{14}
+\contentsline {section}{\numberline {0.10}Conclusions}{14}
+\contentsline {section}{\numberline {0.11}Appendices}{15}
+\contentsline {section}{\numberline {0.12}Testing}{15}
+\contentsline {subsection}{\numberline {0.12.1}Automated Testing}{15}
+\contentsline {subsection}{\numberline {0.12.2}Real-world Testing}{15}
+\contentsline {section}{\numberline {0.13}User Manual}{15}
+\contentsline {section}{\numberline {0.14}Other Appendices}{15}
