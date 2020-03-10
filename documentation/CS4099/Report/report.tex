@@ -11,7 +11,7 @@
 	\input{title-page.tex}
 	
 	\section{Abstract}
-	The project expands on an existing implementation [2] of the streaming architecture for control networks (sACN) protocol [3] in rust with the aim to make a library that is avaliable in rust that allows ANSI E1.31-2018 sACN data transfer, universe synchronisation, universe discovery and that supports Ipv4, Ipv6, Unix and Windows.
+	The project aims to create a library that is available in rust allowing usage of the ANSI E1.31-2018 sACN \cite{ANSI_E1.31} protocol including data transfer, universe synchronisation, universe discovery and that supports Ipv4, Ipv6, Unix and Windows. This library utilises an existing implementation \cite{ORIGINAL_IMPL} as a base but does not attempt to provide backwards compatibility.
 	
 	\section{Declaration}
 	I declare that the material submitted for
@@ -43,18 +43,20 @@
 		report.
 	At the time of starting this project there did not exist a native, open-source ANSI E1.31-2018 sACN library for rust which allowed data sending, receiving, universe synchronisation and universe discovery.  The library that did exist was incomplete and only supported sending data and parsing packets.\\
 	
-	This project therefore aims to create a library for rust users which supports ANSI E1.31-2018 sACN sending, receiving, universe synchronisation and discovery. This project is based on the existing library to give a starting point. As sACN is commonly used in heterogeneous device environments with a mix of embedded systems and operating systems such as Windows and Unix to provide support for as many devices as possible a few additional non-functional requirements were made; The library must have support for both Ipv4 and Ipv6 as well as unicast, multicast and broadcast in both windows and unix environments.\\
+	This project therefore aims to create a library for rust users which supports ANSI E1.31-2018 sACN sending, receiving, universe synchronisation and discovery. This project is based on the existing library to give a starting point. As sACN is commonly used in heterogeneous device environments with a mix of embedded systems and operating systems such as Windows and Unix to provide support for as many devices as possible a few additional non-functional requirements were made; The library must have support for both Ipv4 and Ipv6 as well as unicast, multicast and broadcast in both windows and unix environments. Backwards compatibility with the existing library was abandoned due to the incomplete nature of the library and to re-use it would require significantly forcing the implementation of the new library into confusing patterns.
+	
+	\\
 	
 The project was split into the following list of primary and secondary objectives.\\
 	\begin{list}{}{Primary}
 		\item Allow sending and receiving DMX data over sACN.
-		\item Support the sending and receiving of cross universe DMX data through the 				universe synchronisation feature.
-		\item Support universe discovery with adverts for sources and discovery for 					receivers.
+		\item Support the sending and receiving of cross universe DMX data through the universe synchronisation feature.
+		\item Support universe discovery with adverts for sources and discovery for receivers.
 	\end{list}
 	\begin{list}{}{Secondary}
 		\item Demonstrate a deployment of the library into a real-world system to show its compliance with the protocol by showing interoperability with other compliant devices.
 		\item Provide support for Windows 10 and Fedora Linux systems.
-		\item Support multiple IP transmission modes - Unicast, Multicast and 			Broadcast.
+		\item Support multiple IP transmission modes - Unicast, Multicast and Broadcast.
 		\item Support multiple IP versions - Ipv4 and Ipv6.
 	\end{list}
 	
@@ -94,15 +96,8 @@ The project was split into the following list of primary and secondary objective
 	
 	
 	
-	https://www.techrepublic.com/article/rust-programming-language-seven-reasons-why-you-should-learn-it-in-2019/
 	
-	
-	
-	Rust \cite{RUST_LANG} is a language designed to be used for writing fast, memory efficient systems code. It has relatively low overhead and because it doesn't require the additional overhead of a garbage collector it is perfect for usage in embedded or high performance systems. 
-	
-	
-	This makes it an ideal language for usage with sACN as responding quickly to control events is vital to a lighting system (imagine a sound effect goes off but the lighting doesn't until a second later). 
-	
+
 	\subsection{Related Work}
 	The ANSI E1.31 sACN protocol was originally specified in the document ANSI E1.31-2009 \cite{ANSI_E1.31_2009}. This represented the base version of the protocol without any universe synchronisation, universe discovery or discussion of operation with Ipv6. Since then it has been revised in 2016 (universe sync and discovery) \cite{ANSI_E1.31_2016} and again to its current latest version in 2018 (Ipv6). The future of ANSI E1.31 is still being actively developed and discussed \cite{WHAT_COMES_AFTER_SACN} with the direction of the ACN eco-system of lighting control data over IP being focused on supporting communication from receivers back to sources. Within traditional DMX systems this is supported using the remote device management protocol (RDM) as described in ANSI E1.20-2010 \cite{ANSI_E1.20_2010}. An IP version of the RDM protocol was then created (RDMnet) \cite{ANSI_E1.33_2019} which is ACN based and allows discovery and control of receivers over a network. RDMnet as a fairly new protocol is still in the process of being taken up by vendors but has strong support from ETC (a large lighting company \cite{ETC}) in the form of a maintained open source implementation of RDMnet in C++ \cite{ANSI_E1.33_IMPL}.\\
 	
@@ -126,51 +121,31 @@ The project was split into the following list of primary and secondary objective
 	may wish to specify different types of requirements and
 	given them priorities if applicable.
 	
-	\section{Software Engineering Process}
-		Software
-	engineering
-	process
-	The development approach taken and justification for
-	its adoption.
+\section{Software Engineering Process}
+Software engineering process. The development approach taken and justification for its adoption.
 
-	A waterfall based process model was used for the development of the program. In the waterfall
-	method there are several distinct phases of the project as shown in figure: \ref{waterfall-diag}. This 
-	development approach was chosen as it has a very clear structure which allows easy to manage distinct milestones 
-	so progress through the project can be more easily tracked. This process method has a number of disadvantages aswell
-	with the main one being the inflexibility - if something major needed to change it would be difficult to adapt the project. 
-	As this project is based on a clearly defined specification provided by the protocal specification and the domains were 
-	clearly defined at the start it means that this inflexibility isn't a major issue and so therefore choosing the waterfall 
-	method for its advantages makes sense. 
+A waterfall based process model was used for the development of the program. In the waterfall method there are several distinct phases of the project as shown in figure: \ref{waterfall-diag} which follow on from each other with loops back possible if a problem is found at a later stage. This development approach was chosen as it has a very clear structure which allows easy to manage distinct milestones so progress through the project can be more easily tracked. This process method has a number of disadvantages as-well with the main one being the inflexibility - if something major needed to change it would be difficult to adapt the project.  As this project is based on a clearly defined specification provided by the protocal specification and the domains were  clearly defined at the start it means that this inflexibility isn't a major issue and so therefore choosing the waterfall method for its advantages makes sense. 
 	
-	\begin{figure}
-		\label{waterfall-diag}
-		\includegraphics[width=\textwidth]{sdlc_waterfall_model.jpg}
-		\caption{A diagram showing the waterfall development process, [\cite{waterfall-diagram}]}
-	\end{figure}
+\begin{figure}
+	\label{waterfall-diag}
+	\includegraphics[width=\textwidth]{sdlc_waterfall_model.jpg}
+	\caption{A diagram showing the waterfall development process, [\cite{waterfall-diagram}]}
+\end{figure}
 
-	\paragraph*{}
-	The waterfall model can be clearly seen throughout the development of the program. The first phase of 'requirement analysis'
-	is the protocol specification itself as it clearly lays out the goals of the protocol and what it is required to do. On top of this
-	there is the project goals which were defined around the protocol specifically for how much of the protocol this specification should
-	implement for example universe-syncronisation, IPv4/IPv6 support, Unix/Windows support etc. When take together this gives a clear list of
-	requirements as so allows moving onto the 'system design' phase.
+\paragraph*{}
+The waterfall model can be clearly seen throughout the development of the program. The first phase of 'requirement analysis' is the protocol specification itself as it clearly lays out the goals of the protocol and what it is required to do. On top of this there is the project goals which were defined around the protocol specifically for how much of the protocol this specification should implement for example universe-synchronisation, IPv4/IPv6 support, Unix/Windows support etc. When take together this gives a clear list of requirements as so allows moving onto the 'system design' phase.
 
-	\paragraph*{}
-	The system design phase is where the requirements are turned into a technical plan for how they will be implemented. Alot of this also comes from
-	the protocol specification itself as it describes how each bit of a compliant implementation should behave and so therefore the design can be based
-	of this.
+\paragraph*{}
+The system design phase is where the requirements are turned into a technical plan for how they will be implemented. Most of this comes from the protocol specification itself as it describes how each bit of a compliant implementation should behave and so therefore the design can be based of this. This combined with the existing base incomplete implementation that was used meant that the general system design was built around this. In general the system was designed around there being distinct receivers and senders with all communication being one-way with no expected replies. This meant that the two different sides could be developed in relative isolation as all their communication must be done in a way that is compliant with the protocol which provides the interface between them.
 
-	\paragraph*{}
-	The 'implementation' phase was done 
+\subsection{Implementation, Testing and Deployment Phases}
+As most of the design is already provided in the form of the protocol specifications and the requirement to make the project in rust it means that the project is mainly focused on the Implementation, Testing and Deployment phases. The implementation phase is one of the biggest in this project and represents the actual creation of the code as discussed in more detail in the Implementation section. As part of the engineering process there was an amount of looping between the implementation and testing phases. This was done as each part of the code was implemented (for example adding universe synchronisation) which was then tested by creating some initial tests to check that the design for that section has been implemented correctly. Then the implementation phase was revisited to either fix a discovered bug or to implement the next section. This looping is similar to the way that a test-driven-development methodology might work however the waterfall methodology described here is distinct as the implementation is written before the tests.\\
 
-	One of the requirements
-	of the project that was defined was that the implementation should be in rust. This combined with the existing base
-	incomplete implementation that was used meant that the general system design was built around this. In general the system
-	was designed around there being distinct receivers and senders with communication being mostly one-way. This meant that the two
-	different sides could be developed in relative isolation as all their communication must be done in a way that is compliant with the
-	protocol which provides the interface between them.
+The implementation is known to be complete when all the functionality specified in the design has been implemented. In this project this is represented by data sending, universe sync and universe discovery all being implemented on both the sender and receiver. 
 
-	\paragraph*{}
+
+
+
 	The 'testing' phase is the combining of the various bits of the implementation. This is marked by the passing of the various intergration tests
 	where the sender and the receiver were passing information back and forth. Also part of this phase is the overall compliance tests which are detailed
 	later which show that the implementation of the protocol as a whole conforms to the design and requirements.
@@ -298,6 +273,8 @@ The project was split into the following list of primary and secondary objective
 		https://www.etcconnect.com/About/ (26/01/2020)
 		\bibitem{RUST_C_COMPARISON}
 		https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust.html (28/01/2020)
+		\bibitem{WHY_LEARN_RUST}
+		https://www.techrepublic.com/article/rust-programming-language-seven-reasons-why-you-should-learn-it-in-2019/
 		
 	\end{thebibliography}
 	
