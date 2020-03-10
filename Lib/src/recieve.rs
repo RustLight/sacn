@@ -545,8 +545,7 @@ impl SacnNetworkReceiver {
         )
     }
 
-    /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
-    /// Returns as a Result containing a SacnNetworkReceiver if Ok which recieves multicast packets for the given universe.
+    /// Connects this SacnNetworkReceiver to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
     /// 
     /// # Errors
     /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an 
@@ -643,8 +642,7 @@ impl SacnNetworkReceiver {
         )
     }
 
-    /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
-    /// Returns as a Result containing a SacnNetworkReceiver if Ok which recieves multicast packets for the given universe.
+    /// Connects this SacnNetworkReceiver to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
     /// 
     /// # Errors
     /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an 
@@ -659,7 +657,7 @@ impl SacnNetworkReceiver {
             multicast_addr = universe_to_ipv6_multicast_addr(universe).chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
         }
 
-        Ok(join_unix_multicast(&self.socket, multicast_addr).chain_err(|| "Failed to join multicast")?)
+        Ok(join_unix_multicast(&self.socket, multicast_addr, self.addr.ip()).chain_err(|| "Failed to join multicast")?)
     }
 
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
@@ -881,11 +879,20 @@ pub fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 /// # Errors
 /// Will return an error if the given socket cannot be joined to the given multicast group address.
 ///     See join_multicast_v4[fn.join_multicast_v4.Socket] and join_multicast_v6[fn.join_multicast_v6.Socket]
-fn join_unix_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
+fn join_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.ip() {
         IpAddr::V4(ref mdns_v4) => {
-            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to join IPv4 multicast")?;
+            match interface_addr {
+                IpAddr::V4(ref interface_v4) => {
+                    socket.join_multicast_v4(mdns_v4, &interface_v4).chain_err(|| "Failed to join IPv4 multicast")?;
+                }
+                IpAddr::V6(ref interface_v6) => {
+                    // ERROR
+                    assert!(false);
+                }
+            }
         }
+        /// Ipv6 not complete.
         IpAddr::V6(ref mdns_v6) => {
             socket.join_multicast_v6(mdns_v6, 0).chain_err(|| "Failed to join IPv6 multicast")?;
         }
