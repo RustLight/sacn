@@ -522,7 +522,10 @@ fn find_discovered_src(srcs: &Vec<DiscoveredSacnSource>, name: &String) -> Optio
     None
 }
 
-/// In general the lower level transport layer is handled by SacnNetworkReceiver (which itself wraps a Socket). 
+/// In general the lower level transport layer is handled by SacnNetworkReceiver (which itself wraps a Socket).
+/// Windows and linux handle multicast sockets differently.
+/// This is built for / testing with Windows 10 1909.
+#[cfg(target_os = "windows")]
 impl SacnNetworkReceiver {
     /// Creates a new DMX receiver on the interface specified by the given address.
     /// 
@@ -559,6 +562,104 @@ impl SacnNetworkReceiver {
         }
 
         Ok(join_multicast(&self.socket, multicast_addr).chain_err(|| "Failed to join multicast")?)
+    }
+
+    /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
+    /// This will return an error if the SacnReceiver wasn't created using an IPv6 address to bind to.
+    pub fn set_only_v6(&mut self, val: bool) -> Result<()>{
+        if self.addr.is_ipv4() {
+            bail!(IpVersionError("No data avaliable in given timeout".to_string()))
+        } else {
+            Ok(self.socket.set_only_v6(val)?)
+        }
+    }
+
+    /// Returns a packet if there is one available. 
+    /// 
+    /// The packet may not be ready to transmit if it is awaiting synchronisation.
+    /// Will only block if set_timeout was called with a timeout of None so otherwise (and by default) it won't 
+    /// block so may return a WouldBlock/TimedOut error to indicate that there was no data ready.
+    /// 
+    /// IMPORTANT NOTE:
+    /// An explicit lifetime is given to the AcnRootLayerProtocol which comes from the lifetime of the given buffer.
+    /// The compiler will prevent usage of the returned AcnRootLayerProtocol after the buffer is dropped.
+    /// 
+    /// Arguments:
+    /// buf: The buffer to use for storing the received data into. This buffer shouldn't be accessed or used directly as the data
+    /// is returned formatted properly in the AcnRootLayerProtocol. This buffer is used as memory space for the returned AcnRootLayerProtocol.
+    /// 
+    /// # Errors
+    /// May return an error if there is an issue receiving data from the underlying socket, see (recv)[fn.recv.Socket].
+    /// 
+    /// May return an error if there is an issue parsing the data from the underlying socket, see (parse)[fn.AcnRootLayerProtocol::parse.packet].
+    /// 
+    fn recv<'a>(&self, buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE]) -> Result<AcnRootLayerProtocol<'a>> {
+        self.socket.recv(&mut buf[0..])?;
+
+        Ok(AcnRootLayerProtocol::parse(buf)?)
+    }
+
+    /// Set the timeout for the recv operation.
+    /// 
+    /// Arguments:
+    /// timeout: The new timeout for the receive operation, a value of None means the recv operation will become blocking.
+    /// 
+    /// Errors:
+    /// A timeout with Duration 0 will cause an error. See (set_read_timeout)[fn.set_read_timeout.Socket].
+    /// 
+    pub fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
+        Ok(self.socket.set_read_timeout(timeout)?)
+    }
+
+    /// Returns the current read timeout for the receiver.
+    /// 
+    /// A timeout of None indicates infinite blocking behaviour.
+    /// 
+    pub fn read_timeout(&self) -> Result<Option<Duration>> {
+        Ok(self.socket.read_timeout()?)
+    }
+}
+
+/// Windows and linux handle multicast sockets differently.
+/// This is built for / testing with Fedora 30/31.
+#[cfg(target_os = "linux")]
+impl SacnNetworkReceiver {
+    /// Creates a new DMX receiver on the interface specified by the given address.
+    /// 
+    /// If the given address is an IPv4 address then communication will only work between IPv4 devices, if the given address is IPv6 then communication
+    /// will only work between IPv6 devices by default but IPv4 receiving can be enabled using set_ipv6_only(false).
+    /// 
+    /// # Errors
+    /// Will return an error if the SacnReceiver fails to bind to a socket with the given ip. 
+    /// For more details see socket2::Socket::new().
+    /// 
+    pub fn new (ip: SocketAddr) -> Result<SacnNetworkReceiver> {
+        println!("Created new UNIX SacnNetworkReceiver");
+        Ok(
+            SacnNetworkReceiver {
+                socket: create_unix_socket(ip)?,
+                addr: ip
+            }
+        )
+    }
+
+    /// Connects a socket to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
+    /// Returns as a Result containing a SacnNetworkReceiver if Ok which recieves multicast packets for the given universe.
+    /// 
+    /// # Errors
+    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an 
+    /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
+    /// 
+    pub fn listen_multicast_universe(&self, universe: u16) -> Result<()> {
+        let multicast_addr;
+
+        if self.addr.is_ipv4() {
+            multicast_addr = universe_to_ipv4_multicast_addr(universe).chain_err(|| "Failed to convert universe to IPv4 multicast addr")?;
+        } else {
+            multicast_addr = universe_to_ipv6_multicast_addr(universe).chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
+        }
+
+        Ok(join_unix_multicast(&self.socket, multicast_addr).chain_err(|| "Failed to join multicast")?)
     }
 
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
@@ -743,6 +844,54 @@ impl DiscoveredSacnSource {
             p.universes.retain(|x| *x != universe)
         }
     }
+}
+
+/// Creates a new Socket2 socket bound to the given address.
+/// 
+/// Returns the created socket.
+/// 
+/// Arguments:
+/// addr: The address that the newly created socket should bind to.
+/// 
+/// # Errors
+/// Will return an error if the socket cannot be created, see (Socket::new)[fn.new.Socket].
+/// 
+/// Will return an error if the socket cannot be bound to the given address, see (bind)[fn.bind.Socket].
+pub fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
+    if addr.is_ipv4() {
+        let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
+        
+        let socketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
+        socket.bind(&socketAddr.into())?;
+        Ok(socket)
+    } else {
+        /// Ipv6 not complete.
+        let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
+        socket.bind(&SockAddr::from(addr))?;
+        Ok(socket)
+    }
+}
+
+/// Joins the multicast group with the given address using the given socket.
+/// 
+/// Arguments:
+/// socket: The socket to join to the multicast group.
+/// addr:   The address of the multicast group to join.
+/// 
+/// # Errors
+/// Will return an error if the given socket cannot be joined to the given multicast group address.
+///     See join_multicast_v4[fn.join_multicast_v4.Socket] and join_multicast_v6[fn.join_multicast_v6.Socket]
+fn join_unix_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
+    match addr.ip() {
+        IpAddr::V4(ref mdns_v4) => {
+            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to join IPv4 multicast")?;
+        }
+        IpAddr::V6(ref mdns_v6) => {
+            socket.join_multicast_v6(mdns_v6, 0).chain_err(|| "Failed to join IPv6 multicast")?;
+        }
+    };
+
+    Ok(())
 }
 
 /// Creates a new Socket2 socket bound to the given address.
