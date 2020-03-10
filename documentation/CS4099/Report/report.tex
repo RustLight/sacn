@@ -1,6 +1,7 @@
 \documentclass[11pt,a4paper]{report}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
+\usepackage{float}
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{graphicx}
@@ -43,22 +44,7 @@
 		report.
 	At the time of starting this project there did not exist a native, open-source ANSI E1.31-2018 sACN library for rust which allowed data sending, receiving, universe synchronisation and universe discovery.  The library that did exist was incomplete and only supported sending data and parsing packets.\\
 	
-	This project therefore aims to create a library for rust users which supports ANSI E1.31-2018 sACN sending, receiving, universe synchronisation and discovery. This project is based on the existing library to give a starting point. As sACN is commonly used in heterogeneous device environments with a mix of embedded systems and operating systems such as Windows and Unix to provide support for as many devices as possible a few additional non-functional requirements were made; The library must have support for both Ipv4 and Ipv6 as well as unicast, multicast and broadcast in both windows and unix environments. Backwards compatibility with the existing library was abandoned due to the incomplete nature of the library and to re-use it would require significantly forcing the implementation of the new library into confusing patterns.
-	
-	\\
-	
-The project was split into the following list of primary and secondary objectives.\\
-	\begin{list}{}{Primary}
-		\item Allow sending and receiving DMX data over sACN.
-		\item Support the sending and receiving of cross universe DMX data through the universe synchronisation feature.
-		\item Support universe discovery with adverts for sources and discovery for receivers.
-	\end{list}
-	\begin{list}{}{Secondary}
-		\item Demonstrate a deployment of the library into a real-world system to show its compliance with the protocol by showing interoperability with other compliant devices.
-		\item Provide support for Windows 10 and Fedora Linux systems.
-		\item Support multiple IP transmission modes - Unicast, Multicast and Broadcast.
-		\item Support multiple IP versions - Ipv4 and Ipv6.
-	\end{list}
+	This project therefore aims to create a library for rust users which supports ANSI E1.31-2018 sACN sending, receiving, universe synchronisation and discovery. This project is based on the existing library to give a starting point. As sACN is commonly used in heterogeneous device environments with a mix of embedded systems and operating systems such as Windows and Unix to provide support for as many devices as possible a few additional non-functional requirements were made; The library must have support for both Ipv4 and Ipv6 as well as unicast, multicast and broadcast in both windows and unix environments. Backwards compatibility with the existing library was abandoned due to the incomplete nature of the library and to re-use it would require significantly forcing the implementation of the new library into confusing patterns.\\
 	
 	\section{Context Survey}
 	Context survey
@@ -83,29 +69,28 @@ The project was split into the following list of primary and secondary objective
 	\subsubsection{sACN}
 	One solution to solve some of the problems with DMX is to send it using UDP over a standard IP based network and one of the protocols created to do this is sACN. This allows many DMX packets (and so many universes) to be simultaneously sent using a single network cable from the console and then to be received by the devices. Often for backwards compatibility reasons the sACN is converted back into DMX packets before being sent to the device as most devices older than a few years do not support direct sACN communication but this is rapidly increasing - particularly with higher end professional fixtures. 
 	
-	\subsubsection{sACN - Universe Synchronisation}
-	A potential problem with multiplexing multiple universes down a single network line is that two universes of data cannot be sent simultaneously, this is often not a problem but for receiving devices that span multiple universes receiving one packet before the another may put the device into an inconsistent state. A similar problem arises if two different devices on different universes want to be controlled simultaneously. ANSI E1.31-2018 provides a solution to this problem in the form of the universe synchronisation feature. This works by data packets containing a synchronisation universe field which can be set to a specific universe. On receipt of a sACN packet with a non-zero universe synchronisation field a compliant receiver won't act on the packet immediately and instead will hold the data for that universe. This data will then be acted upon on receipt of a universe synchronisation packet with the corresponding universe. As data packets for multiple different universes can specify a single synchronisation universe this allows data for multiple universes to be acted upon simultaneously on receipt of a universe synchronisation packet.
+\subsubsection{sACN - Universe Synchronisation}
+A potential problem with multiplexing multiple universes down a single network line is that two universes of data cannot be sent simultaneously, this is often not a problem but for receiving devices that span multiple universes receiving one packet before the another may put the device into an inconsistent state. A similar problem arises if two different devices on different universes want to be controlled simultaneously. ANSI E1.31-2018 provides a solution to this problem in the form of the universe synchronisation feature. This works by data packets containing a synchronisation universe field which can be set to a specific universe. On receipt of a sACN packet with a non-zero universe synchronisation field a compliant receiver won't act on the packet immediately and instead will hold the data for that universe. This data will then be acted upon on receipt of a universe synchronisation packet with the corresponding universe. As data packets for multiple different universes can specify a single synchronisation universe this allows data for multiple universes to be acted upon simultaneously on receipt of a universe synchronisation packet.
 	
-	\subsection{Critical Analysis of the sACN protocol}
-	ANSI E1.31-2018 sACN over a purely DMX network provides a solution to a number of problems as discussed above but also introduces its own flaws.\\		
-	One flaw comes with the concept of universe synchronisation as it relies on all receivers to receive a universe synchronisation packet simultaneously. In real-world networks however this may not be the case and depending on the complexity of the network varying transmission latencies between devices may mean that even with synchronisation multiple sources act on data at different times. Another potential issue with the protocol is that it provides no protection from malicious or malfunctioning sources taking control of the system. This makes isolation, preferably physical, of the network vital and so ANSI E1.31 sACN is commonly used on networks dedicated to lighting protocols. This also helps reduce the issue of variable transmission latencies as these networks are likely to be fairly simple. 
+\subsubsection{sACN - Universe Discovery}
+sACN allows sending on upto 63998 universes with each universe having a unique multicast address. Any of the universes can be used by any source and so in initial versions of the protocol such as ANSI E1.31-2009 \cite{ANSI_E1.31_2009} the only way to learn which universes were in use were either to have prior knowledge or to scan every single possible address and listen for packets. This is very inefficient and impractical in a real-system especially as in the time that a universe was last scanned another source might have joined and started transmitting. Universe discovery solves this problem through the universe discovery mechanism. This mechanism works by having a reserved universe of 64214 (as defined in ANSI E1.31-2018 Appendix A) on which sources send universe discovery advert packets. These packets contain a list of universes that the source sends which is referred to as a universe page. Each page can hold 512 universes and so therefore a source may send multiple discovery packets each with a different page that the receiver can then put together to build up a complete list of universes that the source is sending. To allow a receiver to know when all the pages have been received for a given source each universe discovery page has a numbering which increases sequentially with the number of the last page expected included. By having multiple pages it prevents the protocol being required to send large packets on the network (size limited by page size not by the much larger number of possible universes). This is advantageous as it prevents problems with sending large packets such as causing a-lot of fragmentation at the link layer which will fragment packets into frames that are the size of link-layers maximum transmission unit (e.g. 1500 bytes for ethernet \cite{ETHERNET_MTU}).
 	
-	\subsection{Rust}
-	Rust \cite{RUST_LANG} is a compiled memory safe language with no garbage collector. It is extremely fast with near C/C++ like performance \cite{RUST_C_COMPARISON} but with a much stricter compiler that guarantees memory safety. As Rust has no runtime due to no garbage collector it is applicable to embedded devices and high performance applications making it an ideal language for an ANSI E1.31-2018 sACN device which are often embedded (e.g. in lighting fixtures) or controlling multiple steams of data in real-time where minimal latency is vitally important (e.g. lighting controllers).
-	
-	
-	
-	
-	
+\subsection{Critical Analysis of the sACN protocol}
+ANSI E1.31-2018 sACN over a purely DMX network provides a solution to a number of problems as discussed above but also introduces its own flaws.\\		
 
-	\subsection{Related Work}
-	The ANSI E1.31 sACN protocol was originally specified in the document ANSI E1.31-2009 \cite{ANSI_E1.31_2009}. This represented the base version of the protocol without any universe synchronisation, universe discovery or discussion of operation with Ipv6. Since then it has been revised in 2016 (universe sync and discovery) \cite{ANSI_E1.31_2016} and again to its current latest version in 2018 (Ipv6). The future of ANSI E1.31 is still being actively developed and discussed \cite{WHAT_COMES_AFTER_SACN} with the direction of the ACN eco-system of lighting control data over IP being focused on supporting communication from receivers back to sources. Within traditional DMX systems this is supported using the remote device management protocol (RDM) as described in ANSI E1.20-2010 \cite{ANSI_E1.20_2010}. An IP version of the RDM protocol was then created (RDMnet) \cite{ANSI_E1.33_2019} which is ACN based and allows discovery and control of receivers over a network. RDMnet as a fairly new protocol is still in the process of being taken up by vendors but has strong support from ETC (a large lighting company \cite{ETC}) in the form of a maintained open source implementation of RDMnet in C++ \cite{ANSI_E1.33_IMPL}.\\
+One flaw comes with the concept of universe synchronisation as it relies on all receivers to receive a universe synchronisation packet simultaneously. In real-world networks however this may not be the case and depending on the complexity of the network varying transmission latencies between devices may mean that even with synchronisation multiple sources act on data at different times. Another potential issue with the protocol is that it provides no protection from malicious or malfunctioning sources taking control of the system. This makes isolation, preferably physical, of the network vital and so ANSI E1.31 sACN is commonly used on networks dedicated to lighting protocols. This also helps reduce the issue of variable transmission latencies as these networks are likely to be fairly simple. Even with isolation from malicious users the sACN protocol is still vulnerable to problems related to byzantine failures where devices fail but rather than doing so cleanly instead produce random values which are interpreted by devices on the network as intentional and can cause the system to act unpredictably. These failures are not-uncommon in networks using cheap, knock-off devices which might not be fully compliant with the protocol even if they work most of the time.
 	
-	The ACN based family of lighting control protocols aren't the only protocols that allow sending DMX data over an IP network. Another widely adopted protocol is ArtNet which at time of writing is in its 4th version. Unlike sACN on its own ArtNet allows discovery of receivers, remote configuration and transporting RDM data \cite{ARNET} in addition to sending data. ArtNet therefore has taken the strategy of being a larger protocol which covers many use-cases as opposed to the ACN strategy of many protocols each doing a specific area that inter-operate. While they are developed independently the ArtNet v4 standard does allow managing sACN devices which means that it can be used to configure/control sACN devices but with the data still sent over sACN \cite[Pg. 3]{ARTNET}. \\https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust.html]
+\subsection{Rust}
+Rust \cite{RUST_LANG} is a compiled memory safe language with no garbage collector. It is extremely fast with near C/C++ like performance \cite{RUST_C_COMPARISON} but with a much stricter compiler that guarantees memory safety. As Rust has no runtime due to no garbage collector it is applicable to embedded devices and high performance applications making it an ideal language for an ANSI E1.31-2018 sACN device which are often embedded (e.g. in lighting fixtures) or controlling multiple steams of data in real-time where minimal latency is vitally important (e.g. lighting controllers).
 	
-	There are a number of existing implementations of sACN in rust however none are fully compliant with the protocol as specified in ANSI E1.31-2018. One of the most complete is \cite{ORIGNIAL_IMPL} which was used as the base for this project. As this is hosted on github it can be seen that while there are a number of forks (6 at time of writing) no public fork has any further progress which leads to the conclusion that this is the most complete open source rust implementation available. Note that this implementation appears in a number of places such as \cite{ORIGINAL_IMPL_RUST_DOC} but this is still the same implementation.\\
+\subsection{Related Work}
+The ANSI E1.31 sACN protocol was originally specified in the document ANSI E1.31-2009 \cite{ANSI_E1.31_2009}. This represented the base version of the protocol without any universe synchronisation, universe discovery or discussion of operation with Ipv6. Since then it has been revised in 2016 (universe sync and discovery) \cite{ANSI_E1.31_2016} and again to its current latest version in 2018 (Ipv6). The future of ANSI E1.31 is still being actively developed and discussed \cite{WHAT_COMES_AFTER_SACN} with the direction of the ACN eco-system of lighting control data over IP being focused on supporting communication from receivers back to sources. Within traditional DMX systems this is supported using the remote device management protocol (RDM) as described in ANSI E1.20-2010 \cite{ANSI_E1.20_2010}. An IP version of the RDM protocol was then created (RDMnet) \cite{ANSI_E1.33_2019} which is ACN based and allows discovery and control of receivers over a network. RDMnet as a fairly new protocol is still in the process of being taken up by vendors but has strong support from ETC (a large lighting company \cite{ETC}) in the form of a maintained open source implementation of RDMnet in C++ \cite{ANSI_E1.33_IMPL}.\\
 	
-	Implementations of sACN exist in multiple languages, at the time of writing (Jan 2020) a cursory search for E1.31 repositories on github reveals repositories in multiple languages with the most prevalent being C++ and C as shown by Figure: \ref{E131_REPO_SEARCH}. An example of one of these projects is \ref{C++_IMPL} which allows both sending and receiving of sACN packets.
+The ACN based family of lighting control protocols aren't the only protocols that allow sending DMX data over an IP network. Another widely adopted protocol is ArtNet which at time of writing is in its 4th version. Unlike sACN on its own ArtNet allows discovery of receivers, remote configuration and transporting RDM data \cite{ARNET} in addition to sending data. ArtNet therefore has taken the strategy of being a larger protocol which covers many use-cases as opposed to the ACN strategy of many protocols each doing a specific area that inter-operate. While they are developed independently the ArtNet v4 standard does allow managing sACN devices which means that it can be used to configure/control sACN devices but with the data still sent over sACN \cite[Pg. 3]{ARTNET}. \\https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust.html]
+	
+There are a number of existing implementations of sACN in rust however none are fully compliant with the protocol as specified in ANSI E1.31-2018. One of the most complete is \cite{ORIGNIAL_IMPL} which was used as the base for this project. As this is hosted on github it can be seen that while there are a number of forks (6 at time of writing) no public fork has any further progress which leads to the conclusion that this is the most complete open source rust implementation available. Note that this implementation appears in a number of places such as \cite{ORIGINAL_IMPL_RUST_DOC} but this is still the same implementation.\\
+	
+Implementations of sACN exist in multiple languages, at the time of writing (Jan 2020) a cursory search for E1.31 repositories on github reveals repositories in multiple languages with the most prevalent being C++ and C as shown by Figure: \ref{E131_REPO_SEARCH}. An example of one of these projects is \ref{C++_IMPL} which allows both sending and receiving of sACN packets.
 	
 	\begin{figure}
 		\label{E131_REPO_SEARCH}
@@ -113,13 +98,24 @@ The project was split into the following list of primary and secondary objective
 		\caption{A search of repositories on github with the search term "E1.31" as of Jan 2020}
 	\end{figure}
 
-	\section{Requirement specification}
-	Requirements
-	specification
-	Capturing the properties the software solution must
+\section{Requirement specification}
+Requirements specification. Capturing the properties the software solution must
 	have in the form of requirements specification. You
 	may wish to specify different types of requirements and
 	given them priorities if applicable.
+	
+The project was split into the following list of primary and secondary functional requirements\\
+	\begin{list}{}{Primary}
+		\item Allow sending and receiving DMX data over sACN.
+		\item Support the sending and receiving of cross universe DMX data through the universe synchronisation feature.
+		\item Support universe discovery with adverts for sources and discovery for receivers.
+	\end{list}
+	\begin{list}{}{Secondary}
+		\item Demonstrate a deployment of the library into a real-world system to show its compliance with the protocol by showing interoperability with other compliant devices.
+		\item Provide support for Windows 10 and Fedora Linux systems.
+		\item Support multiple IP transmission modes - Unicast, Multicast and Broadcast.
+		\item Support multiple IP versions - Ipv4 and Ipv6.
+	\end{list}
 	
 \section{Software Engineering Process}
 Software engineering process. The development approach taken and justification for its adoption.
@@ -141,43 +137,38 @@ The system design phase is where the requirements are turned into a technical pl
 \subsection{Implementation, Testing and Deployment Phases}
 As most of the design is already provided in the form of the protocol specifications and the requirement to make the project in rust it means that the project is mainly focused on the Implementation, Testing and Deployment phases. The implementation phase is one of the biggest in this project and represents the actual creation of the code as discussed in more detail in the Implementation section. As part of the engineering process there was an amount of looping between the implementation and testing phases. This was done as each part of the code was implemented (for example adding universe synchronisation) which was then tested by creating some initial tests to check that the design for that section has been implemented correctly. Then the implementation phase was revisited to either fix a discovered bug or to implement the next section. This looping is similar to the way that a test-driven-development methodology might work however the waterfall methodology described here is distinct as the implementation is written before the tests.\\
 
-The implementation is known to be complete when all the functionality specified in the design has been implemented. In this project this is represented by data sending, universe sync and universe discovery all being implemented on both the sender and receiver. 
+The implementation is known to be complete when all the functionality specified in the design has been implemented. In this project this is represented by data sending, universe sync and universe discovery all being implemented on both the sender and receiver. At this point the project moves into the testing phase. The focus now becomes on verifying that the implementation is correct with respect to the design (compliant) using a holistic view with all parts put together as-well as ensuring the documentation matches the actual behaviour. During this stage it is possible that bugs or areas where the implementation isn't compliant with the protocol specification may be discovered. In this case the focus will move briefly back to the implementation stage to fix the problems before progressing back through to the testing phase. It is possible at this phase that a design problem is encountered, for example if it was found that the structure of the program didn't support a functional or non-functional requirement. If this happens then at that point the engineering focus would move back to the design stage and as per the waterfall model the focus would then continue through the process of the implementation and testing phases. The testing phase is signalled as complete when there is sufficient tests that verify that all functional and non-functional requirements have been met. What counts as sufficient is discussed in more detail in the testing section.\\
+
+The next phase if the deployment phase, within the project this is where the finished and tested code is given to users to use. In this project this is shown by the real-world and acceptance tests. These tests fall across the boundary of the testing and deployment phases as they both verify the system works but also show that it is sufficiently mature that it can be used by an intended end user. For this project the intended end user is a software developer creating a program which allows usage of the E131 protocol. Having an actual developer use the library is beyond the scope of the project however the demo sender and receivers act as an example of a possible deployment. Since this example is then demoed by interacting with a real-system and this is shown to someone who actually works in the field it shows that the project has reached the stage of being deployed. As part of this stage it also includes the packaging of the project so that it can be used by developers including the finalisation of documentation and a list of dependencies, once this is complete and the demo programs have been packaged the deployment stage is complete. This is the point at which the scope of the project ends as the final 'deployment' is marked by the final submission.\\
+
+The final stage is the maintenance stage, this falls out with the scope of this limited time-period project however in a real-world project this represents the process of users reporting bugs, problems, feedback and developers looping back to one of the various stages such as design, implementation or testing to verify the problem and implement a fix. While not part of the project directly it is hoped that the library will be able to be contributed back to the community e.g. through the rust cargo repository and GitHub and by doing so the maintenance stage can begin. \\
+
+\subsection*{Reflection on Methodology Used}
+The approach fit the project well as it made it clear which stages the project was focused on (implementation, testing, deployment) with the previous stages (analysis, design) clearly shown by the protocol specification. The methodology did require increased up-front work as implementation could not begin until the analysis and design states were complete. This up-front work came in the form of the initial documentation for the project such as the DOER list of objectives and as this is required anyway this isn't a problem for this project. The methodology also meant that there was the risk that too long could be spent on one stage which delays further stages and therefore the entire project doesn't reach the deployment stage by the fixed deadline. This meant that a time-line had to be created early on to mark when various parts of the project would be complete so that progress could be tracked. This was attached as part of the project in the 'Objectives with times.txt' file and its creation and modifications are shown by the git-version control which shows how it changed. This was later superseded by minute notes at weekly meetings where the project and its progress were discussed. Taken together these show how the project has developed and how the requirements have been changed from those originally proposed due to time-constraints. \\
+
+A high level view of the development of the project over time is shown in Figure \ref{project_dev_timeline}. This shows that the waterfall methodology was followed starting with the deployed existing library which is moved into the requirement analysis stage as new requirements are set as discussed in the requirements section. The requirements are then turned into a design using some of the structure provided by the existing base implementation and a set of milestones created. As discussed above the project then enters its main stages of implementation and testing which loop around as sections of the program are created, tested and debugged. It can be seen that at on the 12th of January the project had to loop back 2 steps to the design stage and this was due to the non-threaded structure of the program being insufficient to allow the periodic universe discovery adverts and so the design had to be changed to a threaded structure to allow this. The implementation of this new design and testing was then performed as part of the next 2 steps as per the waterfall model. This was then followed by a stage of further testing indicating the start of the test phase. This phase also included instances of steps back being required such as the bug found on March 7th which required implementing a new OS specific socket handling mechanism to fix. The testing phase then continued up until the code was ready to be demoed in the real-world environment which marks the transition from the testing phase into the documentation phase. The documentation phase then continued right up until the final deployment marked by the final submission.\\
+
+\begin{figure}[H]
+\label{project_dev_timeline}
+\includegraphics[width=\textwidth]{CS4099-dev-timeline}
+\caption{The development of the project over time with the water-fall methodology stages marked}
+\end{figure}
 
 
 
-
-	The 'testing' phase is the combining of the various bits of the implementation. This is marked by the passing of the various intergration tests
-	where the sender and the receiver were passing information back and forth. Also part of this phase is the overall compliance tests which are detailed
-	later which show that the implementation of the protocol as a whole conforms to the design and requirements.
-
-	\paragraph*{}
-	Once the testing phase has finished the implementation can move onto the 'deployment' phase. In an industry project this would mean 
-	distributing the implementation to users and then later moving to the maintenance stage to fix issues or improve various parts of the project
-	as opportunities or problems are reported. Within this project the deployment took the form of the development of 2 small programs, one which transmits data 
-	specified by the user in the form of various dynamic patterns and a receiver which logs all received input. Theses programs followed a waterfall development
-	methodolgy as described later. These programs were then used with various other sACN devices in a real-world environment to show real usage/deployment of
-	the protocol. Issues that are discovered at this point can then be fixed through patches which represent the 'maintenance' phase of the program.
+\section*{Ethics}
+This project has no ethical considerations that require notification in this section.
 	
-	\paragraph*{}
-	Reflection on the methonolody used
-	In general the approach used worked well for the project as it fit the natural development stratergy meaning there weren't any points where the development felt
-	like it was 'fighting' the approach chosen. There were a few potential problems that were identified however. One of these was that the model forced rigid time 
-	constraints. This is because if too long is spent on any one stage all the subsequent stages would suffer. This was taken as a fairly minor issue for this project 
-	because the constraints of fixed submissions deadlines already meant that there some rigid time constraints in place. 
-
-	\ref{waterfall-diagram}
-	https://www.tutorialspoint.com/sdlc/sdlc\_waterfall\_model.htm (01/01/2020)
-	
-	\section*{Ethics}
-	This project has no ethical considerations that require notification in this section.
-	
-	\section{Design}
+\section{Design}
 	Design
 	Indicating the structure of the system, with particular
 	focus on main ideas of the design, unusual design
 	features, etc.
-	\subsection{ANSI E1.31-2018}
-	\subsection{Critique of the protocol}
+	
+-- Intended end user		
+	documentation vital -> maintenance -> developers will use the library
+test-> compliance -> conformance -> what it means for there to be 'sufficient' testing
+	
 	\section{Implementation}
 	Implementation
 	How the implementation was done and tested, with
@@ -221,6 +212,9 @@ The implementation is known to be complete when all the functionality specified 
 	\section{User Manual}
 	User manual Instructions on installing, executing and using the
 	system where appropriate.
+	
+	Building documentation from source:
+	cargo doc --document-private-items --no-deps --open
 	
 	\section{Other Appendices}
 	Other
@@ -275,6 +269,10 @@ The implementation is known to be complete when all the functionality specified 
 		https://benchmarksgame-team.pages.debian.net/benchmarksgame/fastest/rust.html (28/01/2020)
 		\bibitem{WHY_LEARN_RUST}
 		https://www.techrepublic.com/article/rust-programming-language-seven-reasons-why-you-should-learn-it-in-2019/
+		\bibitem{waterfall-diagram}
+		https://www.tutorialspoint.com/sdlc/sdlc\_waterfall\_model.htm (01/01/2020)
+		\bibitem{ETHERNET_MTU}
+		https://tools.ietf.org/html/rfc894 (10/03/2020)
 		
 	\end{thebibliography}
 	
