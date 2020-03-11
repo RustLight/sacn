@@ -143,7 +143,7 @@ The next phase if the deployment phase, within the project this is where the fin
 
 The final stage is the maintenance stage, this falls out with the scope of this limited time-period project however in a real-world project this represents the process of users reporting bugs, problems, feedback and developers looping back to one of the various stages such as design, implementation or testing to verify the problem and implement a fix. While not part of the project directly it is hoped that the library will be able to be contributed back to the community e.g. through the rust cargo repository and GitHub and by doing so the maintenance stage can begin. \\
 
-\subsection*{Reflection on Methodology Used}
+\subsection{Reflection on Methodology Used}
 The approach fit the project well as it made it clear which stages the project was focused on (implementation, testing, deployment) with the previous stages (analysis, design) clearly shown by the protocol specification. The methodology did require increased up-front work as implementation could not begin until the analysis and design states were complete. This up-front work came in the form of the initial documentation for the project such as the DOER list of objectives and as this is required anyway this isn't a problem for this project. The methodology also meant that there was the risk that too long could be spent on one stage which delays further stages and therefore the entire project doesn't reach the deployment stage by the fixed deadline. This meant that a time-line had to be created early on to mark when various parts of the project would be complete so that progress could be tracked. This was attached as part of the project in the 'Objectives with times.txt' file and its creation and modifications are shown by the git-version control which shows how it changed. This was later superseded by minute notes at weekly meetings where the project and its progress were discussed. Taken together these show how the project has developed and how the requirements have been changed from those originally proposed due to time-constraints. \\
 
 A high level view of the development of the project over time is shown in Figure \ref{project_dev_timeline}. This shows that the waterfall methodology was followed starting with the deployed existing library which is moved into the requirement analysis stage as new requirements are set as discussed in the requirements section. The requirements are then turned into a design using some of the structure provided by the existing base implementation and a set of milestones created. As discussed above the project then enters its main stages of implementation and testing which loop around as sections of the program are created, tested and debugged. It can be seen that at on the 12th of January the project had to loop back 2 steps to the design stage and this was due to the non-threaded structure of the program being insufficient to allow the periodic universe discovery adverts and so the design had to be changed to a threaded structure to allow this. The implementation of this new design and testing was then performed as part of the next 2 steps as per the waterfall model. This was then followed by a stage of further testing indicating the start of the test phase. This phase also included instances of steps back being required such as the bug found on March 7th which required implementing a new OS specific socket handling mechanism to fix. The testing phase then continued up until the code was ready to be demoed in the real-world environment which marks the transition from the testing phase into the documentation phase. The documentation phase then continued right up until the final deployment marked by the final submission.\\
@@ -155,15 +155,37 @@ A high level view of the development of the project over time is shown in Figure
 \end{figure}
 
 
+\section{Tools \& Technologies}
+- Rust
+	- Error-chain
+	- Net2/Socket2
+- Cargo
+	- Run
+	- Docs
+	- Test
+- Wireshark
+	- ACN filter
+- Vision
+	- What visualisers are
+- sACN Viewer
+	- Checking formatting
+- Git, Github, Gitlab
+	- Version control
 
-\section*{Ethics}
+\section{Ethics}
 This project has no ethical considerations that require notification in this section.
 	
 \section{Design}
+The project was based around creating a library that is high-level enough that a user can easily use it for its primary functionality. This meant providing a clear set of public facing functions/methods which don't rely on the user understanding all aspects of the protocol and instead just the bits they are interested in. For example the SacnReceiver.recv(timeout) method,  takes just a timeout (using None to indicate no timeout) and returns DMX data. This completely abstracts away many aspects of the protocol from a user who most of the time will want to just get data and perform actions with it. For example this function abstracts the concept of 
+
+
 	Design
 	Indicating the structure of the system, with particular
 	focus on main ideas of the design, unusual design
 	features, etc.
+	
+	
+	
 	
 -- Intended end user		
 	documentation vital -> maintenance -> developers will use the library
@@ -175,6 +197,9 @@ test-> compliance -> conformance -> what it means for there to be 'sufficient' t
 	particular focus on important / novel algorithms
 	and/or data structures, unusual implementation
 	decisions, novel user interface features, etc.
+	
+	\subsection{Std vs Non-Std}
+	
 	
 	\subsection{Implementation dependent specifics}
 	
