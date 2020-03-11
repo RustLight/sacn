@@ -23,6 +23,12 @@ pub mod errors {
 
         errors {
 
+            /// A source was discovered by a receiver with the announce_discovery_flag set to true.
+            SourceDiscovered(msg: String) {
+                description("A source was discovered by a receiver with the announce_discovery_flag set to true"),
+                display("A source was discovered by a receiver with the announce_discovery_flag set to true, msg: {}", msg)
+            }
+
             /// Attempted to exceed the capacity of a single universe (packet::UNIVERSE_CHANNEL_CAPACITY).
             ExceedUniverseCapacity(msg: String) {
                 description("Attempted to exceed the capacity of a single universe"),

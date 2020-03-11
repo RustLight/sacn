@@ -42,23 +42,14 @@ pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
 /// DMX payload size in bytes (512 bytes of data + 1 byte start code).
 pub const DMX_PAYLOAD_SIZE: usize = 513;
 
-/// By default shouldn't check for packets send over the network using unicast.
-pub const CHECK_UNICAST_DEFAULT: bool = false;
-
-/// By default should check for packets sent over the network using multicast.
-pub const CHECK_MUTLICAST_DEFAULT: bool = true;
-
-/// By default shouldn't check for packets sent over the network using broadcast.
-pub const CHECK_BROADCAST_DEFAULT: bool = false;
-
 /// The name of the thread which runs periodically to perform actions on the receiver such as update discovered universes.
 pub const RCV_UPDATE_THREAD_NAME: &'static str = "rust_sacn_rcv_update_thread"; 
 
 /// The default value of the process_preview_data flag.
 const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 
-/// The default value for the reading timeout for a SacnNetworkReceiver.
-pub const DEFAULT_RECV_TIMEOUT: Option<Duration> = Some(time::Duration::from_millis(500));
+/// The default value of the announce_source_discovery flag.
+const ANNOUNCE_SOURCE_DISCOVERY_DEFAULT: bool = false;
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
@@ -95,6 +86,9 @@ pub struct SacnReceiver {
     /// Sequence numbers are always in the range [0, 255] inclusive.
     /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     sync_sequences: RefCell<HashMap<u16, u8>>,
+
+    /// Flag which indicates if a SourceDiscovered error should be thrown when receiving data and a source is discovered.
+    announce_source_discovery: bool
 }
 
 impl fmt::Debug for SacnReceiver {
@@ -137,6 +131,7 @@ impl SacnReceiver {
                 process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT,
                 data_sequences: RefCell::new(HashMap::new()),
                 sync_sequences: RefCell::new(HashMap::new()),
+                announce_source_discovery: ANNOUNCE_SOURCE_DISCOVERY_DEFAULT,
         };
 
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE]).chain_err(|| "Failed to listen to discovery universe")?;
@@ -374,12 +369,12 @@ impl SacnReceiver {
     /// This universe discovery packet might be the whole thing or may be just one page of a discovery packet.
     /// This method puts the pages to produce the DiscoveredSacnSource which is stored in the receiver.
     /// 
-    /// Returns None as this will never produce data.
+    /// Returns true if a source was fully discovered or false if the source was only partially discovered.
     /// 
     /// Arguments:
     /// discovery_pkt: The universe discovery part of the universe discovery packet to handle.
     /// 
-    fn handle_universe_discovery_packet(&mut self, discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> Option<Vec<DMXData>>{
+    fn handle_universe_discovery_packet(&mut self, discovery_pkt: UniverseDiscoveryPacketFramingLayer) -> bool {
         let data: UniverseDiscoveryPacketUniverseDiscoveryLayer = discovery_pkt.data;
 
         let page: u8 = data.page;
@@ -400,6 +395,7 @@ impl SacnReceiver {
                 if self.partially_discovered_sources[index].has_all_pages() {
                     let discovered_src: DiscoveredSacnSource = self.partially_discovered_sources.remove(index);
                     self.update_discovered_srcs(discovered_src);
+                    return true;
                 }
             }
             None => { // This is the first page received from this source.
@@ -412,13 +408,14 @@ impl SacnReceiver {
 
                 if page == 0 && page == last_page { // Indicates that this is a single page universe discovery packet.
                     self.update_discovered_srcs(discovered_src);
+                    return true;
                 } else { // Indicates that this is a page in a set of pages as part of a sources universe discovery.
                     self.partially_discovered_sources.push(discovered_src);
                 }
             }
         }
 
-        None
+        return false;
     }
 
     /// Attempt to recieve data from any of the registered universes.
@@ -429,6 +426,9 @@ impl SacnReceiver {
     /// # Errors
     /// This method will return a WouldBlock error if there is no data ready within the given timeout.
     /// A timeout of duration 0 will instantly return a WouldBlock error without checking for data.
+    ///
+    /// Will return ErrorKind::SourceDiscovered error if the announce_source_discovery flag is set and a universe discovery 
+    /// packet is received and a source fully discovered. 
     ///
     /// Will return a UniverseNotRegistered error if this method is called with an infinite timeout and no
     /// registered data universes. This is to protect the user from making this mistake leading to the method
@@ -464,7 +464,13 @@ impl SacnReceiver {
                     let res = match data {
                         DataPacket(d) => self.handle_data_packet(d).chain_err(|| "Failed to handle data packet")?,
                         SynchronizationPacket(s) => self.handle_sync_packet(s).chain_err(|| "Failed to handle sync packet")?,
-                        UniverseDiscoveryPacket(u) => self.handle_universe_discovery_packet(u)
+                        UniverseDiscoveryPacket(u) => {
+                            if self.handle_universe_discovery_packet(u) && self.announce_source_discovery {
+                                bail!(ErrorKind::SourceDiscovered("Receiver discovered a source".to_string()));
+                            } else {
+                                None
+                            }
+                        }
                     };
                     match res {
                         Some(r) => {
