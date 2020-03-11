@@ -430,9 +430,9 @@ impl SacnReceiver {
     /// Will return ErrorKind::SourceDiscovered error if the announce_source_discovery flag is set and a universe discovery 
     /// packet is received and a source fully discovered. 
     ///
-    /// Will return a UniverseNotRegistered error if this method is called with an infinite timeout and no
-    /// registered data universes. This is to protect the user from making this mistake leading to the method
-    /// never returning.
+    /// Will return a UniverseNotRegistered error if this method is called with an infinite timeout, no
+    /// registered data universes and the announce_discovered_sources flag set to off. This is to protect the user from 
+    /// making this mistake leading to the method never being able to return.
     /// 
     /// The method may also return an error if there is an issue setting a timeout on the receiver. See 
     /// SacnNetworkReceiver::set_timeout for details.
@@ -441,11 +441,11 @@ impl SacnReceiver {
     /// See the SacnReceiver::handle_data_packet, SacnReceiver::handle_sync_packet and SacnReceiver::handle_universe_discovery_packet methods 
     /// for details. 
     pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>> {
-        if self.universes.len() == 1 && self.universes[0] == E131_DISCOVERY_UNIVERSE && timeout.is_none() {
+        if self.universes.len() == 1 && self.universes[0] == E131_DISCOVERY_UNIVERSE && timeout.is_none() && !self.announce_source_discovery {
             // This indicates that the only universe that can be received is the discovery universe.
             // This means that having no timeout may lead to no data ever being received and so this method blocking forever
             // to prevent this likely unintended behaviour throw a universe not registered error.
-            bail!(ErrorKind::UniverseNotRegistered("Attempting to receive data with no data universes registered and an infinite timeout".to_string()));
+            bail!(ErrorKind::UniverseNotRegistered("Attempting to receive data with no data universes registered, an infinite timeout and no discovery announcements".to_string()));
         }
 
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE ] = [0; RCV_BUF_DEFAULT_SIZE];
@@ -520,6 +520,24 @@ impl SacnReceiver {
     fn remove_expired_sources(&mut self) {
         self.partially_discovered_sources.retain(|s| s.last_updated.elapsed() < UNIVERSE_DISCOVERY_SOURCE_TIMEOUT);
         self.discovered_sources.retain(|s| s.last_updated.elapsed() < UNIVERSE_DISCOVERY_SOURCE_TIMEOUT);
+    }
+
+    pub fn get_announce_source_discovery(&self) -> bool {
+        return self.announce_source_discovery;
+    }
+
+    /// Sets the value of the announce_source_discovery flag to the given value.
+    ///
+    /// By default this flag is false which indicates that when receiving data discovered sources through universe discovery
+    ///  won't be announced by the recv method and the receivers list of discovered universes will be updated silently.
+    /// If set to true then it means that a SourceDiscovered error will be thrown whenever a source is discovered through a 
+    ///  complete universe discovery packet. 
+    ///
+    /// Arguments:
+    /// new_val: The new value for the announce_source_discovery flag.
+    ///
+    pub fn set_announce_source_discovery(&mut self, new_val: bool) {
+        self.announce_source_discovery = new_val;
     }
 }
 
