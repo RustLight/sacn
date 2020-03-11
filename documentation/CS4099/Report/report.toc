@@ -1,27 +1,30 @@
-\contentsline {section}{\numberline {0.1}Abstract}{1}%
-\contentsline {section}{\numberline {0.2}Declaration}{1}%
-\contentsline {section}{\numberline {0.3}Introduction}{3}%
-\contentsline {section}{\numberline {0.4}Context Survey}{3}%
-\contentsline {subsection}{\numberline {0.4.1}DMX, SACN and ACN}{3}%
-\contentsline {subsubsection}{DMX512}{3}%
-\contentsline {subsubsection}{sACN}{4}%
-\contentsline {subsubsection}{sACN - Universe Synchronisation}{4}%
-\contentsline {subsubsection}{sACN - Universe Discovery}{5}%
-\contentsline {subsection}{\numberline {0.4.2}Critical Analysis of the sACN protocol}{6}%
-\contentsline {subsection}{\numberline {0.4.3}Rust}{6}%
-\contentsline {subsection}{\numberline {0.4.4}Related Work}{6}%
-\contentsline {section}{\numberline {0.5}Requirement specification}{7}%
-\contentsline {section}{\numberline {0.6}Software Engineering Process}{9}%
-\contentsline {subsection}{\numberline {0.6.1}Implementation, Testing and Deployment Phases}{10}%
-\contentsline {section}{\numberline {0.7}Tools \& Technologies}{14}%
-\contentsline {section}{\numberline {0.8}Design}{14}%
-\contentsline {section}{\numberline {0.9}Implementation}{14}%
-\contentsline {subsection}{\numberline {0.9.1}Implementation dependent specifics}{14}%
-\contentsline {section}{\numberline {0.10}Evaluation and Critical Appraisal}{14}%
-\contentsline {section}{\numberline {0.11}Conclusions}{14}%
-\contentsline {section}{\numberline {0.12}Appendices}{14}%
-\contentsline {section}{\numberline {0.13}Testing}{15}%
-\contentsline {subsection}{\numberline {0.13.1}Automated Testing}{15}%
-\contentsline {subsection}{\numberline {0.13.2}Real-world Testing}{15}%
-\contentsline {section}{\numberline {0.14}User Manual}{15}%
-\contentsline {section}{\numberline {0.15}Other Appendices}{15}%
+\contentsline {section}{\numberline {0.1}Abstract}{1}
+\contentsline {section}{\numberline {0.2}Declaration}{1}
+\contentsline {section}{\numberline {0.3}Introduction}{3}
+\contentsline {section}{\numberline {0.4}Context Survey}{3}
+\contentsline {subsection}{\numberline {0.4.1}DMX, SACN and ACN}{3}
+\contentsline {subsubsection}{DMX512}{3}
+\contentsline {subsubsection}{sACN}{4}
+\contentsline {subsubsection}{sACN - Universe Synchronisation}{4}
+\contentsline {subsubsection}{sACN - Universe Discovery}{5}
+\contentsline {subsection}{\numberline {0.4.2}Critical Analysis of the sACN protocol}{6}
+\contentsline {subsection}{\numberline {0.4.3}Rust}{6}
+\contentsline {subsection}{\numberline {0.4.4}Related Work}{6}
+\contentsline {section}{\numberline {0.5}Requirement specification}{7}
+\contentsline {section}{\numberline {0.6}Software Engineering Process}{9}
+\contentsline {subsection}{\numberline {0.6.1}Implementation, Testing and Deployment Phases}{10}
+\contentsline {subsection}{\numberline {0.6.2}Reflection on Methodology Used}{12}
+\contentsline {section}{\numberline {0.7}Tools \& Technologies}{14}
+\contentsline {section}{\numberline {0.8}Ethics}{14}
+\contentsline {section}{\numberline {0.9}Design}{14}
+\contentsline {section}{\numberline {0.10}Implementation}{14}
+\contentsline {subsection}{\numberline {0.10.1}Std vs Non-Std}{14}
+\contentsline {subsection}{\numberline {0.10.2}Implementation dependent specifics}{14}
+\contentsline {section}{\numberline {0.11}Evaluation and Critical Appraisal}{14}
+\contentsline {section}{\numberline {0.12}Conclusions}{15}
+\contentsline {section}{\numberline {0.13}Appendices}{15}
+\contentsline {section}{\numberline {0.14}Testing}{15}
+\contentsline {subsection}{\numberline {0.14.1}Automated Testing}{15}
+\contentsline {subsection}{\numberline {0.14.2}Real-world Testing}{15}
+\contentsline {section}{\numberline {0.15}User Manual}{15}
+\contentsline {section}{\numberline {0.16}Other Appendices}{15}

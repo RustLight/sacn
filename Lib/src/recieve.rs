@@ -429,6 +429,10 @@ impl SacnReceiver {
     /// # Errors
     /// This method will return a WouldBlock error if there is no data ready within the given timeout.
     /// A timeout of duration 0 will instantly return a WouldBlock error without checking for data.
+    ///
+    /// Will return a UniverseNotRegistered error if this method is called with an infinite timeout and no
+    /// registered data universes. This is to protect the user from making this mistake leading to the method
+    /// never returning.
     /// 
     /// The method may also return an error if there is an issue setting a timeout on the receiver. See 
     /// SacnNetworkReceiver::set_timeout for details.
@@ -437,6 +441,13 @@ impl SacnReceiver {
     /// See the SacnReceiver::handle_data_packet, SacnReceiver::handle_sync_packet and SacnReceiver::handle_universe_discovery_packet methods 
     /// for details. 
     pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>> {
+        if self.universes.len() == 1 && self.universes[0] == E131_DISCOVERY_UNIVERSE && timeout.is_none() {
+            // This indicates that the only universe that can be received is the discovery universe.
+            // This means that having no timeout may lead to no data ever being received and so this method blocking forever
+            // to prevent this likely unintended behaviour throw a universe not registered error.
+            bail!(ErrorKind::UniverseNotRegistered("Attempting to receive data with no data universes registered and an infinite timeout".to_string()));
+        }
+
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE ] = [0; RCV_BUF_DEFAULT_SIZE];
 
         if timeout == Some(Duration::from_secs(0)) {
