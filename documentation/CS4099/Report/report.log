@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (MiKTeX 2.9.6840 64-bit) (preloaded format=pdflatex 2018.11.14)  11 MAR 2020 10:21
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (MiKTeX 2.9.6840 64-bit) (preloaded format=pdflatex 2018.11.14)  11 MAR 2020 15:21
 entering extended mode
 **./report.tex
 (report.tex
@@ -258,66 +258,66 @@ Underfull \hbox (badness 10000) in paragraph at lines 47--48
  []
 
 [3] [4]
-Underfull \hbox (badness 10000) in paragraph at lines 79--80
+Underfull \hbox (badness 10000) in paragraph at lines 76--77
 
  []
 
 [5]
-Underfull \hbox (badness 10000) in paragraph at lines 87--88
+Underfull \hbox (badness 10000) in paragraph at lines 81--82
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 89--90
 
  []
 
 [6]
 
-LaTeX Warning: Citation `ARNET' on page 7 undefined on input line 89.
+LaTeX Warning: Citation `ARNET' on page 7 undefined on input line 91.
 
 
-Overfull \hbox (46.58011pt too wide) in paragraph at lines 89--90
+Overfull \hbox (46.58011pt too wide) in paragraph at lines 91--92
 \OT1/cmr/m/n/10.95 https://benchmarksgame-team.pages.debian.net/benchmarksgame/
 fastest/rust.html] 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 91--92
+Underfull \hbox (badness 10000) in paragraph at lines 93--94
 
  []
 
 
-LaTeX Warning: Reference `C++_IMPL' on page 7 undefined on input line 93.
+LaTeX Warning: Reference `C++_IMPL' on page 7 undefined on input line 95.
 
 <E131-Repo-Search.png, id=27, 545.78906pt x 441.52454pt>
 File: E131-Repo-Search.png Graphic file (type png)
 <use E131-Repo-Search.png>
-Package pdftex.def Info: E131-Repo-Search.png  used on input line 97.
+Package pdftex.def Info: E131-Repo-Search.png  used on input line 99.
 (pdftex.def)             Requested size: 360.0pt x 291.22519pt.
 [7] [8 <./E131-Repo-Search.png>]
 <sdlc_waterfall_model.jpg, id=36, 451.6875pt x 301.8778pt>
 File: sdlc_waterfall_model.jpg Graphic file (type jpg)
 <use sdlc_waterfall_model.jpg>
-Package pdftex.def Info: sdlc_waterfall_model.jpg  used on input line 127.
+Package pdftex.def Info: sdlc_waterfall_model.jpg  used on input line 129.
 (pdftex.def)             Requested size: 360.0pt x 240.61356pt.
  [9]
-Underfull \hbox (badness 10000) in paragraph at lines 138--139
-
- []
-
-[10 <./sdlc_waterfall_model.jpg>]
 Underfull \hbox (badness 10000) in paragraph at lines 140--141
 
  []
 
-
+[10 <./sdlc_waterfall_model.jpg>]
 Underfull \hbox (badness 10000) in paragraph at lines 142--143
 
  []
 
-[11]
+
 Underfull \hbox (badness 10000) in paragraph at lines 144--145
 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 147--148
+[11]
+Underfull \hbox (badness 10000) in paragraph at lines 146--147
 
  []
 
@@ -326,96 +326,127 @@ Underfull \hbox (badness 10000) in paragraph at lines 149--150
 
  []
 
+
+Underfull \hbox (badness 10000) in paragraph at lines 151--152
+
+ []
+
 [12]
 <CS4099-dev-timeline.png, id=50, 830.10126pt x 672.5125pt>
 File: CS4099-dev-timeline.png Graphic file (type png)
 <use CS4099-dev-timeline.png>
-Package pdftex.def Info: CS4099-dev-timeline.png  used on input line 153.
+Package pdftex.def Info: CS4099-dev-timeline.png  used on input line 155.
 (pdftex.def)             Requested size: 360.0pt x 291.65807pt.
- [13 <./CS4099-dev-timeline.png>] [14]
-Overfull \hbox (10.96207pt too wide) in paragraph at lines 219--224
+ [13] [14 <./CS4099-dev-timeline.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 217--218
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 220--221
+
+ []
+
+[15]
+Underfull \hbox (badness 10000) in paragraph at lines 226--227
+
+ []
+
+[16]
+Underfull \hbox (badness 10000) in paragraph at lines 228--229
+
+ []
+
+[17]
+Overfull \hbox (0.89124pt too wide) in paragraph at lines 252--253
+[]\OT1/cmr/m/n/10.95 -- Std/No-Std means won't work on all em-bed-ded de-vices,
+ also the thread-
+ []
+
+
+Overfull \hbox (10.96207pt too wide) in paragraph at lines 256--261
 \OT1/cmr/m/n/10.95 Conclusions You should sum-marise your project, em-pha-sis-i
 ng your key achieve-
  []
 
 
-Overfull \hbox (1.10419pt too wide) in paragraph at lines 241--243
+Overfull \hbox (1.10419pt too wide) in paragraph at lines 280--282
 []\OT1/cmr/m/n/10.95 Building doc-u-men-ta-tion from source: cargo doc --docume
 nt-private-items
  []
 
-[15]
-Underfull \hbox (badness 10000) in paragraph at lines 264--265
+[18] [19]
+Underfull \hbox (badness 10000) in paragraph at lines 303--304
 []\OT1/cmr/m/n/10.95 https://www.element14.com/community/groups/open-source-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 264--265
+Underfull \hbox (badness 10000) in paragraph at lines 303--304
 \OT1/cmr/m/n/10.95 hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 270--271
+Underfull \hbox (badness 10000) in paragraph at lines 309--310
 []\OT1/cmr/m/n/10.95 http://artisticlicence.com/WebSiteMaster/User%20Guides/art
 -net.pdf
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 278--280
+Underfull \hbox (badness 10000) in paragraph at lines 317--319
 []\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31[]2009.pdf
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 281--283
+Underfull \hbox (badness 10000) in paragraph at lines 320--322
 []\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31-2016.pdf
  []
 
 
-Overfull \hbox (144.9842pt too wide) in paragraph at lines 284--285
+Overfull \hbox (144.9842pt too wide) in paragraph at lines 323--324
 []\OT1/cmr/m/n/10.95 http://www.rdmprotocol.org/files/What[]Comes[]After[]Strea
 ming[]DMX[]over[]ACN[]%20%284%29.pdf
  []
 
 
-Overfull \hbox (66.0468pt too wide) in paragraph at lines 294--295
+Overfull \hbox (66.0468pt too wide) in paragraph at lines 333--334
 []\OT1/cmr/m/n/10.95 https://benchmarksgame-team.pages.debian.net/benchmarksgam
 e/fastest/rust.html
  []
 
-[16
+[20
 
 ]
-Underfull \hbox (badness 10000) in paragraph at lines 296--297
+Underfull \hbox (badness 10000) in paragraph at lines 335--336
 []\OT1/cmr/m/n/10.95 https://www.techrepublic.com/article/rust-programming-lang
 uage-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 298--299
+Underfull \hbox (badness 10000) in paragraph at lines 337--338
 []\OT1/cmr/m/n/10.95 https://www.tutorialspoint.com/sdlc/sdlc[]waterfall[]model
 .htm
  []
 
-[17] (report.aux)
+[21] (report.aux)
 
 LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 2469 strings out of 492970
- 34240 string characters out of 3127037
- 100645 words of memory out of 3000000
- 6303 multiletter control sequences out of 15000+200000
+ 2470 strings out of 492970
+ 34252 string characters out of 3127037
+ 102649 words of memory out of 3000000
+ 6304 multiletter control sequences out of 15000+200000
  10412 words of font info for 39 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 41i,5n,25p,1845b,222s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 41i,5n,25p,3146b,222s stack positions out of 5000i,500n,10000p,200000b,50000s
 <C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/
 cm/cmbx10.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/publ
 ic/amsfonts/cm/cmbx12.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/font
 s/type1/public/amsfonts/cm/cmr10.pfb>
-Output written on report.pdf (18 pages, 346082 bytes).
+Output written on report.pdf (22 pages, 354878 bytes).
 PDF statistics:
- 78 PDF objects out of 1000 (max. 8388607)
+ 91 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  16 words of extra memory for PDF output out of 10000 (max. 10000000)
 

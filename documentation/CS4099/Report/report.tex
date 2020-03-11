@@ -158,40 +158,54 @@ A high level view of the development of the project over time is shown in Figure
 
 
 \section{Tools \& Technologies}
-- Rust
-	- Error-chain
-	- Net2/Socket2
-- Cargo
-	- Run
-	- Docs
-	- Test
-- Wireshark
+\subsection{Language: Rust}
+\subsubsection{Error handling: Error-chain}
+-- Error-chain, specific sACN, Io, Net errors.
+\subsubsection{Networking: Net2 / Socket2}
+\subsection{Dependency Management: Cargo}
+\subsubsection{Run}
+\subsubsection{Docs}
+documentation vital -> maintenance -> developers will use the library
+\subsubsection{Test}
+\subsection{Debug Tools: Wireshark}
 	- ACN filter
-- Vision
+\subsection{Compliance Testing Tools: sACN Viewer}
+- Checking formatting
+\subsection{Real-world Usage Tool: Visualisers: Vision}
 	- What visualisers are
-- sACN Viewer
-	- Checking formatting
-- Git, Github, Gitlab
-	- Version control
+\subsection{Version Control: Git, Gitlab, Github}
 
 \section{Ethics}
 This project has no ethical considerations that require notification in this section.
 	
 \section{Design}
-The intended user for this library is a software developer developing applications that utilise the sACN protocol. It isn't designed to be used directly by an end user as it is just a library which needs to be used in code to actually perform any actions.	\\	
+\subsection{Expected System Usage/Layout}
+-- Multiple senders, multiple receivers
+-- Packet structure
 
-The project was based around creating a library that is high-level enough that a user can easily use it for its primary functionality. This meant providing a clear set of public facing functions/methods which don't rely on the user understanding all aspects of the protocol and instead just the bits they are interested in. For example the SacnReceiver.recv(timeout) method which takes just a timeout (using None to indicate no timeout) and returns DMX data. This completely abstracts away many aspects of the protocol from a user who most of the time will want to just get data and perform actions with it. For example this function abstracts the concept of universe synchronisation with data only retuned when it is ready to be acted upon without users having to know when they can use the data. This also abstracts away having to handle universe discovery packets, if a universe discovery packet is received then by default it is handled silently and added to the receivers list of discovered sources. This allows the user the flexibility to inspect the list of discovered sources if required but otherwise they can be ignored. This decision to not explicitly announce the discovered universes was made with the observation that a receiver spends most of its time receiving and processing data rather than listing discovered sources - especially as a source doesn't have to be 'discovered' to allow receiving on. This design decision comes with a few trade-offs, first it means that to discover sources a receiver must first attempt to receive data even if it doesn't act on any received data. This leads to a pattern of attempting to receive data with a short timeout and then inspecting the list of discovered sources. This is slightly more work for a library user trying to discover sources but allows the flexibility for the user to choose how they want to handle data received in this time (throw out or handle). The library does allow setting a flag on the receiver to change this behaviour, if the 'announce\_source\_discovery' flag is set to true (default is false) then on completely discovering a source the method will return a SourceDiscovered error. This still means any data received will need to be handled by the user but means that if no data is received it prevents the method having to wait for the entire timeout if a source is discovered. By having this off by default it keeps the method functionality simple for the expected majority of the receivers time when it is just receiving data but allowing the flexibility for use-cases that require knowing whenever a source is discovered. An error was used as oppose to a special return value for a similar reason - to keep it simple for the major use case. This is similar to how the underlying socket will return a WouldBlock or TimedOut error if it doesn't receive within the given timeout, this isn't explicitly an error that means the program has to stop operation but it is something that the user should handle. Since errors are handled as part of the type system adding an error also doesn't add significant performance overhead.
+
+\subsubsection{Universe Discovery}
+-- Periodically send universe discovery packets
+
+\subsubsection{Universe Synchronisation}
+-- Send data then send sync, sync can come from anywhere
+
+\subsection{Network Layers / Transport Modes}
+-- Sits on top of UDP
+-- Unicast, Broadcast Multicast
+
+\subsubsection{Multicast Address Assignment}
+-- Universe -> Ipv4 and Ipv6. 
+-- Is in the IETF range...
+
 
 	Design
 	Indicating the structure of the system, with particular
 	focus on main ideas of the design, unusual design
 	features, etc.
-	
-	
-	
-	
+
 --
-	documentation vital -> maintenance -> developers will use the library
+	
 test-> compliance -> conformance -> what it means for there to be 'sufficient' testing
 	
 	\section{Implementation}
@@ -201,14 +215,24 @@ test-> compliance -> conformance -> what it means for there to be 'sufficient' t
 	and/or data structures, unusual implementation
 	decisions, novel user interface features, etc.
 	
+	The intended user for this library is a software developer developing applications that utilise the sACN protocol. It isn't designed to be used directly by an end user as it is just a library which needs to be used in code to actually perform any actions.	\\	
+	
+\subsection{SacnReceiver}
+	The project was based around creating a library that is high-level enough that a user can easily use it for its primary functionality. This meant providing a clear set of public facing functions/methods which don't rely on the user understanding all aspects of the protocol and instead just the bits they are interested in. For example the SacnReceiver.recv(timeout) method which takes just a timeout (using None to indicate no timeout) and returns DMX data. This completely abstracts away many aspects of the protocol from a user who most of the time will want to just get data and perform actions with it. For example this function abstracts the concept of universe synchronisation with data only retuned when it is ready to be acted upon without users having to know when they can use the data. This also abstracts away having to handle universe discovery packets, if a universe discovery packet is received then by default it is handled silently and added to the receivers list of discovered sources. This allows the user the flexibility to inspect the list of discovered sources if required but otherwise they can be ignored. This decision to not explicitly announce the discovered universes was made with the observation that a receiver spends most of its time receiving and processing data rather than listing discovered sources - especially as a source doesn't have to be 'discovered' to allow receiving on. This design decision comes with a few trade-offs, first it means that to discover sources a receiver must first attempt to receive data even if it doesn't act on any received data. This leads to a pattern of attempting to receive data with a short timeout and then inspecting the list of discovered sources. This is slightly more work for a library user trying to discover sources but allows the flexibility for the user to choose how they want to handle data received in this time (throw out or handle). The library does allow setting a flag on the receiver to change this behaviour, if the 'announce\_source\_discovery' flag is set to true (default is false) then on completely discovering a source the method will return a SourceDiscovered error. This still means any data received will need to be handled by the user but means that if no data is received it prevents the method having to wait for the entire timeout if a source is discovered. By having this off by default it keeps the method functionality simple for the expected majority of the receivers time when it is just receiving data but allowing the flexibility for use-cases that require knowing whenever a source is discovered. An error was used as oppose to a special return value for a similar reason - to keep it simple for the major use case. This is similar to how the underlying socket will return a WouldBlock or TimedOut error if it doesn't receive within the given timeout, this isn't explicitly an error that means the program has to stop operation but it is something that the user should handle. Since errors are handled as part of the type system adding an error also doesn't add significant performance overhead. \\
+	
 	As discussed above data-packets are only passed up by a receiver when they are ready, this means that there is an underlying data structure which stores the waiting data
 	-> could get very large -> set a limit for embedded systems.
 	
+	\subsection{SacnSource}
+	Unlike the receiver on the sender side universe synchronisation has to be handled explicitly. Firstly when data is sent there is an optional synchronisation universe argument. The rust built in Option type makes this simple to ignore if not required as this can be set to None to indicate no synchronisation. When data is sent with synchronisation it won't be acted upon until a synchronisation packet is send using the 'send\_sync\_packet' initially the sender would automatically send this sync packet after the data was sent however this was removed and an explicitly split up method used instead. While slightly more involved this provides greatly increased flexibility because with the other method there was no way for a source to send data and either synchronise it later or to allow another source to generate synchronisation packet. While not a hard requirement it is advised in the standard (ANSI-E1.31-2018 Appendix B.1) that there is a small delay between sending data and sending the synchronisation packet to allow receivers time to process the data. This isn't enforced by the library as what counts as a 'small' delay will depend on the system and so this is left up to the user to decide. Similarly as specified in ANSI E1.31-2018 Section 6.6.1 the send method shouldn't be called at a higher refresh rate than specified in DMX (ANSI E1.11) unless there are no E1.31-DMX converts on the network. Since this is also something which is system dependent and the library cannot know on its own this is also left to the user.\\
+	
+	The send method also exposes the way that the information is sent on the network through the 'dst\_ip' this argument allows a sender to send information using unicast directly to a source (or broadcast by providing the broadcast IP) but also allows usage of multicast (as described in design) by providing the None argument. \\
+	
+	The sender is based on a multi-threaded model with an internal source protected by a lock encapsulated within the SacnSource that users interact with. The reason for this was to allow abstracting the task of sending periodic universe discovery packets away from the user. Instead on creation the SacnSource spawns a thread which will send universe discovery packets at the 10s interval defined in ANSI E1.31-2018 Appendix A. This leads to the requirement for a user to register a universe before they can send data on that universe allowing it to be reflected in the discovery packets. By abstracting this behaviour away it makes it easier for the users to create a compliant source as the correct sending interval and formatting (including splitting into multiple pages) is handled for them. In some situations it might be required that universe discovery isn't used, for example if there are devices which implement ANSI E1.31-2009 which was created before universe discovery and which don't correctly discard packets with the wrong vector. To allow compatibility with these devices the sender provides the 'is\_sending\_discovery' flag which defaults to true but can be set to false to prevent discovery packets being sent.
+	
 	\subsection{Std vs Non-Std}
-	
-	
-	\subsection{Implementation dependent specifics}
-	
+	The library is implemented assuming a std environment. This means that the rust std libraries such as the network library are available. This greatly increases the amount that can be done using rust as within the standard library the inbuilt functionality is fairly limited and would require rebuilding many already implemented solutions. This differs from the library that the implementation is based on which allowed running in environments with and without std. The reason to discontinue support for no\_std environments was made as the new parts of the protocol which were being implemented such as universe discovery are significantly easier and provide a better user experience when parts of the standard library such as the threads can be used. \\
+
 	\section{Evaluation and Critical Appraisal}
 	Evaluation and
 	critical
@@ -221,12 +245,17 @@ test-> compliance -> conformance -> what it means for there to be 'sufficient' t
 	written about in published papers, or as distributed in
 	software available to you.
 	
+	-- Std/No-Std means won't work on all embedded devices, also the threading required for source.
+	
+	
 	\section{Conclusions}
 	Conclusions
 	You should summarise your project, emphasising your
 	key achievements and significant drawbacks to your
 	work, and discuss future directions your work could be
 	taken in.
+	
+	-- Finish full compliance, performance analysis vs C, see how the library does and if worth using in actual devices. 
 	
 	\section{Appendices}
 	The appendices to your report will normally be as follows.
@@ -304,6 +333,8 @@ test-> compliance -> conformance -> what it means for there to be 'sufficient' t
 		https://www.tutorialspoint.com/sdlc/sdlc\_waterfall\_model.htm (01/01/2020)
 		\bibitem{ETHERNET_MTU}
 		https://tools.ietf.org/html/rfc894 (10/03/2020)
+		\bibitem{NO_STD_LIB}
+		https://doc.rust-lang.org/1.7.0/book/no-stdlib.html (11/03/2020)
 		
 	\end{thebibliography}
 	
