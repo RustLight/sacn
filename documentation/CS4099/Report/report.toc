@@ -1,37 +1,49 @@
-\contentsline {section}{\numberline {0.1}Abstract}{1}
-\contentsline {section}{\numberline {0.2}Declaration}{1}
-\contentsline {section}{\numberline {0.3}Introduction}{3}
-\contentsline {section}{\numberline {0.4}Context Survey}{3}
-\contentsline {subsection}{\numberline {0.4.1}DMX, SACN and ACN}{3}
-\contentsline {subsubsection}{DMX512}{3}
-\contentsline {subsubsection}{sACN}{4}
-\contentsline {subsubsection}{sACN - Universe Synchronisation}{4}
-\contentsline {subsubsection}{sACN - Universe Discovery}{5}
-\contentsline {subsection}{\numberline {0.4.2}Critical Analysis of the sACN protocol}{6}
-\contentsline {subsection}{\numberline {0.4.3}Rust}{6}
-\contentsline {subsection}{\numberline {0.4.4}Related Work}{6}
-\contentsline {section}{\numberline {0.5}Requirement specification}{7}
-\contentsline {section}{\numberline {0.6}Software Engineering Process}{9}
-\contentsline {subsection}{\numberline {0.6.1}Implementation, Testing and Deployment Phases}{10}
-\contentsline {subsection}{\numberline {0.6.2}Reflection on Methodology Used}{12}
-\contentsline {section}{\numberline {0.7}Tools \& Technologies}{14}
-\contentsline {section}{\numberline {0.8}Ethics}{14}
-\contentsline {section}{\numberline {0.9}Design}{14}
-\contentsline {subsection}{\numberline {0.9.1}Expected System Usage/Layout}{14}
-\contentsline {subsubsection}{Universe Discovery}{15}
-\contentsline {subsubsection}{Universe Synchronisation}{15}
-\contentsline {subsection}{\numberline {0.9.2}Network Layers / Transport Modes}{15}
-\contentsline {subsubsection}{Multicast Address Assignment}{15}
-\contentsline {section}{\numberline {0.10}Implementation}{15}
-\contentsline {subsection}{\numberline {0.10.1}SacnReceiver}{15}
-\contentsline {subsection}{\numberline {0.10.2}SacnSource}{16}
-\contentsline {subsection}{\numberline {0.10.3}Std vs Non-Std}{17}
-\contentsline {subsection}{\numberline {0.10.4}Errors}{18}
-\contentsline {section}{\numberline {0.11}Evaluation and Critical Appraisal}{18}
-\contentsline {section}{\numberline {0.12}Conclusions}{18}
-\contentsline {section}{\numberline {0.13}Appendices}{18}
-\contentsline {section}{\numberline {0.14}Testing}{18}
-\contentsline {subsection}{\numberline {0.14.1}Automated Testing}{18}
-\contentsline {subsection}{\numberline {0.14.2}Real-world Testing}{18}
-\contentsline {section}{\numberline {0.15}User Manual}{18}
-\contentsline {section}{\numberline {0.16}Other Appendices}{19}
+\contentsline {section}{\numberline {0.1}Abstract}{1}% 
+\contentsline {section}{\numberline {0.2}Declaration}{1}% 
+\contentsline {section}{\numberline {0.3}Introduction}{4}% 
+\contentsline {section}{\numberline {0.4}Context Survey}{4}% 
+\contentsline {subsection}{\numberline {0.4.1}DMX, SACN and ACN}{4}% 
+\contentsline {subsubsection}{DMX512}{4}% 
+\contentsline {subsubsection}{sACN}{5}% 
+\contentsline {subsubsection}{sACN - Universe Synchronisation}{5}% 
+\contentsline {subsubsection}{sACN - Universe Discovery}{6}% 
+\contentsline {subsection}{\numberline {0.4.2}Critical Analysis of the sACN protocol}{7}% 
+\contentsline {subsection}{\numberline {0.4.3}Rust}{8}% 
+\contentsline {subsection}{\numberline {0.4.4}Related Work}{8}% 
+\contentsline {section}{\numberline {0.5}Requirement specification}{10}% 
+\contentsline {section}{\numberline {0.6}Software Engineering Process}{10}% 
+\contentsline {subsection}{\numberline {0.6.1}Implementation, Testing and Deployment Phases}{12}% 
+\contentsline {subsection}{\numberline {0.6.2}Reflection on Methodology Used}{13}% 
+\contentsline {section}{\numberline {0.7}Tools \& Technologies}{15}% 
+\contentsline {subsection}{\numberline {0.7.1}Language: Rust}{15}% 
+\contentsline {subsubsection}{Error handling: Error-chain}{15}% 
+\contentsline {subsubsection}{Networking: Net2 / Socket2}{15}% 
+\contentsline {subsection}{\numberline {0.7.2}Dependency Management: Cargo}{15}% 
+\contentsline {subsubsection}{Run}{16}% 
+\contentsline {subsubsection}{Docs}{16}% 
+\contentsline {subsubsection}{Test}{16}% 
+\contentsline {subsection}{\numberline {0.7.3}Debug Tools: Wireshark}{17}% 
+\contentsline {subsection}{\numberline {0.7.4}Compliance Testing Tools: sACN Viewer}{17}% 
+\contentsline {subsection}{\numberline {0.7.5}Real-world Usage Tool: Visualisers: Vision}{17}% 
+\contentsline {subsection}{\numberline {0.7.6}Version Control: Git, Gitlab, Github}{17}% 
+\contentsline {section}{\numberline {0.8}Ethics}{17}% 
+\contentsline {section}{\numberline {0.9}Design}{17}% 
+\contentsline {subsection}{\numberline {0.9.1}Expected System Usage/Layout}{17}% 
+\contentsline {subsubsection}{Universe Discovery}{17}% 
+\contentsline {subsubsection}{Universe Synchronisation}{17}% 
+\contentsline {subsection}{\numberline {0.9.2}Network Layers / Transport Modes}{17}% 
+\contentsline {subsubsection}{Multicast Address Assignment}{17}% 
+\contentsline {section}{\numberline {0.10}Implementation}{18}% 
+\contentsline {subsection}{\numberline {0.10.1}SacnReceiver}{18}% 
+\contentsline {subsection}{\numberline {0.10.2}SacnSource}{19}% 
+\contentsline {subsection}{\numberline {0.10.3}Std vs Non-Std}{20}% 
+\contentsline {section}{\numberline {0.11}Evaluation and Critical Appraisal}{20}% 
+\contentsline {section}{\numberline {0.12}Conclusions}{21}% 
+\contentsline {section}{\numberline {0.13}Appendices}{21}% 
+\contentsline {section}{\numberline {0.14}Testing}{21}% 
+\contentsline {subsection}{\numberline {0.14.1}Unit Testing}{22}% 
+\contentsline {subsection}{\numberline {0.14.2}Integration Testing}{22}% 
+\contentsline {subsubsection}{Compliance and Conformance Testing}{24}% 
+\contentsline {subsection}{\numberline {0.14.3}Real-world Testing}{24}% 
+\contentsline {section}{\numberline {0.15}User Manual}{25}% 
+\contentsline {section}{\numberline {0.16}Other Appendices}{25}% 
