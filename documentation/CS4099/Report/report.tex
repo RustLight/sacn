@@ -217,7 +217,37 @@ This project has no ethical considerations that require notification in this sec
 Figure \ref{Expected_usage} shows a layout of a typical network in which sACN may be deployed. It shows that there are expected to be many sources of sACN in the form of lighting controllers and many receivers in the form of lighting fixtures and E1.31 to DMX converters. It also shows that the senders may send onto the same or separate universes as each other. Receivers can receive one or multiple different universes and multiple receivers can receive the same universes. Within these universes individual devices all have their own 'addresses' which refer to which section of the universe they are listening to as-well as 'modes' which refer to how many 'channels' (Bytes) are used and what each channel controls on the fixture. This within universe addressing as-well as protocols for assigning and communicating addresses that fixtures should use is outwith the scope of ANSI E1.31-2018. The protocol is focused on the section shown in blue which contains the sending of data from sources such as lighting controllers onto receivers such as the lighting fixtures.\\
 
 \subsection{Packet structure}
-As specified 
+All sACN packets are based on the standard ACN header as shown in Figure \ref{ACN_HEADER}. By using the general ACN header it allows other ACN protocols to be used on the network alongside sACN without conflicts. To designate the rest of the packet as an sACN packet the vector field is set either to VECTOR\_ROOT\_E131\_DATA to indicate that the packet is a E1.31 data packet or VECTOR\_ROOT\_E131\_EXTENDED (note these are defined constant numbers not strings) to indicate that the packet is either a synchronisation or discovery packet. The rest of the data packet is then structures as specified in Figure \ref{ACN_DATA_STRUCTURE}. For the universe synchronisation and discovery packets the next part of the structure starts the same as shown in Figure \ref{ACN_EXTENDED_START} with the vector field deciding if the rest of the packet follows a synchronisation or discovery packet structure. The synchronisation structure after this is fairly short as shown in Figure \ref{ACN_REST_SYNC_PACKET}. The discovery structure is longer as it may include a list of upto 512 universes and is show in Figure \ref{ACN_REST_DISCOVERY_PACKET}.
+
+\begin{figure}[H]
+\label{ACN_HEADER}
+\includegraphics[width=\textwidth]{Acn_header}
+\caption{The layout of the standard ACN header used for all sACN packets}
+\end{figure}
+
+\begin{figure}[H]
+\label{ACN_DATA_STRUCTURE}
+\includegraphics[width=\textwidth]{acn_data_structure}
+\caption{The structure of the rest of the sACN data packet}
+\end{figure}
+
+\begin{figure}[H]
+\label{ACN_EXTENDED_START}
+\includegraphics[width=\textwidth]{Acn_extended_framing_structure_sync_discovery}
+\caption{The structure of the next part of the sACN universe synchronisation and discovery packet}
+\end{figure}
+
+\begin{figure}[H]
+\label{ACN_REST_SYNC_PACKET}
+\includegraphics[width=\textwidth]{acn_sync_packet_specific_structure}
+\caption{The structure of the rest of the sACN universe synchronisation packet}
+\end{figure}
+
+\begin{figure}[H]
+\label{ACN_REST_DISCOVERY_PACKET}
+\includegraphics[width=\textwidth]{acn_discovery_packet_specific_structure}
+\caption{The structure of the rest of the sACN universe discovery packet}
+\end{figure}
 
 \subsubsection{Universe Discovery}
 -- Periodically send universe discovery packets
