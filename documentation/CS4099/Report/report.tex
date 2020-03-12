@@ -167,7 +167,7 @@ The base implementation provided its own error system based on an Enum with vari
 
 Theses issues meant that the existing error implementation was no longer suitable and it didn't make sense to continue trying to use multiple errors systems (rust Io/Net, old system, new errors added by new features). Therefore the entire error system was replaced using the Error-Chain library \cite{ERROR_CHAIN}. This library which is frequently used throughout the rust eco-sphere and allows combining all the error systems into one system with rust errors automatically converted as needed. It also allows errors to encapsulated other errors which allows chaining of errors together to produce much more informative back-traces. As part of this update of the error system all usages of the depreciated 'try!' macro were removed and replaced with the new '?' operator in combination with the error-chain 'bail!' macro. A number of new errors were also added to more descriptively describe possible errors within the library as listed in the 'error.rs' file such as 'ExceededUniverseCapacity' and 'DmxMergeError'. \\
 
-Programs which utilise the library are not required to continue using error-chain within their code and can use their own error systems however for the 'demo_src' and 'demo_rcv' programs the decision was made that continuing to use error-chain made sense due to the advantages it provides as described above.
+Programs which utilise the library are not required to continue using error-chain within their code and can use their own error systems however for the 'demo\_src' and 'demo\_rcv' programs the decision was made that continuing to use error-chain made sense due to the advantages it provides as described above.
 
 \subsubsection{Networking: Net2 / Socket2}
 \subsection{Dependency Management: Cargo}
@@ -208,9 +208,16 @@ This project has no ethical considerations that require notification in this sec
 	
 \section{Design}
 \subsection{Expected System Usage/Layout}
--- Multiple senders, multiple receivers
--- Packet structure
+\begin{figure}
+	\label{Expected_usage}
+	\includegraphics[width=\textwidth]{CS4099-Expected-Usage.png}
+	\caption{A diagram showing a usage scenario for a system which utilises sACN}
+\end{figure}
 
+Figure \ref{Expected_usage} shows a layout of a typical network in which sACN may be deployed. It shows that there are expected to be many sources of sACN in the form of lighting controllers and many receivers in the form of lighting fixtures and E1.31 to DMX converters. It also shows that the senders may send onto the same or separate universes as each other. Receivers can receive one or multiple different universes and multiple receivers can receive the same universes. Within these universes individual devices all have their own 'addresses' which refer to which section of the universe they are listening to as-well as 'modes' which refer to how many 'channels' (Bytes) are used and what each channel controls on the fixture. This within universe addressing as-well as protocols for assigning and communicating addresses that fixtures should use is outwith the scope of ANSI E1.31-2018. The protocol is focused on the section shown in blue which contains the sending of data from sources such as lighting controllers onto receivers such as the lighting fixtures.\\
+
+\subsection{Packet structure}
+As specified 
 
 \subsubsection{Universe Discovery}
 -- Periodically send universe discovery packets
