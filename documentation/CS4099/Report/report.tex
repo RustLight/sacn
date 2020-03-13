@@ -296,7 +296,7 @@ The Ipv6 mapping is similar with the least significant 16 bits used, Figure: \re
 
 As specified in the internet engineering task force (IETF) RFC 5771 \cite{IETF_RFC_5771} all of the Ipv4 multicast address fall within the 'Administratively Scoped Block' as specified in IETF RFC 2365 \cite{IETF_RFC_2365}. This then clarifies that the sACN multicast address fall within the IPv4 Local Scope range (6.1). These multicast addresses are reserved for usage dependent on the specific local network within which they are deployed. This limits the sACN usage to a local dedicated network and not for use on a wide area network (WAN) for as the public internet. As discussed previously this fits with the other design decisions made which based the protocol around usage on a private, isolated dedicated network.\\
 
-The IPv6 multicast address assignment...
+The IPv6 multicast address assignment starts with 0xFF in the first byte, this indicates that the address is a multicast address. This is then followed by 0x18 which can be broken down as per section 2.7 of \cite{IETF_RFC_4291} into a flag value of 1 and a scop value of 8. This flag value mean that this is a transient address which indicates that it isn't statically assigned by the IETF and may change in future. The scope value of 8 indicates organisation-local scope which has a similar reasoning as the local-scope used for IPv4 meaning that this address is only valid within a specific environment / group of networks. Therefore the sACN protocol is not aimed at usage on a WAN regardless of Ipv4 or Ipv6. 
 
 \section{Implementation}
 Implementation
@@ -386,6 +386,16 @@ The test-scripts used as-well as the expected output files and given inputs are 
 	User manual Instructions on installing, executing and using the
 	system where appropriate.
 	
+	Running:
+	cargo run --bin demo\_src
+	cargo run --bin demo\_rcv
+	
+	cargo test -- --test-threads=1
+	
+	cargo build
+	
+	cargo check
+	
 	Building documentation from source:
 	cargo doc --document-private-items --no-deps --open
 	
@@ -470,6 +480,8 @@ The test-scripts used as-well as the expected output files and given inputs are 
 		https://tools.ietf.org/html/rfc5771
 		\bibitem{IETF_RFC_2365}
 		https://tools.ietf.org/html/rfc2365
+		\bibitem{IETF_RFC_4291}
+		https://tools.ietf.org/html/rfc4291
 		
 	\end{thebibliography}
 	
