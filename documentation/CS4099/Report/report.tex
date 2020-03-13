@@ -207,6 +207,11 @@ The visualiser provides a way to test that the library can send sACN which can b
 This project has no ethical considerations that require notification in this section.
 	
 \section{Design}
+Design
+	Indicating the structure of the system, with particular
+	focus on main ideas of the design, unusual design
+	features, etc.
+
 \subsection{Expected System Usage/Layout}
 \begin{figure}
 	\label{Expected_usage}
@@ -255,28 +260,44 @@ The universe discovery mechanism sends discovery adverts on the
 -- Periodically send universe discovery packets
 
 \subsubsection{Universe Synchronisation}
-The universe synchronisation mechanism allows 
-
--- Send data then send sync, sync can come from anywhere
+The universe synchronisation mechanism allows multiple universes of data to be acted upon almost simultaneously. The mechanism for how this works on the receiver side is shown in the include 'Sync-Mechanism.pdf' file as it doesn't fit into the report format in a clear way (splits across pages).
 
 \subsection{Network Layers / Transport Modes}
--- Sits on top of UDP
--- Unicast, Broadcast Multicast
+sACN falls within the application layer of the 5-layer network stack as shown in Figure \ref{NET_STACK}. This is because it sits on top of UDP (layer 4) and IP(layer 3). As UDP is used as the underlying transport protocol it means that there is no guaranteed delivery of packets. The protocol itself also doesn't provide this which means that data send by a source may not reach a receiver and there is no way for the source to know within the protocol scope. This loss of guarantee comes with the advantage that there is less packet overhead and no hand-shake is required meaning data can be sent immediately. The use of UDP also avoids many of the problems associated with session transport protocols like TCP such as lost packets significantly reducing throughput due to the congestion control mechanism. Theses trade-offs fit the expected usage of the sACN protocol as they minimise latency which is vital in a real-time event/lighting system. \\
+
+\begin{figure}[H]
+\label{NET_STACK}
+\includegraphics[width=\textwidth]{net_stack}
+\caption{Image showing the 5 network layers}
+\end{figure}
+
+The usage of UDP additionally means that packets can be delivered in any order, this can cause random jumps in data on the protocol which is noted within the specification to be problematic if this is used with a moving head lighting fixture as it effects the predictive algorithms used (ANSI E1.31-2018 Section 6.7.2). To reduce this happening the protocol uses sequence numbers to allow out of order packets to be discarded. It is important to note that because a packet might have been lost the protocol doesn't attempt to wait for packets which haven't be received yet instead always acting on the most recent data (with regards to sequence number) and discarding any old data received. This keeps the latency of the system low and prevents slightly out of order packets causing unexpected jumps back and forth in the data. As the sequence number field is only 1 byte in length it is expected to wrap around frequently, therefore the sequence numbering mechanism accounts for this by looking at the difference between the last and current sequence numbers as oppose to the numbers themselves directly. This combined with using a reject range for the difference of (-20, 0] with other values accepted allows for the sequence number to wrap around and for the system to quickly (within 20 sequentially numbered packets) start accepting packets again - once again minimising latency. 
+
+The protocol is specified for usage over IP however it doesn't have any inherent requirements for this meaning that in future it could be used over another network protocol with a suitable adaptation. This makes the protocol more future proof and more widely applicable to different applications which might be non-IP. In its current 2018 state however the protocol only specifies operation over IPv4 and IPv6 using 3 different communication modes. The first mode is unicast, this is where a source sends data directly to the receivers IP and this means that any data sent by a source must individually be sent to all receivers for them to see it. The next mode is broadcast, this is where the destination IP is set to a special broadcast IP which causes all receivers to see the data. This mode means that a sender doesn't have to individually send to each receiver but does mean that there is the potential to flood the network with these broadcast packets with all receivers getting packets even if they didn't want them.\\
+
+The final IP communication mode utilised by the protocol is IP Multicast. This is the default mode used and works by receivers joining ip multicast groups which senders then send to with only the receivers that joined the relevant multicast group seeing the send packets. This minimises the packets sent with only registered interested receivers seeing packets. Within the sACN protocol each universe utilises a different multicast address and therefore each receiver and sender can use a specific address to receive from / send to a specific universe. This assignment of addresses to universes is described below.\\
 
 \subsubsection{Multicast Address Assignment}
--- Universe -> Ipv4 and Ipv6. 
--- Is in the IETF range...
+For a sACN universe IPv4 multicast address the first 2 bytes are always 239 and 255 respectively. The 3rd byte is the upper, most significant byte of the universe (when the universe is expressed as a 2 byte unsigned number) and the 4th byte is the least significant byte. This is shown by Figure \ref{IPV4_MULTICAST_MAPPING}.
 
+\begin{figure}[H]
+\label{IPV4_MULTICAST_MAPPING}
+\includegraphics[width=\textwidth]{Ipv4MulticastMapping}
+\caption{The mapping used from a universe to an Ipv4 address used for multicast with sACN}
+\end{figure}
 
-	Design
-	Indicating the structure of the system, with particular
-	focus on main ideas of the design, unusual design
-	features, etc.
+The Ipv6 mapping is similar with the least significant 16 bits used, Figure: \ref{IPV6_MULTICAST_MAPPING}.
 
---
-	
-test-> compliance -> conformance -> what it means for there to be 'sufficient' testing
-	
+\begin{figure}[H]
+\label{IPV6_MULTICAST_MAPPING}
+\includegraphics[width=\textwidth]{Ipv6MulticastMapping}
+\caption{The mapping used from a universe to an Ipv6 address used for multicast with sACN}
+\end{figure}
+
+As specified in the internet engineering task force (IETF) RFC 5771 \cite{IETF_RFC_5771} all of the Ipv4 multicast address fall within the 'Administratively Scoped Block' as specified in IETF RFC 2365 \cite{IETF_RFC_2365}. This then clarifies that the sACN multicast address fall within the IPv4 Local Scope range (6.1). These multicast addresses are reserved for usage dependent on the specific local network within which they are deployed. This limits the sACN usage to a local dedicated network and not for use on a wide area network (WAN) for as the public internet. As discussed previously this fits with the other design decisions made which based the protocol around usage on a private, isolated dedicated network.\\
+
+The IPv6 multicast address assignment...
+
 \section{Implementation}
 Implementation
 How the implementation was done and tested, with particular focus on important / novel algorithms and/or data structures, unusual implementation decisions, novel user interface features, etc.
@@ -305,7 +326,10 @@ You should evaluate your own work with respect to your original objectives. You 
 	\[ 
 	\textit{max possible universes} \times \textit{universe capacity} = 63999 \times 513 bytes = 32831487 bytes = 31.3 megabytes. 
 	\]
-	Similarly to this as the library is based on the std-environment it means the size of the produced binary will include the std libraries used, this means that the binary is bigger than it otherwise might be and isn't as tuned to the specific application from the perspective of performance. This also limits the usage of the library with certain disk-space constrained embedded devices. Support for embedded devices isn't an objective of this project so solutions to these problems such as not using std and putting smaller limits on the memory usage were not implemented as both solutions comes with associated trade-offs.
+	Similarly to this as the library is based on the std-environment it means the size of the produced binary will include the std libraries used, this means that the binary is bigger than it otherwise might be and isn't as tuned to the specific application from the perspective of performance. This also limits the usage of the library with certain disk-space constrained embedded devices. Support for embedded devices isn't an objective of this project so solutions to these problems such as not using std and putting smaller limits on the memory usage were not implemented as both solutions comes with associated trade-offs.\\
+	
+	
+-- Library doesn't aim to be fully compliant with every feature.	
 	
 	\section{Conclusions}
 	Conclusions
@@ -326,6 +350,9 @@ You should evaluate your own work with respect to your original objectives. You 
 	
 	\section{Testing}
 	Throughout the project a priority was put on reproducibility and automation when it comes to testing. The reasoning for this is simple, once a framework is setup it takes approximately the same time to run a test manually once or twice as it does to write the test in a way that it can be run multiple times automatically. This means that there is only a small penalty to setting up a test so that it can run automatically but once it is setup it can be run frequently allowing confidence that the code continues to work and that any change such as a bug fix for another test hasn't broken something else. Easily reproducible automated tests also provide a significant advantage to a project once it reaches the deployment/maintenance stage as they act as their own documentation of the code and a source of examples for new developers to use when learning. These examples are particularly good as they can be run to verify that they still perform as expected which can be used to flag up areas where the documentation and code have diverged.\\
+	
+		
+test-> compliance -> conformance -> what it means for there to be 'sufficient' testing
 	
 	\subsection{Unit Testing}
 	Unit testing is an vital part of many projects including this one. The reason for this is because each test is fairly small and quick to run many of them can be created to each cover a specific case. This means that once in place a developer can be confident that any change they make which breaks a part of the code will be quickly detected and as long as the unit tests are run frequently (aided by their quick running) the specific breakage can be found by following the tests. This relies on the unit tests sufficiently covering all the various functionality and expected outcomes and one measure for this is code-coverage. This doesn't verify that the code is of a high quality or that there is absolutely no bugs but does show that at least every part of the code is run as part of a test and coupled with good testing in general this gives confidence that the system behaves as expected.\\
@@ -437,6 +464,12 @@ The test-scripts used as-well as the expected output files and given inputs are 
 		https://www.vectorworks.net/en-GB/vision (12/03/2020)
 		\bibitem{AVO_TITAN_MOBILE}
 		https://www.avolites.com/product/titan-mobile/ (12/03/2020)
+		\bibitem{NET_STACK_IMAGE}
+		https://www.dcs.bbk.ac.uk/~ptw/teaching/IWT/transport-layer/notes.html (13/03/2020)
+		\bibitem{IETF_RFC_5771}
+		https://tools.ietf.org/html/rfc5771
+		\bibitem{IETF_RFC_2365}
+		https://tools.ietf.org/html/rfc2365
 		
 	\end{thebibliography}
 	
