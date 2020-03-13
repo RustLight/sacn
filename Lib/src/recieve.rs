@@ -51,6 +51,8 @@ const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 /// The default value of the announce_source_discovery flag.
 const ANNOUNCE_SOURCE_DISCOVERY_DEFAULT: bool = false;
 
+const DEFAULT_MERGE_FUNC: fn(&DMXData, &DMXData) -> Result<DMXData> = discard_previous;
+
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
 
@@ -126,7 +128,7 @@ impl SacnReceiver {
                 waiting_data: Vec::new(),
                 universes: Vec::new(),
                 discovered_sources: Vec::new(),
-                merge_func: htp_dmx_merge,
+                merge_func: DEFAULT_MERGE_FUNC,
                 partially_discovered_sources: Vec::new(),
                 process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT,
                 data_sequences: RefCell::new(HashMap::new()),
@@ -1012,12 +1014,28 @@ fn check_seq_number(sequences: &RefCell<HashMap<u16, u8>>, sequence_number: u8, 
     Ok(())
 }
 
-/// Performs a HTP DMX merge of data.
+/// The default merge action for the receiver.
+/// 
+/// This discarding of the old data is the default action for compliance as specified in ANSI E1.31-2018, Section 11.2.1.
+/// 
+/// This can be changed if required as part of the mechanism described in ANSI E1.31-2018, Section 6.2.3.4 Requirements for Merging and Arbitrating.
+/// 
 /// The first argument (i) is the existing data, n is the new data.
 /// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
 /// If this doesn't hold an error will be returned.
 /// Other merge functions may allow merging different start codes or not check for them.
-pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData>{
+pub fn discard_previous(i: &DMXData, n: &DMXData) -> Result<DMXData> {
+    Ok(n)
+}
+
+/// Performs a highest takes priority (per byte) DMX merge of data.
+/// 
+/// Given as an example of a possible merge algorithm.
+/// The first argument (i) is the existing data, n is the new data.
+/// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
+/// If this doesn't hold an error will be returned.
+/// Other merge functions may allow merging different start codes or not check for them.
+pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData> {
     if i.values.len() < 1 || 
         n.values.len() < 1 || 
         i.universe != n.universe || 
