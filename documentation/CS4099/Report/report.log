@@ -1,11 +1,13 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (MiKTeX 2.9.6840 64-bit) (preloaded format=pdflatex 2018.11.14)  13 MAR 2020 11:09
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2019.4.22)  13 MAR 2020 12:58
 entering extended mode
-**./report.tex
-(report.tex
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**report.tex
+(./report.tex
 LaTeX2e <2018-04-01> patch level 5
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\base\report.cls"
+(/usr/share/texlive/texmf-dist/tex/latex/base/report.cls
 Document Class: report 2014/09/29 v1.4h Standard LaTeX document class
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\base\size11.clo"
+(/usr/share/texlive/texmf-dist/tex/latex/base/size11.clo
 File: size11.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
 )
 \c@part=\count80
@@ -21,30 +23,29 @@ File: size11.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
 \belowcaptionskip=\skip42
 \bibindent=\dimen102
 )
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\base\inputenc.sty"
+(/usr/share/texlive/texmf-dist/tex/latex/base/inputenc.sty
 Package: inputenc 2018/04/06 v1.3b Input encoding file
 \inpenc@prehook=\toks14
 \inpenc@posthook=\toks15
-) ("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsmath\amsmath.s
-ty"
+)
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsmath.sty
 Package: amsmath 2017/09/02 v2.17a AMS math features
 \@mathmargin=\skip43
 
 For additional information on amsmath, use the `?' option.
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsmath\amstext.sty
-"
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amstext.sty
 Package: amstext 2000/06/29 v2.01 AMS text
- ("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsmath\amsgen.sty
-"
+
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsgen.sty
 File: amsgen.sty 1999/11/30 v2.0 generic functions
 \@emptytoks=\toks16
 \ex@=\dimen103
 ))
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsmath\amsbsy.sty"
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsbsy.sty
 Package: amsbsy 1999/11/29 v1.2d Bold Symbols
 \pmbraise@=\dimen104
-) ("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsmath\amsopn.st
-y"
+)
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsopn.sty
 Package: amsopn 2016/03/08 v2.02 operator names
 )
 \inf@bad=\count89
@@ -84,7 +85,8 @@ LaTeX Font Info:    Redeclaring font encoding OMS on input line 713.
 \mathdisplay@stack=\toks20
 LaTeX Info: Redefining \[ on input line 2817.
 LaTeX Info: Redefining \] on input line 2818.
-) ("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\float\float.sty"
+)
+(/usr/share/texlive/texmf-dist/tex/latex/float/float.sty
 Package: float 2001/11/08 v1.3d Float enhancements (AL)
 \c@float@type=\count101
 \float@exts=\toks21
@@ -92,47 +94,41 @@ Package: float 2001/11/08 v1.3d Float enhancements (AL)
 \@float@everytoks=\toks22
 \@floatcapt=\box29
 )
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsfonts\amsfonts.s
-ty"
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amsfonts.sty
 Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
 \symAMSa=\mathgroup4
 \symAMSb=\mathgroup5
 LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
 (Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
 )
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsfonts\amssymb.st
-y"
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amssymb.sty
 Package: amssymb 2013/01/14 v3.01 AMS font symbols
 )
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics\graphicx.s
-ty"
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty
 Package: graphicx 2017/06/01 v1.1a Enhanced LaTeX Graphics (DPC,SPQR)
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics\keyval.sty
-"
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/keyval.sty
 Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
 \KV@toks@=\toks23
 )
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics\graphics.s
-ty"
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty
 Package: graphics 2017/06/25 v1.2c Standard LaTeX Graphics (DPC,SPQR)
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics\trig.sty"
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/trig.sty
 Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
 )
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics-cfg\graphi
-cs.cfg"
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
 File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
 )
 Package graphics Info: Driver file: pdftex.def on input line 99.
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\graphics-def\pdftex
-.def"
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-def/pdftex.def
 File: pdftex.def 2018/01/08 v1.0l Graphics/color driver for pdftex
 ))
 \Gin@req@height=\dimen112
 \Gin@req@width=\dimen113
-) (report.aux)
+)
+(./report.aux)
 \openout1 = `report.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 11.
@@ -148,8 +144,7 @@ LaTeX Font Info:    ... okay on input line 11.
 LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 11.
 LaTeX Font Info:    ... okay on input line 11.
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\context\base\supp-pdf.mki
-i"
+(/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count102
 \scratchdimen=\dimen114
@@ -162,41 +157,31 @@ i"
 \MPnumerator=\count106
 \makeMPintoPDFobject=\count107
 \everyMPtoPDFconversion=\toks25
-)
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\oberdiek\epstopdf-b
-ase.sty"
+) (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
 Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\infwarer
-r.sty"
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/infwarerr.sty
 Package: infwarerr 2016/05/16 v1.4 Providing info/warning/error messages (HO)
 )
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\oberdiek\grfext.sty
-"
+(/usr/share/texlive/texmf-dist/tex/latex/oberdiek/grfext.sty
 Package: grfext 2016/05/16 v1.2 Manage graphics extensions (HO)
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\kvdefine
-keys.sty"
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/kvdefinekeys.sty
 Package: kvdefinekeys 2016/05/16 v1.4 Define keys (HO)
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\ltxcmds.
-sty"
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
 Package: ltxcmds 2016/05/16 v1.23 LaTeX kernel commands for general use (HO)
 )))
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\oberdiek\kvoptions.
-sty"
+(/usr/share/texlive/texmf-dist/tex/latex/oberdiek/kvoptions.sty
 Package: kvoptions 2016/05/16 v3.12 Key value format for package options (HO)
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\kvsetkey
-s.sty"
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/kvsetkeys.sty
 Package: kvsetkeys 2016/05/16 v1.17 Key value parser (HO)
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\etexcmds
-.sty"
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/etexcmds.sty
 Package: etexcmds 2016/05/16 v1.6 Avoid name clashes with e-TeX commands (HO)
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\ifluatex
-.sty"
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/ifluatex.sty
 Package: ifluatex 2016/05/16 v1.4 Provides the ifluatex switch (HO)
 Package ifluatex Info: LuaTeX not detected.
 )
@@ -205,14 +190,12 @@ Package etexcmds Info: Could not find \expanded.
 (etexcmds)             that some package has redefined \expanded.
 (etexcmds)             In the latter case, load this package earlier.
 )))
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\pdftexcm
-ds.sty"
-Package: pdftexcmds 2018/09/10 v0.29 Utility functions of pdfTeX for LuaTeX (HO
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/pdftexcmds.sty
+Package: pdftexcmds 2018/01/30 v0.27 Utility functions of pdfTeX for LuaTeX (HO
 )
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\generic\oberdiek\ifpdf.st
-y"
-Package: ifpdf 2018/09/07 v3.3 Provides the ifpdf switch
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/ifpdf.sty
+Package: ifpdf 2017/03/15 v3.2 Provides the ifpdf switch
 )
 Package pdftexcmds Info: LuaTeX not detected.
 Package pdftexcmds Info: \pdf@primitive is available.
@@ -225,24 +208,27 @@ Package grfext Info: Graphics extension search list:
 (grfext)             [.pdf,.png,.jpg,.mps,.jpeg,.jbig2,.jb2,.PDF,.PNG,.JPG,.JPE
 G,.JBIG2,.JB2,.eps]
 (grfext)             \AppendGraphicsExtensions on input line 456.
-) (title-page.tex [1
 
-{C:/Users/paul/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}])
+(/usr/share/texlive/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+(./title-page.tex [1
+
+{/usr/share/texlive/texmf-dist/fonts/map/pdftex/updmap/pdftex.map}])
 
 LaTeX Warning: Citation `ORIGINAL_IMPL' on page 1 undefined on input line 15.
 
-[1] (report.toc
+[1] (./report.toc
 LaTeX Font Info:    Try loading font information for U+msa on input line 1.
-
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsfonts\umsa.fd"
+ (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
 LaTeX Font Info:    Try loading font information for U+msb on input line 1.
 
-("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex\latex\amsfonts\umsb.fd"
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-)
-[2
+) [2
 
 ])
 \tf@toc=\write3
@@ -296,7 +282,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 92--93
 
 LaTeX Warning: Reference `C++_IMPL' on page 9 undefined on input line 94.
 
-<E131-Repo-Search.png, id=33, 545.78906pt x 441.52454pt>
+<E131-Repo-Search.png, id=34, 545.78906pt x 441.52454pt>
 File: E131-Repo-Search.png Graphic file (type png)
 <use E131-Repo-Search.png>
 Package pdftex.def Info: E131-Repo-Search.png  used on input line 98.
@@ -306,7 +292,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 121--122
 
  []
 
-<sdlc_waterfall_model.jpg, id=39, 451.6875pt x 301.8778pt>
+<sdlc_waterfall_model.jpg, id=40, 451.6875pt x 301.8778pt>
 File: sdlc_waterfall_model.jpg Graphic file (type jpg)
 <use sdlc_waterfall_model.jpg>
 Package pdftex.def Info: sdlc_waterfall_model.jpg  used on input line 130.
@@ -341,7 +327,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 152--153
 
  []
 
-<CS4099-dev-timeline.png, id=53, 830.10126pt x 672.5125pt>
+<CS4099-dev-timeline.png, id=54, 830.10126pt x 672.5125pt>
 File: CS4099-dev-timeline.png Graphic file (type png)
 <use CS4099-dev-timeline.png>
 Package pdftex.def Info: CS4099-dev-timeline.png  used on input line 156.
@@ -376,7 +362,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 199--200
  []
 
 [18] [19]
-<CS4099-Expected-Usage.png, id=74, 788.9475pt x 613.29124pt>
+<CS4099-Expected-Usage.png, id=75, 788.9475pt x 613.29124pt>
 File: CS4099-Expected-Usage.png Graphic file (type png)
 <use CS4099-Expected-Usage.png>
 Package pdftex.def Info: CS4099-Expected-Usage.png  used on input line 213.
@@ -387,25 +373,25 @@ Underfull \hbox (badness 10000) in paragraph at lines 217--218
  []
 
 [20 <./CS4099-Expected-Usage.png>]
-<Acn_header.png, id=79, 930.47626pt x 352.31625pt>
+<Acn_header.png, id=80, 930.47626pt x 352.31625pt>
 File: Acn_header.png Graphic file (type png)
 <use Acn_header.png>
 Package pdftex.def Info: Acn_header.png  used on input line 224.
 (pdftex.def)             Requested size: 360.0pt x 136.30609pt.
-<acn_data_structure.png, id=80, 716.6775pt x 720.6925pt>
+<acn_data_structure.png, id=81, 716.6775pt x 720.6925pt>
 File: acn_data_structure.png Graphic file (type png)
 <use acn_data_structure.png>
 Package pdftex.def Info: acn_data_structure.png  used on input line 230.
 (pdftex.def)             Requested size: 360.0pt x 362.01689pt.
  [21 <./Acn_header.png>]
-<Acn_extended_framing_structure_sync_discovery.png, id=85, 819.06pt x 160.6pt>
+<Acn_extended_framing_structure_sync_discovery.png, id=86, 819.06pt x 160.6pt>
 File: Acn_extended_framing_structure_sync_discovery.png Graphic file (type png)
 
 <use Acn_extended_framing_structure_sync_discovery.png>
 Package pdftex.def Info: Acn_extended_framing_structure_sync_discovery.png  use
 d on input line 236.
 (pdftex.def)             Requested size: 360.0pt x 70.58824pt.
-<acn_sync_packet_specific_structure.png, id=86, 502.87875pt x 77.28876pt>
+<acn_sync_packet_specific_structure.png, id=87, 502.87875pt x 77.28876pt>
 File: acn_sync_packet_specific_structure.png Graphic file (type png)
 <use acn_sync_packet_specific_structure.png>
 Package pdftex.def Info: acn_sync_packet_specific_structure.png  used on input 
@@ -413,7 +399,7 @@ line 242.
 (pdftex.def)             Requested size: 360.0pt x 55.32944pt.
  [22 <./acn_data_structure.png> <./Acn_extended_framing_structure_sync_discover
 y.png>]
-<acn_discovery_packet_specific_structure.png, id=92, 814.04124pt x 448.67625pt>
+<acn_discovery_packet_specific_structure.png, id=93, 814.04124pt x 448.67625pt>
 
 File: acn_discovery_packet_specific_structure.png Graphic file (type png)
 <use acn_discovery_packet_specific_structure.png>
@@ -448,10 +434,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 299--300
 
 [26]
 Overfull \hbox (99.92604pt too wide) detected at line 305
-[] \OMS/cmsy/m/n/10.95  [] \OT1/cmr/m/n/10.95 = 63999 \OMS/cmsy/m/n/10.95  \O
-T1/cmr/m/n/10.95 513\OML/cmm/m/it/10.95 bytes \OT1/cmr/m/n/10.95 = 32831487\OML
-/cmm/m/it/10.95 bytes \OT1/cmr/m/n/10.95 = 31\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/
-10.95 3\OML/cmm/m/it/10.95 megabytes:
+[] \OMS/cmsy/m/n/10.95 ^^B [] \OT1/cmr/m/n/10.95 = 63999 \OMS/cmsy/m/n/10.95 ^^
+B \OT1/cmr/m/n/10.95 513\OML/cmm/m/it/10.95 bytes \OT1/cmr/m/n/10.95 = 32831487
+\OML/cmm/m/it/10.95 bytes \OT1/cmr/m/n/10.95 = 31\OML/cmm/m/it/10.95 :\OT1/cmr/
+m/n/10.95 3\OML/cmm/m/it/10.95 megabytes:
  []
 
 
@@ -460,12 +446,12 @@ Overfull \hbox (10.96207pt too wide) in paragraph at lines 309--314
 ng your key achieve-
  []
 
-
+[27]
 Underfull \hbox (badness 10000) in paragraph at lines 326--327
 
  []
 
-[27]
+
 Underfull \hbox (badness 10000) in paragraph at lines 329--330
 
  []
@@ -480,7 +466,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 340--341
 
  []
 
-<SH-Project-Intergration-Tests-Abstract-View.png, id=117, 674.52pt x 773.89125p
+<SH-Project-Intergration-Tests-Abstract-View.png, id=118, 674.52pt x 773.89125p
 t>
 File: SH-Project-Intergration-Tests-Abstract-View.png Graphic file (type png)
 <use SH-Project-Intergration-Tests-Abstract-View.png>
@@ -545,29 +531,29 @@ Underfull \hbox (badness 10000) in paragraph at lines 417--418
 .htm
  []
 
-[33] (report.aux)
+[33] (./report.aux)
 
 LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 2526 strings out of 492970
- 35873 string characters out of 3127037
- 101773 words of memory out of 3000000
- 6350 multiletter control sequences out of 15000+200000
- 11459 words of font info for 42 fonts, out of 3000000 for 9000
- 1141 hyphenation exceptions out of 8191
- 41i,5n,25p,3145b,222s stack positions out of 5000i,500n,10000p,200000b,50000s
-<C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/
-cm/cmbx10.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/publ
-ic/amsfonts/cm/cmbx12.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/font
-s/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/paul/AppData/Local/Programs/MiK
-TeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/paul/AppData/Local/P
-rograms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/paul/App
-Data/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb>
-Output written on report.pdf (34 pages, 941766 bytes).
+ 2529 strings out of 492701
+ 34425 string characters out of 6134504
+ 101705 words of memory out of 5000000
+ 6353 multiletter control sequences out of 15000+600000
+ 11459 words of font info for 42 fonts, out of 8000000 for 9000
+ 1137 hyphenation exceptions out of 8191
+ 41i,5n,25p,3143b,222s stack positions out of 5000i,500n,10000p,200000b,80000s
+</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></us
+r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/shar
+e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texl
+ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/tex
+mf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dis
+t/fonts/type1/public/amsfonts/cm/cmti10.pfb>
+Output written on report.pdf (34 pages, 929098 bytes).
 PDF statistics:
- 155 PDF objects out of 1000 (max. 8388607)
+ 157 PDF objects out of 1000 (max. 8388607)
+ 95 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  51 words of extra memory for PDF output out of 10000 (max. 10000000)
 
