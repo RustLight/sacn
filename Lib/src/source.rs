@@ -485,7 +485,7 @@ impl SacnSourceInternal {
         // Check all the given universes are valid before doing any action.
         // This prevents leaving the source in an inconsistent state if later a universe is found to be invalid.
         for u in universes {
-            self.universe_allowed(u).chain_err(|| format!("Data universe {} not allowed", u))?;
+            self.universe_allowed(u)?;
         }
 
         // Check that the synchronisation universe is also valid.
