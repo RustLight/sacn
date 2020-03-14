@@ -996,7 +996,7 @@ mod test {
 
         let mut recv_buf = [0; 1024];
 
-        source.register_universes(&[universe]);
+        source.register_universes(&[universe]).unwrap();
 
         source.send(&[universe], &dmx_data, Some(priority), None, None).unwrap();
         let (amt, _) = recv_socket.recv_from(&mut recv_buf).unwrap();

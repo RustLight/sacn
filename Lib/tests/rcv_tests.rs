@@ -8,6 +8,3 @@
 // This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
 extern crate sacn;
-
-use sacn::error::errors::*;
-use sacn::error::errors::ErrorKind::*;

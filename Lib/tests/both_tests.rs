@@ -11,11 +11,10 @@ extern crate sacn;
 
 use std::{thread};
 use std::thread::sleep;
-use std::option;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use sacn::source::SacnSource;
 use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
 use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
@@ -23,7 +22,6 @@ use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
 use std::time::Duration;
 
 use sacn::error::errors::*;
-use sacn::error::errors::ErrorKind::*;
 
 // Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
 // - Decided it shouldn't be seperated.
@@ -63,7 +61,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
 
     let priority = 100;
 
-    src.register_universe(universe);
+    src.register_universe(universe).unwrap();
 
     src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
 
@@ -355,9 +353,9 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
 
     let priority = 100;
 
-    src.register_universe(universe1);
-    src.register_universe(universe2);
-    src.register_universe(sync_uni);
+    src.register_universe(universe1).unwrap();
+    src.register_universe(universe2).unwrap();
+    src.register_universe(sync_uni).unwrap();
 
     src.send(&[universe1], &TEST_DATA_MULTIPLE_UNIVERSE[..513], Some(priority), None, Some(sync_uni)).unwrap();
     src.send(&[universe2], &TEST_DATA_MULTIPLE_UNIVERSE[513..], Some(priority), None, Some(sync_uni)).unwrap();
@@ -425,7 +423,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
 
     let priority = 100;
 
-    src.register_universe(universe);
+    src.register_universe(universe).unwrap();
 
     let dst_ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
 
@@ -473,7 +471,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
 
     let priority = 100;
 
-    src.register_universe(universe);
+    src.register_universe(universe).unwrap();
 
     let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT);
 
@@ -523,7 +521,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
 
     let priority = 100;
 
-    src.register_universe(universe);
+    src.register_universe(universe).unwrap();
 
     let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
@@ -569,7 +567,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
 
     let priority = 100;
 
-    src.register_universe(universe);
+    src.register_universe(universe).unwrap();
 
     src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
@@ -616,7 +614,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
 
     let priority = 100;
 
-    src.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES).unwrap();
 
     src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
@@ -674,7 +672,7 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 
     let priority = 100;
 
-    src.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES).unwrap();
 
     src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
@@ -731,7 +729,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
 
     let priority = 100;
 
-    src.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES).unwrap();
 
     let dst_ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
 
@@ -791,7 +789,7 @@ fn test_send_recv_across_universe_unicast_ipv4(){
 
     let priority = 100;
 
-    src.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES).unwrap();
 
     let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT);
 
@@ -840,7 +838,7 @@ fn test_two_senders_one_recv_different_universes_multicast_ipv4(){
 
         let priority = 100;
 
-        src.register_universe(universe_1);
+        src.register_universe(universe_1).unwrap();
 
         let _ = src.send(&[universe_1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
     });
@@ -851,7 +849,7 @@ fn test_two_senders_one_recv_different_universes_multicast_ipv4(){
 
         let priority = 100;
 
-        src.register_universe(universe_2);
+        src.register_universe(universe_2).unwrap();
 
         let _ = src.send(&[universe_2], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
     });
@@ -890,7 +888,7 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
 
         let priority = 100;
 
-        src.register_universe(universe);
+        src.register_universe(universe).unwrap();
 
         let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
     });
@@ -901,7 +899,7 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
 
         let priority = 100;
 
-        src.register_universe(universe);
+        src.register_universe(universe).unwrap();
 
         let _ = src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
     });
@@ -1142,7 +1140,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
 
             let universe: u16 = (i as u16) + BASE_UNIVERSE; 
     
-            src.register_universe(universe); // Senders all send on different universes.
+            src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
     
@@ -1252,7 +1250,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
 
             let universe: u16 = (i as u16) + BASE_UNIVERSE; 
     
-            src.register_universe(universe); // Senders all send on different universes.
+            src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
     
@@ -1362,7 +1360,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 
             let universe: u16 = (i as u16) + BASE_UNIVERSE; 
     
-            src.register_universe(universe); // Senders all send on different universes.
+            src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
     
@@ -1458,7 +1456,7 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
                 universes.push(((i + j) as u16) + BASE_UNIVERSE);
             }
 
-            src.register_universes(&universes);
+            src.register_universes(&universes).unwrap();
 
             tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
         }));
@@ -1538,7 +1536,7 @@ fn test_universe_discovery_multiple_universe_one_source_ipv4(){
                 universes.push(((i + j) as u16) + BASE_UNIVERSE);
             }
 
-            src.register_universes(&universes);
+            src.register_universes(&universes).unwrap();
 
             tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
         }));
@@ -1621,7 +1619,7 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
                 universes.push(((i + j) as u16) + BASE_UNIVERSE);
             }
 
-            src.register_universes(&universes);
+            src.register_universes(&universes).unwrap();
 
             src.set_is_sending_discovery(true);
 

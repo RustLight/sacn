@@ -1214,7 +1214,7 @@ fn test_universe_to_ip_ipv4_out_range_low(){
         Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed below minimum allowed universe")},
         Err(e) => 
             match e.kind() {
-                &ErrorKind::IllegalUniverse(ref s) => assert!(true),
+                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
                 _ => assert!(false, "Unexpected error type returned")
             }
     }
@@ -1226,7 +1226,7 @@ fn test_universe_to_ip_ipv4_out_range_high(){
         Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed above maximum allowed universe")},
         Err(e) => 
             match e.kind() {
-                &ErrorKind::IllegalUniverse(ref s) => assert!(true),
+                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
                 _ => assert!(false, "Unexpected error type returned")
             }
     }
@@ -1284,7 +1284,7 @@ fn test_universe_to_ip_ipv6_out_range_low(){
         Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed below minimum allowed universe")},
         Err(e) => 
             match e.kind() {
-                &ErrorKind::IllegalUniverse(ref s) => assert!(true),
+                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
                 _ => assert!(false, "Unexpected error type returned")
             }
     }
@@ -1296,7 +1296,7 @@ fn test_universe_to_ip_ipv6_out_range_high(){
         Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed above maximum allowed universe")},
         Err(e) => 
             match e.kind() {
-                &ErrorKind::IllegalUniverse(ref s) => assert!(true),
+                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
                 _ => assert!(false, "Unexpected error type returned")
             }
     }

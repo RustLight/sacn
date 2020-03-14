@@ -10,10 +10,8 @@
 extern crate sacn;
 
 use sacn::error::errors::*;
-use sacn::error::errors::ErrorKind::*;
 
 use sacn::source::SacnSource;
-use std::option;
 
 #[test]
 fn test_send_without_registering(){
@@ -25,7 +23,7 @@ fn test_send_without_registering(){
         Ok(_) => {assert!(false, "Source didn't prevent sending without registering")},
         Err(e) => 
             match e.kind() {
-                &ErrorKind::UniverseNotRegistered(ref s) => assert!(true),
+                &ErrorKind::UniverseNotRegistered(ref _s) => assert!(true),
                 _ => assert!(false, format!("Unexpected error type returned, {}", e.kind()))
             }
     }
