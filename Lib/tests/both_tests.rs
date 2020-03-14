@@ -1,3 +1,5 @@
+#[allow(dead_code)]
+
 // Copyright 2020 sacn Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
