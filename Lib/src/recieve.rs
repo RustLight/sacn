@@ -1134,7 +1134,7 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData> {
 fn test_handle_single_page_discovery_packet() {
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); 
 
-    let mut dmx_rcv = SacnReceiver::with_ip(addr).unwrap();
+    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
     let name = "Test Src 1";
     let page: u8 = 0;
@@ -1173,7 +1173,7 @@ fn test_handle_single_page_discovery_packet() {
 fn test_store_retrieve_waiting_data(){
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); 
 
-    let mut dmx_rcv = SacnReceiver::with_ip(addr).unwrap();
+    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
@@ -1199,7 +1199,7 @@ fn test_store_retrieve_waiting_data(){
 fn test_store_2_retrieve_1_waiting_data(){
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); 
 
-    let mut dmx_rcv = SacnReceiver::with_ip(addr).unwrap();
+    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;
@@ -1232,7 +1232,7 @@ fn test_store_2_retrieve_1_waiting_data(){
 fn test_store_2_retrieve_2_waiting_data(){
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); 
 
-    let mut dmx_rcv = SacnReceiver::with_ip(addr).unwrap();
+    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
     let sync_uni: u16 = 1;
     let universe: u16 = 0;

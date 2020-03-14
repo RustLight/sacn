@@ -26,7 +26,7 @@ fn test_send_without_registering(){
         Err(e) => 
             match e.kind() {
                 &ErrorKind::UniverseNotRegistered(ref s) => assert!(true),
-                _ => assert!(false, "Unexpected error type returned")
+                _ => assert!(false, format!("Unexpected error type returned, {}", e.kind()))
             }
     }
 }
