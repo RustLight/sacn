@@ -1022,7 +1022,7 @@ mod test {
 
         let start_code: u8 = 0;
 
-        source.register_universes(&[1]);
+        source.register_universes(&[1]).unwrap();
 
         source.terminate_stream(1, start_code).unwrap();
         for _ in 0..2 {
