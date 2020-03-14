@@ -30,10 +30,8 @@ use packet::{*, E131RootLayerData::*};
 /// This is used for uniquely identifying sources when counting sequence numbers.
 use uuid::Uuid;
 
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::cmp::{max, Ordering};
-use std::time;
 use std::time::{Duration, Instant};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::borrow::Cow;
@@ -630,7 +628,9 @@ impl SacnReceiver {
         self.partially_discovered_sources.retain(|s| s.last_updated.elapsed() < UNIVERSE_DISCOVERY_SOURCE_TIMEOUT);
         self.discovered_sources.retain(|s| s.last_updated.elapsed() < UNIVERSE_DISCOVERY_SOURCE_TIMEOUT);
     }
-
+    
+    /// Returns the current value of the announce_source_discovery flag.
+    /// See receive::set_announce_source_discovery for details of this flag.
     pub fn get_announce_source_discovery(&self) -> bool {
         return self.announce_source_discovery;
     }
@@ -958,7 +958,7 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
         socket.bind(&socketAddr.into())?;
         Ok(socket)
     } else {
-        /// Ipv6 not complete.
+        // Ipv6 not complete.
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
         socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
@@ -988,7 +988,7 @@ fn join_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr
                 }
             }
         }
-        /// Ipv6 not complete.
+        // Ipv6 not complete.
         IpAddr::V6(ref mdns_v6) => {
             socket.join_multicast_v6(mdns_v6, 0).chain_err(|| "Failed to join IPv6 multicast")?;
         }
