@@ -26,6 +26,10 @@ use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 // Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
 use packet::{*, E131RootLayerData::*};
 
+/// The uuid crate is used for working with/generating UUIDs which sACN uses as part of the cid field in the protocol.
+/// This is used for uniquely identifying sources when counting sequence numbers.
+use uuid::Uuid;
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::cmp::{max, Ordering};
@@ -79,15 +83,21 @@ pub struct SacnReceiver {
     /// If true then the receiver will process theses packets.
     process_preview_data: bool,
 
+    /// The limit to the number of sources for which to track sequence numbers.
+    /// A new source after this limit will cause a SourcesExceededError as per ANSI E1.31-2018 Section 6.2.3.3.
+    source_limit: Option<usize>,
+
     /// The sequence numbers used for data packets, keeps a reference of the last sequence number received for each universe.
     /// Sequence numbers are always in the range [0, 255] inclusive.
     /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
-    data_sequences: RefCell<HashMap<u16, u8>>,
+    /// The uuid refers to the source that is sending the data.
+    data_sequences: RefCell<HashMap<Uuid,HashMap<u16, u8>>>,
 
     /// The sequence numbers used for synchronisation packets, keeps a reference of the last sequence number received for each universe.
     /// Sequence numbers are always in the range [0, 255] inclusive.
     /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
-    sync_sequences: RefCell<HashMap<u16, u8>>,
+    /// The uuid refers to the source that is sending the data.
+    sync_sequences: RefCell<HashMap<Uuid,HashMap<u16, u8>>>,
 
     /// Flag which indicates if a SourceDiscovered error should be thrown when receiving data and a source is discovered.
     announce_source_discovery: bool
@@ -111,18 +121,31 @@ impl SacnReceiver {
     /// 
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     /// A receiver with an IPv4 address will only receive IPv4 data.
-    /// 
-    /// Bind to the unspecified address - allows receiving from any multicast address joined with the right port - as described in background.
-    /// let addr = SocketAddr::new(IpAddr::UNSPECIFIED, ACN_SDT_MULTICAST_PORT)
+    ///
+    /// Arguments:
+    ///     ip: The address of the interface for this receiver to join, by default this address should use the ACN_SDT_MULTICAST_PORT as defined in 
+    ///         ANSI E1.31-2018 Appendix A: Defined Parameters (Normative) however another address might be used in some situation.
+    ///     source_limit: The limit to the number of sources, past this limit a new source will cause a SourcesExceededError as per ANSI E1.31-2018 Section 6.2.3.3.
+    ///                     A source limit of None means no limit to the number of sources.
     /// 
     /// # Errors
+    /// Will return an InvalidInput error if the source_limit has a value of Some(0) which would indicate this receiver can never receive from any source.
+    ///
     /// Will return an error if the SacnReceiver fails to bind to a socket with the given ip. 
     /// For more details see socket2::Socket::new().
     /// 
     /// Will return an error if the created SacnReceiver fails to listen to the E1.31_DISCOVERY_UNIVERSE.
     /// For more details see SacnReceiver::listen_universes().
     /// 
-    pub fn with_ip(ip: SocketAddr) -> Result<SacnReceiver> {
+    pub fn with_ip(ip: SocketAddr, source_limit: Option<usize>) -> Result<SacnReceiver> {
+        match source_limit {
+            Some(x) => {
+                if x == 0 {
+                    bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Source_limit has a value of Some(0) which would indicate this receiver can never receive from any source"));
+                }
+            }
+            None => {}
+        }
         let mut sri = SacnReceiver {
                 receiver: SacnNetworkReceiver::new(ip).chain_err(|| "Failed to create SacnNetworkReceiver")?,
                 waiting_data: Vec::new(),
@@ -131,6 +154,7 @@ impl SacnReceiver {
                 merge_func: DEFAULT_MERGE_FUNC,
                 partially_discovered_sources: Vec::new(),
                 process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT,
+                source_limit: source_limit,
                 data_sequences: RefCell::new(HashMap::new()),
                 sync_sequences: RefCell::new(HashMap::new()),
                 announce_source_discovery: ANNOUNCE_SOURCE_DISCOVERY_DEFAULT,
@@ -138,8 +162,16 @@ impl SacnReceiver {
 
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE]).chain_err(|| "Failed to listen to discovery universe")?;
 
-        
         Ok(sri)
+    }
+
+    /// Wipes the record of discovered and sequence number tracked sources.
+    /// This is one way to handle a sources exceeded condition.
+    pub fn reset_sources(&mut self) {
+        self.data_sequences.clear();
+        self.sync_sequences.clear();
+        self.partially_discovered_sources.clear();
+        self.discovered_sources.clear();
     }
     
     /// Sets the merge function to be used by this receiver.
@@ -237,7 +269,7 @@ impl SacnReceiver {
     /// Returns a UniversesTerminated error if a packet is received with the stream_terminated flag set indicating that the source is no longer
     /// sending on that universe.
     /// 
-    fn handle_data_packet(&mut self, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
+    fn handle_data_packet(&mut self, cid: Uuid, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
         if data_pkt.preview_data && !self.process_preview_data {
             // Don't process preview data unless receiver has process_preview_data flag set.
             return Ok(None);
@@ -317,7 +349,7 @@ impl SacnReceiver {
     /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between 
     /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     /// 
-    fn handle_sync_packet(&mut self, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
+    fn handle_sync_packet(&mut self, cid: UUID, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
         check_seq_number(&self.sync_sequences, sync_pkt.sequence_number, sync_pkt.synchronization_address)?;
 
         let res = self.rtrv_waiting_data(sync_pkt.synchronization_address);
@@ -464,8 +496,8 @@ impl SacnReceiver {
                     let pdu: E131RootLayer = pkt.pdu;
                     let data: E131RootLayerData = pdu.data;
                     let res = match data {
-                        DataPacket(d) => self.handle_data_packet(d).chain_err(|| "Failed to handle data packet")?,
-                        SynchronizationPacket(s) => self.handle_sync_packet(s).chain_err(|| "Failed to handle sync packet")?,
+                        DataPacket(d) => self.handle_data_packet(pdu.cid, d).chain_err(|| "Failed to handle data packet")?,
+                        SynchronizationPacket(s) => self.handle_sync_packet(pdu.cid, s).chain_err(|| "Failed to handle sync packet")?,
                         UniverseDiscoveryPacket(u) => {
                             if self.handle_universe_discovery_packet(u) && self.announce_source_discovery {
                                 bail!(ErrorKind::SourceDiscovered("Receiver discovered a source".to_string()));
@@ -1025,7 +1057,7 @@ fn check_seq_number(sequences: &RefCell<HashMap<u16, u8>>, sequence_number: u8, 
 /// If this doesn't hold an error will be returned.
 /// Other merge functions may allow merging different start codes or not check for them.
 pub fn discard_previous(i: &DMXData, n: &DMXData) -> Result<DMXData> {
-    Ok(n)
+    Ok(n.clone())
 }
 
 /// Performs a highest takes priority (per byte) DMX merge of data.
@@ -1098,9 +1130,9 @@ fn test_handle_single_page_discovery_packet() {
         },
     };
     
-    let res: Option<Vec<DMXData>> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt);
+    let res: bool = dmx_rcv.handle_universe_discovery_packet(discovery_pkt);
 
-    assert!(res.is_none());
+    assert!(res);
 
     assert_eq!(dmx_rcv.discovered_sources.len(), 1);
 

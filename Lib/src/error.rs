@@ -22,6 +22,14 @@ pub mod errors {
         }
 
         errors {
+            
+            /// Used to indicate that the limit for the number of supported sources has been reached. 
+            /// This is based on unique CID values.
+            /// as per ANSI E1.31-2018 Section 6.2.3.3.
+            SourcesExceededError(msg: String) {
+                description("Limit for the number of supported sources has been reached"),
+                display("Limit for the number of supported sources has been reached, msg: {}", msg)
+            }
 
             /// A source was discovered by a receiver with the announce_discovery_flag set to true.
             SourceDiscovered(msg: String) {
