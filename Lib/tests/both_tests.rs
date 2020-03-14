@@ -929,7 +929,7 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
 }
 
 #[test]
-fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
+fn test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4(){
     let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking
 
     let snd_tx = tx.clone();
@@ -949,8 +949,8 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
 
         let priority = 100;
 
-        src.register_universe(universe);
-        src.register_universe(sync_uni);
+        src.register_universe(universe).unwrap();
+        src.register_universe(sync_uni).unwrap();
 
         src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
         snd_tx.send(()).unwrap();
@@ -962,8 +962,8 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
 
         let priority = 100;
 
-        src.register_universe(universe);
-        src.register_universe(sync_uni);
+        src.register_universe(universe).unwrap();
+        src.register_universe(sync_uni).unwrap();
 
         src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
         rx.recv().unwrap(); // Must only send once both threads have sent for this test to test what happens in that situation (where there will be a merge).
@@ -980,11 +980,15 @@ fn test_two_senders_one_recv_same_universe_sync_multicast_ipv4(){
         universe: universe,
         values: TEST_DATA_SINGLE_UNIVERSE.to_vec(),
         sync_uni: sync_uni,
+        priority: 100,
+        src_cid: None
     },
     &DMXData {
         universe: universe,
         values: TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec(),
         sync_uni: sync_uni,
+        priority: 100,
+        src_cid: None
     },).unwrap().values);
 }
 
@@ -1028,7 +1032,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
 
             let universe: u16 = (i as u16) + BASE_UNIVERSE; 
     
-            src.register_universe(universe); // Senders all send on different universes.
+            src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
     
