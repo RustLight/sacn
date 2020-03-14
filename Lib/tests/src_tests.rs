@@ -39,7 +39,7 @@ fn test_send_single_universe(){
 
     let universe: u16 = 1;
 
-    src.register_universe(universe);
+    src.register_universe(universe).unwrap();
 
     src.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 }
@@ -52,7 +52,7 @@ fn test_send_across_universe(){
 
     let universes: [u16; 2] = [1, 2];
 
-    src.register_universes(&universes);
+    src.register_universes(&universes).unwrap();
 
     src.send(&universes, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, None).unwrap();
 }
