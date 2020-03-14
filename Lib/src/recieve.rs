@@ -55,7 +55,68 @@ const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 /// The default value of the announce_source_discovery flag.
 const ANNOUNCE_SOURCE_DISCOVERY_DEFAULT: bool = false;
 
-const DEFAULT_MERGE_FUNC: fn(&DMXData, &DMXData) -> Result<DMXData> = discard_previous;
+const DEFAULT_MERGE_FUNC: fn(&DMXData, &DMXData) -> Result<DMXData>  =discard_lowest_priority_then_previous;
+
+/// Holds a universes worth of DMX data.
+#[derive(Debug)]
+pub struct DMXData{
+    /// The universe that the data was sent to.
+    pub universe: u16,
+    
+    /// The actual universe data, if less than 512 values in length then implies trailing 0's to pad to a full-universe of data.
+    pub values: Vec<u8>,
+
+    /// The universe the data is (or was if now acted upon) waiting for a synchronisation packet from.
+    /// 0 indicates it isn't waiting for a universe synchronisation packet. 
+    pub sync_uni: u16,
+
+    /// The priority of the data, this may be useful for receivers which want to implement their own implementing merge algorithms.
+    /// Must be less than packet::E131_MAX_PRIORITY.
+    pub priority: u8,
+
+    /// The unique id of the source of the data, this may be useful for receivers which want to implement their own merge algorithms
+    /// which use the identity of the source to decide behaviour.
+    /// A value of None indicates that there is no clear source, for example if a merge algorithm has merged data from 2 or more sources together.
+    pub src_cid: Option<Uuid>,
+}
+
+/// Used for receiving dmx or other data on a particular universe using multicast.
+#[derive(Debug)]
+struct SacnNetworkReceiver{
+    socket: Socket,
+    addr: SocketAddr
+}
+
+/// Represents an sACN source/sender on the network that has been discovered by this sACN receiver by receiving universe discovery packets.
+#[derive(Clone, Debug)]
+pub struct DiscoveredSacnSource {
+    /// The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
+    pub name: String,
+
+    /// The time at which the discovered source was last updated / a discovery packet was received by the source.
+    pub last_updated: Instant,
+
+    /// The pages that have been sent so far by this source when enumerating the universes it is currently sending on.   
+    pages: Vec<UniversePage>,
+    
+    /// The last page that will be sent by this source.
+    last_page: u8,
+}
+
+/// Universe discovery packets are broken down into pages to allow sending a large list of universes, each page contains a list of universes and
+/// which page it is. The receiver then puts the pages together to get the complete list of universes that the discovered source is sending on.
+/// 
+/// The concept of pages is intentionally hidden from the end-user of the library as they are a network realisation of what is just an
+/// abstract list of universes and don't play any part out-side of the protocol.
+#[derive(Eq, Ord, PartialEq, PartialOrd, Clone, Debug)]
+struct UniversePage {
+    /// The page number of this page.
+    page: u8,
+
+    /// The universes that the source is transmitting that are on this page, this may or may-not be a complete list of all universes being sent 
+    /// depending on if there are more pages.
+    universes: Vec<u16>
+}
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
 pub struct SacnReceiver {
@@ -178,6 +239,9 @@ impl SacnReceiver {
     /// 
     /// This merge function is called if data is waiting for a universe e.g. for syncronisation and then further data for that universe with the same
     /// syncronisation address arrives.
+    ///
+    /// This merge function MUST return a DmxMergeError if there is a problem merging. This error can optionally encapsulate further errors using the Error-chain system 
+    ///     to provide a more informative backtrace.
     /// 
     /// Arguments:
     /// func: The merge function to use. Should take 2 DMXData references as arguments and return a Result<DMXData>.
@@ -268,6 +332,8 @@ impl SacnReceiver {
     /// 
     /// Returns a UniversesTerminated error if a packet is received with the stream_terminated flag set indicating that the source is no longer
     /// sending on that universe.
+    ///
+    /// Will return an DmxMergeError if there is an issue merging or replacing new and existing waiting data.
     /// 
     fn handle_data_packet(&mut self, cid: Uuid, data_pkt: DataPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
         if data_pkt.preview_data && !self.process_preview_data {
@@ -293,7 +359,9 @@ impl SacnReceiver {
             let dmx_data: DMXData = DMXData {
                 universe: data_pkt.universe, 
                 values: vals.to_vec(),
-                sync_uni: data_pkt.synchronization_address
+                sync_uni: data_pkt.synchronization_address,
+                priority: data_pkt.priority,
+                src_cid: Some(cid)
             };
 
             return Ok(Some(vec![dmx_data]));
@@ -302,10 +370,12 @@ impl SacnReceiver {
             let dmx_data: DMXData = DMXData {
                 universe: data_pkt.universe,
                 values: vals.to_vec(),
-                sync_uni: data_pkt.synchronization_address
+                sync_uni: data_pkt.synchronization_address,
+                priority: data_pkt.priority,
+                src_cid: Some(cid)
             };
 
-            self.store_waiting_data(dmx_data);
+            self.store_waiting_data(dmx_data)?;
             
             Ok(None)
         }
@@ -316,17 +386,21 @@ impl SacnReceiver {
     /// Note that multiple bits of data for the same universe can be buffered at one time as long as the data is 
     /// waiting for different synchronisation universes. Only if the data is for the same universe and is waiting 
     /// for the same synchronisation universe is it merged.
+    ///
+    /// # Errors
+    /// Will return an DmxMergeError if there is an issue merging or replacing new and existing waiting data.
     /// 
-    fn store_waiting_data(&mut self, data: DMXData){
+    fn store_waiting_data(&mut self, data: DMXData) -> Result<()>{
         for i in 0 .. self.waiting_data.len() {
             if self.waiting_data[i].universe == data.universe && self.waiting_data[i].sync_uni == data.sync_uni { 
                 
-                self.waiting_data[i] = ((self.merge_func)(&self.waiting_data[i], &data)).unwrap();
-                return;
+                self.waiting_data[i] = ((self.merge_func)(&self.waiting_data[i], &data))?;
+                return Ok(());
             }
         }
 
         self.waiting_data.push(data);
+        Ok(())
     }
 
     /// Handles the given synchronisation packet for this DMX receiver. 
@@ -786,20 +860,6 @@ impl SacnNetworkReceiver {
     }
 }
 
-/// Holds a universes worth of DMX data.
-#[derive(Debug)]
-pub struct DMXData{
-    /// The universe that the data was sent to.
-    pub universe: u16,
-    
-    /// The actual universe data, if less than 512 values in length then implies trailing 0's to pad to a full-universe of data.
-    pub values: Vec<u8>,
-
-    /// The universe the data is (or was if now acted upon) waiting for a synchronisation packet from.
-    /// 0 indicates it isn't waiting for a universe synchronisation packet. 
-    pub sync_uni: u16 
-}
-
 impl Clone for DMXData {
     fn clone(&self) -> DMXData {
         let new_vals = self.values.to_vec(); // https://stackoverflow.com/questions/21369876/what-is-the-idiomatic-rust-way-to-copy-clone-a-vector-in-a-parameterized-functio (26/12/2019)
@@ -807,7 +867,9 @@ impl Clone for DMXData {
         DMXData {
             universe: self.universe,
             values: new_vals,
-            sync_uni: self.sync_uni
+            sync_uni: self.sync_uni,
+            priority: self.priority,
+            src_cid: self.src_cid
         }
     }
 }
@@ -840,44 +902,6 @@ impl PartialEq for DMXData {
 
 /// See PartialEq trait implementation for DMXData.
 impl Eq for DMXData {}
-
-/// Used for receiving dmx or other data on a particular universe using multicast.
-#[derive(Debug)]
-struct SacnNetworkReceiver{
-    socket: Socket,
-    addr: SocketAddr
-}
-
-/// Represents an sACN source/sender on the network that has been discovered by this sACN receiver by receiving universe discovery packets.
-#[derive(Clone, Debug)]
-pub struct DiscoveredSacnSource {
-    /// The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
-    pub name: String,
-
-    /// The time at which the discovered source was last updated / a discovery packet was received by the source.
-    pub last_updated: Instant,
-
-    /// The pages that have been sent so far by this source when enumerating the universes it is currently sending on.   
-    pages: Vec<UniversePage>,
-    
-    /// The last page that will be sent by this source.
-    last_page: u8,
-}
-
-/// Universe discovery packets are broken down into pages to allow sending a large list of universes, each page contains a list of universes and
-/// which page it is. The receiver then puts the pages together to get the complete list of universes that the discovered source is sending on.
-/// 
-/// The concept of pages is intentionally hidden from the end-user of the library as they are a network realisation of what is just an
-/// abstract list of universes and don't play any part out-side of the protocol.
-#[derive(Eq, Ord, PartialEq, PartialOrd, Clone, Debug)]
-struct UniversePage {
-    /// The page number of this page.
-    page: u8,
-
-    /// The universes that the source is transmitting that are on this page, this may or may-not be a complete list of all universes being sent 
-    /// depending on if there are more pages.
-    universes: Vec<u16>
-}
 
 impl DiscoveredSacnSource {
     /// Returns true if all the pages sent by this DiscoveredSacnSource have been receieved. 
@@ -1095,11 +1119,16 @@ fn check_seq_number(src_sequences: &mut HashMap<Uuid, HashMap<u16, u8>>, source_
 /// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
 /// If this doesn't hold an error will be returned.
 /// Other merge functions may allow merging different start codes or not check for them.
-pub fn discard_previous(i: &DMXData, n: &DMXData) -> Result<DMXData> {
+pub fn discard_lowest_priority_then_previous(i: &DMXData, n: &DMXData) -> Result<DMXData> {
+    if i.priority > n.priority {
+        return Ok(i.clone());
+    }
     Ok(n.clone())
 }
 
-/// Performs a highest takes priority (per byte) DMX merge of data.
+/// Performs a highest takes priority (HTP) (per byte) DMX merge of data.
+///
+/// Note this merge is done within the explicit priorty, if i or n has an explictly higher priority it will always take precedence before this HTP merge is attempted.
 /// 
 /// Given as an example of a possible merge algorithm.
 /// The first argument (i) is the existing data, n is the new data.
@@ -1115,10 +1144,19 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData> {
             bail!(DmxMergeError("Attempted DMX merge on dmx data with different universes, syncronisation universes or data with no values".to_string()));
     }
 
+    if i.priority > n.priority {
+        return Ok(i.clone());
+    } else if n.priority > i.priority {
+        return Ok(n.clone());
+    }
+    // Must have same priority.
+
     let mut r: DMXData = DMXData{
         universe: i.universe,
         values: Vec::new(),
-        sync_uni: i.sync_uni
+        sync_uni: i.sync_uni,
+        priority: i.priority,
+        src_cid: None
     };
 
     let mut i_iter = i.values.iter();
@@ -1195,10 +1233,12 @@ fn test_store_retrieve_waiting_data(){
     let dmx_data = DMXData {
         universe: universe,
         values: vals.clone(),
-        sync_uni: sync_uni 
+        sync_uni: sync_uni,
+        priority: 100,
+        src_cid: None
     };
 
-    dmx_rcv.store_waiting_data(dmx_data);
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
 
     let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
 
@@ -1221,17 +1261,21 @@ fn test_store_2_retrieve_1_waiting_data(){
     let dmx_data = DMXData {
         universe: universe,
         values: vals.clone(),
-        sync_uni: sync_uni 
+        sync_uni: sync_uni,
+        priority: 100,
+        src_cid: None
     };
 
     let dmx_data2 = DMXData {
         universe: universe + 1,
         values: vals.clone(),
-        sync_uni: sync_uni + 1 
+        sync_uni: sync_uni + 1,
+        priority: 100,
+        src_cid: None
     };
 
-    dmx_rcv.store_waiting_data(dmx_data);
-    dmx_rcv.store_waiting_data(dmx_data2);
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
 
     let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
 
@@ -1254,7 +1298,9 @@ fn test_store_2_retrieve_2_waiting_data(){
     let dmx_data = DMXData {
         universe: universe,
         values: vals.clone(),
-        sync_uni: sync_uni 
+        sync_uni: sync_uni,
+        priority: 100,
+        src_cid: None
     };
 
     let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
@@ -1262,11 +1308,13 @@ fn test_store_2_retrieve_2_waiting_data(){
     let dmx_data2 = DMXData {
         universe: universe + 1,
         values: vals2.clone(),
-        sync_uni: sync_uni + 1 
+        sync_uni: sync_uni + 1,
+        priority: 100,
+        src_cid: None
     };
 
-    dmx_rcv.store_waiting_data(dmx_data);
-    dmx_rcv.store_waiting_data(dmx_data2);
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
 
     let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
 
