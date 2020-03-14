@@ -284,7 +284,7 @@ impl SacnReceiver {
         // This is as per ANSI E1.31-2018 Section 6.2.6, Stream_Terminated: Bit 6, 'Any property values 
         // in an E1.31 Data Packet containing this bit shall be ignored'
         
-        check_seq_number(&mut self.data_sequences, cid, data_pkt.sequence_number, data_pkt.universe)?;
+        check_seq_number(&mut self.data_sequences, self.source_limit, cid, data_pkt.sequence_number, data_pkt.universe)?;
 
         if data_pkt.synchronization_address == E131_NO_SYNC_ADDR {
             self.clear_waiting_data();
@@ -351,7 +351,7 @@ impl SacnReceiver {
     /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     /// 
     fn handle_sync_packet(&mut self, cid: Uuid, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
-        check_seq_number(&mut self.sync_sequences, cid, sync_pkt.sequence_number, sync_pkt.synchronization_address)?;
+        check_seq_number(&mut self.sync_sequences, self.source_limit, cid, sync_pkt.sequence_number, sync_pkt.synchronization_address)?;
 
         let res = self.rtrv_waiting_data(sync_pkt.synchronization_address);
         if res.len() == 0 {
@@ -1023,16 +1023,29 @@ fn join_win_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
 /// Checks the given sequence number for the given universe against the given expected sequence numbers.
 /// 
 /// Returns Ok(()) if the packet is detected in-order.
-/// 
+///
+/// # Arguments
+/// src_sequences: A mutable hashmap which relates sources identified by Uuid to another hashmap which itself relates universes to sequence numbers. The given hashmap of
+///                 sequences should be for the specific packet-type being checked as different packet-types have their own sequence numbers even from the same source.
+/// source_limit: The limit on the number of sources which are allowed, None indicates no limit, if there is a limit then a SourcesExceededError may be returned.
+/// cid:    The Uuid of the source that send the packet.
+/// sequence_number: The sequence number of the packet to check.
+/// universe: The universe of the packet (this is the data universe for data packets and the sync universe for synchronisation packets).
+///
 /// # Errors
 /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between 
 /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
 ///
-fn check_seq_number(src_sequences: &mut HashMap<Uuid, HashMap<u16, u8>>, cid: Uuid,  sequence_number: u8, universe: u16) -> Result<()>{
-    // sequences.borrow_mut().get(&cid)
+/// Return a SourcesExceededError if the cid of the source is new and would cause the number of sources to exceed the given source_limit.
+///
+fn check_seq_number(src_sequences: &mut HashMap<Uuid, HashMap<u16, u8>>, source_limit: Option<usize>, cid: Uuid, sequence_number: u8, universe: u16) -> Result<()>{
     match src_sequences.get(&cid) {
-        None => {
-            src_sequences.insert(cid, HashMap::new());
+        None => { // New source not previously received from.
+            if source_limit.is_none() || src_sequences.len() < source_limit.unwrap() {
+                src_sequences.insert(cid, HashMap::new());
+            } else {
+                bail!(ErrorKind::SourcesExceededError(format!("Already at max sources: {}", src_sequences.len()).to_string()));
+            }
         },
 
         Some(_) => {}
