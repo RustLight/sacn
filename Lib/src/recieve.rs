@@ -91,13 +91,13 @@ pub struct SacnReceiver {
     /// Sequence numbers are always in the range [0, 255] inclusive.
     /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     /// The uuid refers to the source that is sending the data.
-    data_sequences: RefCell<HashMap<Uuid,HashMap<u16, u8>>>,
+    data_sequences: HashMap<Uuid,HashMap<u16, u8>>,
 
     /// The sequence numbers used for synchronisation packets, keeps a reference of the last sequence number received for each universe.
     /// Sequence numbers are always in the range [0, 255] inclusive.
     /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     /// The uuid refers to the source that is sending the data.
-    sync_sequences: RefCell<HashMap<Uuid,HashMap<u16, u8>>>,
+    sync_sequences: HashMap<Uuid,HashMap<u16, u8>>,
 
     /// Flag which indicates if a SourceDiscovered error should be thrown when receiving data and a source is discovered.
     announce_source_discovery: bool
@@ -155,8 +155,8 @@ impl SacnReceiver {
                 partially_discovered_sources: Vec::new(),
                 process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT,
                 source_limit: source_limit,
-                data_sequences: RefCell::new(HashMap::new()),
-                sync_sequences: RefCell::new(HashMap::new()),
+                data_sequences: HashMap::new(),
+                sync_sequences: HashMap::new(),
                 announce_source_discovery: ANNOUNCE_SOURCE_DISCOVERY_DEFAULT,
         };
 
@@ -283,7 +283,8 @@ impl SacnReceiver {
         // Preview data and stream terminated both get precedence over checking the sequence number.
         // This is as per ANSI E1.31-2018 Section 6.2.6, Stream_Terminated: Bit 6, 'Any property values 
         // in an E1.31 Data Packet containing this bit shall be ignored'
-        check_seq_number(&self.data_sequences, data_pkt.sequence_number, data_pkt.universe)?;
+        
+        check_seq_number(&mut self.data_sequences, cid, data_pkt.sequence_number, data_pkt.universe)?;
 
         if data_pkt.synchronization_address == E131_NO_SYNC_ADDR {
             self.clear_waiting_data();
@@ -349,8 +350,8 @@ impl SacnReceiver {
     /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between 
     /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     /// 
-    fn handle_sync_packet(&mut self, cid: UUID, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
-        check_seq_number(&self.sync_sequences, sync_pkt.sequence_number, sync_pkt.synchronization_address)?;
+    fn handle_sync_packet(&mut self, cid: Uuid, sync_pkt: SynchronizationPacketFramingLayer) -> Result<Option<Vec<DMXData>>>{
+        check_seq_number(&mut self.sync_sequences, cid, sync_pkt.sequence_number, sync_pkt.synchronization_address)?;
 
         let res = self.rtrv_waiting_data(sync_pkt.synchronization_address);
         if res.len() == 0 {
@@ -1027,10 +1028,27 @@ fn join_win_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
 /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between 
 /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
 ///
-fn check_seq_number(sequences: &RefCell<HashMap<u16, u8>>, sequence_number: u8, universe: u16) -> Result<()>{
-    let expected_seq = match sequences.borrow().get(&universe) {
-        Some(s) => *s,
-        None => 255, // Should be set to the value before the initial sequence number. Can't do this using underflow as forbidden in rust.
+fn check_seq_number(src_sequences: &mut HashMap<Uuid, HashMap<u16, u8>>, cid: Uuid,  sequence_number: u8, universe: u16) -> Result<()>{
+    // sequences.borrow_mut().get(&cid)
+    match src_sequences.get(&cid) {
+        None => {
+            src_sequences.insert(cid, HashMap::new());
+        },
+
+        Some(_) => {}
+    };
+
+    let expected_seq = match src_sequences.get(&cid) {
+        Some(src) => {
+            let seq_num = match src.get(&universe) {
+                Some(s) => *s,
+                None => 255, // Should be set to the value before the initial sequence number. Can't do this using underflow as forbidden in rust.
+            };
+            seq_num
+        },
+        None => {
+            panic!();
+        }
     };
 
     let seq_diff: isize = (sequence_number as isize) - (expected_seq as isize);
@@ -1042,7 +1060,15 @@ fn check_seq_number(sequences: &RefCell<HashMap<u16, u8>>, sequence_number: u8, 
             sequence_number, expected_seq, seq_diff).to_string()));
     }
 
-    sequences.borrow_mut().insert(universe, sequence_number);
+    match src_sequences.get_mut(&cid) {
+        Some(src) => {
+            src.insert(universe, sequence_number);
+        },
+        None => {
+            panic!();
+        }
+    };
+
     Ok(())
 }
 
