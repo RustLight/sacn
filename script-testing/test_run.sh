@@ -42,17 +42,3 @@ ssh ${REMOTE_PC_2} fuser -k -n udp ${PORT}
 
 # Give time for both processes to be killed properly.
 sleep 2
-
-# Check if the output matched the expected, diff will output only if they are different
-# https://stackoverflow.com/questions/12137431/test-if-a-command-outputs-an-empty-string (09/02/2020)
-if [[ $(diff -q -N ${SRC_OUTPUT_PATH} ${SRC_EXPECTED_OUTPUT}) ]];
-then
-  echo "Test ${TEST_NUM}: FAILED"
-else
-	if [[ $(diff -q -N ${RCV_OUTPUT_PATH} ${RCV_EXPECTED_OUTPUT}) ]];
-	then
-	  echo "Test ${TEST_NUM}: FAILED"
-	else
-	  echo "Test ${TEST_NUM}: PASSED"
-	fi
-fi
