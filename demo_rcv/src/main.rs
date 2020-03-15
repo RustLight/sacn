@@ -35,37 +35,51 @@ use std::io;
 use std::env;
 use std::thread::sleep;
 
+/// The string given by the user to perform each of the various options as described in get_usage_str below.
+const ACTION_RECV:  &str = "r";
+const ACTION_RECV_CONTINOUS:  &str = "c";
+const ACTION_PRINT_DISCOVERED_SOURCES:  &str = "s";
+const ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT:  &str = "x";
+const ACTION_QUIT:  &str = "q";
+const ACTION_HELP:  &str = "h";
+const ACTION_LISTEN_UNIVERSE:  &str = "l";
+const ACTION_STOP_LISTEN_UNIVERSE:  &str = "t";
+const ACTION_SLEEP:  &str = "w";
 
 /// Describes the various commands / command-line arguments avaliable and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
-const USAGE_STR: &'static str = "Usage: ./main <interface_ip>\n
-Receive data: \n
-r <timeout in secs, 0 means no timeout>\n
+/// Not a const as const with format! not supported in rust.
+fn get_usage_str() -> String {
+    format!("Usage: ./main <interface_ip>\n
+    Receive data: \n
+    {} <timeout in secs, 0 means no timeout>\n
 
-Attempt to receive data with the given timeout for each receive for the given number of times: \n
-a <timeout in secs> <count> \n
+    Attempt to receive data with the given timeout for each receive for the given number of times: \n
+    {} <timeout in secs> <count> \n
 
-Print discovered sources: \n
-s \n
+    Print discovered sources: \n
+    {} \n
 
-Print discovered sources without checking if they are timed out: \n
-x \n
+    Print discovered sources without checking if they are timed out: \n
+    {} \n
 
-Quit \n
-q \n
+    Quit \n
+    {} \n
 
-Help \n
-h \n
+    Help \n
+    {} \n
 
-Listen universe \n
-l <universe> \n
+    Listen universe \n
+    {} <universe> \n
 
-Stop Listening Universe \n
-t <universe> \n
+    Stop Listening Universe \n
+    {} <universe> \n
 
-Sleep for x seconds \n
-w <secs>\n
-";
+    Sleep for x seconds \n
+    {} <secs>\n
+    ", ACTION_RECV, ACTION_RECV_CONTINOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT, 
+    ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP)
+}
 
 fn main() {
     let cmd_args: Vec<String> = env::args().collect();
@@ -118,10 +132,10 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
             }
 
             match split_input[0] {
-                "h" => { // Display help
+                ACTION_HELP => { // Display help
                     display_help();
                 }
-                "r" => { // Receive data
+                ACTION_RECV => { // Receive data
                     if split_input.len() < 2 {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
@@ -140,7 +154,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                     let res = dmx_recv.recv(timeout).map_err(|e| e.into());
                     print_recv(res);
                 }
-                "a" => { // Receive data continously.
+                ACTION_RECV_CONTINOUS => { // Receive data continously.
                     if split_input.len() < 3 {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 3 )"));
@@ -162,16 +176,16 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                         print_recv(res);
                     }
                 }
-                "s" => { // Print discovered sources, note that no sources will be discovered unless you try and recv first.
+                ACTION_PRINT_DISCOVERED_SOURCES => { // Print discovered sources, note that no sources will be discovered unless you try and recv first.
                     print_discovered_sources(&dmx_recv.get_discovered_sources());
                 }
-                "x" => { // Print discovered sources without checking if they are timed out already.
+                ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT => { // Print discovered sources without checking if they are timed out already.
                     print_discovered_sources(&dmx_recv.get_discovered_sources_no_check());
                 }
-                "q" => { // Quit
+                ACTION_QUIT => { // Quit
                     return Ok(false)
                 }
-                "w" => {
+                ACTION_SLEEP => {
                     if split_input.len() < 2 {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
@@ -180,7 +194,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                     sleep(Duration::from_secs(secs));
 
                 }
-                "l" => { // Listen universe
+                ACTION_LISTEN_UNIVERSE => { // Listen universe
                     if split_input.len() < 2 {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
@@ -188,7 +202,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                     let universe: u16 = split_input[1].parse().unwrap();
                     dmx_recv.listen_universes(&[universe])?;
                 }
-                "t" => { // Stop listening to universe
+                ACTION_STOP_LISTEN_UNIVERSE => { // Stop listening to universe
                     if split_input.len() < 2 {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
@@ -234,5 +248,5 @@ fn print_discovered_sources(srcs: &Vec<DiscoveredSacnSource>) {
 }
 
 fn display_help(){
-    println!("{}", USAGE_STR);
+    println!("{}", get_usage_str());
 }
