@@ -1135,13 +1135,23 @@ fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
 /// Will return an error if the given socket cannot be joined to the given multicast group address.
 ///     See join_multicast_v4[fn.join_multicast_v4.Socket] and join_multicast_v6[fn.join_multicast_v6.Socket]
 #[cfg(target_os = "windows")]
-fn join_win_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
-    match addr.ip() {
-        IpAddr::V4(ref mdns_v4) => {
-            socket.join_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to join IPv4 multicast")?;
+fn join_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
+    match addr.family() as i32 { // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
+        AF_INET => {
+            match addr.as_inet() {
+                Some(a) => {
+                    socket.join_multicast_v4(a.ip(), &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to join IPv4 multicast")?;
+                }
+                None => {
+                    bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
+                }
+            }
         }
-        IpAddr::V6(ref mdns_v6) => {
-            socket.join_multicast_v6(mdns_v6, 0).chain_err(|| "Failed to join IPv6 multicast")?;
+        AF_INET6 => {
+            socket.join_multicast_v6(addr.as_inet6().unwrap().ip(), 0).chain_err(|| "Failed to join IPv6 multicast")?;
+        }
+        _ => {
+            bail!(ErrorKind::UnsupportedIpVersion("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6)".to_string()));
         }
     };
 
@@ -1158,13 +1168,23 @@ fn join_win_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
 /// Will return an error if the given socket cannot leave the given multicast group address.
 ///     See leave_multicast_v4[fn.leave_multicast_v4.Socket] and leave_multicast_v6[fn.leave_multicast_v6.Socket]
 #[cfg(target_os = "windows")]
-fn leave_win_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
-    match addr.ip() {
-        IpAddr::V4(ref mdns_v4) => {
-            socket.leave_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to leave IPv4 multicast")?;
+fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
+    match addr.family() as i32 { // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
+        AF_INET => {
+            match addr.as_inet() {
+                Some(a) => {
+                    socket.leave_multicast_v4(a.ip(), &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to leave IPv4 multicast")?;
+                }
+                None => {
+                    bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
+                }
+            }
         }
-        IpAddr::V6(ref mdns_v6) => {
-            socket.leave_multicast_v6(mdns_v6, 0).chain_err(|| "Failed to leave IPv6 multicast")?;
+        AF_INET6 => {
+            socket.leave_multicast_v6(addr.as_inet6().unwrap().ip(), 6).chain_err(|| "Failed to leave IPv6 multicast")?;
+        }
+        _ => {
+            bail!(ErrorKind::UnsupportedIpVersion("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6)".to_string()));
         }
     };
 
