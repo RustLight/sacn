@@ -22,6 +22,7 @@ use error::errors::{*, ErrorKind::*};
 
 /// Socket 2 used for the underlying UDP socket that sACN is sent over.
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+use libc::{AF_INET, AF_INET6};
 
 // Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
 use packet::{*, E131RootLayerData::*};
@@ -989,7 +990,7 @@ impl DiscoveredSacnSource {
 /// # Errors
 /// Will return an error if the socket cannot be created, see (Socket::new)[fn.new.Socket].
 /// 
-/// Will return an error if the socket cannot be bound to the given address, see (bind)[fn.bind.Socket].
+/// Will return an error if the socket cannot be bound to the given address, see (bind)[fn.bind.Socket2].
 #[cfg(target_os = "linux")]
 fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
@@ -1001,8 +1002,7 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
     } else {
         // Ipv6 not complete.
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
-        // socket.bind(&SockAddr::from(addr))?;
-        socket.bind(&addr.into());
+        socket.bind(&addr.into())?;
         Ok(socket)
     }
 }
@@ -1021,7 +1021,7 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 /// 
 #[cfg(target_os = "linux")]
 fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
-    match addr.family() {
+    match addr.family() as i32 { // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
         AF_INET => {
             match addr.as_inet() {
                 Some(a) => {
@@ -1042,6 +1042,9 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
         AF_INET6 => {
             socket.join_multicast_v6(addr.as_inet6().unwrap().ip(), 0).chain_err(|| "Failed to join IPv6 multicast")?;
         }
+        _ => {
+
+        }
     };
 
     Ok(())
@@ -1061,7 +1064,7 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
 /// 
 #[cfg(target_os = "linux")]
 fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
-    match addr.family() {
+    match addr.family() as i32 { // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
         AF_INET => {
             match addr.as_inet() {
                 Some(a) => {
@@ -1081,6 +1084,9 @@ fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr)
         }
         AF_INET6 => {
             socket.leave_multicast_v6(addr.as_inet6().unwrap().ip(), 6).chain_err(|| "Failed to leave IPv6 multicast")?;
+        }
+        _ => {
+            
         }
     };
 

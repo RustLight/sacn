@@ -29,7 +29,7 @@ extern crate sacn;
 use sacn::recieve::{DMXData, SacnReceiver, DiscoveredSacnSource};
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 
-use std::net::{IpAddr, SocketAddr};
+use std::net::{SocketAddr};
 use std::time::Duration;
 use std::io;
 use std::env;

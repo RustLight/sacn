@@ -27,8 +27,9 @@ extern crate error_chain;
 /// This completely replaces the old error system (sACN crate version 0.4.4) which relied on a simple Enum model without proper backtraces.
 pub mod error;
 
-/// The library is built on top of socket2 and net2 to provide the underlying UDP networking interface.
+/// The library is built on top of socket2 to provide the underlying UDP networking interface.
 extern crate socket2;
+extern crate libc;
 extern crate net2;
 
 /// The core crate is used for string processing during packet parsing/packing aswell as to provide access to the Hash trait.
