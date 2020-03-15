@@ -14,6 +14,7 @@ pub mod errors {
         foreign_links {
             Sacn(::sacn::error::errors::Error);
             Io(::std::io::Error);
+            BoolStr(::std::str::ParseBoolError);
         }
         
         errors {}
