@@ -429,6 +429,32 @@ impl SacnSourceInternal {
         Ok(())
     }
 
+    /// De-registers the given universe for sending with this source.
+    /// 
+    /// # Errors
+    /// Returns an IllegalUniverse error if the universe is outwith the allowed range, see (is_universe_in_range)[fn.is_universe_in_range.packet].
+    /// 
+    /// Returns a UniverseNotFound error if the given universe was never registered originally.
+    /// 
+    fn deregister_universe(&mut self, universe: u16) -> Result<()> {
+        is_universe_in_range(universe)?;
+
+        if self.universes.len() == 0 {
+            self.universes.push(universe);
+            Ok(())
+        } else {
+            match self.universes.binary_search(&universe) {
+                Err(_i) => { // Value not found
+                    bail!(ErrorKind::UniverseNotFound("Attempted to de-register a universe that was never registered".to_string()))
+                }
+                Ok(i) => { // Value found, i is index.
+                    self.universes.remove(i);
+                    Ok(())
+                }
+            }
+        }
+    }
+
     /// Checks if the given universe is a valid universe to send on (within allowed range) and that it is registered with this SacnSourceInternal.
     /// 
     /// # Errors
@@ -735,7 +761,9 @@ impl SacnSourceInternal {
     /// # Errors:
     /// See (send_terminate_stream_pkt)[fn.send_terminate_stream_pkt.source].
     /// 
-    fn terminate_stream(&self, universe: u16, start_code: u8) -> Result<()> {
+    fn terminate_stream(&mut self, universe: u16, start_code: u8) -> Result<()> {
+        self.deregister_universe(universe)?;
+
         for _ in 0..3 {
             self.send_terminate_stream_pkt(universe, &None, start_code)?;
         }
@@ -753,8 +781,9 @@ impl SacnSourceInternal {
     /// See (send_terminate_stream_pkt)[fn.send_terminate_stream_pkt.source].
     fn terminate(&mut self, start_code: u8) -> Result<()>{
         self.running = false;
-        for u in &self.universes {
-            self.terminate_stream(*u, start_code)?;
+        let universes = self.universes.clone(); // About to start manipulating self.universes as universes are removed so clone original list.
+        for u in universes {
+            self.terminate_stream(u, start_code)?;
         }
         Ok(())
     }
