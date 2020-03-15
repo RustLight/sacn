@@ -1,3 +1,4 @@
+# Clean previous test output
 rm -f *.temp
 
 # Run the tests
