@@ -1001,7 +1001,8 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
     } else {
         // Ipv6 not complete.
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
-        socket.bind(&SockAddr::from(addr))?;
+        // socket.bind(&SockAddr::from(addr))?;
+        socket.bind(&addr.into());
         Ok(socket)
     }
 }
