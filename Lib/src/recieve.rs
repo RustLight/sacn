@@ -1032,6 +1032,9 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 /// # Errors
 /// Will return an error if the given socket cannot be joined to the given multicast group address.
 ///     See join_multicast_v4[fn.join_multicast_v4.Socket] and join_multicast_v6[fn.join_multicast_v6.Socket]
+/// 
+/// Will return an IpVersionError if addr and interface_addr are not the same IP version.
+/// 
 #[cfg(target_os = "linux")]
 fn join_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.ip() {
@@ -1040,9 +1043,8 @@ fn join_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr
                 IpAddr::V4(ref interface_v4) => {
                     socket.join_multicast_v4(mdns_v4, &interface_v4).chain_err(|| "Failed to join IPv4 multicast")?;
                 }
-                IpAddr::V6(ref interface_v6) => {
-                    // ERROR
-                    assert!(false);
+                IpAddr::V6(ref _interface_v6) => {
+                    bail!(ErrorKind::IpVersionError("Multicast address and interface_addr not same IP version".to_string()));
                 }
             }
         }
@@ -1064,6 +1066,9 @@ fn join_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr
 /// # Errors
 /// Will return an error if the given socket cannot leave the given multicast group address.
 ///     See leave_multicast_v4[fn.leave_multicast_v4.Socket] and leave_multicast_v6[fn.leave_multicast_v6.Socket]
+/// 
+/// Will return an IpVersionError if addr and interface_addr are not the same IP version.
+/// 
 #[cfg(target_os = "linux")]
 fn leave_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.ip() {
@@ -1072,9 +1077,8 @@ fn leave_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAdd
                 IpAddr::V4(ref interface_v4) => {
                     socket.leave_multicast_v4(mdns_v4, &interface_v4).chain_err(|| "Failed to leave IPv4 multicast")?;
                 }
-                IpAddr::V6(ref interface_v6) => {
-                    // ERROR
-                    assert!(false);
+                IpAddr::V6(ref _interface_v6) => {
+                    bail!(ErrorKind::IpVersionError("Multicast address and interface_addr not same IP version".to_string()));
                 }
             }
         }
