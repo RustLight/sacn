@@ -147,6 +147,13 @@ pub mod errors {
                 description("A source terminated a universe and this was detected when trying to receive data"),
                 display("A source terminated a universe and this was detected when trying to receive data, msg: {}", msg)
             }
+
+            /// When looking for a specific universe it wasn't found. This might happen for example if trying to mute a universe on a receiver that
+            /// wasn't being listened.
+            UniverseNotFound(msg: String) {
+                description("When looking for a specific universe it wasn't found"),
+                display("When looking for a specific universe it wasn't found, msg: {}", msg)
+            }
         }
     }
 }

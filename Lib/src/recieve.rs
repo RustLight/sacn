@@ -286,6 +286,28 @@ impl SacnReceiver {
 
         Ok(())
     }
+    
+    /// Stops listening to the given universe.
+    /// 
+    /// # Errors
+    /// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
+    /// see (is_universe_in_range)[fn.is_universe_in_range.packet].
+    /// 
+    /// Returns UniverseNotFound if the given universe wasn't already being listened to.
+    /// 
+    pub fn mute_universe(&mut self, universe: u16) -> Result<()> {
+        is_universe_in_range(universe)?;
+
+        match self.universes.binary_search(&universe) { 
+            Err(_) => { // Universe isn't found.
+                bail!(ErrorKind::UniverseNotFound("Attempted to mute a universe that wasn't already being listened to".to_string()));
+            }
+            Ok(i) => { // If value found then don't insert to avoid duplicates.
+                self.universes.remove(i);
+                self.receiver.mute_multicast_universe(universe)
+            }
+        }
+    }
 
     /// Set the process_preview_data flag to the given value.
     /// 
@@ -305,7 +327,7 @@ impl SacnReceiver {
     /// Arguments:
     /// source_name: The human readable name of the sACN source to remove the universe from.
     /// universe:    The sACN universe to remove.
-    pub fn terminate_stream<'a>(&mut self, source_name: Cow<'a, str>, universe: u16){
+    fn terminate_stream<'a>(&mut self, source_name: Cow<'a, str>, universe: u16){
         match find_discovered_src(&self.discovered_sources, &source_name.to_string()){
             Some(index) => {
                 self.discovered_sources[index].terminate_universe(universe);
@@ -802,6 +824,10 @@ impl SacnNetworkReceiver {
         }
 
         Ok(join_unix_multicast(&self.socket, multicast_addr, self.addr.ip()).chain_err(|| "Failed to join multicast")?)
+    }
+
+    pub fn mute_multicast_universe(&mut self, universe: u16) -> Result<()> {
+        Ok(())
     }
 
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
