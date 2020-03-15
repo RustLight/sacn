@@ -46,6 +46,7 @@ const ACTION_LISTEN_UNIVERSE:                       &str = "l";
 const ACTION_STOP_LISTEN_UNIVERSE:                  &str = "t";
 const ACTION_SLEEP:                                 &str = "w";
 const ACTION_PREVIEW:                               &str = "p";
+const ACTION_ANNOUNCE_DISCOVERED:                   &str = "a";
 
 /// Describes the various commands / command-line arguments avaliable and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
@@ -81,8 +82,11 @@ fn get_usage_str() -> String {
 
     Enter preview mode, true means preview data will be received, false means preview data is ignored, default is false\n
     {} <'true'/'false'>\n
+
+    Enter announce discovery mode, true means that universe discovery packets will be announced as soon as received, false means they are handled silently, default is false\n
+    {} <'true'/'false'>\n
     ", ACTION_RECV, ACTION_RECV_CONTINOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT, 
-    ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP, ACTION_PREVIEW)
+    ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP, ACTION_PREVIEW, ACTION_ANNOUNCE_DISCOVERED)
 }
 
 fn main() {
@@ -223,6 +227,18 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                         Err(_e) => {
                             bail!(std::io::Error::new(
                                 std::io::ErrorKind::InvalidInput, "Preview flag option not 'true'/'false' or otherwise parsable as boolean"));
+                        }
+                    }
+                }
+                ACTION_ANNOUNCE_DISCOVERED => {
+                    let val = split_input[1].parse();
+                    match val {
+                        Ok(v) => {
+                            dmx_recv.set_announce_source_discovery(v);
+                        },
+                        Err(_e) => {
+                            bail!(std::io::Error::new(
+                                std::io::ErrorKind::InvalidInput, "Announce discovery option not 'true'/'false' or otherwise parsable as boolean"));
                         }
                     }
                 }

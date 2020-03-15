@@ -377,7 +377,7 @@ test-> compliance -> conformance -> what it means for there to be 'sufficient' t
 		\caption{The abstract setup of the integration tests along with the actual implementation}
 	\end{figure}
 
-The test-scripts used as-well as the expected output files and given inputs are included in the integration-testing folder. An explanation of what each file does is as follows...
+The test-scripts used as-well as the expected output files and given inputs are included in the integration-testing folder. The test_run script actually runs the test, it starts the receiver and sender and then provides the receiver the commands in the 'rcv' file and the sender the commands in the 'src' file. The output of both sender and receiver are piped into an output file 'xrcv-out.temp' and 'xsrc-out.temp' where 'x' is the test number. The test_check script then checks the output against the expected output for each test and reports pass/fail. The reason for separate run/check scripts is that it helps to account for the delay in the file-system syncing the output from the test machines so that the master can check it.	
 	
 	\subsubsection{Compliance and Conformance Testing}
 	
