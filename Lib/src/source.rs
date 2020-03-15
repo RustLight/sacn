@@ -762,11 +762,11 @@ impl SacnSourceInternal {
     /// See (send_terminate_stream_pkt)[fn.send_terminate_stream_pkt.source].
     /// 
     fn terminate_stream(&mut self, universe: u16, start_code: u8) -> Result<()> {
-        self.deregister_universe(universe)?;
-
         for _ in 0..3 {
             self.send_terminate_stream_pkt(universe, &None, start_code)?;
         }
+
+        self.deregister_universe(universe)?;
         Ok(())
     }
 

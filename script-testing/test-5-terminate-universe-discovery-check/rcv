@@ -1,0 +1,10 @@
+# Announce discovery to allow knowing if a universe discovery packet has been received.
+a true
+# Receive the discovery packet with the universe registered and print the discovered source.
+r 0
+x
+# Start listening to universe 1.
+l 1
+# Wait for the termination packet and print the updated discovered sources.
+r 0
+x
