@@ -729,6 +729,24 @@ impl SacnNetworkReceiver {
         Ok(join_win_multicast(&self.socket, multicast_addr).chain_err(|| "Failed to join multicast")?)
     }
 
+    /// Removes this SacnNetworkReceiver from the multicast group which corresponds to the given universe.
+    /// 
+    /// # Errors
+    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an 
+    /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
+    /// 
+    pub fn mute_multicast_universe(&mut self, universe: u16) -> Result<()> {
+        let multicast_addr;
+
+        if self.addr.is_ipv4() {
+            multicast_addr = universe_to_ipv4_multicast_addr(universe).chain_err(|| "Failed to convert universe to IPv4 multicast addr")?;
+        } else {
+            multicast_addr = universe_to_ipv6_multicast_addr(universe).chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
+        }
+
+        Ok(leave_win_multicast(&self.socket, multicast_addr)?)
+    }
+
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
     /// This will return an error if the SacnReceiver wasn't created using an IPv6 address to bind to.
     pub fn set_only_v6(&mut self, val: bool) -> Result<()>{
@@ -826,8 +844,22 @@ impl SacnNetworkReceiver {
         Ok(join_unix_multicast(&self.socket, multicast_addr, self.addr.ip()).chain_err(|| "Failed to join multicast")?)
     }
 
+    /// Removes this SacnNetworkReceiver from the multicast group which corresponds to the given universe.
+    /// 
+    /// # Errors
+    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an 
+    /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
+    /// 
     pub fn mute_multicast_universe(&mut self, universe: u16) -> Result<()> {
-        Ok(())
+        let multicast_addr;
+
+        if self.addr.is_ipv4() {
+            multicast_addr = universe_to_ipv4_multicast_addr(universe).chain_err(|| "Failed to convert universe to IPv4 multicast addr")?;
+        } else {
+            multicast_addr = universe_to_ipv6_multicast_addr(universe).chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
+        }
+
+        Ok(leave_unix_multicast(&self.socket, multicast_addr, self.addr.ip())?)
     }
 
     /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6. 
@@ -1023,6 +1055,38 @@ fn join_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr
     Ok(())
 }
 
+/// Leaves the multicast group with the given address using the given socket.
+/// 
+/// Arguments:
+/// socket: The socket to leave the multicast group.
+/// addr:   The address of the multicast group to leave.
+/// 
+/// # Errors
+/// Will return an error if the given socket cannot leave the given multicast group address.
+///     See leave_multicast_v4[fn.leave_multicast_v4.Socket] and leave_multicast_v6[fn.leave_multicast_v6.Socket]
+#[cfg(target_os = "linux")]
+fn leave_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr) -> Result<()> {
+    match addr.ip() {
+        IpAddr::V4(ref mdns_v4) => {
+            match interface_addr {
+                IpAddr::V4(ref interface_v4) => {
+                    socket.leave_multicast_v4(mdns_v4, &interface_v4).chain_err(|| "Failed to leave IPv4 multicast")?;
+                }
+                IpAddr::V6(ref interface_v6) => {
+                    // ERROR
+                    assert!(false);
+                }
+            }
+        }
+        // Ipv6 not complete.
+        IpAddr::V6(ref mdns_v6) => {
+            socket.leave_multicast_v6(mdns_v6, 6).chain_err(|| "Failed to leave IPv6 multicast")?;
+        }
+    };
+
+    Ok(())
+}
+
 /// Creates a new Socket2 socket bound to the given address.
 /// 
 /// Returns the created socket.
@@ -1064,6 +1128,29 @@ fn join_win_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
         }
         IpAddr::V6(ref mdns_v6) => {
             socket.join_multicast_v6(mdns_v6, 0).chain_err(|| "Failed to join IPv6 multicast")?;
+        }
+    };
+
+    Ok(())
+}
+
+/// Leaves the multicast group with the given address using the given socket.
+/// 
+/// Arguments:
+/// socket: The socket to leave the multicast group.
+/// addr:   The address of the multicast group to leave.
+/// 
+/// # Errors
+/// Will return an error if the given socket cannot leave the given multicast group address.
+///     See leave_multicast_v4[fn.leave_multicast_v4.Socket] and leave_multicast_v6[fn.leave_multicast_v6.Socket]
+#[cfg(target_os = "windows")]
+fn leave_win_multicast(socket: &Socket, addr: SocketAddr) -> Result<()> {
+    match addr.ip() {
+        IpAddr::V4(ref mdns_v4) => {
+            socket.leave_multicast_v4(mdns_v4, &Ipv4Addr::new(0,0,0,0)).chain_err(|| "Failed to leave IPv4 multicast")?;
+        }
+        IpAddr::V6(ref mdns_v6) => {
+            socket.leave_multicast_v6(mdns_v6, 0).chain_err(|| "Failed to leave IPv6 multicast")?;
         }
     };
 

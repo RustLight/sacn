@@ -196,7 +196,6 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                     }
                     let secs: u64 = split_input[1].parse().unwrap();
                     sleep(Duration::from_secs(secs));
-
                 }
                 ACTION_LISTEN_UNIVERSE => {
                     if split_input.len() < 2 {
