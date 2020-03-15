@@ -349,7 +349,12 @@ impl SacnSourceInternal {
     /// Will return an error if the IP cannot be bound to the underlying socket. See (Socket::bind)[fn.bind.Socket2].
     /// 
     fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSourceInternal> {
-        let socket = Socket::new(Domain::ipv6(), Type::dgram(), None).unwrap();
+        let socket = if ip.is_ipv4() {
+            Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap()
+        } else {
+            Socket::new(Domain::ipv6(), Type::dgram(), None).unwrap()
+        };
+        
         socket.bind(&ip.into())?;
 
         let ds = SacnSourceInternal {
