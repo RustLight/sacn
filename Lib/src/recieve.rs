@@ -809,7 +809,6 @@ impl SacnNetworkReceiver {
     /// For more details see socket2::Socket::new().
     /// 
     pub fn new (ip: SocketAddr) -> Result<SacnNetworkReceiver> {
-        println!("Created new UNIX SacnNetworkReceiver");
         Ok(
             SacnNetworkReceiver {
                 socket: create_unix_socket(ip)?,
