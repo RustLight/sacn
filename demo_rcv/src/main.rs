@@ -186,7 +186,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                 ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT => { // Print discovered sources without checking if they are timed out already.
                     print_discovered_sources(&dmx_recv.get_discovered_sources_no_check());
                 }
-                ACTION_QUIT => { // Quit
+                ACTION_QUIT => {
                     return Ok(false)
                 }
                 ACTION_SLEEP => {
@@ -198,7 +198,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                     sleep(Duration::from_secs(secs));
 
                 }
-                ACTION_LISTEN_UNIVERSE => { // Listen universe
+                ACTION_LISTEN_UNIVERSE => {
                     if split_input.len() < 2 {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
@@ -206,13 +206,14 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                     let universe: u16 = split_input[1].parse().unwrap();
                     dmx_recv.listen_universes(&[universe])?;
                 }
-                ACTION_STOP_LISTEN_UNIVERSE => { // Stop listening to universe
+                ACTION_STOP_LISTEN_UNIVERSE => {
                     if split_input.len() < 2 {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
-                    // TODO
-                    bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Not Impl"));
+                    let universe: u16 = split_input[1].parse().unwrap();
+
+                    dmx_recv.mute_universe(universe)?;
                 }
                 ACTION_PREVIEW => {
                     let val = split_input[1].parse();
