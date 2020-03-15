@@ -1048,7 +1048,14 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
             }
         }
         AF_INET6 => {
-            socket.join_multicast_v6(addr.as_inet6().unwrap().ip(), 0).chain_err(|| "Failed to join IPv6 multicast")?;
+            match addr.as_inet6() {
+                Some(a) => {
+                    socket.join_multicast_v6(a.ip(), 0).chain_err(|| "Failed to join IPv6 multicast")?;
+                }
+                None => {
+                    bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
+                }
+            }
         }
         x => {
             bail!(ErrorKind::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
@@ -1091,7 +1098,14 @@ fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr)
             }
         }
         AF_INET6 => {
-            socket.leave_multicast_v6(addr.as_inet6().unwrap().ip(), 6).chain_err(|| "Failed to leave IPv6 multicast")?;
+            match addr.as_inet6() {
+                Some(a) => {
+                    socket.leave_multicast_v6(a.ip(), 0).chain_err(|| "Failed to leave IPv6 multicast")?;
+                }
+                None => {
+                    bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
+                }
+            }
         }
         x => {
             bail!(ErrorKind::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
@@ -1148,7 +1162,14 @@ fn join_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
             }
         }
         AF_INET6 => {
-            socket.join_multicast_v6(addr.as_inet6().unwrap().ip(), 0).chain_err(|| "Failed to join IPv6 multicast")?;
+            match addr.as_inet6() {
+                Some(a) => {
+                    socket.join_multicast_v6(a.ip(), 0).chain_err(|| "Failed to join IPv6 multicast")?;
+                }
+                None => {
+                    bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
+                }
+            }
         }
         x => {
             bail!(ErrorKind::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
@@ -1181,7 +1202,14 @@ fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
             }
         }
         AF_INET6 => {
-            socket.leave_multicast_v6(addr.as_inet6().unwrap().ip(), 6).chain_err(|| "Failed to leave IPv6 multicast")?;
+            match addr.as_inet6() {
+                Some(a) => {
+                    socket.leave_multicast_v6(a.ip(), 0).chain_err(|| "Failed to leave IPv6 multicast")?;
+                }
+                None => {
+                    bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
+                }
+            }
         }
         x => {
             bail!(ErrorKind::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
