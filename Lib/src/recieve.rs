@@ -1019,21 +1019,27 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 /// Will return an IpVersionError if addr and interface_addr are not the same IP version.
 /// 
 #[cfg(target_os = "linux")]
-fn join_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr) -> Result<()> {
-    match addr.ip() {
-        IpAddr::V4(ref mdns_v4) => {
-            match interface_addr {
-                IpAddr::V4(ref interface_v4) => {
-                    socket.join_multicast_v4(mdns_v4, &interface_v4).chain_err(|| "Failed to join IPv4 multicast")?;
+fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
+    match addr.family() {
+        AF_INET => {
+            match addr.as_inet() {
+                Some(a) => {
+                    match interface_addr {
+                        IpAddr::V4(ref interface_v4) => {
+                            socket.join_multicast_v4(a.ip(), &interface_v4).chain_err(|| "Failed to join IPv4 multicast")?;
+                        }
+                        IpAddr::V6(ref _interface_v6) => {
+                            bail!(ErrorKind::IpVersionError("Multicast address and interface_addr not same IP version".to_string()));
+                        }
+                    }
                 }
-                IpAddr::V6(ref _interface_v6) => {
-                    bail!(ErrorKind::IpVersionError("Multicast address and interface_addr not same IP version".to_string()));
+                None => {
+
                 }
             }
         }
-        // Ipv6 not complete.
-        IpAddr::V6(ref mdns_v6) => {
-            socket.join_multicast_v6(mdns_v6, 0).chain_err(|| "Failed to join IPv6 multicast")?;
+        AF_INET6 => {
+            socket.join_multicast_v6(addr.as_inet6().unwrap().ip(), 0).chain_err(|| "Failed to join IPv6 multicast")?;
         }
     };
 
@@ -1053,21 +1059,27 @@ fn join_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr
 /// Will return an IpVersionError if addr and interface_addr are not the same IP version.
 /// 
 #[cfg(target_os = "linux")]
-fn leave_unix_multicast(socket: &Socket, addr: SocketAddr, interface_addr: IpAddr) -> Result<()> {
-    match addr.ip() {
-        IpAddr::V4(ref mdns_v4) => {
-            match interface_addr {
-                IpAddr::V4(ref interface_v4) => {
-                    socket.leave_multicast_v4(mdns_v4, &interface_v4).chain_err(|| "Failed to leave IPv4 multicast")?;
+fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
+    match addr.family() {
+        AF_INET => {
+            match addr.as_inet() {
+                Some(a) => {
+                    match interface_addr {
+                        IpAddr::V4(ref interface_v4) => {
+                            socket.leave_multicast_v4(a.ip(), &interface_v4).chain_err(|| "Failed to leave IPv4 multicast")?;
+                        }
+                        IpAddr::V6(ref _interface_v6) => {
+                            bail!(ErrorKind::IpVersionError("Multicast address and interface_addr not same IP version".to_string()));
+                        }
+                    }
                 }
-                IpAddr::V6(ref _interface_v6) => {
-                    bail!(ErrorKind::IpVersionError("Multicast address and interface_addr not same IP version".to_string()));
+                None => {
+
                 }
             }
         }
-        // Ipv6 not complete.
-        IpAddr::V6(ref mdns_v6) => {
-            socket.leave_multicast_v6(mdns_v6, 6).chain_err(|| "Failed to leave IPv6 multicast")?;
+        AF_INET6 => {
+            socket.leave_multicast_v6(addr.as_inet6().unwrap().ip(), 6).chain_err(|| "Failed to leave IPv6 multicast")?;
         }
     };
 

@@ -110,7 +110,7 @@ fn main(){
 
     let source_name = &cmd_args[2];
 
-    let mut src = SacnSource::with_ip(source_name, SocketAddr::new(IpAddr::V4(interface_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+    let mut src = SacnSource::with_ip(source_name, SocketAddr::new(interface_ip.parse().unwrap(), ACN_SDT_MULTICAST_PORT)).unwrap();
 
     println!("Started");
 
@@ -205,9 +205,9 @@ fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result
     }
 
     if sync_uni == 0 {
-        src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), None)?;
+        src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT).into()), None)?;
     } else {
-        src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), Some(sync_uni))?;
+        src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT).into()), Some(sync_uni))?;
     }
 
     Ok(true)
@@ -278,7 +278,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                 }
                 ACTION_SYNC_OPTION => {
                     let universe: u16 = split_input[1].parse().unwrap();
-                    src.send_sync_packet(universe, &None)?;
+                    src.send_sync_packet(universe, None)?;
                     Ok(true)
                 }
                 ACTION_UNICAST_SYNC_OPTION => {
@@ -288,7 +288,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
 
                     let universe: u16 = split_input[1].parse().unwrap();
                     let dst_ip = split_input[2];
-                    src.send_sync_packet(universe, &Some(SocketAddr::from_str(dst_ip).unwrap()))?;
+                    src.send_sync_packet(universe, Some(SocketAddr::from_str(dst_ip).unwrap().into()))?;
                     Ok(true)
                 }
                 ACTION_REGISTER_OPTION => {

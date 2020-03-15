@@ -32,6 +32,9 @@ use std::thread;
 use std::sync::{Arc, Mutex};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
+// use std::net::SocketAddr;
+use socket2::{Socket, Domain, Type, SockAddr};
+
 /// Socket2 and Net2 used to create the underlying UDP socket that sACN is sent on.
 use net2::{UdpBuilder, UdpSocketExt};
 
@@ -97,7 +100,7 @@ pub struct SacnSource {
 #[derive(Debug)]
 struct SacnSourceInternal {
     /// Underlying UDP socket used for sending sACN packets on the network.
-    socket: UdpSocket,
+    socket: Socket,
 
     /// The address of this SacnSourceInternal on the network.
     addr: SocketAddr,
@@ -237,14 +240,14 @@ impl SacnSource {
     }
 
     /// See [send](fn.send.SacnSourceInternal) for more details
-    pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
+    pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SockAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
         self.internal.lock().unwrap().send(universes, data, priority, dst_ip, syncronisation_addr)
     }
 
     /// Sends a synchronisation packet.
     /// 
     /// See [send_sync_packet](fn.send_sync_packet.SacnSourceInternal) for more details
-    pub fn send_sync_packet(&self, universe: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
+    pub fn send_sync_packet(&self, universe: u16, dst_ip: Option<SockAddr>) -> Result<()> {
         self.internal.lock().unwrap().send_sync_packet(universe, dst_ip)
     }
 
@@ -356,14 +359,28 @@ impl SacnSourceInternal {
         if ip.is_ipv4() {
             socket_builder = UdpBuilder::new_v4().chain_err(|| "Failed to create Ipv4 UDP builder")?;
         } else if ip.is_ipv6() {
+            println!("IPV6");
             socket_builder = UdpBuilder::new_v6().chain_err(|| "Failed to create Ipv6 UDP builder")?;
             socket_builder.only_v6(true)?;
         } else {
             bail!(ErrorKind::UnsupportedIpVersion("Unrecognised socket address type! Not IPv4 or IPv6".to_string()));
         }
 
-        let socket: UdpSocket = socket_builder.bind(ip)?;
+        println!("Take error before bind: {:?}", socket_builder.take_error());
+
+        println!("Socket builder: {:#?}", socket_builder);
+
+        // let temp = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); Works
+        // let temp = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0,0,0,0, 0,0,0,0)), ACN_SDT_MULTICAST_PORT); Works
         
+        // let temp = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xfe80, 0, 0, 0, 0x4216, 0x7eff, 0xfea8, 0xf713)), ACN_SDT_MULTICAST_PORT);
+
+        // let socket: UdpSocket = socket_builder.bind(temp).chain_err(|| format!(" Failed to bind to given address : {}", temp))?;
+        // let socket: UdpSocket = socket_builder.bind(ip).chain_err(|| format!(" Failed to bind to given address : {}", ip))?;
+
+        let socket = Socket::new(Domain::ipv6(), Type::dgram(), None).unwrap();
+        socket.bind(&"fe80::4216:7eff:fea8:f713:5568".parse::<SocketAddr>().unwrap().into()).unwrap();
+
         let ds = SacnSourceInternal {
             socket: socket,
             addr: ip,
@@ -499,7 +516,7 @@ impl SacnSourceInternal {
     /// 
     /// Will return an error if the data fails to send, see (send_universe)[fn.send_universe.source]
     /// 
-    fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
+    fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SockAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
         if self.running == false { // Indicates that this sender has been terminated.
             bail!(ErrorKind::SenderAlreadyTerminated("Attempted to send".to_string())); 
         }
@@ -558,7 +575,7 @@ impl SacnSourceInternal {
     /// 
     /// Will return an error if the data fails to be sent on the socket. See send_to(fn.send_to.Socket).
     /// 
-    fn send_universe(&self, universe: u16, data: &[u8], priority: u8, dst_ip: &Option<SocketAddr>, sync_address: u16) -> Result<()> {
+    fn send_universe(&self, universe: u16, data: &[u8], priority: u8, dst_ip: &Option<SockAddr>, sync_address: u16) -> Result<()> {
         if priority > E131_MAX_PRIORITY {
             bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Priority must be within allowed range of [0-E131_MAX_PRIORITY], priority provided: {}", priority)));
         }
@@ -596,7 +613,7 @@ impl SacnSourceInternal {
         };
 
         if dst_ip.is_some() {
-            self.socket.send_to(&packet.pack_alloc().unwrap(), dst_ip.unwrap()).chain_err(|| "Failed to send data unicast on socket")?;
+            self.socket.send_to(&packet.pack_alloc().unwrap(), dst_ip.as_ref().unwrap()).chain_err(|| "Failed to send data unicast on socket")?;
         } else {
             let dst;
 
@@ -606,7 +623,7 @@ impl SacnSourceInternal {
                 dst = universe_to_ipv4_multicast_addr(universe).chain_err(|| "Failed to convert universe to Ipv4 multicast address")?;
             }
 
-            self.socket.send_to(&packet.pack_alloc().unwrap(), dst).chain_err(|| "Failed to send data multicast on socket")?;
+            self.socket.send_to(&packet.pack_alloc().unwrap(), &dst).chain_err(|| "Failed to send data multicast on socket")?;
         }
 
         if sequence == 255 {
@@ -638,7 +655,7 @@ impl SacnSourceInternal {
     /// 
     /// Will return an error if the data fails to be sent on the socket. See send_to(fn.send_to.Socket).
     /// 
-    fn send_sync_packet(&self, universe: u16, dst_ip: &Option<SocketAddr>) -> Result<()> {
+    fn send_sync_packet(&self, universe: u16, dst_ip: Option<SockAddr>) -> Result<()> {
         self.universe_allowed(&universe).chain_err(|| format!("Universe {} not allowed", universe))?;
 
         let ip;
@@ -667,7 +684,7 @@ impl SacnSourceInternal {
                 })
             }
         };
-        self.socket.send_to(&packet.pack_alloc().unwrap(), ip).chain_err(|| "Failed to send sync packet on socket")?;
+        self.socket.send_to(&packet.pack_alloc().unwrap(), &ip).chain_err(|| "Failed to send sync packet on socket")?;
 
         if sequence == 255 {
             sequence = 0;
@@ -698,11 +715,11 @@ impl SacnSourceInternal {
     /// 
     /// Will return an error if the data fails to be sent on the socket. See send_to(fn.send_to.Socket).
     /// 
-    fn send_terminate_stream_pkt(&self, universe: u16, dst_ip: &Option<SocketAddr>, start_code: u8) -> Result<()> {
+    fn send_terminate_stream_pkt(&self, universe: u16, dst_ip: Option<SockAddr>, start_code: u8) -> Result<()> {
         self.universe_allowed(&universe).chain_err(|| format!("Universe {} not allowed", universe))?;
 
         let ip = match dst_ip{
-            Some(x) => *x,
+            Some(x) => x,
             None => {
                 if self.addr.is_ipv6(){
                     universe_to_ipv6_multicast_addr(universe)?
@@ -737,7 +754,7 @@ impl SacnSourceInternal {
         };
         let res = &packet.pack_alloc().unwrap();
 
-        self.socket.send_to(res, ip)?;
+        self.socket.send_to(res, &ip)?;
 
         if sequence == 255 {
             sequence = 0;
@@ -763,7 +780,7 @@ impl SacnSourceInternal {
     /// 
     fn terminate_stream(&mut self, universe: u16, start_code: u8) -> Result<()> {
         for _ in 0..3 {
-            self.send_terminate_stream_pkt(universe, &None, start_code)?;
+            self.send_terminate_stream_pkt(universe, None, start_code)?;
         }
 
         self.deregister_universe(universe)?;
@@ -848,7 +865,7 @@ impl SacnSourceInternal {
             ip = universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE)?;
         }
 
-        self.socket.send_to(&packet.pack_alloc().unwrap(), ip).chain_err(|| "Failed to send discovery on socket")?;
+        self.socket.send_to(&packet.pack_alloc().unwrap(), &ip).chain_err(|| "Failed to send discovery on socket")?;
 
         Ok(())
     }
