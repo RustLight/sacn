@@ -22,7 +22,15 @@ use error::errors::{*, ErrorKind::*};
 
 /// Socket 2 used for the underlying UDP socket that sACN is sent over.
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+
+#[cfg(target_os = "linux")]
 use libc::{AF_INET, AF_INET6};
+
+#[cfg(target_os = "windows")]
+const AF_INET: i32 = 2;
+
+#[cfg(target_os = "windows")]
+const AF_INET6: i32 = 10;
 
 // Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
 use packet::{*, E131RootLayerData::*};
