@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 #![recursion_limit="1024"] // Recursion limit for error-chain.
 
 // Copyright 2020 sacn Developers
@@ -296,7 +296,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                         Ok(v) => {
                             src.set_preview_mode(v);
                         },
-                        Err(e) => {
+                        Err(_e) => {
                             bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Preview flag option not 'true'/'false' or otherwise parsable as boolean"));
                         }
                     }
