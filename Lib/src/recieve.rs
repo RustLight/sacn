@@ -26,11 +26,12 @@ use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 #[cfg(target_os = "linux")]
 use libc::{AF_INET, AF_INET6};
 
+// The libc constants required are not avaliable on many windows environments and therefore are hard-coded. 
 #[cfg(target_os = "windows")]
 const AF_INET: i32 = 2;
 
 #[cfg(target_os = "windows")]
-const AF_INET6: i32 = 10;
+const AF_INET6: i32 = 23;
 
 // Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
 use packet::{*, E131RootLayerData::*};
@@ -168,7 +169,12 @@ pub struct SacnReceiver {
     sync_sequences: HashMap<Uuid,HashMap<u16, u8>>,
 
     /// Flag which indicates if a SourceDiscovered error should be thrown when receiving data and a source is discovered.
-    announce_source_discovery: bool
+    announce_source_discovery: bool,
+
+    /// If true then this receiver supports multicast, is false then it does not.
+    /// This flag is set when the receiver is created as not all environments currently support IP multicast.
+    /// E.g. IPv6 Windows IP Multicast is currently unsupported.
+    is_multicast_enabled: bool
 }
 
 impl fmt::Debug for SacnReceiver {
@@ -189,6 +195,11 @@ impl SacnReceiver {
     /// 
     /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     /// A receiver with an IPv4 address will only receive IPv4 data.
+    ///
+    /// IPv6 multicast is unsupported on Windows in Rust. This is due to the underlying library (Socket2) not providing support.
+    /// Since UniverseDiscovery is primarily based around multicast to receive the UniverseDiscovery packets this mechanism is expected
+    /// to have limited usage when running in an Ipv6 Windows environment. The is_multicast_enabled method can be used to see if multicast
+    /// is enabled or not.
     ///
     /// Arguments:
     ///     ip: The address of the interface for this receiver to join, by default this address should use the ACN_SDT_MULTICAST_PORT as defined in 
@@ -226,11 +237,41 @@ impl SacnReceiver {
                 data_sequences: HashMap::new(),
                 sync_sequences: HashMap::new(),
                 announce_source_discovery: ANNOUNCE_SOURCE_DISCOVERY_DEFAULT,
+                is_multicast_enabled: (ip.is_ipv6() && cfg!(windows)), // If running windows and using IPv6 then multicast currently unsupported.
         };
 
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE]).chain_err(|| "Failed to listen to discovery universe")?;
 
         Ok(sri)
+    }
+
+    /// Sets the value of the is_multicast_enabled flag to the given value.
+    ///
+    /// If set to false then the receiver won't attempt to join any more multicast groups.
+    /// 
+    /// This method does not attempt to leave multicast groups already joined through previous listen_universe calls.
+    ///
+    /// # Arguments
+    /// val: The new value for the is_multicast_enabled flag.
+    /// 
+    /// # Errors
+    /// Will return an OsOperationUnsupported error if attempting to set the flag to true in an environment that multicast
+    /// isn't supported i.e. Ipv6 on Windows.
+    pub fn set_is_multicast_enabled(&mut self, val: bool) -> Result<()> {
+        if val && self.receiver.is_ipv6() && cfg!(windows) {
+            bail!(ErrorKind::OsOperationUnsupported("IPv6 multicast is currently unsupported on Windows".to_string()));
+        }
+        
+        self.is_multicast_enabled = val;
+        Ok(())
+    }
+
+
+    /// Returns true if multicast is enabled on this receiver and false if not.
+    /// This flag is set when the receiver is created as not all environments currently support IP multicast.
+    /// E.g. IPv6 Windows IP Multicast is currently unsupported.
+    pub fn is_multicast_enabled(&self) -> bool{
+        return self.is_multicast_enabled;
     }
 
     /// Wipes the record of discovered and sequence number tracked sources.
@@ -267,7 +308,10 @@ impl SacnReceiver {
         self.waiting_data.clear();
     }
 
-    /// Starts listening to the multicast addresses which corresponds to the given universe to allow recieving packets for that universe.
+    /// Allows receiving from the given universe and starts listening to the multicast addresses which corresponds to the given universe.
+    ///
+    /// Note that if the is_multicast_enabled flag is set to false then this method will only register the universe to listen to and won't
+    /// attempt to join any multicast groups.
     /// 
     /// If 1 or more universes in the list are already being listened to this method will have no effect for those universes only.
     /// 
@@ -286,7 +330,11 @@ impl SacnReceiver {
             match self.universes.binary_search(u) { 
                 Err(i) => { // Value not found, i is the position it should be inserted
                     self.universes.insert(i, *u);
-                    self.receiver.listen_multicast_universe(*u).chain_err(|| "Failed to listen to multicast universe")?;
+
+                    if self.is_multicast_enabled {
+                        self.receiver.listen_multicast_universe(*u).chain_err(|| "Failed to listen to multicast universe")?;
+                    }
+                    
                 }
                 Ok(_) => { // If value found then don't insert to avoid duplicates.
                 }
@@ -802,6 +850,11 @@ impl SacnNetworkReceiver {
     pub fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
         Ok(self.socket.set_read_timeout(timeout)?)
     }
+
+    /// Returns true if this SacnNetworkReceiver is bound to an Ipv6 address.
+    pub fn is_ipv6(&self) -> bool {
+        return self.addr.is_ipv6()
+    }
 }
 
 /// Windows and linux handle multicast sockets differently.
@@ -1139,7 +1192,9 @@ fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
     }
 }
 
-/// Joins the multicast group with the given address using the given socket.
+/// Joins the multicast group with the given address using the given socket on the windows operating system.
+///
+/// Note that Ipv6 is currently unsupported.
 /// 
 /// Arguments:
 /// socket: The socket to join to the multicast group.
@@ -1148,6 +1203,9 @@ fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
 /// # Errors
 /// Will return an error if the given socket cannot be joined to the given multicast group address.
 ///     See join_multicast_v4[fn.join_multicast_v4.Socket] and join_multicast_v6[fn.join_multicast_v6.Socket]
+///
+/// Will return OsOperationUnsupported error if attempt to leave an Ipv6 multicast group as all Ipv6 multicast operations are currently unsupported in Rust on Windows.
+///
 #[cfg(target_os = "windows")]
 fn join_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
     match addr.family() as i32 { // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
@@ -1163,8 +1221,8 @@ fn join_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
         }
         AF_INET6 => {
             match addr.as_inet6() {
-                Some(a) => {
-                    socket.join_multicast_v6(a.ip(), 0).chain_err(|| "Failed to join IPv6 multicast")?;
+                Some(_) => {
+                    bail!(ErrorKind::OsOperationUnsupported("IPv6 multicast is currently unsupported on Windows".to_string()));
                 }
                 None => {
                     bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
@@ -1181,6 +1239,8 @@ fn join_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
 
 /// Leaves the multicast group with the given address using the given socket.
 /// 
+/// Note that Ipv6 is currently unsupported.
+///
 /// Arguments:
 /// socket: The socket to leave the multicast group.
 /// addr:   The address of the multicast group to leave.
@@ -1188,6 +1248,9 @@ fn join_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
 /// # Errors
 /// Will return an error if the given socket cannot leave the given multicast group address.
 ///     See leave_multicast_v4[fn.leave_multicast_v4.Socket] and leave_multicast_v6[fn.leave_multicast_v6.Socket]
+///
+/// Will return OsOperationUnsupported error if attempt to leave an Ipv6 multicast group as all Ipv6 multicast operations are currently unsupported in Rust on Windows.
+///
 #[cfg(target_os = "windows")]
 fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
     match addr.family() as i32 { // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
@@ -1203,8 +1266,8 @@ fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
         }
         AF_INET6 => {
             match addr.as_inet6() {
-                Some(a) => {
-                    socket.leave_multicast_v6(a.ip(), 0).chain_err(|| "Failed to leave IPv6 multicast")?;
+                Some(_) => {
+                    bail!(ErrorKind::OsOperationUnsupported("IPv6 multicast is currently unsupported on Windows".to_string()));
                 }
                 None => {
                     bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));

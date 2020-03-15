@@ -151,6 +151,13 @@ pub mod errors {
                 description("When looking for a specific universe it wasn't found"),
                 display("When looking for a specific universe it wasn't found, msg: {}", msg)
             }
+
+            /// Thrown to indicate that the operation attempted is unsupported on the current OS
+            /// For example this is used to indicate that multicast-IPv6 isn't supported current on Windows.
+            OsOperationUnsupported(msg: String) {
+                description("Thrown to indicate that the operation attempted is unsupported on the current OS"),
+                display("Operation attempted is unsupported on the current OS, msg: {}", msg)
+            }
         }
     }
 }
