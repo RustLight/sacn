@@ -7,8 +7,6 @@
 //
 // This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
-#![warn(missing_docs)]
-
 /// The errors used within the SacnLibrary.
 /// 
 /// Uses the error-chain crate to allow errors to allow more informative backtraces through error chaining.
@@ -21,8 +19,7 @@ pub mod errors {
             Uuid(uuid::ParseError);     // Allow UUID library to be used with error-chain system.
         }
 
-        errors {
-            
+        errors {   
             /// Used to indicate that the limit for the number of supported sources has been reached. 
             /// This is based on unique CID values.
             /// as per ANSI E1.31-2018 Section 6.2.3.3.

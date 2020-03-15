@@ -17,9 +17,7 @@
 //! This file was modified as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
 #![doc(html_root_url = "https://docs.rs/sacn/")]
-#![warn(missing_docs)]
-
-
+// #![warn(missing_docs)]
 // Recursion limit for error_chain.
 #![recursion_limit="1024"]
 

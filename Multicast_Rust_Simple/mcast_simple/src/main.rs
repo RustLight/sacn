@@ -1,10 +1,12 @@
+#[allow(dead_code)] 
+
 extern crate socket2;
 
 use std::io;
 use std::time::Duration;
 
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use std::thread::sleep;
 
@@ -21,7 +23,7 @@ fn main() {
     let interface_addr = SocketAddr::new(Ipv4Addr::new(192, 168, 1, 8).into(), 5568);
     let unix_interface_addr = SocketAddr::new(Ipv4Addr::new(0, 0 , 0, 0).into(), 5568);
 
-    ///https://stackoverflow.com/questions/43292357/detect-platform-in-rust
+    // https://stackoverflow.com/questions/43292357/detect-platform-in-rust
     let socket;
 
     if cfg!(windows) {
@@ -91,14 +93,14 @@ fn new_win_socket(addr: &SocketAddr) -> io::Result<Socket> {
 
     let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;
 
-    let winAddr = match addr {
+    let win_addr = match addr {
         SocketAddr::V4(addr) => SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), addr.port()),
         SocketAddr::V6(addr) => {
             SocketAddr::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).into(), addr.port())
         }
     };
     
-    socket.bind(&socket2::SockAddr::from(winAddr));
+    socket.bind(&socket2::SockAddr::from(win_addr)).unwrap();
 
     // we're going to use read timeouts so that we don't hang waiting for packets
     socket.set_read_timeout(Some(Duration::from_millis(1000)))?;
@@ -107,7 +109,7 @@ fn new_win_socket(addr: &SocketAddr) -> io::Result<Socket> {
 }
 
 /// addr: The multicast address to bind to.
-fn new_unix_socket(addr: &SocketAddr, addr2: &SocketAddr) -> io::Result<Socket> {
+fn new_unix_socket(addr: &SocketAddr, _addr2: &SocketAddr) -> io::Result<Socket> {
 
 // fn new_unix_socket(addr: &SocketAddr) -> io::Result<Socket> {  
     let domain = if addr.is_ipv4() {

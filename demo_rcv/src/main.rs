@@ -1,4 +1,4 @@
-#![warn(missing_docs)]      // Used during development to warn about a lack of documentation.
+// #![warn(missing_docs)]      // Used during development to warn about a lack of documentation.
 #![recursion_limit="1024"]  // Recursion limit for error-chain, value used as recommended by the crates documentation.
 
 // Copyright 2020 sacn Developers
@@ -220,7 +220,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                         Ok(v) => {
                             dmx_recv.set_process_preview_data(v);
                         },
-                        Err(e) => {
+                        Err(_e) => {
                             bail!(std::io::Error::new(
                                 std::io::ErrorKind::InvalidInput, "Preview flag option not 'true'/'false' or otherwise parsable as boolean"));
                         }

@@ -793,14 +793,6 @@ impl SacnNetworkReceiver {
     pub fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
         Ok(self.socket.set_read_timeout(timeout)?)
     }
-
-    /// Returns the current read timeout for the receiver.
-    /// 
-    /// A timeout of None indicates infinite blocking behaviour.
-    /// 
-    pub fn read_timeout(&self) -> Result<Option<Duration>> {
-        Ok(self.socket.read_timeout()?)
-    }
 }
 
 /// Windows and linux handle multicast sockets differently.
@@ -908,14 +900,6 @@ impl SacnNetworkReceiver {
     pub fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
         Ok(self.socket.set_read_timeout(timeout)?)
     }
-
-    /// Returns the current read timeout for the receiver.
-    /// 
-    /// A timeout of None indicates infinite blocking behaviour.
-    /// 
-    pub fn read_timeout(&self) -> Result<Option<Duration>> {
-        Ok(self.socket.read_timeout()?)
-    }
 }
 
 impl Clone for DMXData {
@@ -1012,8 +996,8 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
         
-        let socketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
-        socket.bind(&socketAddr.into())?;
+        let socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
+        socket.bind(&socket_addr.into())?;
         Ok(socket)
     } else {
         // Ipv6 not complete.
