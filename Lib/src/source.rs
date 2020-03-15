@@ -354,21 +354,21 @@ impl SacnSourceInternal {
     /// Will return an error if the IP cannot be bound to the underlying socket. See (UdpBuilder::bind)[fn.bind.UdpBuilder].
     /// 
     fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSourceInternal> {
-        let socket_builder;
+        // let socket_builder;
 
-        if ip.is_ipv4() {
-            socket_builder = UdpBuilder::new_v4().chain_err(|| "Failed to create Ipv4 UDP builder")?;
-        } else if ip.is_ipv6() {
-            println!("IPV6");
-            socket_builder = UdpBuilder::new_v6().chain_err(|| "Failed to create Ipv6 UDP builder")?;
-            socket_builder.only_v6(true)?;
-        } else {
-            bail!(ErrorKind::UnsupportedIpVersion("Unrecognised socket address type! Not IPv4 or IPv6".to_string()));
-        }
+        // if ip.is_ipv4() {
+        //     socket_builder = UdpBuilder::new_v4().chain_err(|| "Failed to create Ipv4 UDP builder")?;
+        // } else if ip.is_ipv6() {
+        //     println!("IPV6");
+        //     socket_builder = UdpBuilder::new_v6().chain_err(|| "Failed to create Ipv6 UDP builder")?;
+        //     socket_builder.only_v6(true)?;
+        // } else {
+        //     bail!(ErrorKind::UnsupportedIpVersion("Unrecognised socket address type! Not IPv4 or IPv6".to_string()));
+        // }
 
-        println!("Take error before bind: {:?}", socket_builder.take_error());
+        // println!("Take error before bind: {:?}", socket_builder.take_error());
 
-        println!("Socket builder: {:#?}", socket_builder);
+        // println!("Socket builder: {:#?}", socket_builder);
 
         // let temp = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); Works
         // let temp = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0,0,0,0, 0,0,0,0)), ACN_SDT_MULTICAST_PORT); Works
@@ -379,7 +379,7 @@ impl SacnSourceInternal {
         // let socket: UdpSocket = socket_builder.bind(ip).chain_err(|| format!(" Failed to bind to given address : {}", ip))?;
 
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), None).unwrap();
-        socket.bind(&"fe80::4216:7eff:fea8:f713:5568".parse::<SocketAddr>().unwrap().into()).unwrap();
+        socket.bind(&ip.into());
 
         let ds = SacnSourceInternal {
             socket: socket,
