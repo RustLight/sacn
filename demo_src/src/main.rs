@@ -54,6 +54,7 @@ const ACTION_SLEEP_OPTION:          &str = "w";
 const ACTION_SYNC_OPTION:           &str = "s";
 const ACTION_UNICAST_SYNC_OPTION:   &str = "us"; 
 const ACTION_DATA_OVER_TIME_OPTION: &str = "t";
+const ACTION_IGNORE:                &str = "#";
 
 /// Describes the various commands / command-line arguments avaliable and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
@@ -92,8 +93,10 @@ fn get_usage_str() -> String{
 
     Set the preview data option flag to the given value, this is reflected in packets sent using the other actions\n
     {} <'true'/'false'>\n
+
+    All input is ignored on lines starting with '{} '. 
     ", ACTION_DATA_OPTION, ACTION_FULL_DATA_OPTION, ACTION_UNICAST_OPTION, ACTION_REGISTER_OPTION, ACTION_TERMINATE_OPTION, 
-    ACTION_SLEEP_OPTION, ACTION_SYNC_OPTION, ACTION_UNICAST_SYNC_OPTION, ACTION_DATA_OVER_TIME_OPTION, ACTION_PREVIEW_OPTION)
+    ACTION_SLEEP_OPTION, ACTION_SYNC_OPTION, ACTION_UNICAST_SYNC_OPTION, ACTION_DATA_OVER_TIME_OPTION, ACTION_PREVIEW_OPTION, ACTION_IGNORE)
 }
 
 fn main(){
@@ -257,6 +260,10 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
             }
 
             match split_input[0] {
+                ACTION_IGNORE => {
+                    // Ignore Input
+                    Ok(true)
+                }
                 ACTION_DATA_OPTION => {
                     handle_data_option(src, split_input)
                 }

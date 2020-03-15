@@ -47,6 +47,7 @@ const ACTION_STOP_LISTEN_UNIVERSE:                  &str = "t";
 const ACTION_SLEEP:                                 &str = "w";
 const ACTION_PREVIEW:                               &str = "p";
 const ACTION_ANNOUNCE_DISCOVERED:                   &str = "a";
+const ACTION_IGNORE:                                &str = "#";
 
 /// Describes the various commands / command-line arguments avaliable and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
@@ -85,8 +86,11 @@ fn get_usage_str() -> String {
 
     Enter announce discovery mode, true means that universe discovery packets will be announced as soon as received, false means they are handled silently, default is false\n
     {} <'true'/'false'>\n
+
+    All input is ignored on lines starting with '{} '.
     ", ACTION_RECV, ACTION_RECV_CONTINOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT, 
-    ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP, ACTION_PREVIEW, ACTION_ANNOUNCE_DISCOVERED)
+    ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP, ACTION_PREVIEW, ACTION_ANNOUNCE_DISCOVERED,
+    ACTION_IGNORE)
 }
 
 fn main() {
@@ -140,6 +144,9 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
             }
 
             match split_input[0] {
+                ACTION_IGNORE => {
+                    // Ignore the input
+                }
                 ACTION_HELP => { // Display help
                     display_help();
                 }
