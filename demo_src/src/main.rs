@@ -43,30 +43,46 @@ const TERMINATE_START_CODE: u8 = 0;
 /// Default value is approximately 30 updates per second choosen fairly arbitarily to be less than the DMX refresh rate (44 fps).
 const SHAPE_DATA_SEND_PERIOD: Duration = Duration::from_millis(33);
 
+/// The string given by the user to perform each of the various options as described in get_usage_str below.
+const ACTION_PREVIEW_OPTION:        &str = "p";
+const ACTION_DATA_OPTION:           &str = "d";
+const ACTION_FULL_DATA_OPTION:      &str = "f";
+const ACTION_UNICAST_OPTION:        &str = "u"; 
+const ACTION_REGISTER_OPTION:       &str = "r"; 
+const ACTION_TERMINATE_OPTION:      &str = "q";
+const ACTION_SLEEP_OPTION:          &str = "w"; 
+const ACTION_SYNC_OPTION:           &str = "s";
+const ACTION_UNICAST_SYNC_OPTION:   &str = "us"; 
+const ACTION_DATA_OVER_TIME_OPTION: &str = "t";
+
 /// Describes the various commands / command-line arguments avaliable and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
-const USAGE_STR: &'static str = "Usage ./main <interface_ip> <source_name>\n
+/// Not a const as const with format! not supported in rust.
+fn get_usage_str() -> String{
+    format!("Usage ./main <interface_ip> <source_name>\n
     Reads data from stdin and sends it using the protocol. \n
     Data must be formatted as, a sync_universe of 0 means no synchronisation, this uses multicast: \n
-    d <universe> <sync_uni> <priority> <data_as_u8_space_seperated> \n
+    {} <universe> <sync_uni> <priority> <data_as_u8_space_seperated> \n
     Sends a full universe of data (512 channels + 0 startcode) with the first bytes of the data as specified 
     below (remainder is 0's) \n
-    f <universe> <sync_uni> <priority> <data_as_u8_space_seperate> \n
+    {} <universe> <sync_uni> <priority> <data_as_u8_space_seperate> \n
     To send data unicast use: \n
-    u <universe> <sync_uni> <priority> <dst_addr> <data_as_u8_space_seperated> \n
+    {} <universe> <sync_uni> <priority> <dst_addr> <data_as_u8_space_seperated> \n
     Register a sending universe as: \n
-    r <universe> \n
+    {} <universe> \n
     Terminate a universe, if universe is 0 then will terminate entirely: \n
-    q <universe> \n
+    {} <universe> \n
     Sleep for x milliseconds \n
-    w <milliseconds> \n
+    {} <milliseconds> \n
     Send a synchronisation packet for the given universe \n
-    s <universe> \n
+    {} <universe> \n
     Send a synchronisation packet for the given universe to the given address \n
-    us <universe> <dst_addr> \n
+    {} <universe> <dst_addr> \n
     Start a demo shape which continuously sends data to the given universe for the given number of milliseconds \n
-    t <universe> <duration_millis> <priority>\n
-    ";
+    {} <universe> <duration_millis> <priority>\n
+    ", ACTION_DATA_OPTION, ACTION_FULL_DATA_OPTION, ACTION_UNICAST_OPTION, ACTION_REGISTER_OPTION, ACTION_TERMINATE_OPTION, 
+    ACTION_SLEEP_OPTION, ACTION_SYNC_OPTION, ACTION_UNICAST_SYNC_OPTION, ACTION_DATA_OVER_TIME_OPTION)
+}
 
 fn main(){
     let cmd_args: Vec<String> = env::args().collect();
@@ -99,7 +115,7 @@ fn main(){
 }
 
 fn display_help(){
-    println!("{}", USAGE_STR);
+    println!("{}", get_usage_str());
 }
 
 fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
@@ -261,6 +277,19 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     src.register_universe(universe)?;
                     Ok(true)
                 }
+                ACTION_LETTER_PREVIEW_OPTION => {
+                    let val = split_input[1].parse();
+
+                    match val {
+                        Ok(v) => {
+                            src.set_preview_mode(v);
+                        },
+                        Err(e) => {
+                            bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Preview flag option not 'true'/'false' or otherwise parsable as boolean"));
+                        }
+                    }
+                    Ok(true)
+                }
                 "q" => {
                     let universe: u16 = split_input[1].parse().unwrap();
                     if universe == 0 {
@@ -281,7 +310,6 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                 }
                 x => {
                     bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
-                    Ok(true)
                 }
             }
         }
