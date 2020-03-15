@@ -1,6 +1,0 @@
-# Announce discovery to allow knowing if a universe discovery packet has been received.
-a true
-# Receive the discovery packet with the universe registered.
-r 0
-# Receive the discovery packet without the universe registered.
-r 0

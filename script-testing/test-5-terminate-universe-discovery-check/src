@@ -1,0 +1,5 @@
+r 1
+w 15000
+q 1
+q 0
+# Register the first universe, wait so that a discovery packet is sent, terminate the first universe.

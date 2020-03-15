@@ -123,7 +123,7 @@ fn main(){
                 }
             }
             Err(e) => {
-                println!("Error: Input data line unusable: {}", e);
+                println!("Error: Input line unusable: {}", e);
             }
         }
     } 
