@@ -30,13 +30,10 @@ use std::time::{Duration, Instant};
 use std::thread::{JoinHandle};
 use std::thread;
 use std::sync::{Arc, Mutex};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
-// use std::net::SocketAddr;
+/// Socket2 used to create the underlying UDP socket that sACN is sent on.
 use socket2::{Socket, Domain, Type, SockAddr};
-
-/// Socket2 and Net2 used to create the underlying UDP socket that sACN is sent on.
-use net2::{UdpBuilder, UdpSocketExt};
 
 /// UUID library used to handle the UUID's used in the CID fields.
 use uuid::Uuid;
@@ -349,37 +346,11 @@ impl SacnSourceInternal {
     /// Will return an error if the UDP socket builder cannot be created. 
     /// See (UdpBuilder::new_v4)[fn.new_v4.UdpBuilder] and (UdpBuilder::new_v6)[fn.new_v6.UdpBuilder] for details.
     /// 
-    /// Will return an UnsupportedIpVersion error if the passed in IP is an unsupported version (not Ipv4 or Ipv6).
-    /// 
-    /// Will return an error if the IP cannot be bound to the underlying socket. See (UdpBuilder::bind)[fn.bind.UdpBuilder].
+    /// Will return an error if the IP cannot be bound to the underlying socket. See (Socket::bind)[fn.bind.Socket2].
     /// 
     fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSourceInternal> {
-        // let socket_builder;
-
-        // if ip.is_ipv4() {
-        //     socket_builder = UdpBuilder::new_v4().chain_err(|| "Failed to create Ipv4 UDP builder")?;
-        // } else if ip.is_ipv6() {
-        //     println!("IPV6");
-        //     socket_builder = UdpBuilder::new_v6().chain_err(|| "Failed to create Ipv6 UDP builder")?;
-        //     socket_builder.only_v6(true)?;
-        // } else {
-        //     bail!(ErrorKind::UnsupportedIpVersion("Unrecognised socket address type! Not IPv4 or IPv6".to_string()));
-        // }
-
-        // println!("Take error before bind: {:?}", socket_builder.take_error());
-
-        // println!("Socket builder: {:#?}", socket_builder);
-
-        // let temp = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); Works
-        // let temp = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0,0,0,0, 0,0,0,0)), ACN_SDT_MULTICAST_PORT); Works
-        
-        // let temp = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xfe80, 0, 0, 0, 0x4216, 0x7eff, 0xfea8, 0xf713)), ACN_SDT_MULTICAST_PORT);
-
-        // let socket: UdpSocket = socket_builder.bind(temp).chain_err(|| format!(" Failed to bind to given address : {}", temp))?;
-        // let socket: UdpSocket = socket_builder.bind(ip).chain_err(|| format!(" Failed to bind to given address : {}", ip))?;
-
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), None).unwrap();
-        socket.bind(&ip.into());
+        socket.bind(&ip.into())?;
 
         let ds = SacnSourceInternal {
             socket: socket,
