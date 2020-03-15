@@ -293,7 +293,7 @@ impl SacnReceiver {
     /// 
     /// Argument:
     /// val: The new value of process_preview_data flag.
-    fn set_process_preview_data(&mut self, val: bool) {
+    pub fn set_process_preview_data(&mut self, val: bool) {
         self.process_preview_data = val;
     }
 
@@ -305,7 +305,7 @@ impl SacnReceiver {
     /// Arguments:
     /// source_name: The human readable name of the sACN source to remove the universe from.
     /// universe:    The sACN universe to remove.
-    fn terminate_stream<'a>(&mut self, source_name: Cow<'a, str>, universe: u16){
+    pub fn terminate_stream<'a>(&mut self, source_name: Cow<'a, str>, universe: u16){
         match find_discovered_src(&self.discovered_sources, &source_name.to_string()){
             Some(index) => {
                 self.discovered_sources[index].terminate_universe(universe);

@@ -36,15 +36,16 @@ use std::env;
 use std::thread::sleep;
 
 /// The string given by the user to perform each of the various options as described in get_usage_str below.
-const ACTION_RECV:  &str = "r";
-const ACTION_RECV_CONTINOUS:  &str = "c";
-const ACTION_PRINT_DISCOVERED_SOURCES:  &str = "s";
-const ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT:  &str = "x";
-const ACTION_QUIT:  &str = "q";
-const ACTION_HELP:  &str = "h";
-const ACTION_LISTEN_UNIVERSE:  &str = "l";
-const ACTION_STOP_LISTEN_UNIVERSE:  &str = "t";
-const ACTION_SLEEP:  &str = "w";
+const ACTION_RECV:                                  &str = "r";
+const ACTION_RECV_CONTINOUS:                        &str = "c";
+const ACTION_PRINT_DISCOVERED_SOURCES:              &str = "s";
+const ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT:   &str = "x";
+const ACTION_QUIT:                                  &str = "q";
+const ACTION_HELP:                                  &str = "h";
+const ACTION_LISTEN_UNIVERSE:                       &str = "l";
+const ACTION_STOP_LISTEN_UNIVERSE:                  &str = "t";
+const ACTION_SLEEP:                                 &str = "w";
+const ACTION_PREVIEW:                               &str = "p";
 
 /// Describes the various commands / command-line arguments avaliable and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
@@ -77,8 +78,11 @@ fn get_usage_str() -> String {
 
     Sleep for x seconds \n
     {} <secs>\n
+
+    Enter preview mode, true means preview data will be received, false means preview data is ignored, default is false\n
+    {} <'true'/'false'>\n
     ", ACTION_RECV, ACTION_RECV_CONTINOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT, 
-    ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP)
+    ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP, ACTION_PREVIEW)
 }
 
 fn main() {
@@ -210,6 +214,19 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                     // TODO
                     bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Not Impl"));
                 }
+                ACTION_PREVIEW => {
+                    let val = split_input[1].parse();
+                    match val {
+                        Ok(v) => {
+                            dmx_recv.set_process_preview_data(v);
+                        },
+                        Err(e) => {
+                            bail!(std::io::Error::new(
+                                std::io::ErrorKind::InvalidInput, "Preview flag option not 'true'/'false' or otherwise parsable as boolean"));
+                        }
+                    }
+                }
+
                 x => {
                     bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
                 }
