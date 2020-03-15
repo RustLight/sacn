@@ -102,6 +102,114 @@ fn display_help(){
     println!("{}", USAGE_STR);
 }
 
+fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
+    let universe: u16 = split_input[1].parse().unwrap();
+
+    if split_input.len() < 4 {
+        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+    }
+
+    let sync_uni: u16 = split_input[2].parse().unwrap();
+
+    let priority: u8 = split_input[3].parse().unwrap();
+
+    let mut data: [u8; 513] = [0; 513];
+
+    for i in 4 .. split_input.len() {
+        data[i - 4] = split_input[i].parse().unwrap();
+    }
+
+    if sync_uni == 0 {
+        src.send(&[universe], &data, Some(priority), None, None)?;
+    } else {
+        src.send(&[universe], &data, Some(priority), None, Some(sync_uni))?;
+    }
+
+    Ok(true)
+}
+
+fn handle_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
+    let universe: u16 = split_input[1].parse().unwrap();
+
+    if split_input.len() < 4 {
+        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+    }
+
+    let sync_uni: u16 = split_input[2].parse().unwrap();
+
+    let priority: u8 = split_input[3].parse().unwrap();
+
+    let mut data: Vec<u8> = Vec::new();
+
+    for i in 4 .. split_input.len() {
+        data.push(split_input[i].parse().unwrap());
+    }
+
+    if sync_uni == 0 {
+        src.send(&[universe], &data, Some(priority), None, None)?;
+    } else {
+        src.send(&[universe], &data, Some(priority), None, Some(sync_uni))?;
+    }
+
+    Ok(true)
+}
+
+fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
+    let universe: u16 = split_input[1].parse().unwrap();
+
+    if split_input.len() < 5 {
+        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 5 )"));
+    }
+
+    let sync_uni: u16 = split_input[2].parse().unwrap();
+
+    let priority: u8 = split_input[3].parse().unwrap();
+
+    let dst_ip = split_input[4];
+
+    let mut data: Vec<u8> = Vec::new();
+
+    for i in 5 .. split_input.len() {
+        data.push(split_input[i].parse().unwrap());
+    }
+
+    if sync_uni == 0 {
+        src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), None)?;
+    } else {
+        src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), Some(sync_uni))?;
+    }
+
+    Ok(true)
+}
+
+fn handle_data_over_time_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
+    if split_input.len() < 4 {
+        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
+    }
+
+    let universe: u16 = split_input[1].parse().unwrap();
+    let duration_millis: u64 = split_input[2].parse().unwrap();
+    let priority: u8 = split_input[3].parse().unwrap();
+
+    let duration: Duration = Duration::from_millis(duration_millis);
+
+    let start_time = Instant::now();
+
+    while start_time.elapsed() < duration {
+        let x: f64 = (start_time.elapsed().as_millis() as f64) / (1000 as f64);
+        let d: u8 = (255.0 * x.sin()) as u8;
+
+        let mut data: [u8; 513] = [d; 513];
+        data[0] = 0; // Use 0 startcode
+
+        src.send(&[universe], &data, Some(priority), None, None)?;
+
+        sleep(SHAPE_DATA_SEND_PERIOD);
+    }
+
+    Ok(true)
+}
+
 /// Returns Ok(true) to continue or Ok(false) if no more input.
 fn handle_input(src: &mut SacnSource) -> Result <bool>{
     let mut input = String::new();
@@ -122,104 +230,21 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
 
             match split_input[0] {
                 "d" => {
-                    let universe: u16 = split_input[1].parse().unwrap();
-
-                    if split_input.len() < 4 {
-                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
-                    }
-
-                    let sync_uni: u16 = split_input[2].parse().unwrap();
-
-                    let priority: u8 = split_input[3].parse().unwrap();
-
-                    let mut data: Vec<u8> = Vec::new();
-
-                    for i in 4 .. split_input.len() {
-                        data.push(split_input[i].parse().unwrap());
-                    }
-
-                    if sync_uni == 0 {
-                        src.send(&[universe], &data, Some(priority), None, None)?;
-                    } else {
-                        src.send(&[universe], &data, Some(priority), None, Some(sync_uni))?;
-                    }
+                    handle_data_option(src, split_input)
                 }
                 "f" => {
-                    let universe: u16 = split_input[1].parse().unwrap();
-
-                    if split_input.len() < 4 {
-                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
-                    }
-
-                    let sync_uni: u16 = split_input[2].parse().unwrap();
-
-                    let priority: u8 = split_input[3].parse().unwrap();
-
-                    let mut data: [u8; 513] = [0; 513];
-
-                    for i in 4 .. split_input.len() {
-                        data[i - 4] = split_input[i].parse().unwrap();
-                    }
-
-                    if sync_uni == 0 {
-                        src.send(&[universe], &data, Some(priority), None, None)?;
-                    } else {
-                        src.send(&[universe], &data, Some(priority), None, Some(sync_uni))?;
-                    }
+                    handle_full_data_option(src, split_input)
                 }
                 "u" => {
-                    let universe: u16 = split_input[1].parse().unwrap();
-
-                    if split_input.len() < 5 {
-                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 5 )"));
-                    }
-
-                    let sync_uni: u16 = split_input[2].parse().unwrap();
-
-                    let priority: u8 = split_input[3].parse().unwrap();
-
-                    let dst_ip = split_input[4];
-
-                    let mut data: Vec<u8> = Vec::new();
-
-                    for i in 5 .. split_input.len() {
-                        data.push(split_input[i].parse().unwrap());
-                    }
-
-                    if sync_uni == 0 {
-                        src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), None)?;
-                    } else {
-                        src.send(&[universe], &data, Some(priority), Some(SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT)), Some(sync_uni))?;
-                    }
+                    handle_unicast_option(src, split_input)
                 }
                 "t" => {
-                    if split_input.len() < 4 {
-                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
-                    }
-
-                    let universe: u16 = split_input[1].parse().unwrap();
-                    let duration_millis: u64 = split_input[2].parse().unwrap();
-                    let priority: u8 = split_input[3].parse().unwrap();
-
-                    let duration: Duration = Duration::from_millis(duration_millis);
-
-                    let start_time = Instant::now();
-
-                    while start_time.elapsed() < duration {
-                        let x: f64 = (start_time.elapsed().as_millis() as f64) / (1000 as f64);
-                        let d: u8 = (255.0 * x.sin()) as u8;
-
-                        let mut data: [u8; 513] = [d; 513];
-                        data[0] = 0; // Use 0 startcode
-
-                        src.send(&[universe], &data, Some(priority), None, None)?;
-
-                        sleep(SHAPE_DATA_SEND_PERIOD);
-                    }
+                    handle_data_over_time_option(src, split_input)
                 }
                 "s" => {
                     let universe: u16 = split_input[1].parse().unwrap();
                     src.send_sync_packet(universe, &None)?;
+                    Ok(true)
                 }
                 "us" => {
                     if split_input.len() < 3 {
@@ -229,10 +254,12 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     let universe: u16 = split_input[1].parse().unwrap();
                     let dst_ip = split_input[2];
                     src.send_sync_packet(universe, &Some(SocketAddr::from_str(dst_ip).unwrap()))?;
+                    Ok(true)
                 }
                 "r" => {
                     let universe: u16 = split_input[1].parse().unwrap();
                     src.register_universe(universe)?;
+                    Ok(true)
                 }
                 "q" => {
                     let universe: u16 = split_input[1].parse().unwrap();
@@ -241,6 +268,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     } else {
                         src.terminate_stream(universe, TERMINATE_START_CODE)?;
                     }
+                    Ok(true)
                 }
                 "w" => {
                     if split_input.len() < 2 {
@@ -249,13 +277,13 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     }
                     let millis: u64 = split_input[1].parse().unwrap();
                     sleep(Duration::from_millis(millis));
-
+                    Ok(true)
                 }
                 x => {
                     bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
+                    Ok(true)
                 }
             }
-            Ok(true)
         }
         Err(e) => {
             bail!(e);

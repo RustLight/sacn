@@ -12,8 +12,8 @@ RCV_EXPECTED_OUTPUT=$7
 KILL_WAIT=$8 # How long should the testing program wait before killing both receiver and sender forcefully (seconds).
 
 # The addresses of the machines used for the test. The addresses given here are host-names which are resolved by the the lab DNS.
-REMOTE_PC=pc3-049-l
-REMOTE_PC_2=pc3-059-l
+REMOTE_PC=pc3-018-l
+REMOTE_PC_2=pc3-026-l
 
 # The default ACN port.
 PORT=5568
