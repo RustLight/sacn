@@ -30,7 +30,6 @@ pub mod error;
 /// The library is built on top of socket2 to provide the underlying UDP networking interface.
 extern crate socket2;
 extern crate libc;
-extern crate net2;
 
 /// The core crate is used for string processing during packet parsing/packing aswell as to provide access to the Hash trait.
 extern crate core;
