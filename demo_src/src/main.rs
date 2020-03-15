@@ -60,28 +60,40 @@ const ACTION_DATA_OVER_TIME_OPTION: &str = "t";
 /// Not a const as const with format! not supported in rust.
 fn get_usage_str() -> String{
     format!("Usage ./main <interface_ip> <source_name>\n
+    
     Reads data from stdin and sends it using the protocol. \n
     Data must be formatted as, a sync_universe of 0 means no synchronisation, this uses multicast: \n
     {} <universe> <sync_uni> <priority> <data_as_u8_space_seperated> \n
+    
     Sends a full universe of data (512 channels + 0 startcode) with the first bytes of the data as specified 
     below (remainder is 0's) \n
     {} <universe> <sync_uni> <priority> <data_as_u8_space_seperate> \n
+    
     To send data unicast use: \n
     {} <universe> <sync_uni> <priority> <dst_addr> <data_as_u8_space_seperated> \n
+    
     Register a sending universe as: \n
     {} <universe> \n
+    
     Terminate a universe, if universe is 0 then will terminate entirely: \n
     {} <universe> \n
+    
     Sleep for x milliseconds \n
     {} <milliseconds> \n
+    
     Send a synchronisation packet for the given universe \n
     {} <universe> \n
+    
     Send a synchronisation packet for the given universe to the given address \n
     {} <universe> <dst_addr> \n
+    
     Start a demo shape which continuously sends data to the given universe for the given number of milliseconds \n
     {} <universe> <duration_millis> <priority>\n
+
+    Set the preview data option flag to the given value, this is reflected in packets sent using the other actions\n
+    {} <'true'/'false'>\n
     ", ACTION_DATA_OPTION, ACTION_FULL_DATA_OPTION, ACTION_UNICAST_OPTION, ACTION_REGISTER_OPTION, ACTION_TERMINATE_OPTION, 
-    ACTION_SLEEP_OPTION, ACTION_SYNC_OPTION, ACTION_UNICAST_SYNC_OPTION, ACTION_DATA_OVER_TIME_OPTION)
+    ACTION_SLEEP_OPTION, ACTION_SYNC_OPTION, ACTION_UNICAST_SYNC_OPTION, ACTION_DATA_OVER_TIME_OPTION, ACTION_PREVIEW_OPTION)
 }
 
 fn main(){
@@ -245,24 +257,24 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
             }
 
             match split_input[0] {
-                "d" => {
+                ACTION_DATA_OPTION => {
                     handle_data_option(src, split_input)
                 }
-                "f" => {
+                ACTION_FULL_DATA_OPTION => {
                     handle_full_data_option(src, split_input)
                 }
-                "u" => {
+                ACTION_UNICAST_OPTION => {
                     handle_unicast_option(src, split_input)
                 }
-                "t" => {
+                ACTION_DATA_OVER_TIME_OPTION => {
                     handle_data_over_time_option(src, split_input)
                 }
-                "s" => {
+                ACTION_SYNC_OPTION => {
                     let universe: u16 = split_input[1].parse().unwrap();
                     src.send_sync_packet(universe, &None)?;
                     Ok(true)
                 }
-                "us" => {
+                ACTION_UNICAST_SYNC_OPTION => {
                     if split_input.len() < 3 {
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
                     }
@@ -272,12 +284,12 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     src.send_sync_packet(universe, &Some(SocketAddr::from_str(dst_ip).unwrap()))?;
                     Ok(true)
                 }
-                "r" => {
+                ACTION_REGISTER_OPTION => {
                     let universe: u16 = split_input[1].parse().unwrap();
                     src.register_universe(universe)?;
                     Ok(true)
                 }
-                ACTION_LETTER_PREVIEW_OPTION => {
+                ACTION_PREVIEW_OPTION => {
                     let val = split_input[1].parse();
 
                     match val {
@@ -290,7 +302,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     }
                     Ok(true)
                 }
-                "q" => {
+                ACTION_TERMINATE_OPTION => {
                     let universe: u16 = split_input[1].parse().unwrap();
                     if universe == 0 {
                         return Ok(false)
@@ -299,7 +311,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     }
                     Ok(true)
                 }
-                "w" => {
+                ACTION_SLEEP_OPTION => {
                     if split_input.len() < 2 {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
