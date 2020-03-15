@@ -62,6 +62,9 @@ use core::str;
 use std::borrow::Cow;
 use std::vec::Vec;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+
+use socket2::SockAddr;
+
 use std::{time, time::Duration};
 
 
@@ -184,14 +187,14 @@ pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_T
 /// # Errors
 /// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
 /// see (is_universe_in_range)[fn.is_universe_in_range.packet].
-pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr>{
+pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SockAddr>{
     is_universe_in_range(universe)?;
 
     let high_byte: u8 = ((universe >> 8) & 0xff) as u8;
     let low_byte: u8 = (universe & 0xff) as u8;
 
     // As per ANSI E1.31-2018 Section 9.3.1 Table 9-10.
-    Ok(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, high_byte, low_byte)), ACN_SDT_MULTICAST_PORT))
+    Ok(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, high_byte, low_byte)), ACN_SDT_MULTICAST_PORT).into())
 }
 
 /// Converts the given ANSI E1.31-2018 universe into an Ipv6 multicast address with the port set to the acn multicast port as defined 
@@ -204,11 +207,11 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SocketAddr>{
 /// # Errors
 /// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
 /// see (is_universe_in_range)[fn.is_universe_in_range.packet].
-pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SocketAddr>{
+pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SockAddr>{
     is_universe_in_range(universe)?;
 
     // As per ANSI E1.31-2018 Section 9.3.2 Table 9-12.
-    Ok(SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, universe)), ACN_SDT_MULTICAST_PORT))
+    Ok(SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, universe)), ACN_SDT_MULTICAST_PORT).into())
 }
 
 /// Checks if the given universe is a valid universe to send on (within allowed range).

@@ -104,7 +104,7 @@ fn main() {
 
     let source_limit = None;
 
-    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(interface_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT), source_limit).unwrap();
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(interface_ip.parse().unwrap(), ACN_SDT_MULTICAST_PORT), source_limit).unwrap();
 
     println!("Started");
 
