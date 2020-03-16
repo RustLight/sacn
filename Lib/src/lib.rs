@@ -23,8 +23,10 @@
 
 #[macro_use]
 extern crate error_chain;
+
 /// Error-chain is used for errors within the library to allow chaining errors together to provide more informative backtraces.
 /// This completely replaces the old error system (sACN crate version 0.4.4) which relied on a simple Enum model without proper backtraces.
+pub mod sacn_parse_pack_error;
 pub mod error;
 
 /// The library is built on top of socket2 to provide the underlying UDP networking interface.
