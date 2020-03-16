@@ -16,6 +16,7 @@ use uuid::Uuid;
 
 /// Uses the sACN error-chain errors.
 use sacn::error::errors::*;
+use sacn::sacn_parse_pack_error::sacn_parse_pack_error;
 
 /// A test data packet as specified as an example in
 /// ANSI E1.31-2018 Appendix B Table B-13: Universe Synchronization Example E1.31 Data Packet.
@@ -730,7 +731,7 @@ fn test_malformed_data_packet_wrong_preample_lower_byte_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_WRONG_PREAMBLE_SIZE_LOWER_BYTE) {
         Err(e) => {
             match *e.kind() {
-                ErrorKind::ParseInvalidData(_) => {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -753,7 +754,7 @@ fn test_malformed_data_packet_wrong_preample_upper_byte_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_WRONG_PREAMBLE_SIZE_UPPER_BYTE) {
         Err(e) => {
             match *e.kind() {
-                ErrorKind::ParseInvalidData(_) => {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -776,7 +777,7 @@ fn test_malformed_data_packet_wrong_postample_lower_byte_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_WRONG_POSTAMBLE_SIZE_LOWER_BYTE) {
         Err(e) => {
             match *e.kind() {
-                ErrorKind::ParseInvalidData(_) => {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -799,7 +800,7 @@ fn test_malformed_data_packet_wrong_postample_upper_byte_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_WRONG_POSTAMBLE_SIZE_UPPER_BYTE) {
         Err(e) => {
             match *e.kind() {
-                ErrorKind::ParseInvalidData(_) => {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -822,7 +823,7 @@ fn test_malformed_data_packet_wrong_acn_identifier_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_WRONG_ACN_IDENTIFIER) {
         Err(e) => {
             match *e.kind() {
-                ErrorKind::ParseInvalidData(_) => {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -845,7 +846,7 @@ fn test_malformed_data_packet_unknown_acn_vector_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_UNKNOWN_ACN_VECTOR) {
         Err(e) => {
             match *e.kind() {
-                ErrorKind::PduInvalidVector(_) => {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -868,10 +869,13 @@ fn test_malformed_data_packet_extended_acn_vector_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_EXTENDED_VECTOR) {
         Err(e) => {
             match e.kind() {
-                // As this is a byzantine type error because the packet is otherwise correct except the vector is the wrong vector type the exact
-                // parse error isn't enforced but it must still be rejected.
+                ErrorKind::SacnParsePackError(_) => {
+                    // As this is a byzantine type error because the packet is otherwise correct except the vector is the wrong vector type the exact
+                    // parse error isn't enforced but the packet must still be rejected.
+                    assert!(true, "Malformed packet successfully rejected");
+                }
                 _ => {
-                    assert!(true, "Malformed packet detected");
+                    assert!(false, "Unexpected error type returned");
                 }
             }
             
