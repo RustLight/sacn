@@ -814,7 +814,7 @@ impl SacnNetworkReceiver {
     /// Will return an OsOperationUnsupported error if attempting to set the flag to true in an environment that multicast
     /// isn't supported i.e. Ipv6 on Windows.
     pub fn set_is_multicast_enabled(&mut self, val: bool) -> Result<()> {
-        if val && self.receiver.is_ipv6() {
+        if val && self.is_ipv6() {
             bail!(ErrorKind::OsOperationUnsupported("IPv6 multicast is currently unsupported on Windows".to_string()));
         }
         

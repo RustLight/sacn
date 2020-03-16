@@ -1173,141 +1173,10 @@ impl_universe_discovery_packet_universe_discovery_layer!(<'a>);
 #[cfg(not(feature = "std"))]
 impl_universe_discovery_packet_universe_discovery_layer!();
 
-#[test]
-fn test_universe_to_ipv4_lowest_byte_normal(){
-    let val: u16 = 119;
-    let res = universe_to_ipv4_multicast_addr(val).unwrap();
-    
-    assert!(res.ip().is_multicast());
-
-    assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (val/256) as u8, (val % 256) as u8)), ACN_SDT_MULTICAST_PORT));
-}
-
-#[test]
-fn test_universe_to_ip_ipv4_both_bytes_normal(){
-    let val: u16 = 300;
-    let res = universe_to_ipv4_multicast_addr(val).unwrap();
-    
-    assert!(res.ip().is_multicast());
-
-    assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (val/256) as u8, (val % 256) as u8)), ACN_SDT_MULTICAST_PORT));
-}
-
-#[test]
-fn test_universe_to_ip_ipv4_limit_high(){
-    let res = universe_to_ipv4_multicast_addr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
-    
-    assert!(res.ip().is_multicast());
-
-    assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (E131_MAX_MULTICAST_UNIVERSE/256) as u8, (E131_MAX_MULTICAST_UNIVERSE % 256) as u8)), ACN_SDT_MULTICAST_PORT));
-}
-
-#[test]
-fn test_universe_to_ip_ipv4_limit_low(){
-    let res = universe_to_ipv4_multicast_addr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
-
-    assert!(res.ip().is_multicast());
-
-    assert_eq!(res, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, (E131_MIN_MULTICAST_UNIVERSE/256) as u8, (E131_MIN_MULTICAST_UNIVERSE % 256) as u8)), ACN_SDT_MULTICAST_PORT));
-}
-
-#[test]
-fn test_universe_to_ip_ipv4_out_range_low(){
-    match universe_to_ipv4_multicast_addr(0) {
-        Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed below minimum allowed universe")},
-        Err(e) => 
-            match e.kind() {
-                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
-                _ => assert!(false, "Unexpected error type returned")
-            }
-    }
-}
-
-#[test]
-fn test_universe_to_ip_ipv4_out_range_high(){
-    match universe_to_ipv4_multicast_addr(E131_MAX_MULTICAST_UNIVERSE + 10) {
-        Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed above maximum allowed universe")},
-        Err(e) => 
-            match e.kind() {
-                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
-                _ => assert!(false, "Unexpected error type returned")
-            }
-    }
-}
-
-#[test]
-fn test_universe_to_ipv6_lowest_byte_normal(){
-    let val: u16 = 119;
-    let res = universe_to_ipv6_multicast_addr(val).unwrap();
-
-    assert!(res.ip().is_multicast());
-
-    let low_16: u16 = (((val/256) as u16) << 8) | ((val % 256) as u16);
-    
-    assert_eq!(res, SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16)), ACN_SDT_MULTICAST_PORT));
-}
-
-#[test]
-fn test_universe_to_ip_ipv6_both_bytes_normal(){
-    let val: u16 = 300;
-    let res = universe_to_ipv6_multicast_addr(val).unwrap();
-
-    assert!(res.ip().is_multicast());
-
-    let low_16: u16 = (((val/256) as u16) << 8) | ((val % 256) as u16);
-    
-    assert_eq!(res, SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16)), ACN_SDT_MULTICAST_PORT));
-}
-
-#[test]
-fn test_universe_to_ip_ipv6_limit_high(){
-    let res = universe_to_ipv6_multicast_addr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
-
-    assert!(res.ip().is_multicast());
-
-    let low_16: u16 = (((E131_MAX_MULTICAST_UNIVERSE/256) as u16) << 8) | ((E131_MAX_MULTICAST_UNIVERSE % 256) as u16);
-    
-    assert_eq!(res, SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16)), ACN_SDT_MULTICAST_PORT));
-}
-
-#[test]
-fn test_universe_to_ip_ipv6_limit_low(){
-    let res = universe_to_ipv6_multicast_addr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
-
-    assert!(res.ip().is_multicast());
-
-    let low_16: u16 = (((E131_MIN_MULTICAST_UNIVERSE/256) as u16) << 8) | ((E131_MIN_MULTICAST_UNIVERSE % 256) as u16);
-    
-    assert_eq!(res, SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16)), ACN_SDT_MULTICAST_PORT));
-}
-
-#[test]
-fn test_universe_to_ip_ipv6_out_range_low(){
-    match universe_to_ipv6_multicast_addr(0) {
-        Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed below minimum allowed universe")},
-        Err(e) => 
-            match e.kind() {
-                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
-                _ => assert!(false, "Unexpected error type returned")
-            }
-    }
-}
-
-#[test]
-fn test_universe_to_ip_ipv6_out_range_high(){
-    match universe_to_ipv6_multicast_addr(E131_MAX_MULTICAST_UNIVERSE + 10) {
-        Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed above maximum allowed universe")},
-        Err(e) => 
-            match e.kind() {
-                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
-                _ => assert!(false, "Unexpected error type returned")
-            }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 
     #[cfg_attr(rustfmt, rustfmt_skip)]
     const TEST_DATA_PACKET: &[u8] = &[
@@ -1571,4 +1440,135 @@ mod test {
 
         assert_eq!(&buf[..packet.len()], TEST_UNIVERSE_DISCOVERY_PACKET);
     }
+
+    #[test]
+fn test_universe_to_ipv4_lowest_byte_normal(){
+    let val: u16 = 119;
+    let res = universe_to_ipv4_multicast_addr(val).unwrap();
+    
+    assert!(res.as_inet().unwrap().ip().is_multicast());
+
+    assert_eq!(res.as_inet().unwrap(), SocketAddrV4::new(Ipv4Addr::new(239, 255, (val/256) as u8, (val % 256) as u8), ACN_SDT_MULTICAST_PORT));
+}
+
+#[test]
+fn test_universe_to_ip_ipv4_both_bytes_normal(){
+    let val: u16 = 300;
+    let res = universe_to_ipv4_multicast_addr(val).unwrap();
+    
+    assert!(res.as_inet().unwrap().ip().is_multicast());
+
+    assert_eq!(res.as_inet().unwrap(), SocketAddrV4::new(Ipv4Addr::new(239, 255, (val/256) as u8, (val % 256) as u8), ACN_SDT_MULTICAST_PORT));
+}
+
+#[test]
+fn test_universe_to_ip_ipv4_limit_high(){
+    let res = universe_to_ipv4_multicast_addr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
+    assert!(res.as_inet().unwrap().ip().is_multicast());
+
+    assert_eq!(res.as_inet().unwrap(), SocketAddrV4::new(Ipv4Addr::new(239, 255, (E131_MAX_MULTICAST_UNIVERSE/256) as u8, (E131_MAX_MULTICAST_UNIVERSE % 256) as u8), ACN_SDT_MULTICAST_PORT));
+}
+
+#[test]
+fn test_universe_to_ip_ipv4_limit_low(){
+    let res = universe_to_ipv4_multicast_addr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
+
+    assert!(res.as_inet().unwrap().ip().is_multicast());
+
+    assert_eq!(res.as_inet().unwrap(), SocketAddrV4::new(Ipv4Addr::new(239, 255, (E131_MIN_MULTICAST_UNIVERSE/256) as u8, (E131_MIN_MULTICAST_UNIVERSE % 256) as u8), ACN_SDT_MULTICAST_PORT));
+}
+
+#[test]
+fn test_universe_to_ip_ipv4_out_range_low(){
+    match universe_to_ipv4_multicast_addr(0) {
+        Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed below minimum allowed universe")},
+        Err(e) => 
+            match e.kind() {
+                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
+                _ => assert!(false, "Unexpected error type returned")
+            }
+    }
+}
+
+#[test]
+fn test_universe_to_ip_ipv4_out_range_high(){
+    match universe_to_ipv4_multicast_addr(E131_MAX_MULTICAST_UNIVERSE + 10) {
+        Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed above maximum allowed universe")},
+        Err(e) => 
+            match e.kind() {
+                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
+                _ => assert!(false, "Unexpected error type returned")
+            }
+    }
+}
+
+#[test]
+fn test_universe_to_ipv6_lowest_byte_normal(){
+    let val: u16 = 119;
+    let res = universe_to_ipv6_multicast_addr(val).unwrap();
+
+    assert!(res.as_inet6().unwrap().ip().is_multicast());
+
+    let low_16: u16 = (((val/256) as u16) << 8) | ((val % 256) as u16);
+    
+    assert_eq!(res.as_inet6().unwrap(), SocketAddrV6::new(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16), ACN_SDT_MULTICAST_PORT, 0, 0));
+}
+
+#[test]
+fn test_universe_to_ip_ipv6_both_bytes_normal(){
+    let val: u16 = 300;
+    let res = universe_to_ipv6_multicast_addr(val).unwrap();
+
+    assert!(res.as_inet6().unwrap().ip().is_multicast());
+
+    let low_16: u16 = (((val/256) as u16) << 8) | ((val % 256) as u16);
+    
+    assert_eq!(res.as_inet6().unwrap(), SocketAddrV6::new(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16), ACN_SDT_MULTICAST_PORT, 0, 0));
+}
+
+#[test]
+fn test_universe_to_ip_ipv6_limit_high(){
+    let res = universe_to_ipv6_multicast_addr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
+
+    assert!(res.as_inet6().unwrap().ip().is_multicast());
+
+    let low_16: u16 = (((E131_MAX_MULTICAST_UNIVERSE/256) as u16) << 8) | ((E131_MAX_MULTICAST_UNIVERSE % 256) as u16);
+    
+    assert_eq!(res.as_inet6().unwrap(), SocketAddrV6::new(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16), ACN_SDT_MULTICAST_PORT, 0, 0));
+}
+
+#[test]
+fn test_universe_to_ip_ipv6_limit_low(){
+    let res = universe_to_ipv6_multicast_addr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
+
+    assert!(res.as_inet6().unwrap().ip().is_multicast());
+
+    let low_16: u16 = (((E131_MIN_MULTICAST_UNIVERSE/256) as u16) << 8) | ((E131_MIN_MULTICAST_UNIVERSE % 256) as u16);
+    
+    assert_eq!(res.as_inet6().unwrap(), SocketAddrV6::new(Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16), ACN_SDT_MULTICAST_PORT, 0, 0));
+}
+
+#[test]
+fn test_universe_to_ip_ipv6_out_range_low(){
+    match universe_to_ipv6_multicast_addr(0) {
+        Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed below minimum allowed universe")},
+        Err(e) => 
+            match e.kind() {
+                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
+                _ => assert!(false, "Unexpected error type returned")
+            }
+    }
+}
+
+#[test]
+fn test_universe_to_ip_ipv6_out_range_high(){
+    match universe_to_ipv6_multicast_addr(E131_MAX_MULTICAST_UNIVERSE + 10) {
+        Ok(_) => {assert!(false, "Universe to ipv4 multicast allowed above maximum allowed universe")},
+        Err(e) => 
+            match e.kind() {
+                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
+                _ => assert!(false, "Unexpected error type returned")
+            }
+    }
+}
 }

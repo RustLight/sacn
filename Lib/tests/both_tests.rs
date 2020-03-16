@@ -21,6 +21,9 @@ use sacn::source::SacnSource;
 use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
 use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
 
+extern crate socket2;
+use socket2::{SockAddr};
+
 use std::time::Duration;
 
 use sacn::error::errors::*;
@@ -112,7 +115,7 @@ fn test_send_recv_single_alternative_startcode_universe_multicast_ipv6(){
 
     let priority = 100;
 
-    src.register_universe(universe);
+    src.register_universe(universe).unwrap();
 
     src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, None).unwrap();
 
@@ -158,11 +161,11 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
 
     let priority = 100;
 
-    src.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES).unwrap();
 
     src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    src.send_sync_packet(UNIVERSES[0], &None).unwrap();
+    src.send_sync_packet(UNIVERSES[0], None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
@@ -215,11 +218,11 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 
     let priority = 100;
 
-    src.register_universes(&UNIVERSES);
+    src.register_universes(&UNIVERSES).unwrap();
 
     src.send(&UNIVERSES, &TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    src.send_sync_packet(UNIVERSES[0], &None).unwrap();
+    src.send_sync_packet(UNIVERSES[0], None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
@@ -287,7 +290,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
 
     let priority = 100;
 
-    src.register_universe(universe);
+    src.register_universe(universe).unwrap();
 
     src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
 
@@ -378,7 +381,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
         Err(e) => assert_eq!(e, RecvTimeoutError::Timeout)
     }
 
-    src.send_sync_packet(sync_uni, &None).unwrap();
+    src.send_sync_packet(sync_uni, None).unwrap();
 
     println!("Waiting to receive");
 
@@ -620,7 +623,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
 
     src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
-    src.send_sync_packet(UNIVERSES[0], &None).unwrap();
+    src.send_sync_packet(UNIVERSES[0], None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
@@ -678,7 +681,7 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 
     src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
-    src.send_sync_packet(UNIVERSES[0], &None).unwrap();
+    src.send_sync_packet(UNIVERSES[0], None).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
@@ -733,11 +736,9 @@ fn test_send_recv_across_universe_unicast_ipv6(){
 
     src.register_universes(&UNIVERSES).unwrap();
 
-    let dst_ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
-
-    let _ = src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), Some(UNIVERSES[0])).unwrap();
+    let _ = src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT).into()), Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    src.send_sync_packet(UNIVERSES[0], &Some(dst_ip)).unwrap();
+    src.send_sync_packet(UNIVERSES[0], Some(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT).into())).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
@@ -793,11 +794,9 @@ fn test_send_recv_across_universe_unicast_ipv4(){
 
     src.register_universes(&UNIVERSES).unwrap();
 
-    let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT);
-
-    let _ = src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(dst_ip), Some(UNIVERSES[0])).unwrap();
+    let _ = src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT).into()), Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    src.send_sync_packet(UNIVERSES[0], &Some(dst_ip)).unwrap();
+    src.send_sync_packet(UNIVERSES[0], Some(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT).into())).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
@@ -967,7 +966,7 @@ fn test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4()
 
         src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, Some(sync_uni)).unwrap();
         rx.recv().unwrap(); // Must only send once both threads have sent for this test to test what happens in that situation (where there will be a merge).
-        src.send_sync_packet(sync_uni, &None).unwrap();
+        src.send_sync_packet(sync_uni, None).unwrap();
     });
 
     let res1: Vec<DMXData> = dmx_recv.recv(None).unwrap();
