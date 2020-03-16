@@ -890,6 +890,74 @@ const TEST_DATA_PACKET_FRAMING_LAYER_HIGH_LENGTH: &[u8] = &[
     0,
 ];
 
+/// The data-packet framing layer vector set to the wrong value for a data packet.
+const TEST_DATA_PACKET_FRAMING_LAYER_WRONG_VECTOR: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x72, 0x6e, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length */
+    0x72, 0x58,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x07,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    100,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    0,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length */
+    0x72, 0x0b,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count */
+    0x02, 0x01,
+    /* Property values */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,
+];
+
+
 /// Built up / checked as per:
 /// ANSI E1.31-2018:
 ///     Section 4.3 Table 4-3: E1.31 Universe Discovery Packet Format
@@ -1294,7 +1362,7 @@ fn test_malformed_data_packet_framing_layer_wrong_flags_parse() {
 }
 
 #[test]
-fn test_malformed_data_packet_framing_layer_layer_low_length_parse() {
+fn test_malformed_data_packet_framing_layer_low_length_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_FRAMING_LAYER_LOW_LENGTH) {
         Err(e) => {
             match *e.kind() {
@@ -1317,8 +1385,31 @@ fn test_malformed_data_packet_framing_layer_layer_low_length_parse() {
 }
 
 #[test]
-fn test_malformed_data_packet_framing_layer_layer_high_length_parse() {
+fn test_malformed_data_packet_framing_layer_high_length_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_FRAMING_LAYER_HIGH_LENGTH) {
+        Err(e) => {
+            match *e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error type returned");
+                }
+            }
+            
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Malformed packet was parsed when should have been rejected"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_malformed_data_packet_framing_layer_wrong_vector_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_FRAMING_LAYER_WRONG_VECTOR) {
         Err(e) => {
             match *e.kind() {
                 ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
