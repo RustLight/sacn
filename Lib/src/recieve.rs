@@ -1511,6 +1511,73 @@ fn test_handle_single_page_discovery_packet() {
 }
 
 #[test]
+fn test_handle_multi_page_discovery_packet() {
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); 
+
+    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+    let name = "Test Src 1";
+    let last_page: u8 = 1;
+    
+    let mut universes_page_1: Vec<u16> = Vec::new();
+    let mut universes_page_2: Vec<u16> = Vec::new();
+
+    for i in 1 .. 513 {
+        universes_page_1.push(i);
+    }
+
+    for i in 513 .. 1024 {
+        universes_page_2.push(i);
+    }
+
+    let discovery_pkt_1: UniverseDiscoveryPacketFramingLayer = UniverseDiscoveryPacketFramingLayer {
+        source_name: name.into(),
+
+        /// Universe discovery layer.
+        data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+            page: 0,
+
+            /// The number of the final page.
+            last_page: last_page,
+
+            /// List of universes.
+            universes: universes_page_1.clone().into(),
+        },
+    };
+
+    let discovery_pkt_2: UniverseDiscoveryPacketFramingLayer = UniverseDiscoveryPacketFramingLayer {
+        source_name: name.into(),
+
+        /// Universe discovery layer.
+        data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+            page: 1,
+
+            /// The number of the final page.
+            last_page: last_page,
+
+            /// List of universes.
+            universes: universes_page_2.clone().into(),
+        },
+    };
+    
+    let res1: bool = dmx_rcv.handle_universe_discovery_packet(discovery_pkt_1);
+    let res2: bool = dmx_rcv.handle_universe_discovery_packet(discovery_pkt_2);
+
+    assert!(!res1); // Should be false because first packet isn't complete as its only the first page.
+    assert!(res2);  // Should be true because the second and last page is now received.
+
+    assert_eq!(dmx_rcv.discovered_sources.len(), 1);
+
+    assert_eq!(dmx_rcv.discovered_sources[0].name, name);
+    assert_eq!(dmx_rcv.discovered_sources[0].last_page, last_page);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages.len(), 2);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].page, 0);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages[1].page, 1);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].universes, universes_page_1);
+    assert_eq!(dmx_rcv.discovered_sources[0].pages[1].universes, universes_page_2);
+}
+
+#[test]
 fn test_store_retrieve_waiting_data(){
     let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT); 
 
