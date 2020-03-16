@@ -51,33 +51,30 @@ pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 ///
 /// SacnSourceInternal is used for sending sACN packets over ethernet.
 ///
-/// Each universe will be sent to a dedicated multicast address
-/// "239.255.{universe_high_byte}.{universe_low_byte}".
-///
 /// # Examples
 ///
 /// ```
 /// // Example showing creation of a source and then sending some data.
-/// use sacn::SacnSourceInternal;
+/// use sacn::source::SacnSource;
 /// use sacn::packet::ACN_SDT_MULTICAST_PORT;
+/// use std::net::{IpAddr, SocketAddr};
 ///
-/// let interface_ip = "127.0.0.1"; // Example ip.
+/// let local_addr: SocketAddr = SocketAddr::new(IpAddr::V4("0.0.0.0".parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 ///
-/// let source_name = "Controller"; // Example source name.
+/// let mut src = SacnSource::with_ip("Source", local_addr).unwrap();
 ///
-/// let addr = SocketAddr::new(IpAddr::V4(interface_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT); 
-/// 
-/// let mut src = SacnSource::with_ip(source_name, addr).unwrap();
-/// 
-/// let universe: u16 = 1;    // Universe the data is to be sent on.
-/// let sync_uni: u16 = None; // Don't want the packet to be delayed awaiting synchronisation.
-/// let priority: u8 = 100;   // The priority for the sending data, must be 1-200 inclusive.
-/// let dst_ip = None;
-
-/// let mut data: Vec<u8> = vec![0, 0, 0, 0, 255, 255, 128, 128];
-/// src.send(&[universe], &data, Some(priority), dst_ip, sync_uni)?;
+/// let universe: u16 = 1;                        // Universe the data is to be sent on.
+/// let sync_uni: Option<u16> = None;             // Don't want the packet to be delayed on the receiver awaiting synchronisation.
+/// let priority: u8 = 100;                       // The priority for the sending data, must be 1-200 inclusive,  None means use default.
+/// let dst_ip: Option<SocketAddr> = None;        // Sending the data using IP multicast so don't have a destination IP.
+///
+/// src.register_universe(universe).unwrap(); // Register with the source that will be sending on the given universe.
+///
+/// let mut data: Vec<u8> = vec![0, 0, 0, 0, 255, 255, 128, 128]; // Some arbitary data, must have length <= 513 (including start-code).
+///
+/// src.send(&[universe], &data, Some(priority), dst_ip, sync_uni).unwrap(); // Actually send the data
 /// ```
-
+///
 /// An ANSI E1.31-2018 sACN source.
 ///
 /// Allows sending DMX data over an IPv4 or IPv6 network using sACN.
@@ -237,14 +234,14 @@ impl SacnSource {
     }
 
     /// See [send](fn.send.SacnSourceInternal) for more details
-    pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SockAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
+    pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
         self.internal.lock().unwrap().send(universes, data, priority, dst_ip, syncronisation_addr)
     }
 
     /// Sends a synchronisation packet.
     /// 
     /// See [send_sync_packet](fn.send_sync_packet.SacnSourceInternal) for more details
-    pub fn send_sync_packet(&self, universe: u16, dst_ip: Option<SockAddr>) -> Result<()> {
+    pub fn send_sync_packet(&self, universe: u16, dst_ip: Option<SocketAddr>) -> Result<()> {
         self.internal.lock().unwrap().send_sync_packet(universe, dst_ip)
     }
 
@@ -348,11 +345,15 @@ impl SacnSourceInternal {
     /// 
     /// Will return an error if the IP cannot be bound to the underlying socket. See (Socket::bind)[fn.bind.Socket2].
     /// 
+    /// Will return UnsupportedIpVersion if the SockAddr is not IPv4 or IPv6.
+    /// 
     fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSourceInternal> {
         let socket = if ip.is_ipv4() {
             Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap()
-        } else {
+        } else if ip.is_ipv6() {
             Socket::new(Domain::ipv6(), Type::dgram(), None).unwrap()
+        } else {
+            bail!(ErrorKind::UnsupportedIpVersion("Address to create SacnSource is not IPv4 or IPv6".to_string()));
         };
         
         socket.bind(&ip.into())?;
@@ -492,7 +493,7 @@ impl SacnSourceInternal {
     /// 
     /// Will return an error if the data fails to send, see (send_universe)[fn.send_universe.source]
     /// 
-    fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SockAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
+    fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
         if self.running == false { // Indicates that this sender has been terminated.
             bail!(ErrorKind::SenderAlreadyTerminated("Attempted to send".to_string())); 
         }
@@ -551,7 +552,7 @@ impl SacnSourceInternal {
     /// 
     /// Will return an error if the data fails to be sent on the socket. See send_to(fn.send_to.Socket).
     /// 
-    fn send_universe(&self, universe: u16, data: &[u8], priority: u8, dst_ip: &Option<SockAddr>, sync_address: u16) -> Result<()> {
+    fn send_universe(&self, universe: u16, data: &[u8], priority: u8, dst_ip: &Option<SocketAddr>, sync_address: u16) -> Result<()> {
         if priority > E131_MAX_PRIORITY {
             bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Priority must be within allowed range of [0-E131_MAX_PRIORITY], priority provided: {}", priority)));
         }
@@ -589,7 +590,7 @@ impl SacnSourceInternal {
         };
 
         if dst_ip.is_some() {
-            self.socket.send_to(&packet.pack_alloc().unwrap(), dst_ip.as_ref().unwrap()).chain_err(|| "Failed to send data unicast on socket")?;
+            self.socket.send_to(&packet.pack_alloc().unwrap(), &dst_ip.unwrap().into()).chain_err(|| "Failed to send data unicast on socket")?;
         } else {
             let dst;
 
@@ -631,7 +632,7 @@ impl SacnSourceInternal {
     /// 
     /// Will return an error if the data fails to be sent on the socket. See send_to(fn.send_to.Socket).
     /// 
-    fn send_sync_packet(&self, universe: u16, dst_ip: Option<SockAddr>) -> Result<()> {
+    fn send_sync_packet(&self, universe: u16, dst_ip: Option<SocketAddr>) -> Result<()> {
         self.universe_allowed(&universe).chain_err(|| format!("Universe {} not allowed", universe))?;
 
         let ip;
@@ -643,7 +644,7 @@ impl SacnSourceInternal {
                 ip = universe_to_ipv4_multicast_addr(universe).chain_err(|| "Failed to convert universe to ipv4 multicast addr")?;
             }
         } else {
-            ip = dst_ip.unwrap();
+            ip = dst_ip.unwrap().into();
         }
 
         let mut sequence = match self.sync_sequences.borrow().get(&universe) {
@@ -691,11 +692,11 @@ impl SacnSourceInternal {
     /// 
     /// Will return an error if the data fails to be sent on the socket. See send_to(fn.send_to.Socket).
     /// 
-    fn send_terminate_stream_pkt(&self, universe: u16, dst_ip: Option<SockAddr>, start_code: u8) -> Result<()> {
+    fn send_terminate_stream_pkt(&self, universe: u16, dst_ip: Option<SocketAddr>, start_code: u8) -> Result<()> {
         self.universe_allowed(&universe).chain_err(|| format!("Universe {} not allowed", universe))?;
 
         let ip = match dst_ip{
-            Some(x) => x,
+            Some(x) => x.into(),
             None => {
                 if self.addr.is_ipv6(){
                     universe_to_ipv6_multicast_addr(universe)?
@@ -926,7 +927,6 @@ fn perform_periodic_update(src: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<(
 #[cfg(test)]
 mod test {
     use super::*;
-    use net2::UdpBuilder;
     use std::iter;
     use std::net::Ipv4Addr;
 
@@ -1011,7 +1011,11 @@ mod test {
         source.set_preview_mode(preview_data);
         source.set_multicast_loop(true).unwrap();
 
-        let recv_socket = UdpSocket::bind("0.0.0.0:5568").unwrap();
+        let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+        
+        let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
+
+        recv_socket.bind(&addr.into()).unwrap();
 
         recv_socket.join_multicast_v4(&Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0))
                    .unwrap();
@@ -1035,7 +1039,12 @@ mod test {
 
         source.set_multicast_loop(true).unwrap();
 
-        let recv_socket = UdpBuilder::new_v4().unwrap().bind("0.0.0.0:5568").unwrap();
+        let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+        
+        let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
+
+        recv_socket.bind(&addr.into()).unwrap();
+
         recv_socket
             .join_multicast_v4(&Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0))
             .unwrap();
