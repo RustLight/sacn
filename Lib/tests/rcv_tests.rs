@@ -364,6 +364,12 @@ const TEST_DATA_PACKET_WRONG_ACN_IDENTIFIER: &[u8] = &[
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
+/// Built up / checked as per:
+/// ANSI E1.31-2018:
+///     Section 4.3 Table 4-3: E1.31 Universe Discovery Packet Format
+///     Section 5 Table 5-4: E1.31 Root Layer
+///     Section 6.4 Table 6-7: E1.31 Universe Discovery Packet Framing Layer
+///     Section 8 Table 8-9: E1.31 Universe Discovery Packet Universe Discovery Layer
 const TEST_UNIVERSE_DISCOVERY_PACKET: &[u8] = &[
     // Root Layer
     // Preamble Size
