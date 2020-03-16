@@ -951,6 +951,57 @@ fn test_send_recv_two_universe_multicast_ipv6(){
     assert_eq!(received_data_2[0].values, TEST_DATA_MULTIPLE_UNIVERSE[513..].to_vec());
 }
 
+fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv6(){
+    let universe = 1;
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT), None).unwrap();
+
+    dmx_recv.listen_universes(&[universe]).unwrap();
+
+    let snd_thread_1 = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
+
+        let priority = 100;
+
+        src.register_universe(universe).unwrap();
+
+        let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
+    });
+
+    let snd_thread_2 = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 2);
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
+
+        let priority = 100;
+
+        src.register_universe(universe).unwrap();
+
+        let _ = src.send(&[universe], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, Some(priority), None, None).unwrap();
+    });
+
+    let res1: Vec<DMXData> = dmx_recv.recv(None).unwrap();
+    let res2: Vec<DMXData> = dmx_recv.recv(None).unwrap();
+
+    snd_thread_1.join().unwrap();
+    snd_thread_2.join().unwrap();
+
+    assert_eq!(res1.len(), 1);
+    assert_eq!(res2.len(), 1);
+
+    let res = vec![res1[0].clone(), res2[0].clone()];
+
+    assert_eq!(res[0].universe, universe);
+    assert_eq!(res[1].universe, universe);
+
+    if res[0].values == TEST_DATA_SINGLE_UNIVERSE.to_vec() {
+        assert_eq!(res[1].values, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec());
+    } else {
+        assert_eq!(res[0].values, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec());
+        assert_eq!(res[1].values, TEST_DATA_SINGLE_UNIVERSE.to_vec());
+    }
+}
+
 // Note: For this test to work the PC must be capable of connecting to the network on 2 IP's, this was done in windows by adding another static IP so the PC was connecting through
 // 2 different IP's to the network. Theses IPs are manually specified in the TEST_NETWORK_INTERFACE_IPV4 constant and so to run it must be changed
 // depending on the environment.

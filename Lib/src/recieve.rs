@@ -637,52 +637,52 @@ impl SacnReceiver {
         }
 
         self.receiver.set_timeout(timeout).chain_err(|| "Failed to sent a timeout value for the receiver")?;
-            let start_time = Instant::now();
-
-            match self.receiver.recv(&mut buf){
-                Ok(pkt) => {
-                    let pdu: E131RootLayer = pkt.pdu;
-                    let data: E131RootLayerData = pdu.data;
-                    let res = match data {
-                        DataPacket(d) => self.handle_data_packet(pdu.cid, d).chain_err(|| "Failed to handle data packet")?,
-                        SynchronizationPacket(s) => self.handle_sync_packet(pdu.cid, s).chain_err(|| "Failed to handle sync packet")?,
-                        UniverseDiscoveryPacket(u) => {
-                            if self.handle_universe_discovery_packet(u) && self.announce_source_discovery {
-                                bail!(ErrorKind::SourceDiscovered("Receiver discovered a source".to_string()));
-                            } else {
-                                None
-                            }
+        let start_time = Instant::now();
+        
+        match self.receiver.recv(&mut buf){
+            Ok(pkt) => {
+                let pdu: E131RootLayer = pkt.pdu;
+                let data: E131RootLayerData = pdu.data;
+                let res = match data {
+                    DataPacket(d) => self.handle_data_packet(pdu.cid, d).chain_err(|| "Failed to handle data packet")?,
+                    SynchronizationPacket(s) => self.handle_sync_packet(pdu.cid, s).chain_err(|| "Failed to handle sync packet")?,
+                    UniverseDiscoveryPacket(u) => {
+                        if self.handle_universe_discovery_packet(u) && self.announce_source_discovery {
+                            bail!(ErrorKind::SourceDiscovered("Receiver discovered a source".to_string()));
+                        } else {
+                            None
                         }
-                    };
-                    match res {
-                        Some(r) => {
-                            Ok(r)
-                        },
-                        None => { // Indicates that there is no data ready to pass up yet even if a packet was received.
-                            // To stop recv blocking forever with a non-None timeout due to packets being received consistently (that reset the timeout)
-                            // within the receive timeout (e.g. universe discovery packets if the discovery interval < timeout) the timeout needs to be 
-                            // adjusted to account for the time already taken.
-                            if !timeout.is_none() {
-                                let elapsed = start_time.elapsed();
-                                match timeout.unwrap().checked_sub(elapsed) {
-                                    None => { // Indicates that elapsed is bigger than timeout so its time to return.
-                                        bail!(std::io::Error::new(std::io::ErrorKind::WouldBlock, "No data avaliable in given timeout"));
-                                    }
-                                    Some(new_timeout) => {
-                                        return self.recv(Some(new_timeout))
-                                    }
-                                }
-                            } else {
-                                // If the timeout was none then would keep looping till data is returned as the method should keep blocking till then.
-                                self.recv(timeout)
-                            }
-                        } 
                     }
-                }
-                Err(err) => {
-                    Err(err)
+                };
+                match res {
+                    Some(r) => {
+                        Ok(r)
+                    },
+                    None => { // Indicates that there is no data ready to pass up yet even if a packet was received.
+                        // To stop recv blocking forever with a non-None timeout due to packets being received consistently (that reset the timeout)
+                        // within the receive timeout (e.g. universe discovery packets if the discovery interval < timeout) the timeout needs to be 
+                        // adjusted to account for the time already taken.
+                        if !timeout.is_none() {
+                            let elapsed = start_time.elapsed();
+                            match timeout.unwrap().checked_sub(elapsed) {
+                                None => { // Indicates that elapsed is bigger than timeout so its time to return.
+                                    bail!(std::io::Error::new(std::io::ErrorKind::WouldBlock, "No data avaliable in given timeout"));
+                                }
+                                Some(new_timeout) => {
+                                    return self.recv(Some(new_timeout))
+                                }
+                            }
+                        } else {
+                            // If the timeout was none then would keep looping till data is returned as the method should keep blocking till then.
+                            self.recv(timeout)
+                        }
+                    } 
                 }
             }
+            Err(err) => {
+                Err(err)
+            }
+        }
     }
 
     /// Returns a list of the sources that have been discovered on the network by this receiver through the E1.31 universe discovery mechanism.
