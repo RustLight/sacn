@@ -54,6 +54,7 @@
 
 /// Uses the sACN error-chain errors.
 use error::errors::*;
+use sacn_parse_pack_error::sacn_parse_pack_error;
 
 /// The core crate is used for string processing during packet parsing/packing aswell as to provide access to the Hash trait.
 use core::hash::{self, Hash};
@@ -277,17 +278,17 @@ macro_rules! impl_acn_root_layer_protocol {
             pub fn parse(buf: &[u8]) -> Result<AcnRootLayerProtocol> {
                 // Preamble Size
                 if NetworkEndian::read_u16(&buf[0..2]) != 0x0010 {
-                    bail!(ErrorKind::ParseInvalidData("invalid Preamble Size".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Preamble Size".to_string())));
                 }
 
                 // Post-amble Size
                 if NetworkEndian::read_u16(&buf[2..4]) != 0 {
-                    bail!(ErrorKind::ParseInvalidData("invalid Post-amble Size".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Post-amble Size".to_string())));
                 }
 
                 // ACN Packet Identifier
                 if &buf[4..16] != b"ASC-E1.17\x00\x00\x00" {
-                    bail!(ErrorKind::ParseInvalidData("invalid ACN packet indentifier".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid ACN packet indentifier".to_string())));
                 }
 
                 // PDU block
@@ -320,7 +321,7 @@ macro_rules! impl_acn_root_layer_protocol {
             /// Packs the packet into the given buffer.
             pub fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if buf.len() < self.len() {
-                    bail!(ErrorKind::PackBufferInsufficient("".to_string()))
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid ACN packet indentifier".to_string())));
                 }
 
                 // Preamble Size
@@ -363,20 +364,18 @@ struct PduInfo {
 
 fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo> {
     if buf.len() < 2 {
-        bail!(ErrorKind::ParseInsufficientData("".to_string()));
+        bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Insufficient data when parsing pdu_info, no flags or length field".to_string())));
     }
 
     // Flags
     let flags = buf[0] & 0xf0;
     if flags != 0x70 {
-        bail!(ErrorKind::ParsePduInvalidFlags(flags));
+        bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParsePduInvalidFlags(flags)));
     }
     // Length
     let length = (NetworkEndian::read_u16(&buf[0..2]) & 0x0fff) as usize;
     if buf.len() < length {
-        bail!(ErrorKind::ParseInsufficientData(
-            "Insufficient data when parsing pdu_info".to_string()
-        ));
+        bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Insufficient data when parsing pdu_info".to_string())));
     }
 
     // Vector
@@ -422,7 +421,7 @@ macro_rules! impl_e131_root_layer {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
                 if vector != VECTOR_ROOT_E131_DATA && vector != VECTOR_ROOT_E131_EXTENDED {
-                    bail!(ErrorKind::PduInvalidVector(vector));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
 
                 // CID
@@ -447,10 +446,10 @@ macro_rules! impl_e131_root_layer {
                                 UniverseDiscoveryPacketFramingLayer::parse(data_buf)?,
                             ),
 
-                            vector => bail!(ErrorKind::PduInvalidVector(vector)),
+                            vector => bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector))),
                         }
                     }
-                    vector => bail!(ErrorKind::PduInvalidVector(vector)),
+                    vector => bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector))),
                 };
 
                 Ok(E131RootLayer {
@@ -461,7 +460,7 @@ macro_rules! impl_e131_root_layer {
 
             fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if buf.len() < self.len() {
-                    bail!(ErrorKind::PackBufferInsufficient("".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackBufferInsufficient("".to_string())))
                 }
 
                 // Flags and Length
@@ -555,7 +554,7 @@ macro_rules! impl_data_packet_framing_layer {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
                 if vector != VECTOR_E131_DATA_PACKET {
-                    bail!(ErrorKind::PduInvalidVector(vector));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
 
                 // Source Name
@@ -599,7 +598,7 @@ macro_rules! impl_data_packet_framing_layer {
 
             fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if buf.len() < self.len() {
-                    bail!(ErrorKind::PackBufferInsufficient("".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackBufferInsufficient("".to_string())));
                 }
 
                 // Flags and Length
@@ -730,33 +729,33 @@ macro_rules! impl_data_packet_dmp_layer {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 1)?;
                 if vector != u32::from(VECTOR_DMP_SET_PROPERTY) {
-                    bail!(ErrorKind::PduInvalidVector(vector));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
 
                 // Address and Data Type
                 if buf[3] != 0xa1 {
-                    bail!(ErrorKind::ParseInvalidData("invalid Address and Data Type".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Address and Data Type".to_string())));
                 }
 
                 // First Property Address
                 if NetworkEndian::read_u16(&buf[4..6]) != 0 {
-                    bail!(ErrorKind::ParseInvalidData("invalid First Property Address".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid First Property Address".to_string())));
                 }
 
                 // Address Increment
                 if NetworkEndian::read_u16(&buf[6..8]) != 0x0001 {
-                    bail!(ErrorKind::ParseInvalidData("invalid Address Increment".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Address Increment".to_string())));
                 }
 
                 // Property value count
                 if NetworkEndian::read_u16(&buf[8..10]) as usize + 10 != length {
-                    bail!(ErrorKind::ParseInvalidData("invalid Property value count".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Property value count".to_string())));
                 }
 
                 // Property values
                 let property_values_length = length - 10;
                 if property_values_length > 513 {
-                    bail!(ErrorKind::ParseInvalidData("only 512 DMX slots allowed".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("only 512 DMX slots allowed".to_string())));
                 }
 
                 #[cfg(feature = "std")]
@@ -779,11 +778,11 @@ macro_rules! impl_data_packet_dmp_layer {
 
             fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if self.property_values.len() > 513 {
-                    bail!(ErrorKind::PackInvalidData("only 512 DMX values allowed".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackInvalidData("only 512 DMX values allowed".to_string())));
                 }
 
                 if buf.len() < self.len() {
-                    bail!(ErrorKind::PackBufferInsufficient("".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackBufferInsufficient("DataPacketDmpLayer pack buffer length insufficient".to_string())));
                 }
 
                 // Flags and Length
@@ -876,7 +875,7 @@ impl Pdu for SynchronizationPacketFramingLayer {
         // Length and Vector
         let PduInfo { vector, .. } = pdu_info(&buf, 4)?;
         if vector != VECTOR_E131_EXTENDED_SYNCHRONIZATION {
-            bail!(ErrorKind::PduInvalidVector(vector));
+            bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
         }
 
         // Sequence Number
@@ -887,9 +886,9 @@ impl Pdu for SynchronizationPacketFramingLayer {
 
         // Reserved
         if buf[9..11] != [0, 0] {
-            bail!(ErrorKind::ParseInvalidData(
+            bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(
                 "Reserved data is invalid and couldn't be parsed".to_string()
-            ));
+            )));
         }
 
         Ok(SynchronizationPacketFramingLayer {
@@ -900,7 +899,7 @@ impl Pdu for SynchronizationPacketFramingLayer {
 
     fn pack(&self, buf: &mut [u8]) -> Result<()> {
         if buf.len() < self.len() {
-            bail!(ErrorKind::PackBufferInsufficient("".to_string()));
+            bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackBufferInsufficient("SynchronizationPacketFramingLayer pack buffer length insufficient".to_string())));
         }
 
         // Flags and Length
@@ -956,7 +955,7 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
                 if vector != VECTOR_E131_EXTENDED_DISCOVERY {
-                    bail!(ErrorKind::PduInvalidVector(vector));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
 
                 // Source Name
@@ -964,7 +963,7 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
 
                 // Reserved
                 if buf[70..74] != [0, 0, 0, 0] {
-                    bail!(ErrorKind::ParseInvalidData("Reserved data invalid and couldn't be parsed".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("Reserved data invalid and couldn't be parsed".to_string())));
                 }
 
                 // Data
@@ -981,7 +980,7 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
 
             fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if buf.len() < self.len() {
-                    bail!(ErrorKind::PackBufferInsufficient("".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackBufferInsufficient("UniverseDiscoveryPacketFramingLayer pack buffer length insufficient".to_string())));
                 }
 
                 // Flags and Length
@@ -1067,7 +1066,7 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
                 if vector != VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST {
-                    bail!(ErrorKind::PduInvalidVector(vector));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
 
                 // Page
@@ -1102,11 +1101,11 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
 
             fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if self.universes.len() > 512 {
-                    bail!(ErrorKind::PackInvalidData("only 512 universes allowed".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackInvalidData("only 512 universes allowed".to_string())));
                 }
 
                 if buf.len() < self.len() {
-                    bail!(ErrorKind::PackBufferInsufficient("".to_string()));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackBufferInsufficient("UniverseDiscoveryPacketUniverseDiscoveryLayer pack buffer insufficient".to_string())));
                 }
 
                 // Flags and Length
@@ -1125,10 +1124,10 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 // Universes
                 for i in 1..self.universes.len() {
                     if self.universes[i] == self.universes[i - 1] {
-                        bail!(ErrorKind::PackInvalidData("Universes are not unique".to_string()));
+                        bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackInvalidData("Universes are not unique".to_string())));
                     }
                     if self.universes[i] <= self.universes[i - 1] {
-                        bail!(ErrorKind::PackInvalidData("Universes are not sorted".to_string()));
+                        bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackInvalidData("Universes are not sorted".to_string())));
                     }
                 }
                 NetworkEndian::write_u16_into(
