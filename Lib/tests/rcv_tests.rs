@@ -2518,6 +2518,184 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_LOW_PROPERTY_COUNT: &[u8] = &[
     0,
 ];
 
+/// Test termination packet with a full universe of property values.
+/// This should be parsed successfully as the property values should be ignored.
+/// As per ANSI E1.31-2018 Section 6.2.6.
+const TEST_TERMINATION_FULL_PROPERTY_VALUES_PACKET: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x72, 0x6e, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length */
+    0x72, 0x58,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    100,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    E131_STREAM_TERMINATION_OPTION_BIT_MASK,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length */
+    0x72, 0x0b,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count */
+    0x02, 0x01,
+    /* Property values */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,
+];
+
+/// Test termination packet with an empty universe of property values.
+/// This should be parsed successfully as the property values should be ignored.
+/// As per ANSI E1.31-2018 Section 6.2.6.
+const TEST_TERMINATION_EMPTY_PROPERTY_VALUES_PACKET: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol, Length = 109*/
+    0x70, 0x6D, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length, Length = 87 */
+    0x70, 0x57,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    100,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    E131_STREAM_TERMINATION_OPTION_BIT_MASK,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length, Length = 10 */
+    0x70, 0x0a,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count */
+    0x00, 0x00,
+];
+
+/// Test termination packet with a partial universe of property values.
+/// This should be parsed successfully as the property values should be ignored.
+/// As per ANSI E1.31-2018 Section 6.2.6.
+const TEST_TERMINATION_PARTIAL_PROPERTY_VALUES_PACKET: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol, Length = 139 */
+    0x70, 0x8B, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length, Length = 117 */
+    0x70, 0x75,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    100,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    E131_STREAM_TERMINATION_OPTION_BIT_MASK,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length, Length = 40 */
+    0x70, 0x28,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count = 30 */
+    0x00, 0x1E,
+    /* Property values */
+    0, 0, 0, 0, 0,   
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+];
+
 /// Built up / checked as per:
 /// ANSI E1.31-2018:
 ///     Section 4.3 Table 4-3: E1.31 Universe Discovery Packet Format
@@ -3761,6 +3939,115 @@ fn test_malformed_data_packet_dmp_layer_too_low_property_count_parse() {
                 false,
                 "Malformed packet was parsed when should have been rejected"
             );
+        }
+    }
+}
+
+#[test]
+fn test_termination_packet_full_property_values_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_TERMINATION_FULL_PROPERTY_VALUES_PACKET) {
+        Err(e) => {
+            assert!(false, format!("Unexpected error returned: {}", e));
+        }
+        Ok(p) => {
+            match p.pdu.data {
+                E131RootLayerData::DataPacket(dpfl) => {
+                    assert_eq!(dpfl.source_name, "Source_A");
+                    assert_eq!(dpfl.priority, 100);
+                    assert_eq!(dpfl.synchronization_address, 7962);
+                    assert_eq!(dpfl.sequence_number, 154);
+                    assert!(!dpfl.preview_data);
+                    assert!(dpfl.stream_terminated);
+                    assert!(!dpfl.force_synchronization);
+                    assert_eq!(dpfl.universe, 1);
+                    assert_eq!(dpfl.data.property_values, 
+                        vec!{
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0}
+                    );
+                }
+                _ => {
+                    assert!(false, "Packet not parsed as data termination packet as expected");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn test_termination_packet_partial_property_values_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_TERMINATION_PARTIAL_PROPERTY_VALUES_PACKET) {
+        Err(e) => {
+            assert!(false, format!("Unexpected error returned: {}", e));
+        }
+        Ok(p) => {
+            match p.pdu.data {
+                E131RootLayerData::DataPacket(dpfl) => {
+                    assert_eq!(dpfl.source_name, "Source_A");
+                    assert_eq!(dpfl.priority, 100);
+                    assert_eq!(dpfl.synchronization_address, 7962);
+                    assert_eq!(dpfl.sequence_number, 154);
+                    assert!(!dpfl.preview_data);
+                    assert!(dpfl.stream_terminated);
+                    assert!(!dpfl.force_synchronization);
+                    assert_eq!(dpfl.universe, 1);
+                    assert_eq!(dpfl.data.property_values, 
+                        vec!{
+                            0, 0, 0, 0, 0,   
+                            0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0,
+                        }
+                    );
+                }
+                _ => {
+                    assert!(false, "Packet not parsed as data termination packet as expected");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn test_termination_packet_empty_property_values_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_TERMINATION_EMPTY_PROPERTY_VALUES_PACKET) {
+        Err(e) => {
+            assert!(false, format!("Unexpected error returned: {}", e));
+        }
+        Ok(p) => {
+            match p.pdu.data {
+                E131RootLayerData::DataPacket(dpfl) => {
+                    assert_eq!(dpfl.source_name, "Source_A");
+                    assert_eq!(dpfl.priority, 100);
+                    assert_eq!(dpfl.synchronization_address, 7962);
+                    assert_eq!(dpfl.sequence_number, 154);
+                    assert!(!dpfl.preview_data);
+                    assert!(dpfl.stream_terminated);
+                    assert!(!dpfl.force_synchronization);
+                    assert_eq!(dpfl.universe, 1);
+                    assert_eq!(dpfl.data.property_values, Vec::new());
+                }
+                _ => {
+                    assert!(false, "Packet not parsed as data termination packet as expected");
+                }
+            }
         }
     }
 }
