@@ -123,15 +123,15 @@ pub const E131_SEQ_DIFF_DISCARD_UPPER_BOUND: isize = 0;
 
 /// The bit mask used to get the preview-data option within the packet option field as per
 /// ANSI E1.31-2018 Section 6.2.6
-const E131_PREVIEW_DATA_OPTION_BIT_MASK: u8 = 0b1000_0000;
+pub const E131_PREVIEW_DATA_OPTION_BIT_MASK: u8 = 0b1000_0000;
 
 /// The bit mask used to get the stream-termination option within the packet option field as per
 /// ANSI E1.31-2018 Section 6.2.6
-const E131_STREAM_TERMINATION_OPTION_BIT_MASK: u8 = 0b0100_0000;
+pub const E131_STREAM_TERMINATION_OPTION_BIT_MASK: u8 = 0b0100_0000;
 
 /// The bit mask used to get the force-synchronisation option within the packet option field as per
 /// ANSI E1.31-2018 Section 6.2.6
-const E131_FORCE_SYNCHRONISATION_OPTION_BIT_MASK: u8 = 0b0010_0000;
+pub const E131_FORCE_SYNCHRONISATION_OPTION_BIT_MASK: u8 = 0b0010_0000;
 
 /// The initial/starting sequence number used.
 pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
