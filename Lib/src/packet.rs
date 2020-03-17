@@ -571,6 +571,13 @@ macro_rules! impl_data_packet_framing_layer {
 
                 // Synchronization Address
                 let synchronization_address = NetworkEndian::read_u16(&buf[71..73]);
+                if synchronization_address > E131_MAX_MULTICAST_UNIVERSE {
+                    bail!(
+                        ErrorKind::SacnParsePackError(
+                        sacn_parse_pack_error::ErrorKind::ParseInvalidSyncAddr(
+                            format!("Sync_addr value: {} is outwith the allowed range", synchronization_address).to_string()))
+                    );
+                }
 
                 // Sequence Number
                 let sequence_number = buf[73];
