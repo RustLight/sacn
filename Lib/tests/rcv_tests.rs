@@ -706,7 +706,7 @@ const TEST_DATA_PACKET_FRAMING_LAYER_WRONG_FLAGS: &[u8] = &[
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
     /* Data Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x58,
+    0x82, 0x58,
     /* Vector */
     0x00, 0x00, 0x00, 0x02,
     /* Source Name */
@@ -1296,9 +1296,11 @@ fn test_malformed_data_packet_extended_acn_vector_parse() {
 fn test_malformed_data_packet_too_long_cid_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_TOO_LONG_CID) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
-                    assert!(true, "Expected error returned");
+            match e.kind() {
+                ErrorKind::SacnParsePackError(_) => {
+                    // The exact error in this case is not defined as other fields will be effected as all the data
+                    // is shifted, therefore just check for any parse error.
+                    assert!(true, "Malformed packet successfully rejected");
                 }
                 _ => {
                     assert!(false, "Unexpected error type returned");
@@ -1319,12 +1321,12 @@ fn test_malformed_data_packet_too_long_cid_parse() {
 fn test_malformed_data_packet_too_short_cid_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_TOO_SHORT_CID) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) => {
                     assert!(true, "Expected error returned");
                 }
-                _ => {
-                    assert!(false, "Unexpected error type returned");
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
                 }
             }
             
@@ -1342,12 +1344,12 @@ fn test_malformed_data_packet_too_short_cid_parse() {
 fn test_malformed_data_packet_framing_layer_wrong_flags_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_FRAMING_LAYER_WRONG_FLAGS) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParsePduInvalidFlags(_)) => {
                     assert!(true, "Expected error returned");
                 }
-                _ => {
-                    assert!(false, "Unexpected error type returned");
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
                 }
             }
             
@@ -1365,12 +1367,12 @@ fn test_malformed_data_packet_framing_layer_wrong_flags_parse() {
 fn test_malformed_data_packet_framing_layer_low_length_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_FRAMING_LAYER_LOW_LENGTH) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) => {
                     assert!(true, "Expected error returned");
                 }
-                _ => {
-                    assert!(false, "Unexpected error type returned");
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
                 }
             }
             
@@ -1388,12 +1390,12 @@ fn test_malformed_data_packet_framing_layer_low_length_parse() {
 fn test_malformed_data_packet_framing_layer_high_length_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_FRAMING_LAYER_HIGH_LENGTH) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) => {
                     assert!(true, "Expected error returned");
                 }
-                _ => {
-                    assert!(false, "Unexpected error type returned");
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
                 }
             }
             
@@ -1411,12 +1413,12 @@ fn test_malformed_data_packet_framing_layer_high_length_parse() {
 fn test_malformed_data_packet_framing_layer_wrong_vector_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_FRAMING_LAYER_WRONG_VECTOR) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) => {
                     assert!(true, "Expected error returned");
                 }
-                _ => {
-                    assert!(false, "Unexpected error type returned");
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
                 }
             }
             
