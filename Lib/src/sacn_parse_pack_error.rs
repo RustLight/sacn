@@ -21,6 +21,13 @@ pub mod sacn_parse_pack_error {
                 display("Attempted to parse a sync_addr value that is outwith the allowed range of [0, 63999], msg: {}", msg)
             }
 
+            /// Attempted to parse a universe value that is outwith the allowed range of [1, E131_MAX_MULTICAST_UNIVERSE].
+            /// As per ANSI E1.31-2018 Section 9.1.1
+            ParseInvalidUniverse(msg: String) {
+                description("Attempted to parse a universe value that is outwith the allowed range of [1, 63999]"),
+                display("Attempted to parse a universe value that is outwith the allowed range of [1, 63999], msg: {}", msg)
+            }
+
             /// When packing a packet into a buffer invalid data encountered.
             PackInvalidData(msg: String) {
                 description("When packing a packet into a buffer invalid data encountered"),

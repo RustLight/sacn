@@ -602,6 +602,14 @@ macro_rules! impl_data_packet_framing_layer {
                 // Universe
                 let universe = NetworkEndian::read_u16(&buf[75..77]);
 
+                if universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE {
+                    bail!(
+                        ErrorKind::SacnParsePackError(
+                        sacn_parse_pack_error::ErrorKind::ParseInvalidUniverse(
+                            format!("Universe value: {} is outwith the allowed range", universe).to_string()))
+                    );
+                }
+
                 // Data
                 let data = DataPacketDmpLayer::parse(&buf[77..length])?;
 
@@ -774,7 +782,7 @@ macro_rules! impl_data_packet_dmp_layer {
 
                 // Property value count
                 if NetworkEndian::read_u16(&buf[8..10]) as usize + 10 != length {
-                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Property value count".to_string())));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("invalid Property value count".to_string())));
                 }
 
                 // Property values
