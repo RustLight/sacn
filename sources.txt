@@ -78,3 +78,6 @@ https://www.joshmcguigan.com/blog/array-initialization-rust/ (16/03/2020)
 
 Error handling / checking with error-chain for tests:
 https://rust-lang-nursery.github.io/rust-cookbook/errors/handle.html (16/03/2020)
+
+For creating the test universe discovery packets.
+https://stackoverflow.com/questions/53314005/how-can-i-convert-the-lower-upper-8-bits-of-a-u16-to-a-u8-in-rust (17/03/2020)
