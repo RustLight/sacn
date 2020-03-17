@@ -957,6 +957,139 @@ const TEST_DATA_PACKET_FRAMING_LAYER_WRONG_VECTOR: &[u8] = &[
     0,
 ];
 
+/// The data-packet has a priority above the maximum allowed.
+const TEST_DATA_PACKET_TOO_HIGH_PRIORITY: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x72, 0x6e, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length */
+    0x72, 0x58,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    E131_MAX_PRIORITY + 1,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    0,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length */
+    0x72, 0x0b,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count */
+    0x02, 0x01,
+    /* Property values */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,
+];
+
+/// The data-packet has the lowest acceptable priority of 0. This should be parsed correctly.
+const TEST_DATA_PACKET_LOWEST_PRIORITY: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x72, 0x6e, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length */
+    0x72, 0x58,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    0,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    0,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length */
+    0x72, 0x0b,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count */
+    0x02, 0x01,
+    /* Property values */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,
+];
 
 /// Built up / checked as per:
 /// ANSI E1.31-2018:
@@ -1427,6 +1560,44 @@ fn test_malformed_data_packet_framing_layer_wrong_vector_parse() {
             assert!(
                 false,
                 "Malformed packet was parsed when should have been rejected"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_malformed_data_packet_too_high_priority_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_TOO_HIGH_PRIORITY) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidPriority(_)) => {
+                    assert!(true, "Expected error returned");
+                }
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
+                }
+            }
+            
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Malformed packet was parsed when should have been rejected"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_data_packet_lowest_priority_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_LOWEST_PRIORITY) {
+        Err(e) => {
+            assert!(false, format!("Unexpected error returned: {}", e));
+        }
+        Ok(_) => {
+            assert!(
+                true,
+                "Packet was successfully correctly parsed"
             );
         }
     }
