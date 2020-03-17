@@ -121,6 +121,18 @@ pub const E131_SEQ_DIFF_DISCARD_LOWER_BOUND: isize = -20;
 /// Value as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
 pub const E131_SEQ_DIFF_DISCARD_UPPER_BOUND: isize = 0;
 
+/// The bit mask used to get the preview-data option within the packet option field as per
+/// ANSI E1.31-2018 Section 6.2.6
+const E131_PREVIEW_DATA_OPTION_BIT_MASK: u8 = 0b1000_0000;
+
+/// The bit mask used to get the stream-termination option within the packet option field as per
+/// ANSI E1.31-2018 Section 6.2.6
+const E131_STREAM_TERMINATION_OPTION_BIT_MASK: u8 = 0b0100_0000;
+
+/// The bit mask used to get the force-synchronisation option within the packet option field as per
+/// ANSI E1.31-2018 Section 6.2.6
+const E131_FORCE_SYNCHRONISATION_OPTION_BIT_MASK: u8 = 0b0010_0000;
+
 /// The initial/starting sequence number used.
 pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
 
@@ -583,9 +595,9 @@ macro_rules! impl_data_packet_framing_layer {
                 let sequence_number = buf[73];
 
                 // Options
-                let preview_data = buf[74] & 0b0100_0000 != 0;
-                let stream_terminated = buf[74] & 0b0010_0000 != 0;
-                let force_synchronization = buf[74] & 0b0001_0000 != 0;
+                let preview_data = buf[74] & E131_PREVIEW_DATA_OPTION_BIT_MASK != 0;
+                let stream_terminated = buf[74] & E131_STREAM_TERMINATION_OPTION_BIT_MASK != 0;
+                let force_synchronization = buf[74] & E131_FORCE_SYNCHRONISATION_OPTION_BIT_MASK != 0;
 
                 // Universe
                 let universe = NetworkEndian::read_u16(&buf[75..77]);
@@ -639,17 +651,17 @@ macro_rules! impl_data_packet_framing_layer {
 
                 // Preview Data
                 if self.preview_data {
-                    buf[74] = 0b0100_0000
+                    buf[74] = E131_PREVIEW_DATA_OPTION_BIT_MASK;
                 }
 
                 // Stream Terminated
                 if self.stream_terminated {
-                    buf[74] |= 0b0010_0000
+                    buf[74] |= E131_STREAM_TERMINATION_OPTION_BIT_MASK;
                 }
 
                 // Force Synchronization
                 if self.force_synchronization {
-                    buf[74] |= 0b0001_0000
+                    buf[74] |= E131_FORCE_SYNCHRONISATION_OPTION_BIT_MASK;
                 }
 
                 // Universe
