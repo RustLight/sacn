@@ -562,6 +562,12 @@ macro_rules! impl_data_packet_framing_layer {
 
                 // Priority
                 let priority = buf[70];
+                if priority > E131_MAX_PRIORITY {
+                    bail!(
+                        ErrorKind::SacnParsePackError(
+                            sacn_parse_pack_error::ErrorKind::ParseInvalidPriority(
+                                format!("Priority value: {} is outwith the allowed range", priority).to_string())));
+                }
 
                 // Synchronization Address
                 let synchronization_address = NetworkEndian::read_u16(&buf[71..73]);

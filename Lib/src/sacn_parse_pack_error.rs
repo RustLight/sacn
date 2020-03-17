@@ -7,6 +7,13 @@ pub mod sacn_parse_pack_error {
                 display("Error when parsing data into packet, msg: {}", msg)
             }
 
+            /// Attempted to parse a priority value that is outwith the allowed range of [0, E131_MAX_PRIORITY].
+            /// As per ANSI E1.31-2018 Section 6.2.3
+            ParseInvalidPriority(msg: String) {
+                description("Attempted to parse a priority value that is outwith the allowed range of [0, 200]"),
+                display("Attempted to parse a priority value that is outwith the allowed range of [0, 200], msg: {}", msg)
+            }
+
             /// When packing a packet into a buffer invalid data encountered.
             PackInvalidData(msg: String) {
                 description("When packing a packet into a buffer invalid data encountered"),
