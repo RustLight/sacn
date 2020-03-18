@@ -34,6 +34,13 @@ pub mod sacn_parse_pack_error {
                 display("Attempted to parse a universe value that is outwith the allowed range of [1, 63999], msg: {}", msg)
             }
 
+            /// Attempted to parse a packet with an invalid ordering of universes.
+            /// For example a discovery packet where the universes aren't correctly ordered in assending order.
+            ParseInvalidUniverseOrder(msg: String) {
+                description("Attempted to parse a packet with an invalid ordering of universes"),
+                display("Attempted to parse a packet with an invalid ordering of universes, msg: {}", msg)
+            }
+
             /// When packing a packet into a buffer invalid data encountered.
             PackInvalidData(msg: String) {
                 description("When packing a packet into a buffer invalid data encountered"),
