@@ -405,7 +405,7 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_ARBITARY_RESERVED: &[u8] = &[
     1,
     /* Last Page */
     2, 
-    /* Universes */
+    /* Universes (3 universes, 0x0001, 0x0203, 0x0405) */
     0, 1, 2, 3, 4, 5,
 ];
 
@@ -917,7 +917,7 @@ fn test_discovery_packet_discovery_layer_length_too_short_parse() {
     match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_DISCOVERY_LAYER_LENGTH_TOO_SHORT) {
         Err(e) => {
             match e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 x => {
@@ -926,10 +926,10 @@ fn test_discovery_packet_discovery_layer_length_too_short_parse() {
             }
             
         }
-        Ok(_) => {
+        Ok(p) => {
             assert!(
                 false,
-                "Malformed packet was parsed when should have been rejected"
+                format!("Malformed packet was parsed when should have been rejected: {:?}", p)
             );
         }
     }
@@ -1009,7 +1009,7 @@ fn test_discovery_packet_decending_order_parse() {
     match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_DECENDING_ORDER) {
         Err(e) => {
             match e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidUniverseOrder(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 x => {
@@ -1032,7 +1032,7 @@ fn test_discovery_packet_random_order_parse() {
     match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_RANDOM_ORDER) {
         Err(e) => {
             match e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidUniverseOrder(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 x => {

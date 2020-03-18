@@ -1111,17 +1111,35 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
 
                 // Universes
                 let universes_length = (length - 8) / 2;
-                #[cfg(feature = "std")]
                 let mut universes = Vec::with_capacity(universes_length);
-                #[cfg(not(feature = "std"))]
-                let mut universes = Vec::new();
 
-                #[cfg(feature = "std")]
-                universes.resize(universes_length, 0);
-                #[cfg(not(feature = "std"))]
-                universes.resize(universes_length, 0).unwrap();
+                let mut i = 8;
+                let mut last_universe: i32 = -1;
+                while ((i+2) <= length) {
+                    let u = NetworkEndian::read_u16(&buf[i .. i+2]);
 
-                NetworkEndian::read_u16_into(&buf[8..length], &mut universes[..universes_length]);
+                    if ((u as i32) > last_universe) { // Enforce assending ordering of universes as per ANSI E1.31-2018 Section 8.5. 
+                        universes.push(u);
+                        last_universe = (u as i32);
+                        i = i + 2; // Each universe takes 2 bytes so jump by 2.
+                    } else {
+                        bail!(ErrorKind::SacnParsePackError(
+                            sacn_parse_pack_error::ErrorKind::ParseInvalidUniverseOrder(
+                                format!("Universe {} is out of order, discovery packet universe list must be in accending order!", u).to_string())));
+                    }
+                }
+
+                if i != length { 
+                    // Indicates that there is data left over, this can happen if the bytes for the universes is not an even number meaning 
+                    // that every byte cannot be used to create 16 bit universe numbers, this shouldn't happen and indicates that the packet
+                    // is the wrong length / malformed (with extra data on the end).
+                    bail!(ErrorKind::SacnParsePackError(
+                            sacn_parse_pack_error::ErrorKind::ParseInsufficientData(
+                                "A non-even (odd) amount of data left at end of packet, cannot parsed a single byte into a 16 bit universe number".to_string()
+                            )
+                        )
+                    );
+                }
 
                 Ok(UniverseDiscoveryPacketUniverseDiscoveryLayer {
                     page,
