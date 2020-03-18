@@ -14,6 +14,12 @@ pub mod sacn_parse_pack_error {
                 display("Attempted to parse a priority value that is outwith the allowed range of [0, 200], msg: {}", msg)
             }
 
+            /// Attempted to parse a page value that is invalid - e.g. the page value is higher than the last_page value.
+            ParseInvalidPage(msg: String) {
+                description("Atttempted to parse a page value that is invalid"),
+                display("Error when parsing page value, msg: {}", msg)
+            }
+
             /// Attempted to parse a sync address value that is outwith the allowed range of [0, E131_MAX_MULTICAST_UNIVERSE].
             /// As per ANSI E1.31-2018 Section 9.1.1
             ParseInvalidSyncAddr(msg: String) {

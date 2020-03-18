@@ -994,10 +994,7 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                 // Source Name
                 let source_name = String::from(parse_c_str(&buf[6..70])?);
 
-                // Reserved
-                if buf[70..74] != [0, 0, 0, 0] {
-                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("Reserved data invalid and couldn't be parsed".to_string())));
-                }
+                // Reserved data (buf[70..74]) ignored as per ANSI E1.31-2018 Section 6.4.3.
 
                 // Data
                 let data = UniverseDiscoveryPacketUniverseDiscoveryLayer::parse(&buf[74..length])?;
@@ -1107,6 +1104,10 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
 
                 // Last Page
                 let last_page = buf[7];
+
+                if page > last_page {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidPage("Page value higher than last_page".to_string())));
+                }
 
                 // Universes
                 let universes_length = (length - 8) / 2;
