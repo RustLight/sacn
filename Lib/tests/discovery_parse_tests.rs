@@ -71,7 +71,7 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_WRONG_FLAGS: &[u8] = &[
     /* Vector */
     0x00, 0x00, 0x00, 0x08, 
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14,
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
     0x70, 0x58, 
@@ -188,7 +188,7 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_WRONG_FLAGS: &[u8] = &[
     /* Vector */
     0x00, 0x00, 0x00, 0x08, 
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14,
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
     0x60, 0x58, 
@@ -690,7 +690,7 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_RANDOM_ORDER: &[u8] = &[
 ];
 
 #[test]
-fn test_universe_discovery_packet_parse_pack() {
+fn test_discovery_packet_parse_pack() {
     let packet = AcnRootLayerProtocol {
         pdu: E131RootLayer {
             cid: Uuid::from_bytes(&TEST_UNIVERSE_DISCOVERY_PACKET[22..38]).unwrap(),
@@ -842,6 +842,29 @@ fn test_discovery_packet_length_too_short_parse() {
 }
 
 #[test]
+fn test_discovery_packet_framing_layer_wrong_flags_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_WRONG_FLAGS) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParsePduInvalidFlags(_)) => {
+                    assert!(true, "Expected error returned");
+                }
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
+                }
+            }
+            
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Malformed packet was parsed when should have been rejected"
+            );
+        }
+    }
+}
+
+#[test]
 fn test_discovery_packet_sync_framing_vector_parse() {
     match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_SYNC_FRAMING_VECTOR) {
         Err(e) => {
@@ -866,6 +889,30 @@ fn test_discovery_packet_sync_framing_vector_parse() {
         }
     }
 }
+
+#[test]
+fn test_discovery_packet_unknown_framing_vector_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_UNKNOWN_FRAMING_VECTOR) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) => {
+                    assert!(true, "Expected error returned");
+                }
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
+                }
+            }
+            
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Malformed packet was parsed when should have been rejected"
+            );
+        }
+    }
+}
+
 
 #[test]
 fn test_discovery_packet_arbitary_reserved_parse() {
