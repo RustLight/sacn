@@ -5,7 +5,6 @@ extern crate uuid;
 pub mod discovery_parse_tests {
 
 use sacn::packet::*;
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use uuid::Uuid;
 
 /// Uses the sACN error-chain errors.
@@ -1219,6 +1218,28 @@ fn test_discovery_packet_max_universe_capacity() {
                     assert!(false, "Packet not parsed as discovery-packet as expected");
                 }
             }
+        }
+    }
+}
+
+#[test]
+fn test_discovery_packet_above_max_universe_capacity() {
+    match AcnRootLayerProtocol::parse(&generate_test_universe_discovery_packet((DISCOVERY_UNI_PER_PAGE as u16) + 1)) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidLength(_)) => {
+                    assert!(true, "Expected error returned");
+                }
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Malformed packet was parsed when should have been rejected"
+            );
         }
     }
 }
