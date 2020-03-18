@@ -700,7 +700,7 @@ fn test_discovery_packet_parse_pack() {
                     page: 1,
                     last_page: 2,
                     #[cfg(feature = "std")]
-                    universes: vec![3, 4, 5].into(),
+                    universes: vec![0x0001, 0x0203, 0x0405].into(),
                     #[cfg(not(feature = "std"))]
                     universes: {
                         let mut universes = Vec::new();
@@ -1097,6 +1097,8 @@ fn test_discovery_packet_random_order_parse() {
     }
 }
 
+/// Generates a test universe discovery packet with the given number of universes.
+/// This function has no usage outside the parse tests - it is just used as an auxillary function.
 fn generate_test_universe_discovery_packet(universes_to_generate: u16) -> Vec<u8> {
     let flags_val: u8 = 0x70;
 
@@ -1122,10 +1124,10 @@ fn generate_test_universe_discovery_packet(universes_to_generate: u16) -> Vec<u8
     let framing_layer_flags_length_upper: u8 = flags_val | framing_layer_parts[0];
     let framing_layer_flags_length_lower: u8 = framing_layer_parts[1];
     
-    /// 38 as this is the number of bytes always in the root layer.
-    /// + the framing layer as the root layer encapsulates it.
-    /// As per ANSI E1.31-2018 Table 4-3: E1.31 Universe Discovery Packet Format.
-    let root_layer_length: u16 = 38 + framing_layer_length;
+    // 22 as this is the number of bytes always in the root layer.
+    // + the framing layer as the root layer encapsulates it.
+    // As per ANSI E1.31-2018 Table 4-3: E1.31 Universe Discovery Packet Format.
+    let root_layer_length: u16 = 22 + framing_layer_length;
 
     let root_layer_parts = root_layer_length.to_be_bytes();
 
@@ -1176,4 +1178,49 @@ fn generate_test_universe_discovery_packet(universes_to_generate: u16) -> Vec<u8
 
     return test_universe_discovery_packet;
 }
+
+#[test]
+fn test_discovery_packet_no_universes() {
+    match AcnRootLayerProtocol::parse(&generate_test_universe_discovery_packet(0)) {
+        Err(e) => {
+            assert!(false, format!("Unexpected error returned: {}", e));
+        }
+        Ok(p) => {
+            match p.pdu.data {
+                E131RootLayerData::UniverseDiscoveryPacket(udpfl) => {
+                    assert_eq!(udpfl.source_name, "Source_A");
+                    assert_eq!(udpfl.data.page, 1);
+                    assert_eq!(udpfl.data.last_page, 2);
+                    assert_eq!(udpfl.data.universes, Vec::new());
+                }
+                _ => {
+                    assert!(false, "Packet not parsed as discovery-packet as expected");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn test_discovery_packet_max_universe_capacity() {
+    match AcnRootLayerProtocol::parse(&generate_test_universe_discovery_packet(DISCOVERY_UNI_PER_PAGE as u16)) {
+        Err(e) => {
+            assert!(false, format!("Unexpected error returned: {}", e));
+        }
+        Ok(p) => {
+            match p.pdu.data {
+                E131RootLayerData::UniverseDiscoveryPacket(udpfl) => {
+                    assert_eq!(udpfl.source_name, "Source_A");
+                    assert_eq!(udpfl.data.page, 1);
+                    assert_eq!(udpfl.data.last_page, 2);
+                    assert_eq!(udpfl.data.universes.into_owned().len(), DISCOVERY_UNI_PER_PAGE);
+                }
+                _ => {
+                    assert!(false, "Packet not parsed as discovery-packet as expected");
+                }
+            }
+        }
+    }
+}
+
 }
