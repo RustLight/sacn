@@ -133,6 +133,14 @@ pub const E131_STREAM_TERMINATION_OPTION_BIT_MASK: u8 = 0b0100_0000;
 /// ANSI E1.31-2018 Section 6.2.6
 pub const E131_FORCE_SYNCHRONISATION_OPTION_BIT_MASK: u8 = 0b0010_0000;
 
+/// The minimum allowed length of the discovery layer of an ANSI E1.31-2018 universe discovery packet.
+/// As per ANSI E1.31-2018 Section 8 Table 8-9.
+pub const E131_UNIVERSE_DISCOVERY_LAYER_MIN_LENGTH: usize = 8;
+
+/// The maximum allowed length of the discovery layer of an ANSI E1.31-2018 universe discovery packet.
+/// As per ANSI E1.31-2018 Section 8 Table 8-9.
+pub const E131_UNIVERSE_DISCOVERY_LAYER_MAX_LENGTH: usize = 1032;
+
 /// The initial/starting sequence number used.
 pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
 
@@ -1097,6 +1105,10 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
                 if vector != VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
+                }
+
+                if length < E131_UNIVERSE_DISCOVERY_LAYER_MIN_LENGTH || length > E131_UNIVERSE_DISCOVERY_LAYER_MAX_LENGTH {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidLength(length)));
                 }
 
                 // Page

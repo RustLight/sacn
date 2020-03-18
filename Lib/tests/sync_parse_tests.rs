@@ -5,7 +5,6 @@ extern crate uuid;
 pub mod sync_parse_tests {
 
 use sacn::packet::*;
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use uuid::Uuid;
 
 /// Uses the sACN error-chain errors.
