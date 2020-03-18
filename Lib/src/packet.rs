@@ -925,12 +925,7 @@ impl Pdu for SynchronizationPacketFramingLayer {
         // Synchronization Address
         let synchronization_address = NetworkEndian::read_u16(&buf[7..9]);
 
-        // Reserved
-        if buf[9..11] != [0, 0] {
-            bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(
-                "Reserved data is invalid and couldn't be parsed".to_string()
-            )));
-        }
+        // Reserved fields (buf[9..11]) should be ignored by receivers as per ANSI E1.31-2018 Section 6.3.4.
 
         Ok(SynchronizationPacketFramingLayer {
             sequence_number,
