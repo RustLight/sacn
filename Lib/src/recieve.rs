@@ -60,7 +60,14 @@ pub const RCV_UPDATE_THREAD_NAME: &'static str = "rust_sacn_rcv_update_thread";
 const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 
 /// The default value of the announce_source_discovery flag.
+/// Defaults to false based on the assumption that often receivers won't have any immediate response/checks to do on a source
+/// announcing itself (every source does this approximately every 10 seconds as per the E131_DISCOVERY_INTERVAL).
 const ANNOUNCE_SOURCE_DISCOVERY_DEFAULT: bool = false;
+
+/// The default value of the announce_stream_termination flag.
+/// Defaults to false based on the assumption that often receivers will want to ignore termination from a source based on there
+/// being multiple possible sources.
+const ANNOUNCE_STREAM_TERMINATION_DEFAULT: bool = false;
 
 const DEFAULT_MERGE_FUNC: fn(&DMXData, &DMXData) -> Result<DMXData> =
     discard_lowest_priority_then_previous;
@@ -171,6 +178,9 @@ pub struct SacnReceiver {
 
     /// Flag which indicates if a SourceDiscovered error should be thrown when receiving data and a source is discovered.
     announce_source_discovery: bool,
+
+    /// Flag which indicates if a StreamTerminated error should be thrown if a receiver receives a stream terminated packet.
+    announce_stream_termination_flag: bool,
 }
 
 impl fmt::Debug for SacnReceiver {
@@ -234,6 +244,7 @@ impl SacnReceiver {
             data_sequences: HashMap::new(),
             sync_sequences: HashMap::new(),
             announce_source_discovery: ANNOUNCE_SOURCE_DISCOVERY_DEFAULT,
+            announce_stream_termination_flag: ANNOUNCE_STREAM_TERMINATION_DEFAULT
         };
 
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])
@@ -404,7 +415,7 @@ impl SacnReceiver {
     /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     ///
     /// Returns a UniversesTerminated error if a packet is received with the stream_terminated flag set indicating that the source is no longer
-    /// sending on that universe.
+    /// sending on that universe and the announce_stream_termination_flag is set to true.
     ///
     /// Will return an DmxMergeError if there is an issue merging or replacing new and existing waiting data.
     ///
@@ -420,10 +431,14 @@ impl SacnReceiver {
 
         if data_pkt.stream_terminated {
             self.terminate_stream(data_pkt.source_name, data_pkt.universe);
-            bail!(ErrorKind::UniverseTerminated(
-                "A source terminated a universe and this was detected when trying to receive data"
-                    .to_string()
-            ));
+            if self.announce_stream_termination_flag {
+                bail!(ErrorKind::UniverseTerminated(
+                    "A source terminated a universe and this was detected when trying to receive data"
+                        .to_string()
+                ));
+            }
+            
+            return Ok(None);
         }
 
         // Preview data and stream terminated both get precedence over checking the sequence number.
