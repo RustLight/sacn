@@ -141,6 +141,18 @@ pub const E131_UNIVERSE_DISCOVERY_LAYER_MIN_LENGTH: usize = 8;
 /// As per ANSI E1.31-2018 Section 8 Table 8-9.
 pub const E131_UNIVERSE_DISCOVERY_LAYER_MAX_LENGTH: usize = 1032;
 
+/// The expected value of the root layer length field for a synchronisation packet.
+/// 33 bytes as per ANSI E1.31-2018 Section 4.2 Table 4-2.
+pub const E131_UNIVERSE_SYNC_PACKET_ROOT_LENGTH: usize = 33;
+
+/// The expected value of the framing layer length field for a synchronisation packet.
+/// 11 bytes as per ANSI E1.31-2018 Section 4.2 Table 4-2.
+pub const E131_UNIVERSE_SYNC_PACKET_FRAMING_LAYER_LENGTH: usize = 11;
+
+/// The minimum expected value of the framing layer length field for a discovery packet.
+/// 84 bytes as per ANSI E1.31-2018 Section 4.3 Table 4-3.
+pub const E131_UNIVERSE_DISCOVERY_FRAMING_LAYER_MIN_LENGTH: usize = 82;
+
 /// The initial/starting sequence number used.
 pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
 
@@ -454,7 +466,7 @@ macro_rules! impl_e131_root_layer {
                     }
                     VECTOR_ROOT_E131_EXTENDED => {
                         let data_buf = &buf[22..length];
-                        let PduInfo { vector, .. } = pdu_info(&data_buf, 4)?;
+                        let PduInfo { length, vector} = pdu_info(&data_buf, 4)?;
 
                         match vector {
                             VECTOR_E131_EXTENDED_SYNCHRONIZATION => {
@@ -462,10 +474,11 @@ macro_rules! impl_e131_root_layer {
                                     SynchronizationPacketFramingLayer::parse(data_buf)?,
                                 )
                             }
-                            VECTOR_E131_EXTENDED_DISCOVERY => E131RootLayerData::UniverseDiscoveryPacket(
-                                UniverseDiscoveryPacketFramingLayer::parse(data_buf)?,
-                            ),
-
+                            VECTOR_E131_EXTENDED_DISCOVERY => {
+                                E131RootLayerData::UniverseDiscoveryPacket(
+                                    UniverseDiscoveryPacketFramingLayer::parse(data_buf)?,
+                                )
+                            }
                             vector => bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector))),
                         }
                     }
@@ -761,8 +774,6 @@ macro_rules! impl_data_packet_dmp_layer {
             /// DMX data property values (DMX start coder + 512 slots).
             #[cfg(feature = "std")]
             pub property_values: Cow<'a, [u8]>,
-            #[cfg(not(feature = "std"))]
-            pub property_values: Vec<u8, [u8; 513]>,
         }
 
         impl$( $lt )* Pdu for DataPacketDmpLayer$( $lt )* {
@@ -914,9 +925,14 @@ pub struct SynchronizationPacketFramingLayer {
 impl Pdu for SynchronizationPacketFramingLayer {
     fn parse(buf: &[u8]) -> Result<SynchronizationPacketFramingLayer> {
         // Length and Vector
-        let PduInfo { vector, .. } = pdu_info(&buf, 4)?;
+        let PduInfo { length, vector } = pdu_info(&buf, 4)?;
         if vector != VECTOR_E131_EXTENDED_SYNCHRONIZATION {
             bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
+        }
+
+        if length != E131_UNIVERSE_SYNC_PACKET_FRAMING_LAYER_LENGTH {
+            bail!(ErrorKind::SacnParsePackError(
+                sacn_parse_pack_error::ErrorKind::PduInvalidLength(length))); 
         }
 
         // Sequence Number
@@ -924,6 +940,14 @@ impl Pdu for SynchronizationPacketFramingLayer {
 
         // Synchronization Address
         let synchronization_address = NetworkEndian::read_u16(&buf[7..9]);
+
+        if synchronization_address > E131_MAX_MULTICAST_UNIVERSE || synchronization_address < E131_MIN_MULTICAST_UNIVERSE {
+            bail!(
+                ErrorKind::SacnParsePackError(
+                sacn_parse_pack_error::ErrorKind::ParseInvalidUniverse(
+                    format!("Synchronisation address value: {} is outwith the allowed range", synchronization_address).to_string()))
+            );
+        }
 
         // Reserved fields (buf[9..11]) should be ignored by receivers as per ANSI E1.31-2018 Section 6.3.4.
 
@@ -979,8 +1003,6 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
             /// Name of the source.
             #[cfg(feature = "std")]
             pub source_name: Cow<'a, str>,
-            #[cfg(not(feature = "std"))]
-            pub source_name: String<[u8; 64]>,
 
             /// Universe dicovery layer.
             pub data: UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )*,
@@ -992,6 +1014,10 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
                 if vector != VECTOR_E131_EXTENDED_DISCOVERY {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
+                }
+
+                if length < E131_UNIVERSE_DISCOVERY_FRAMING_LAYER_MIN_LENGTH {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidLength(length)));
                 }
 
                 // Source Name
@@ -1090,8 +1116,6 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
             /// List of universes.
             #[cfg(feature = "std")]
             pub universes: Cow<'a, [u16]>,
-            #[cfg(not(feature = "std"))]
-            pub universes: Vec<u16, [u16; 512]>,
         }
 
         impl$( $lt )* Pdu for UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )* {
