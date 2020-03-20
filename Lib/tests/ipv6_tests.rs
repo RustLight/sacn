@@ -9,9 +9,9 @@
 
 extern crate sacn;
 extern crate socket2;
-pub mod integration_tests;
+pub mod ipv4_tests;
 
-const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 3] = ["fe80::2077:cb6:7b9b:a144", "fe80::2077:cb6:7b9b:a145", "fe80::2077:cb6:7b9b:a146"];
+const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 3] = ["2a02:c7f:d20a:c600:a502:2dae:7716:601b", "2a02:c7f:d20a:c600:a502:2dae:7716:601c", "2a02:c7f:d20a:c600:a502:2dae:7716:601d"];
 
 #[cfg(test)]
 #[cfg(target_os = "linux")]
@@ -33,7 +33,11 @@ use std::time::Duration;
 
 use sacn::error::errors::*;
 
-use integration_tests::{TEST_DATA_SINGLE_UNIVERSE, TEST_DATA_MULTIPLE_UNIVERSE};
+use ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE, 
+    TEST_DATA_MULTIPLE_UNIVERSE, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, 
+    TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE,
+    TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE};
+use TEST_NETWORK_INTERFACE_IPV6;
 
 #[test]
 fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
@@ -926,7 +930,8 @@ use std::time::Duration;
 
 use sacn::error::errors::*;
 
-use integration_tests::{TEST_DATA_SINGLE_UNIVERSE, TEST_DATA_MULTIPLE_UNIVERSE};
+use ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE, TEST_DATA_MULTIPLE_UNIVERSE};
+use TEST_NETWORK_INTERFACE_IPV6;
 
 #[test]
 fn test_send_recv_single_universe_unicast_ipv6(){
