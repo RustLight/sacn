@@ -43,7 +43,7 @@ use std::borrow::Cow;
 use std::cmp::{max, Ordering};
 use std::collections::HashMap;
 use std::fmt;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr, Shutdown};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, Shutdown};
 use std::time::{Duration, Instant};
 
 /// The default size of the buffer used to recieve E1.31 packets.
@@ -1231,7 +1231,9 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
     } else {
         // Ipv6 not complete.
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
-        socket.bind(&addr.into())?;
+        let socket_addr =
+            SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
+        socket.bind(&socket_addr.into())?;
         Ok(socket)
     }
 }
