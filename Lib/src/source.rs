@@ -356,6 +356,8 @@ impl SacnSourceInternal {
             bail!(ErrorKind::UnsupportedIpVersion("Address to create SacnSource is not IPv4 or IPv6".to_string()));
         };
         
+        // Multiple different processes might want to send to the sACN stream so therefore need to allow re-using the ACN port.
+        socket.set_reuse_port(true);
         socket.bind(&ip.into())?;
 
         let ds = SacnSourceInternal {

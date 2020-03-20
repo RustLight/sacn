@@ -867,7 +867,7 @@ fn test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4()
     dmx_recv.set_merge_fn(htp_dmx_merge).unwrap();
 
     let snd_thread_1 = thread::spawn(move || {
-        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT);
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
         let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
         let priority = 100;
@@ -880,7 +880,7 @@ fn test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4()
     });
 
     let snd_thread_2 = thread::spawn(move || {
-        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[2].parse().unwrap()), ACN_SDT_MULTICAST_PORT);
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[2].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 2);
         let mut src = SacnSource::with_ip("Source 2", ip).unwrap();
 
         let priority = 100;

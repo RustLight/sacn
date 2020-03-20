@@ -1369,10 +1369,18 @@ fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr)
 fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
+
+        // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
+        socket.set_reuse_port(true);
+
         socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
     } else {
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
+
+        // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
+        socket.set_reuse_port(true);
+
         socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
     }
