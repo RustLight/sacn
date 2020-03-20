@@ -43,7 +43,7 @@ use std::borrow::Cow;
 use std::cmp::{max, Ordering};
 use std::collections::HashMap;
 use std::fmt;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, Shutdown};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
 /// The default size of the buffer used to recieve E1.31 packets.
@@ -1112,19 +1112,6 @@ impl SacnNetworkReceiver {
     ///
     pub fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
         Ok(self.socket.set_read_timeout(timeout)?)
-    }
-}
-
-/// By implementing the Drop trait for SacnNetworkReceiver it means that the user doesn't have to explicitly cleanup the receiver
-/// and if it goes out of reference it will clean itself up.
-impl Drop for SacnNetworkReceiver {
-    fn drop(&mut self){
-        match self.socket.shutdown(Shutdown::Both) {
-            Ok(_) => {}
-            Err(e) => {
-                println!("Failed to correctly shutdown socket receiver socket, {:?}", e);
-            }
-        }
     }
 }
 
