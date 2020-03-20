@@ -61,7 +61,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
