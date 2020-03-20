@@ -547,6 +547,10 @@ impl SacnReceiver {
         cid: Uuid,
         sync_pkt: SynchronizationPacketFramingLayer,
     ) -> Result<Option<Vec<DMXData>>> {
+        if !self.is_listening(&sync_pkt.synchronization_address) {
+            return Ok(None); // If not listening for this universe then ignore the packet.
+        }
+
         check_seq_number(
             &mut self.sync_sequences,
             self.source_limit,
