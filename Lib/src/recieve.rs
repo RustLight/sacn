@@ -400,6 +400,20 @@ impl SacnReceiver {
         }
     }
 
+    /// Checks if this receiver is currently listening to the given universe.
+    /// 
+    /// A receiver is 'listening' to a universe if it allows that universe to be received without filtering it out.
+    /// This does not mean that the multicast address for that universe is or isn't being listened to.
+    /// 
+    /// Arguments:
+    /// universe: The sACN universe to check
+    /// 
+    /// Returns:
+    /// True if the universe is being listened to by this receiver, false if not.
+    pub fn is_listening(&self, universe: &u16) -> bool {
+        self.universes.contains(universe)
+    }
+
     /// Handles the given data packet for this DMX reciever.
     ///
     /// Returns the universe data if successful.
@@ -439,6 +453,10 @@ impl SacnReceiver {
             }
             
             return Ok(None);
+        }
+
+        if !self.is_listening(&data_pkt.universe) {
+            return Ok(None); // If not listening for this universe then ignore the packet.
         }
 
         // Preview data and stream terminated both get precedence over checking the sequence number.
@@ -1211,13 +1229,18 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
 
+        // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
+        socket.set_reuse_port(true);
+
         let socket_addr =
             SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
         socket.bind(&socket_addr.into())?;
         Ok(socket)
     } else {
-        // Ipv6 not complete.
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
+
+        // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
+        socket.set_reuse_port(true);
         let socket_addr =
             SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
         socket.bind(&socket_addr.into())?;
