@@ -13,16 +13,12 @@ use std::{thread};
 use std::thread::sleep;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
-
+use std::time::{Duration, Instant};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
 use sacn::source::SacnSource;
 use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
-use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
-
-extern crate socket2;
-
-use std::time::Duration;
-
+use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT, E131_UNIVERSE_DISCOVERY_INTERVAL};
 use sacn::error::errors::*;
 
 // Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
@@ -1434,6 +1430,81 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
     for s in snd_threads {
         s.join().unwrap();
     }
+}
+
+/// Measures the time taken in milliseconds between 2 discovery packets to check that the interval fits with expected.
+#[test]
+fn test_universe_discovery_interval_ipv4(){
+    const SND_THREADS: usize = 1;
+    const BASE_UNIVERSE: u16 = 1;
+    const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
+    const INTERVAL_EXPECTED_MILLIS: u128 = E131_UNIVERSE_DISCOVERY_INTERVAL.as_millis(); // Expected discovery packet interval is every 10 seconds (10000 milliseconds).
+    const INTERVAL_TOLERANCE_MILLIS: u128 = 1000; // Allow upto a second either side of this interval to account for random variations.
+
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+
+    let mut snd_threads = Vec::new();
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+
+            tx.send(()).unwrap(); // Force the send thread to wait before creating the sender, should sync once the receiver has been created.
+
+            let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
+
+            src.register_universes(&[BASE_UNIVERSE]).unwrap();
+
+            tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
+        }));
+    }
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
+    dmx_recv.set_announce_source_discovery(true); // Make the receiver explicitly notify when it receives a universe discovery packet.
+
+    snd_rx.recv().unwrap(); // Receiver created and ready so allow the sender to be created.
+
+    let mut interval_start = Instant::now(); // Assignment never used.
+
+    match dmx_recv.recv(None) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SourceDiscovered(_) => {
+                    // Measure the time between the first and second discovery packets, this removes the uncertainty in the time taken for the sender to start.
+                    interval_start = Instant::now();
+                }
+                k => {
+                    assert!(false, "Unexpected error kind, {:?}", k);
+                }
+            }
+        }
+        Ok(d) => {
+            assert!(false, "No data expected, {:?}", d);
+        }
+    }
+
+    match dmx_recv.recv(None) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SourceDiscovered(_) => {
+                    let interval = interval_start.elapsed();
+                    let interval_millis = interval.as_millis();
+                    assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), format!("Discovery interval is shorter than expected, {} ms", interval_millis));
+                    assert!(interval_millis < (INTERVAL_EXPECTED_MILLIS + INTERVAL_TOLERANCE_MILLIS), format!("Discovery interval is longer than expected, {} ms", interval_millis));
+                }
+                k => {
+                    assert!(false, "Unexpected error kind, {:?}", k);
+                }
+            }
+        }
+        Ok(d) => {
+            assert!(false, "No data expected, {:?}", d);
+        }
+    }
+
+    snd_rx.recv().unwrap(); // Allow sender to finish.
 }
 
 #[test]
