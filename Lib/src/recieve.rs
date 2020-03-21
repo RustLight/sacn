@@ -1245,6 +1245,7 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 
         // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
         socket.set_reuse_port(true)?;
+        socket.set_reuse_address(true)?;
 
         let socket_addr =
             SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
@@ -1255,6 +1256,8 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 
         // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
         socket.set_reuse_port(true)?;
+        socket.set_reuse_address(true)?;
+
         let socket_addr =
             SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
         socket.bind(&socket_addr.into())?;
@@ -1380,17 +1383,13 @@ fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
 
-        // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
-        socket.set_reuse_port(true)?;
-
+        socket.set_reuse_address(true)?;
         socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
     } else {
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
 
-        // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
-        socket.set_reuse_port(true)?;
-
+        socket.set_reuse_address(true)?;
         socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
     }

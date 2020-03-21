@@ -358,7 +358,12 @@ impl SacnSourceInternal {
         };
         
         // Multiple different processes might want to send to the sACN stream so therefore need to allow re-using the ACN port.
+        // This doesn't work on windows.
+        #[cfg(target_os = "linux")]
         socket.set_reuse_port(true)?;
+
+
+        socket.set_reuse_address(true)?;
         socket.bind(&ip.into())?;
 
         let ds = SacnSourceInternal {
