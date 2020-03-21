@@ -854,7 +854,7 @@ fn find_discovered_src(srcs: &Vec<DiscoveredSacnSource>, name: &String) -> Optio
 
 /// In general the lower level transport layer is handled by SacnNetworkReceiver (which itself wraps a Socket).
 /// Windows and linux handle multicast sockets differently.
-/// This is built for / testing with Windows 10 1909.
+/// This is built for / tested with Windows 10 1909.
 #[cfg(target_os = "windows")]
 impl SacnNetworkReceiver {
     /// Creates a new DMX receiver on the interface specified by the given address.
@@ -1003,7 +1003,7 @@ impl SacnNetworkReceiver {
 }
 
 /// Windows and linux handle multicast sockets differently.
-/// This is built for / testing with Fedora 30/31.
+/// This is built for / tested with Fedora 30/31.
 #[cfg(target_os = "linux")]
 impl SacnNetworkReceiver {
     /// Creates a new DMX receiver on the interface specified by the given address.

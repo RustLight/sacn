@@ -55,6 +55,12 @@ fn test_send_across_universe(){
     src.send(&universes, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, None).unwrap();
 }
 
+/// Tests that the source sends a discovery packet at approximately every discovery interval and that it contains the correct information.
+#[test]
+fn test_discovery_interval() {
+    
+}
+
 const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

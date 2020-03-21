@@ -33,7 +33,7 @@ use std::sync::{Arc, Mutex};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 /// Socket2 used to create the underlying UDP socket that sACN is sent on.
-use socket2::{Socket, Domain, Type, SockAddr};
+use socket2::{Socket, Domain, Type};
 
 /// UUID library used to handle the UUID's used in the CID fields.
 use uuid::Uuid;
@@ -358,7 +358,7 @@ impl SacnSourceInternal {
         };
         
         // Multiple different processes might want to send to the sACN stream so therefore need to allow re-using the ACN port.
-        socket.set_reuse_port(true);
+        socket.set_reuse_port(true)?;
         socket.bind(&ip.into())?;
 
         let ds = SacnSourceInternal {
