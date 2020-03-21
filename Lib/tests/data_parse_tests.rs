@@ -20,7 +20,7 @@ use uuid::Uuid;
 use sacn::error::errors::*;
 use sacn::sacn_parse_pack_error::sacn_parse_pack_error;
 
-/// A test data packet as specified as an example in
+/// A full test data packet as specified as an example in
 /// ANSI E1.31-2018 Appendix B Table B-13: Universe Synchronization Example E1.31 Data Packet.
 const TEST_DATA_PACKET: &[u8] = &[
     /* Root Layer */
@@ -88,8 +88,115 @@ const TEST_DATA_PACKET: &[u8] = &[
     0,
 ];
 
+/// A test data packet with less than a full universe of data.
+const TEST_DATA_PACKET_PARTIAL: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x70, 0x8B, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length */
+    0x70, 0x75,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    100,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    0,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length = 40 */
+    0x70, 0x28,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count = 30 */
+    0x00, 0x1E,
+    /* Property values */
+    0, 0, 0, 0, 0,   
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0,
+];
+
+/// A test data packet with no data (only a startcode). Lengths set as specified in ANSI E1.31-2018 Section 4.1 Table 4-1.
+const TEST_DATA_PACKET_EMPTY: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x70, 0x6e, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length */
+    0x70, 0x58,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    100,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    0,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length */
+    0x70, 0x0b,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count */
+    0x00, 0x01,
+    /* One property value in form of startcode */
+    0x00
+];
+
 /// Uses a pre amble size that is wrong in its least significant byte value.
-const TEST_DATA_PACKET_WRONG_PREAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
+const TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
     0x00, 0x11,
@@ -156,7 +263,7 @@ const TEST_DATA_PACKET_WRONG_PREAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
 ];
 
 /// Uses a pre amble size that is wrong in its most significant byte value.
-const TEST_DATA_PACKET_WRONG_PREAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
+const TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
     0x01, 0x10,
@@ -223,7 +330,7 @@ const TEST_DATA_PACKET_WRONG_PREAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
 ];
 
 /// Uses a post amble size that is wrong in its most significant byte value.
-const TEST_DATA_PACKET_WRONG_POSTAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
+const TEST_DATA_PACKET_ROOT_LAYER_WRONG_POSTAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
     0x00, 0x10,
@@ -290,7 +397,7 @@ const TEST_DATA_PACKET_WRONG_POSTAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
 ];
 
 /// Uses a post amble size that is wrong in its least significant byte value.
-const TEST_DATA_PACKET_WRONG_POSTAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
+const TEST_DATA_PACKET_ROOT_LAYER_WRONG_POSTAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
     0x00, 0x10,
@@ -357,7 +464,7 @@ const TEST_DATA_PACKET_WRONG_POSTAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
 ];
 
 /// Uses an incorrect value for the ACN identifier
-const TEST_DATA_PACKET_WRONG_ACN_IDENTIFIER: &[u8] = &[
+const TEST_DATA_PACKET_ROOT_LAYER_WRONG_ACN_IDENTIFIER: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
     0x00, 0x10,
@@ -367,6 +474,207 @@ const TEST_DATA_PACKET_WRONG_ACN_IDENTIFIER: &[u8] = &[
     0x42, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
     0x72, 0x6e, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length */
+    0x72, 0x58,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    100,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    0,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length */
+    0x72, 0x0b,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count */
+    0x02, 0x01,
+    /* Property values */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,
+];
+
+/// Data packet with the root layer flags set incorrectly.
+const TEST_DATA_PACKET_ROOT_LAYER_WRONG_FLAGS: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x62, 0x6e, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length */
+    0x72, 0x58,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    100,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    0,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length */
+    0x72, 0x0b,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count */
+    0x02, 0x01,
+    /* Property values */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,
+];
+
+/// Data packet with the root layer length field set lower than the actual length.
+const TEST_DATA_PACKET_ROOT_LAYER_TOO_LOW_LENGTH: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x72, 0x6d, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04,
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    /* Data Packet Framing Layer */
+    /* Flags and Length */
+    0x72, 0x58,
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02,
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    /* Priority */
+    100,
+    /* Synchronization Address, 7962 */
+    0x1F, 0x1A,
+    /* Sequence Number */
+    154,
+    /* Options */
+    0,
+    /* Universe */
+    0, 1,
+    /* DMP Layer */
+    /* Flags and Length */
+    0x72, 0x0b,
+    /* Vector */
+    0x02,
+    /* Address and Data Type */
+    0xa1, 
+    /* First Property Address */
+    0x00, 0x00,
+    /* Address Increment */
+    0x00, 0x01,
+    /* Property value count */
+    0x02, 0x01,
+    /* Property values */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,
+];
+
+/// Data packet with the root layer length field set higher than the actual length.
+const TEST_DATA_PACKET_ROOT_LAYER_TOO_HIGH_LENGTH: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10,
+    /* Post-amble Size */
+    0x00, 0x00,
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x72, 0x6f, 
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
@@ -2699,6 +3007,12 @@ const TEST_TERMINATION_PARTIAL_PROPERTY_VALUES_PACKET: &[u8] = &[
 ];
 
 #[test]
+fn test_data_packet_full_length() {
+    const EXPECTED_DATA_PACKET_LEN: usize = 638; // As per ANSI E1.31-2018 Section 5.4.
+    assert_eq!(TEST_DATA_PACKET.len(), EXPECTED_DATA_PACKET_LEN);
+}
+
+#[test]
 fn test_data_packet_parse_pack() {
     let packet = AcnRootLayerProtocol {
         pdu: E131RootLayer {
@@ -2741,7 +3055,7 @@ fn test_data_packet_parse_pack() {
 
 #[test]
 fn test_malformed_data_packet_wrong_preample_lower_byte_parse() {
-    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_WRONG_PREAMBLE_SIZE_LOWER_BYTE) {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_LOWER_BYTE) {
         Err(e) => {
             match *e.kind() {
                 ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
@@ -2764,7 +3078,7 @@ fn test_malformed_data_packet_wrong_preample_lower_byte_parse() {
 
 #[test]
 fn test_malformed_data_packet_wrong_preample_upper_byte_parse() {
-    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_WRONG_PREAMBLE_SIZE_UPPER_BYTE) {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_UPPER_BYTE) {
         Err(e) => {
             match *e.kind() {
                 ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
@@ -2787,7 +3101,7 @@ fn test_malformed_data_packet_wrong_preample_upper_byte_parse() {
 
 #[test]
 fn test_malformed_data_packet_wrong_postample_lower_byte_parse() {
-    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_WRONG_POSTAMBLE_SIZE_LOWER_BYTE) {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_WRONG_POSTAMBLE_SIZE_LOWER_BYTE) {
         Err(e) => {
             match *e.kind() {
                 ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
@@ -2810,7 +3124,7 @@ fn test_malformed_data_packet_wrong_postample_lower_byte_parse() {
 
 #[test]
 fn test_malformed_data_packet_wrong_postample_upper_byte_parse() {
-    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_WRONG_POSTAMBLE_SIZE_UPPER_BYTE) {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_WRONG_POSTAMBLE_SIZE_UPPER_BYTE) {
         Err(e) => {
             match *e.kind() {
                 ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
@@ -2832,8 +3146,77 @@ fn test_malformed_data_packet_wrong_postample_upper_byte_parse() {
 }
 
 #[test]
+fn test_malformed_data_packet_root_layer_wrong_flags() {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_WRONG_FLAGS) {
+        Err(e) => {
+            match *e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParsePduInvalidFlags(_)) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error type returned");
+                }
+            }
+            
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Malformed packet was parsed when should have been rejected"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_malformed_data_packet_root_layer_too_low_length() {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_TOO_LOW_LENGTH) {
+        Err(e) => {
+            match *e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error type returned");
+                }
+            }
+            
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Malformed packet was parsed when should have been rejected"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_malformed_data_packet_root_layer_too_high_length() {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_TOO_HIGH_LENGTH) {
+        Err(e) => {
+            match *e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error type returned");
+                }
+            }
+            
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Malformed packet was parsed when should have been rejected"
+            );
+        }
+    }
+}
+
+#[test]
 fn test_malformed_data_packet_wrong_acn_identifier_parse() {
-    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_WRONG_ACN_IDENTIFIER) {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_WRONG_ACN_IDENTIFIER) {
         Err(e) => {
             match *e.kind() {
                 ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {

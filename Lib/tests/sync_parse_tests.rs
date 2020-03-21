@@ -326,6 +326,12 @@ const TEST_SYNCHRONIZATION_PACKET_ARBITARY_RESERVED: &[u8] = &[
 ];
 
 #[test]
+fn test_sync_packet_length() {
+    const EXPECTED_SYNC_PACKET_LEN: usize = 49; // As per ANSI E1.31-2018 Section 5.4.
+    assert_eq!(TEST_SYNCHRONIZATION_PACKET.len(), EXPECTED_SYNC_PACKET_LEN);
+}
+
+#[test]
 fn test_synchronization_packet_parse_pack() {
     let packet = AcnRootLayerProtocol {
         pdu: E131RootLayer {
