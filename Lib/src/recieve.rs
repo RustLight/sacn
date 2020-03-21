@@ -1758,7 +1758,7 @@ fn test_store_retrieve_waiting_data() {
     let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
     let sync_uni: u16 = 1;
-    let universe: u16 = 0;
+    let universe: u16 = 1;
     let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     let dmx_data = DMXData {
@@ -1786,7 +1786,7 @@ fn test_store_2_retrieve_1_waiting_data() {
     let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
     let sync_uni: u16 = 1;
-    let universe: u16 = 0;
+    let universe: u16 = 1;
     let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     let dmx_data = DMXData {
@@ -1823,7 +1823,7 @@ fn test_store_2_retrieve_2_waiting_data() {
     let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
     let sync_uni: u16 = 1;
-    let universe: u16 = 0;
+    let universe: u16 = 1;
     let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     let dmx_data = DMXData {
@@ -1861,3 +1861,86 @@ fn test_store_2_retrieve_2_waiting_data() {
     assert_eq!(res2[0].sync_uni, sync_uni + 1);
     assert_eq!(res2[0].values, vals2);
 }
+
+#[test]
+fn test_store_2_same_universe_same_priority_waiting_data() {
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+    let sync_uni: u16 = 1;
+    let universe: u16 = 1;
+    let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    let dmx_data = DMXData {
+        universe: universe,
+        values: vals.clone(),
+        sync_uni: sync_uni,
+        priority: 100,
+        src_cid: None,
+    };
+
+    let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
+
+    let dmx_data2 = DMXData {
+        universe: universe,
+        values: vals2.clone(),
+        sync_uni: sync_uni,
+        priority: 100,
+        src_cid: None,
+    };
+
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
+
+    let res2: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
+
+    assert_eq!(res2.len(), 1);
+    assert_eq!(res2[0].universe, universe);
+    assert_eq!(res2[0].sync_uni, sync_uni);
+    assert_eq!(res2[0].values, vals2);
+
+    assert_eq!(dmx_rcv.rtrv_waiting_data(sync_uni).len(), 0);
+}
+
+#[test]
+fn test_store_2_same_universe_diff_priority_waiting_data() {
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+    let sync_uni: u16 = 1;
+    let universe: u16 = 1;
+    let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    let dmx_data = DMXData {
+        universe: universe,
+        values: vals.clone(),
+        sync_uni: sync_uni,
+        priority: 120,
+        src_cid: None,
+    };
+
+    let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
+
+    let dmx_data2 = DMXData {
+        universe: universe,
+        values: vals2.clone(),
+        sync_uni: sync_uni,
+        priority: 100,
+        src_cid: None,
+    };
+
+    dmx_rcv.store_waiting_data(dmx_data).unwrap();
+    dmx_rcv.store_waiting_data(dmx_data2).unwrap(); // Won't be added as lower priority than already waiting data.
+
+    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
+
+    assert_eq!(res.len(), 1);
+    assert_eq!(res[0].universe, universe);
+    assert_eq!(res[0].sync_uni, sync_uni);
+    assert_eq!(res[0].values, vals);
+
+    assert_eq!(dmx_rcv.rtrv_waiting_data(sync_uni).len(), 0);
+}
+
