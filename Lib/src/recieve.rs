@@ -819,8 +819,18 @@ impl SacnReceiver {
 impl Drop for SacnReceiver {
     fn drop(&mut self){
         let universes = self.universes.clone();
-        for u in universes{
-            self.mute_universe(u);
+        for u in universes {
+            // Cannot return an error or pass it onto the user because drop might be called during a panic.
+            // Therefore if there is an error cleaning up the only options are ignore, notify or panic.
+            // Notify using stdout might pollute the application using the library so would require a flag to enable/disable but the function of this
+            // is unclear and the problem isn't solved if the flag is disabled.
+            // A panic might be unnessesary or pollute another in-progress panic hiding the true problem. It would also prevent muting the other
+            // universes.
+            // The error is therefore ignored as it can't be fixed eitherway as the SacnReceiver has gone out of scope and won't lead to memory unsafety.
+            match self.mute_universe(u) {
+                Ok(_) => {}
+                Err(_e) => {/* Ignored */}
+            }
         }
     }
 }
