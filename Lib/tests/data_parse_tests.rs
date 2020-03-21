@@ -732,7 +732,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_TOO_HIGH_LENGTH: &[u8] = &[
 ];
 
 /// Uses a random value for the ACN vector.
-const TEST_DATA_PACKET_UNKNOWN_ACN_VECTOR: &[u8] = &[
+const TEST_DATA_PACKET_ROOT_LAYER_UNKNOWN_ACN_VECTOR: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
     0x00, 0x10,
@@ -799,7 +799,7 @@ const TEST_DATA_PACKET_UNKNOWN_ACN_VECTOR: &[u8] = &[
 ];
 
 /// Uses the ACN vector for synchronisation and discovery packets which is incorrect for a data-packet.
-const TEST_DATA_PACKET_EXTENDED_VECTOR: &[u8] = &[
+const TEST_DATA_PACKET_ROOT_LAYER_EXTENDED_VECTOR: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
     0x00, 0x10,
@@ -3239,7 +3239,7 @@ fn test_malformed_data_packet_wrong_acn_identifier_parse() {
 
 #[test]
 fn test_malformed_data_packet_unknown_acn_vector_parse() {
-    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_UNKNOWN_ACN_VECTOR) {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_UNKNOWN_ACN_VECTOR) {
         Err(e) => {
             match *e.kind() {
                 ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) => {
@@ -3262,7 +3262,7 @@ fn test_malformed_data_packet_unknown_acn_vector_parse() {
 
 #[test]
 fn test_malformed_data_packet_extended_acn_vector_parse() {
-    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_EXTENDED_VECTOR) {
+    match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_EXTENDED_VECTOR) {
         Err(e) => {
             match e.kind() {
                 ErrorKind::SacnParsePackError(_) => {

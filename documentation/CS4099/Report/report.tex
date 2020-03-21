@@ -379,6 +379,8 @@ The library is based on wrapping an underlying socket which is used to access th
 	
 		
 test-> compliance -> conformance -> what it means for there to be 'sufficient' testing
+
+Testing that the receiver rejects malformed packets and then testing the sender with the receiver give evidence to verify both work as expected.
 	
 Testing found a number of problems with existing implementation:
 - No checking for the sync universe / universe / priority being in range
