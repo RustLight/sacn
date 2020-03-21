@@ -38,13 +38,14 @@
 \contentsline {subsection}{\numberline {0.10.1}SacnReceiver}{27}% 
 \contentsline {subsection}{\numberline {0.10.2}SacnSource}{28}% 
 \contentsline {subsection}{\numberline {0.10.3}Std vs Non-Std}{29}% 
-\contentsline {section}{\numberline {0.11}Evaluation and Critical Appraisal}{30}% 
-\contentsline {section}{\numberline {0.12}Conclusions}{31}% 
-\contentsline {section}{\numberline {0.13}Appendices}{31}% 
-\contentsline {section}{\numberline {0.14}Testing}{31}% 
-\contentsline {subsection}{\numberline {0.14.1}Unit Testing}{32}% 
-\contentsline {subsection}{\numberline {0.14.2}Integration Testing}{32}% 
-\contentsline {subsubsection}{Compliance and Conformance Testing}{35}% 
-\contentsline {subsection}{\numberline {0.14.3}Real-world Testing}{35}% 
-\contentsline {section}{\numberline {0.15}User Manual}{35}% 
-\contentsline {section}{\numberline {0.16}Other Appendices}{35}% 
+\contentsline {subsection}{\numberline {0.10.4}Drop / Closing}{30}% 
+\contentsline {section}{\numberline {0.11}Evaluation and Critical Appraisal}{31}% 
+\contentsline {section}{\numberline {0.12}Conclusions}{32}% 
+\contentsline {section}{\numberline {0.13}Appendices}{32}% 
+\contentsline {section}{\numberline {0.14}Testing}{32}% 
+\contentsline {subsection}{\numberline {0.14.1}Unit Testing}{33}% 
+\contentsline {subsection}{\numberline {0.14.2}Integration Testing}{33}% 
+\contentsline {subsubsection}{Compliance and Conformance Testing}{36}% 
+\contentsline {subsection}{\numberline {0.14.3}Real-world Testing}{36}% 
+\contentsline {section}{\numberline {0.15}User Manual}{36}% 
+\contentsline {section}{\numberline {0.16}Other Appendices}{36}% 
