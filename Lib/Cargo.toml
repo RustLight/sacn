@@ -19,11 +19,7 @@ libc = { version = "0.2.67" }
 lazy_static = "1.4.0"
 error-chain = "0.12.2"
 
-[target.'cfg(feature = "std")'.dependencies]
 uuid = { version = "0.6.3", features = ["use_std", "v4"] }
-
-[target.'cfg(not(feature = "std"))'.dependencies]
-uuid = { version = "0.6.3", features = ["v4"] }
 
 [features]
 default = ["std"]
