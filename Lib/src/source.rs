@@ -316,6 +316,7 @@ impl SacnSource {
 /// and if it goes out of reference it will clean itself up and send the required termination packets etc.
 impl Drop for SacnSource {
     fn drop(&mut self){
+        self.internal.lock().unwrap().running = false;
         if let Some(thread) = self.update_thread.take() {
             {
                 match self.internal.lock().unwrap().terminate(DEFAULT_TERMINATE_START_CODE) {
