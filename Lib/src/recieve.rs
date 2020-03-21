@@ -43,7 +43,7 @@ use std::borrow::Cow;
 use std::cmp::{max, Ordering};
 use std::collections::HashMap;
 use std::fmt;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
 /// The default size of the buffer used to recieve E1.31 packets.
@@ -400,6 +400,20 @@ impl SacnReceiver {
         }
     }
 
+    /// Checks if this receiver is currently listening to the given universe.
+    /// 
+    /// A receiver is 'listening' to a universe if it allows that universe to be received without filtering it out.
+    /// This does not mean that the multicast address for that universe is or isn't being listened to.
+    /// 
+    /// Arguments:
+    /// universe: The sACN universe to check
+    /// 
+    /// Returns:
+    /// True if the universe is being listened to by this receiver, false if not.
+    pub fn is_listening(&self, universe: &u16) -> bool {
+        self.universes.contains(universe)
+    }
+
     /// Handles the given data packet for this DMX reciever.
     ///
     /// Returns the universe data if successful.
@@ -439,6 +453,10 @@ impl SacnReceiver {
             }
             
             return Ok(None);
+        }
+
+        if !self.is_listening(&data_pkt.universe) {
+            return Ok(None); // If not listening for this universe then ignore the packet.
         }
 
         // Preview data and stream terminated both get precedence over checking the sequence number.
@@ -529,6 +547,10 @@ impl SacnReceiver {
         cid: Uuid,
         sync_pkt: SynchronizationPacketFramingLayer,
     ) -> Result<Option<Vec<DMXData>>> {
+        if !self.is_listening(&sync_pkt.synchronization_address) {
+            return Ok(None); // If not listening for this universe then ignore the packet.
+        }
+
         check_seq_number(
             &mut self.sync_sequences,
             self.source_limit,
@@ -792,6 +814,28 @@ impl SacnReceiver {
     }
 }
 
+/// By implementing the Drop trait for SacnNetworkReceiver it means that the user doesn't have to explicitly cleanup the receiver
+/// and if it goes out of reference it will clean itself up.
+impl Drop for SacnReceiver {
+    fn drop(&mut self){
+        let universes = self.universes.clone();
+        for u in universes {
+            // Cannot return an error or pass it onto the user because drop might be called during a panic.
+            // Therefore if there is an error cleaning up the only options are ignore, notify or panic.
+            // Notify using stdout might pollute the application using the library so would require a flag to enable/disable but the function of this
+            // is unclear and the problem isn't solved if the flag is disabled.
+            // A panic might be unnessesary or pollute another in-progress panic hiding the true problem. It would also prevent muting the other
+            // universes.
+            // The error is therefore ignored as it can't be fixed eitherway as the SacnReceiver has gone out of scope and won't lead to memory unsafety.
+            match self.mute_universe(u) {
+                Ok(_) => {}
+                Err(_e) => {/* Ignored */}
+            }
+        }
+    }
+}
+
+
 /// Searches for the discovered source with the given name in the given vector of discovered sources and
 /// returns the index of the src in the Vec or None if not found.
 ///
@@ -810,7 +854,7 @@ fn find_discovered_src(srcs: &Vec<DiscoveredSacnSource>, name: &String) -> Optio
 
 /// In general the lower level transport layer is handled by SacnNetworkReceiver (which itself wraps a Socket).
 /// Windows and linux handle multicast sockets differently.
-/// This is built for / testing with Windows 10 1909.
+/// This is built for / tested with Windows 10 1909.
 #[cfg(target_os = "windows")]
 impl SacnNetworkReceiver {
     /// Creates a new DMX receiver on the interface specified by the given address.
@@ -959,7 +1003,7 @@ impl SacnNetworkReceiver {
 }
 
 /// Windows and linux handle multicast sockets differently.
-/// This is built for / testing with Fedora 30/31.
+/// This is built for / tested with Fedora 30/31.
 #[cfg(target_os = "linux")]
 impl SacnNetworkReceiver {
     /// Creates a new DMX receiver on the interface specified by the given address.
@@ -1199,14 +1243,21 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
 
+        // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
+        socket.set_reuse_port(true)?;
+
         let socket_addr =
             SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
         socket.bind(&socket_addr.into())?;
         Ok(socket)
     } else {
-        // Ipv6 not complete.
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
-        socket.bind(&addr.into())?;
+
+        // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
+        socket.set_reuse_port(true)?;
+        let socket_addr =
+            SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
+        socket.bind(&socket_addr.into())?;
         Ok(socket)
     }
 }
@@ -1328,10 +1379,18 @@ fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr)
 fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
+
+        // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
+        socket.set_reuse_port(true)?;
+
         socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
     } else {
         let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
+
+        // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
+        socket.set_reuse_port(true)?;
+
         socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
     }

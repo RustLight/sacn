@@ -9,9 +9,9 @@
 
 extern crate sacn;
 extern crate socket2;
-pub mod integration_tests;
+pub mod ipv4_tests;
 
-const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 3] = ["fe80::2077:cb6:7b9b:a144", "fe80::2077:cb6:7b9b:a145", "fe80::2077:cb6:7b9b:a146"];
+const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 3] = ["2a02:c7f:d20a:c600:a502:2dae:7716:601b", "2a02:c7f:d20a:c600:a502:2dae:7716:601c", "2a02:c7f:d20a:c600:a502:2dae:7716:601d"];
 
 #[cfg(test)]
 #[cfg(target_os = "linux")]
@@ -22,18 +22,20 @@ use std::thread::sleep;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use sacn::source::SacnSource;
-use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
+use sacn::recieve::{SacnReceiver, DMXData};
 use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
-
-use socket2::{SockAddr};
 
 use std::time::Duration;
 
 use sacn::error::errors::*;
 
-use integration_tests::{TEST_DATA_SINGLE_UNIVERSE, TEST_DATA_MULTIPLE_UNIVERSE};
+use ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE, 
+    TEST_DATA_MULTIPLE_UNIVERSE, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, 
+    TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE,
+    TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE};
+use TEST_NETWORK_INTERFACE_IPV6;
 
 #[test]
 fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
@@ -57,7 +59,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
 
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
@@ -913,20 +915,19 @@ mod sacn_ipv6_unicast_test {
 use std::{thread};
 use std::thread::sleep;
 use std::sync::mpsc;
-use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
+use std::sync::mpsc::{Sender, Receiver};
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use sacn::source::SacnSource;
-use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
+use sacn::recieve::{SacnReceiver, DMXData};
 use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
-
-use socket2::{SockAddr};
 
 use std::time::Duration;
 
 use sacn::error::errors::*;
 
-use integration_tests::{TEST_DATA_SINGLE_UNIVERSE, TEST_DATA_MULTIPLE_UNIVERSE};
+use ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE, TEST_DATA_MULTIPLE_UNIVERSE};
+use TEST_NETWORK_INTERFACE_IPV6;
 
 #[test]
 fn test_send_recv_single_universe_unicast_ipv6(){
@@ -937,7 +938,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
     let universe = 1;
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT), None).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
 
         dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -948,7 +949,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
@@ -987,7 +988,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
     const UNIVERSES: [u16; 2] = [2, 3];
 
     let rcv_thread = thread::spawn(move || {
-        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT), None).unwrap();
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
 
         dmx_recv.listen_universes(&UNIVERSES).unwrap();
 
@@ -998,7 +999,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
@@ -1007,7 +1008,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
 
     let _ = src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT).into()), Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
-    src.send_sync_packet(UNIVERSES[0], Some(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT).into())).unwrap();
+    src.send_sync_packet(UNIVERSES[0], Some(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT).into())).unwrap();
 
     let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
 
