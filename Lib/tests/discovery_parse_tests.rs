@@ -56,6 +56,84 @@ const TEST_UNIVERSE_DISCOVERY_PACKET: &[u8] = &[
     0, 1, 2, 3, 4, 5,
 ];
 
+/// Universe discovery packet with the root layer vector set to a vector unknown to ANSI E1.31-2018.
+const TEST_UNIVERSE_DISCOVERY_PACKET_ROOT_LAYER_UNKNOWN_VECTOR: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10, 
+    /* Post-amble Size */
+    0x00, 0x00, 
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x70, 0x6e, 
+    /* Vector */
+    0x00, 0x00, 0x01, 0x08, 
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
+    /* E1.31 Framing Layer */
+    /* Flags and Length */
+    0x70, 0x58, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02, 
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 
+    /* Reserved */
+    0, 0, 0, 0, 
+    /* Universe Discovery Layer */
+    /* Flags and Length */
+    0x70, 0x0e, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x01, 
+    /* Page */
+    1,
+    /* Last Page */
+    2, 
+    /* Universes */
+    0, 1, 2, 3, 4, 5,
+];
+
+/// Universe discovery packet with the root layer vector incorrectly set to the vector for an ANSI E1.31-2018 data packet.
+const TEST_UNIVERSE_DISCOVERY_PACKET_ROOT_LAYER_DATA_VECTOR: &[u8] = &[
+    /* Root Layer */
+    /* Preamble Size */
+    0x00, 0x10, 
+    /* Post-amble Size */
+    0x00, 0x00, 
+    /* ACN Packet Identifier */
+    0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
+    /* Flags and Length Protocol */
+    0x70, 0x6e, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x04, 
+    /* CID */
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
+    /* E1.31 Framing Layer */
+    /* Flags and Length */
+    0x70, 0x58, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x02, 
+    /* Source Name */
+    b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 
+    /* Reserved */
+    0, 0, 0, 0, 
+    /* Universe Discovery Layer */
+    /* Flags and Length */
+    0x70, 0x0e, 
+    /* Vector */
+    0x00, 0x00, 0x00, 0x01, 
+    /* Page */
+    1,
+    /* Last Page */
+    2, 
+    /* Universes */
+    0, 1, 2, 3, 4, 5,
+];
+
 /// Universe discovery packet which has its E1.31 Framing Layer flags set incorrectly.
 const TEST_UNIVERSE_DISCOVERY_PACKET_WRONG_FLAGS: &[u8] = &[
     /* Root Layer */
@@ -720,6 +798,55 @@ fn test_discovery_packet_parse_pack() {
     packet.pack(&mut buf).unwrap();
 
     assert_eq!(&buf[..packet.len()], TEST_UNIVERSE_DISCOVERY_PACKET);
+}
+
+
+#[test]
+fn test_discovery_packet_root_layer_unknown_vector_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_ROOT_LAYER_UNKNOWN_VECTOR) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) => {
+                    assert!(true, "Expected error returned");
+                }
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
+                }
+            }
+            
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Malformed packet was parsed when should have been rejected"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_discovery_packet_root_layer_data_vector_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_ROOT_LAYER_DATA_VECTOR) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SacnParsePackError(_) => {
+                    // As the packet will be treated as a data packet it is unclear where the parse will fail so only assert that it must fail
+                    // with a parse type error rather than a specific error.
+                    assert!(true, "Expected error family returned");
+                }
+                x => {
+                    assert!(false, format!("Unexpected error type returned: {}", x));
+                }
+            }
+            
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Malformed packet was parsed when should have been rejected"
+            );
+        }
+    }
 }
 
 #[test]
