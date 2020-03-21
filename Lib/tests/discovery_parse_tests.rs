@@ -11,6 +11,11 @@ use uuid::Uuid;
 use sacn::error::errors::*;
 use sacn::sacn_parse_pack_error::sacn_parse_pack_error;
 
+/// The expected minimum size of a universe discovery packet as per ANSI E1.31-2018 Section 6.1.
+const UNIVERSE_DISCOVERY_PACKET_EXPECTED_MIN_SIZE: usize = 120;
+
+/// The expected maximum size of a universe discovery packet as per ANSI E1.31-2018 Section 6.1.
+const UNIVERSE_DISCOVERY_PACKET_EXPECTED_MAX_SIZE: usize = 1144;
 
 /// Built up / checked as per:
 /// ANSI E1.31-2018:
@@ -291,7 +296,7 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_WRONG_FLAGS: &[u8] = &[
 ];
 
 /// Universe discovery packet which has its E1.31 Framing Layer length set shorter than it actually is.
-const TEST_UNIVERSE_DISCOVERY_PACKET_LENGTH_TOO_SHORT: &[u8] = &[
+const TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_LENGTH_TOO_SHORT: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
     0x00, 0x10, 
@@ -330,7 +335,7 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_LENGTH_TOO_SHORT: &[u8] = &[
 ];
 
 /// Universe discovery packet which has its E1.31 Framing Layer length set longer than it actually is.
-const TEST_UNIVERSE_DISCOVERY_PACKET_LENGTH_TOO_LONG: &[u8] = &[
+const TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_LENGTH_TOO_LONG: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
     0x00, 0x10, 
@@ -922,8 +927,8 @@ fn test_discovery_packet_wrong_flags_parse() {
 }
 
 #[test]
-fn test_discovery_packet_length_too_long_parse() {
-    match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_LENGTH_TOO_LONG) {
+fn test_discovery_packet_framing_layer_length_too_long_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_LENGTH_TOO_LONG) {
         Err(e) => {
             match e.kind() {
                 ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) => {
@@ -945,8 +950,8 @@ fn test_discovery_packet_length_too_long_parse() {
 }
 
 #[test]
-fn test_discovery_packet_length_too_short_parse() {
-    match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_LENGTH_TOO_SHORT) {
+fn test_discovery_packet_framing_layer_length_too_short_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_LENGTH_TOO_SHORT) {
         Err(e) => {
             match e.kind() {
                 ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) => {
@@ -1038,7 +1043,6 @@ fn test_discovery_packet_unknown_framing_vector_parse() {
         }
     }
 }
-
 
 #[test]
 fn test_discovery_packet_arbitary_reserved_parse() {
@@ -1307,7 +1311,11 @@ fn generate_test_universe_discovery_packet(universes_to_generate: u16) -> Vec<u8
 
 #[test]
 fn test_discovery_packet_no_universes() {
-    match AcnRootLayerProtocol::parse(&generate_test_universe_discovery_packet(0)) {
+    let generated_packet = generate_test_universe_discovery_packet(0);
+
+    assert_eq!(generated_packet.len(), UNIVERSE_DISCOVERY_PACKET_EXPECTED_MIN_SIZE);
+
+    match AcnRootLayerProtocol::parse(&generated_packet) {
         Err(e) => {
             assert!(false, format!("Unexpected error returned: {}", e));
         }
@@ -1329,7 +1337,11 @@ fn test_discovery_packet_no_universes() {
 
 #[test]
 fn test_discovery_packet_max_universe_capacity() {
-    match AcnRootLayerProtocol::parse(&generate_test_universe_discovery_packet(DISCOVERY_UNI_PER_PAGE as u16)) {
+    let generated_packet = generate_test_universe_discovery_packet(DISCOVERY_UNI_PER_PAGE as u16);
+
+    assert_eq!(generated_packet.len(), UNIVERSE_DISCOVERY_PACKET_EXPECTED_MAX_SIZE);
+
+    match AcnRootLayerProtocol::parse(&generated_packet) {
         Err(e) => {
             assert!(false, format!("Unexpected error returned: {}", e));
         }

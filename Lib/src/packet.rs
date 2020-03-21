@@ -284,8 +284,15 @@ fn zeros(buf: &mut [u8], n: usize) {
 }
 
 /// Takes the given byte buffer (e.g. a c char array) and parses it into a rust &str.
+/// 
+/// # Arguments
+/// buf: The byte buffer to parse into a str.
+/// 
+/// # Errors
+/// Returns SourceNameInvalid if the source name is not null terminated as required by ANSI E1.31-2018 Section 6.2.2
+/// 
 #[inline]
-fn parse_c_str(buf: &[u8]) -> Result<&str> {
+fn parse_source_name_str(buf: &[u8]) -> Result<&str> {
     let mut source_name_length = buf.len();
     for (i, b) in buf.iter().enumerate() {
         if *b == 0 {
@@ -293,6 +300,11 @@ fn parse_c_str(buf: &[u8]) -> Result<&str> {
             break;
         }
     }
+
+    if source_name_length == buf.len() && buf[buf.len() - 1] == 0 {
+        bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::SourceNameInvalid("Packet source name not null terminated".to_string())));
+    }
+
     Ok(str::from_utf8(&buf[..source_name_length])?)
 }
 
@@ -554,8 +566,6 @@ macro_rules! impl_data_packet_framing_layer {
             /// The name of the source.
             #[cfg(feature = "std")]
             pub source_name: Cow<'a, str>,
-            #[cfg(not(feature = "std"))]
-            pub source_name: String<[u8; 64]>,
 
             /// Priority of this data packet.
             pub priority: u8,
@@ -590,8 +600,13 @@ macro_rules! impl_data_packet_framing_layer {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
 
+                // The source name must be NULL terminated and therefore the last 
+                if buf[69] != 0 {
+
+                }
+
                 // Source Name
-                let source_name = String::from(parse_c_str(&buf[6..70])?);
+                let source_name = String::from(parse_source_name_str(&buf[6..70])?);
 
                 // Priority
                 let priority = buf[70];
@@ -1021,7 +1036,7 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                 }
 
                 // Source Name
-                let source_name = String::from(parse_c_str(&buf[6..70])?);
+                let source_name = String::from(parse_source_name_str(&buf[6..70])?);
 
                 // Reserved data (buf[70..74]) ignored as per ANSI E1.31-2018 Section 6.4.3.
 

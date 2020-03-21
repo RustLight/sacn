@@ -88,6 +88,12 @@ pub mod sacn_parse_pack_error {
                 description("Error parsing received UTF8 string"),
                 display("Error parsing received UTF8 string, msg: {}", msg)
             }
+
+            /// Source name in packet was invalid, for example due to not being null terminated.
+            SourceNameInvalid(msg: String) {
+                description("Attempted to parse invalid source name"),
+                display("Attempted to parse invalid source name, msg: {}", msg)
+            }
         }
     }
 }
