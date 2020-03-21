@@ -3007,9 +3007,73 @@ const TEST_TERMINATION_PARTIAL_PROPERTY_VALUES_PACKET: &[u8] = &[
 ];
 
 #[test]
-fn test_data_packet_full_length() {
+fn test_data_packet_full_length_expected() {
     const EXPECTED_DATA_PACKET_LEN: usize = 638; // As per ANSI E1.31-2018 Section 5.4.
     assert_eq!(TEST_DATA_PACKET.len(), EXPECTED_DATA_PACKET_LEN);
+}
+
+#[test]
+fn test_data_packet_empty_capacity_parse_pack() {
+    let packet = AcnRootLayerProtocol {
+        pdu: E131RootLayer {
+            cid: Uuid::from_bytes(&TEST_DATA_PACKET_EMPTY[22..38]).unwrap(),
+            data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
+                source_name: "Source_A".into(),
+                priority: 100,
+                synchronization_address: 7962,
+                sequence_number: 154,
+                preview_data: false,
+                stream_terminated: false,
+                force_synchronization: false,
+                universe: 1,
+                data: DataPacketDmpLayer {
+                    property_values: TEST_DATA_PACKET_EMPTY[125..].into(),
+                },
+            }),
+        },
+    };
+
+    assert_eq!(
+        AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_EMPTY).unwrap(),
+        packet
+    );
+
+    let mut buf = [0; 638];
+    packet.pack(&mut buf).unwrap();
+
+    assert_eq!(&buf[..packet.len()], TEST_DATA_PACKET_EMPTY);
+}
+
+#[test]
+fn test_data_packet_partial_capacity_parse_pack() {
+    let packet = AcnRootLayerProtocol {
+        pdu: E131RootLayer {
+            cid: Uuid::from_bytes(&TEST_DATA_PACKET_PARTIAL[22..38]).unwrap(),
+            data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
+                source_name: "Source_A".into(),
+                priority: 100,
+                synchronization_address: 7962,
+                sequence_number: 154,
+                preview_data: false,
+                stream_terminated: false,
+                force_synchronization: false,
+                universe: 1,
+                data: DataPacketDmpLayer {
+                    property_values: TEST_DATA_PACKET_PARTIAL[125..].into(),
+                },
+            }),
+        },
+    };
+
+    assert_eq!(
+        AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_PARTIAL).unwrap(),
+        packet
+    );
+
+    let mut buf = [0; 638];
+    packet.pack(&mut buf).unwrap();
+
+    assert_eq!(&buf[..packet.len()], TEST_DATA_PACKET_PARTIAL);
 }
 
 #[test]
@@ -3027,16 +3091,7 @@ fn test_data_packet_parse_pack() {
                 force_synchronization: false,
                 universe: 1,
                 data: DataPacketDmpLayer {
-                    #[cfg(feature = "std")]
                     property_values: TEST_DATA_PACKET[125..638].into(),
-                    #[cfg(not(feature = "std"))]
-                    property_values: {
-                        let mut property_values = Vec::new();
-                        property_values
-                            .extend_from_slice(&TEST_DATA_PACKET[125..638])
-                            .unwrap();
-                        property_values
-                    },
                 },
             }),
         },
