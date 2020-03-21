@@ -301,7 +301,7 @@ fn parse_source_name_str(buf: &[u8]) -> Result<&str> {
         }
     }
 
-    if source_name_length == buf.len() && buf[buf.len() - 1] == 0 {
+    if source_name_length == buf.len() && buf[buf.len() - 1] != 0 {
         bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::SourceNameInvalid("Packet source name not null terminated".to_string())));
     }
 
