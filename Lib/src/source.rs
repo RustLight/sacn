@@ -33,7 +33,7 @@ use std::sync::{Arc, Mutex};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 /// Socket2 used to create the underlying UDP socket that sACN is sent on.
-use socket2::{Socket, Domain, Type, SockAddr};
+use socket2::{Socket, Domain, Type};
 
 /// UUID library used to handle the UUID's used in the CID fields.
 use uuid::Uuid;
@@ -316,6 +316,7 @@ impl SacnSource {
 /// and if it goes out of reference it will clean itself up and send the required termination packets etc.
 impl Drop for SacnSource {
     fn drop(&mut self){
+        self.internal.lock().unwrap().running = false;
         if let Some(thread) = self.update_thread.take() {
             {
                 match self.internal.lock().unwrap().terminate(DEFAULT_TERMINATE_START_CODE) {
@@ -356,6 +357,8 @@ impl SacnSourceInternal {
             bail!(ErrorKind::UnsupportedIpVersion("Address to create SacnSource is not IPv4 or IPv6".to_string()));
         };
         
+        // Multiple different processes might want to send to the sACN stream so therefore need to allow re-using the ACN port.
+        socket.set_reuse_port(true)?;
         socket.bind(&ip.into())?;
 
         let ds = SacnSourceInternal {

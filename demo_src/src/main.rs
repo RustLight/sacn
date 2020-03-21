@@ -110,7 +110,8 @@ fn main(){
 
     let source_name = &cmd_args[2];
 
-    let mut src = SacnSource::with_ip(source_name, SocketAddr::new(interface_ip.parse().unwrap(), ACN_SDT_MULTICAST_PORT)).unwrap();
+    // Uses the next along port to allow usage on the same machine as a receiver which is using the ACN_SDT port.
+    let mut src = SacnSource::with_ip(source_name, SocketAddr::new(interface_ip.parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1)).unwrap();
 
     println!("Started");
 
