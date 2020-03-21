@@ -1,2 +1,2 @@
 Started
-[{ Universe(s): 1, Sync_Universe: 1, Values: [1, 2, 3, 4, 5] }, { Universe(s): 2, Sync_Universe: 1, Values: [6, 7, 8, 9, 10] }, ]
+[{ Universe(s): 1, Sync_Universe: 0, Values: [1, 2] }, ]
