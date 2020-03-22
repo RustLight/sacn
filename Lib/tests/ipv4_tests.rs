@@ -528,6 +528,111 @@ fn test_send_recv_single_universe_multicast_ipv4(){
     assert_eq!(received_universe.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
 }
 
+/// Sends 2 packets with the same universe and synchronisation address from a sender to a receiver, the first packet has a priority of 110 
+/// and the second a priority of 109. The receiver should discard the second packet when received due to its higher priority as per ANSI E1.31-2018 Section 6.2.3.
+/// A sync packet is then sent and the receiver output checked that the right packet was kept.
+/// Tests that lower priority packets are correctly discarded.
+#[test]
+fn test_send_recv_diff_priority_same_universe_multicast_ipv4(){
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
+
+    let thread_tx = tx.clone();
+
+    let universe = 1;
+
+    let rcv_thread = thread::spawn(move || {
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
+
+        dmx_recv.listen_universes(&[universe]).unwrap();
+
+        thread_tx.send(Ok(Vec::new())).unwrap();
+
+        thread_tx.send(dmx_recv.recv(None)).unwrap();
+    });
+
+    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
+
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
+
+    let priority = 110;
+    let priority_2 = 109;
+
+    src.register_universe(universe).unwrap();
+
+    src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(universe)).unwrap(); // First packet with higher priority.
+    src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority_2), None, Some(universe)).unwrap(); // Second packet with lower priority.
+    src.send_sync_packet(universe, None).unwrap(); // Trigger the packet to be passed up on the receiver.
+
+    let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
+
+    rcv_thread.join().unwrap();
+
+    assert!(!received_result.is_err(), "Failed: Error when receving data");
+
+    let received_data: Vec<DMXData> = received_result.unwrap();
+
+    assert_eq!(received_data.len(), 1); // Check only 1 universe received as expected.
+
+    let received_universe: DMXData = received_data[0].clone();
+
+    assert_eq!(received_universe.universe, universe); // Check that the universe received is as expected.
+
+    assert_eq!(received_universe.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+}
+
+/// Sends 2 packets with the same universe, priority and synchronisation address from a sender to a receiver.
+/// The receiver should discard the first packet when the second arrives as per ANSI E1.31-2018 Section 6.2.3.
+/// A sync packet is then sent and the receiver output checked that the right packet was kept.
+/// Tests that older packet is correctly discarded.
+#[test]
+fn test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4(){
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
+
+    let thread_tx = tx.clone();
+
+    let universe = 1;
+
+    let rcv_thread = thread::spawn(move || {
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
+
+        dmx_recv.listen_universes(&[universe]).unwrap();
+
+        thread_tx.send(Ok(Vec::new())).unwrap();
+
+        thread_tx.send(dmx_recv.recv(None)).unwrap();
+    });
+
+    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
+
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
+
+    let priority = 110;
+
+    src.register_universe(universe).unwrap();
+
+    src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(universe)).unwrap(); // First packet with higher priority.
+    src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(universe)).unwrap(); // Second packet with lower priority.
+    src.send_sync_packet(universe, None).unwrap(); // Trigger the packet to be passed up on the receiver.
+
+    let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
+
+    rcv_thread.join().unwrap();
+
+    assert!(!received_result.is_err(), "Failed: Error when receving data");
+
+    let received_data: Vec<DMXData> = received_result.unwrap();
+
+    assert_eq!(received_data.len(), 1); // Check only 1 universe received as expected.
+
+    let received_universe: DMXData = received_data[0].clone();
+
+    assert_eq!(received_universe.universe, universe); // Check that the universe received is as expected.
+
+    assert_eq!(received_universe.values, TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+}
+
 #[test]
 fn test_send_recv_two_universe_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
