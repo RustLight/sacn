@@ -29,6 +29,39 @@ fn test_send_without_registering(){
     }
 }
 
+/// Attempts to send a packet with a priority higher (> 200) than the maximum allowed as per ANSI E1.31-2018 Section 6.2.3. 
+#[test]
+fn test_send_above_priorty(){
+    let mut src = SacnSource::new_v4("Controller").unwrap();
+    let universe = 1;
+    let priority = 201;
+    
+    src.register_universe(universe).unwrap();
+
+    match src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::InvalidPriority(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                x => {
+                    assert!(false, format!("Unexpected error type returned, {:?}", x));
+                }
+            }
+            
+        }
+        Ok(_) => {
+            assert!(
+                false,
+                "Invalid priority (> limit) was not rejected"
+            );
+        }
+    }
+}
+
+/// Tests sending a single universe of data, this appear 'assertion-free' but it isn't because .unwrap() will panic 
+/// if a function returns an error. 
+/// This test therefore checks that the sender works without crashing in one of the simplest cases.
 #[test]
 fn test_send_single_universe(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
@@ -53,12 +86,6 @@ fn test_send_across_universe(){
     src.register_universes(&universes).unwrap();
 
     src.send(&universes, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, None).unwrap();
-}
-
-/// Tests that the source sends a discovery packet at approximately every discovery interval and that it contains the correct information.
-#[test]
-fn test_discovery_interval() {
-    
 }
 
 const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [

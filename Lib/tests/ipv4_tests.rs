@@ -1777,3 +1777,222 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
         s.join().unwrap();
     }
 }
+
+/// Creates a receiver with a source limit of 2 and then creates 3 sources to trigger a sources exceeded condition.
+#[test]
+fn test_receiver_sources_exceeded_3() {
+    const SND_THREADS: usize = 3;
+    const RCV_THREADS: usize = 1;
+    const SRC_LIMIT: Option<usize> = Some(2);
+
+    let mut snd_threads = Vec::new();
+
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
+
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
+
+    const BASE_UNIVERSE: u16 = 2;
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        let data = [1, 2, 3];
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
+            let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
+    
+            let priority = 100;
+
+            let universe: u16 = (i as u16) + BASE_UNIVERSE; 
+    
+            src.register_universe(universe).unwrap(); // Senders all send on different universes.
+
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+    
+            src.send(&[universe], &data, Some(priority), None, None).unwrap();
+        }));
+    }
+
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), SRC_LIMIT).unwrap();
+
+    // Receivers listen to all universes
+    for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
+        dmx_recv.listen_universes(&[i]).unwrap();
+    }
+
+    for _i in 0 .. SND_THREADS {
+        snd_rx.recv().unwrap(); // Allow each sender to progress
+    }
+
+    // Asserts that the first 2 recv attempts are successful.
+    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(None).unwrap();
+
+    // On receiving the third time from the third source the sources exceeded error should be thrown.
+    match dmx_recv.recv(None) {
+        Err(e) => {
+            match *e.kind() {
+                ErrorKind::SourcesExceededError(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error type returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "Recv was successful even though source limit was exceeded");
+        }
+    }
+}
+
+/// Creates a receiver with a source limit of 2 and then creates 2 sources which send to the receiver. 
+/// This shouldn't trigger a SourcesExceededCondition
+#[test]
+fn test_receiver_source_limit_2() {
+    const SND_THREADS: usize = 2;
+    const RCV_THREADS: usize = 1;
+    const SRC_LIMIT: Option<usize> = Some(2);
+
+    let mut snd_threads = Vec::new();
+
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
+
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
+
+    const BASE_UNIVERSE: u16 = 2;
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        let data = [1, 2, 3];
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
+    
+            let priority = 100;
+
+            let universe: u16 = (i as u16) + BASE_UNIVERSE; 
+    
+            src.register_universe(universe).unwrap(); // Senders all send on different universes.
+
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+
+            // Each source sends twice (meaning 4 packets total), this checks that the receiver isn't using the number of packets as the way to check for the number
+            // of sources. 
+            src.send(&[universe], &data, Some(priority), None, None).unwrap();
+            src.send(&[universe], &data, Some(priority), None, None).unwrap();
+        }));
+    }
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), SRC_LIMIT).unwrap();
+
+    // Receivers listen to all universes
+    for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
+        dmx_recv.listen_universes(&[i]).unwrap();
+    }
+
+    for _i in 0 .. SND_THREADS {
+        snd_rx.recv().unwrap(); // Allow each sender to progress
+    }
+
+    // Asserts that the recv attempts are successful.
+    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(None).unwrap();
+}
+
+/// Creates a receiver with a source limit of 2 and then creates 2 sources which send to the receiver.
+/// A source then terminates and another source is created.
+/// At all points the total source count was less than or equal to the limit of 2 sources as specified by the receiver
+/// so this should not cause a SourcesExceededCondition.
+#[test]
+fn test_receiver_source_limit_2_termination_check() {
+    const SND_THREADS: usize = 2;
+    const SRC_LIMIT: Option<usize> = Some(2);
+
+    let mut snd_threads = Vec::new();
+
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
+
+    const BASE_UNIVERSE: u16 = 2;
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        let data = [1, 2, 3];
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+            let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
+    
+            let priority = 100;
+
+            let universe: u16 = (i as u16) + BASE_UNIVERSE; 
+    
+            src.register_universe(universe).unwrap(); // Senders all send on different universes.
+
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+
+            // Each source sends twice (meaning 4 packets total), this checks that the receiver isn't using the number of packets as the way to check for the number
+            // of sources. 
+            src.send(&[universe], &data, Some(priority), None, None).unwrap();
+            src.send(&[universe], &data, Some(priority), None, None).unwrap();
+
+            if i == 0 { // Forces the first thread not to terminate and to wait. The second thread will finish and terminate the source.
+                tx.send(()).unwrap();
+            }
+        }));
+    }
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), SRC_LIMIT).unwrap();
+
+    // Receivers listen to all universes
+    for i in (BASE_UNIVERSE as u16) .. ((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
+        dmx_recv.listen_universes(&[i]).unwrap();
+    }
+
+    for _i in 0 .. SND_THREADS {
+        snd_rx.recv().unwrap(); // Allow each sender to progress
+    }
+
+    // Asserts that the recv attempts are successful.
+    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(None).unwrap();
+
+    // The first source is held back from terminating but the second source should terminate.
+    let second_thread = snd_threads.remove(1);
+    second_thread.join().unwrap();
+
+    // Create a new source which sends to the receiver.
+    let data = [1, 2, 3];
+    let new_src_thread = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (3 as u16));
+        let mut src = SacnSource::with_ip(&format!("Source {}", 3), ip).unwrap();
+
+        src.register_universe(BASE_UNIVERSE).unwrap();
+
+        // New source now sends twice which the receiver should receive.
+        src.send(&[BASE_UNIVERSE], &data, None, None, None).unwrap();
+        src.send(&[BASE_UNIVERSE], &data, None, None, None).unwrap();
+    });
+
+    // Asserts that the recv attempts are successful (no source exceeded).
+    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(None).unwrap();
+
+    // Allow the first source to progress and finish.
+    snd_rx.recv().unwrap();
+    let first_thread = snd_threads.remove(0);
+    first_thread.join().unwrap();
+    
+    // Finish the new source.
+    new_src_thread.join().unwrap();
+}

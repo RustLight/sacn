@@ -726,11 +726,9 @@ impl SacnReceiver {
                 let data: E131RootLayerData = pdu.data;
                 let res = match data {
                     DataPacket(d) => self
-                        .handle_data_packet(pdu.cid, d)
-                        .chain_err(|| "Failed to handle data packet")?,
+                        .handle_data_packet(pdu.cid, d)?,
                     SynchronizationPacket(s) => self
-                        .handle_sync_packet(pdu.cid, s)
-                        .chain_err(|| "Failed to handle sync packet")?,
+                        .handle_sync_packet(pdu.cid, s)?,
                     UniverseDiscoveryPacket(u) => {
                         if self.handle_universe_discovery_packet(u)
                             && self.announce_source_discovery
