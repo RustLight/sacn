@@ -1867,10 +1867,14 @@ fn test_receiver_sources_exceeded_3() {
     const SND_THREADS: usize = 3;
     const RCV_THREADS: usize = 1;
     const SRC_LIMIT: Option<usize> = Some(2);
+    const TIMEOUT: Option<Duration> = Some(Duration::from_secs(3));
 
     let mut snd_threads = Vec::new();
 
+    // Seperate message queues used so threads don't take messages to allow them to proceed as a message to allow finishing.
+    // This is less efficient than using different message types within a single queue however as this is a test the priority is simplicity.
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
+    let (finish_snd_tx, finish_snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking to tell the source threads to finish.
 
     assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
 
@@ -1878,6 +1882,7 @@ fn test_receiver_sources_exceeded_3() {
 
     for i in 0 .. SND_THREADS {
         let tx = snd_tx.clone();
+        let fin_tx = finish_snd_tx.clone();
 
         let data = [1, 2, 3];
 
@@ -1895,9 +1900,10 @@ fn test_receiver_sources_exceeded_3() {
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
     
             src.send(&[universe], &data, Some(priority), None, None).unwrap();
+
+            fin_tx.send(()).unwrap(); // Forces each sender to wait and not terminate.
         }));
     }
-
 
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), SRC_LIMIT).unwrap();
 
@@ -1906,16 +1912,16 @@ fn test_receiver_sources_exceeded_3() {
         dmx_recv.listen_universes(&[i]).unwrap();
     }
 
-    for _i in 0 .. SND_THREADS {
+    for _ in 0 .. SND_THREADS {
         snd_rx.recv().unwrap(); // Allow each sender to progress
     }
 
     // Asserts that the first 2 recv attempts are successful.
-    dmx_recv.recv(None).unwrap();
-    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(TIMEOUT).unwrap();
+    dmx_recv.recv(TIMEOUT).unwrap();
 
     // On receiving the third time from the third source the sources exceeded error should be thrown.
-    match dmx_recv.recv(None) {
+    match dmx_recv.recv(TIMEOUT) {
         Err(e) => {
             match *e.kind() {
                 ErrorKind::SourcesExceededError(_) => {
@@ -1929,6 +1935,15 @@ fn test_receiver_sources_exceeded_3() {
         Ok(_) => {
             assert!(false, "Recv was successful even though source limit was exceeded");
         }
+    }
+    
+    // Allow the senders to finish / terminate.
+    for _ in 0 .. SND_THREADS {
+        finish_snd_rx.recv().unwrap();
+    }
+
+    for _ in 0 .. SND_THREADS {
+        snd_threads.pop().unwrap().join().unwrap();
     }
 }
 

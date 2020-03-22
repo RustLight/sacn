@@ -77,6 +77,7 @@ const DEFAULT_MERGE_FUNC: fn(&DMXData, &DMXData) -> Result<DMXData> =
 pub struct DMXData {
     /// The universe that the data was sent to.
     pub universe: u16,
+    
     /// The actual universe data, if less than 512 values in length then implies trailing 0's to pad to a full-universe of data.
     pub values: Vec<u8>,
 
@@ -143,10 +144,17 @@ struct UniversePage {
 pub struct SacnReceiver {
     /// The SacnNetworkReceiver used for handling communication with UDP / Network / Transport layer.
     receiver: SacnNetworkReceiver,
+
     /// Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
-    waiting_data: Vec<DMXData>,
+    /// Key is the universe. A receiver may not have more than one packet waiting per data_universe.
+    /// Data_universe used as key as oppose to sync universe because multiple packets might be waiting on the same sync universe
+    /// and adding data by data universe is at least as common as retrieving data by sync address because in a normal setup
+    /// 1 or more bits of data wait for 1 sync.
+    waiting_data: HashMap<u16, DMXData>,
+
     /// Universes that this receiver is currently listening for
     universes: Vec<u16>,
+
     /// Sacn sources that have been discovered by this receiver through universe discovery packets.
     discovered_sources: Vec<DiscoveredSacnSource>,
 
@@ -234,7 +242,7 @@ impl SacnReceiver {
         let mut sri = SacnReceiver {
             receiver: SacnNetworkReceiver::new(ip)
                 .chain_err(|| "Failed to create SacnNetworkReceiver")?,
-            waiting_data: Vec::new(),
+            waiting_data: HashMap::new(),
             universes: Vec::new(),
             discovered_sources: Vec::new(),
             merge_func: DEFAULT_MERGE_FUNC,
@@ -306,8 +314,18 @@ impl SacnReceiver {
     }
 
     /// Deletes all data currently waiting to be passed up - e.g. waiting for a synchronisation packet.
-    pub fn clear_waiting_data(&mut self) {
+    pub fn clear_all_waiting_data(&mut self) {
         self.waiting_data.clear();
+    }
+
+    /// Clears data (if any) waiting to be passed up for the specific universe.
+    /// 
+    /// # Arguments
+    /// 
+    /// universe: The universe that the data that is waiting was sent to.
+    /// 
+    pub fn clear_waiting_data(&mut self, universe: u16) {
+        self.waiting_data.remove(&universe);
     }
 
     /// Allows receiving from the given universe and starts listening to the multicast addresses which corresponds to the given universe.
@@ -506,7 +524,7 @@ impl SacnReceiver {
             data_pkt.universe,
         )?;
         if data_pkt.synchronization_address == E131_NO_SYNC_ADDR {
-            self.clear_waiting_data();
+            self.clear_waiting_data(data_pkt.universe);
 
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
             let dmx_data: DMXData = DMXData {
@@ -533,26 +551,27 @@ impl SacnReceiver {
         }
     }
 
-    /// Takes the given data and stores it in the buffer of data waiting to be passed up.
-    ///
-    /// Note that multiple bits of data for the same universe can be buffered at one time as long as the data is
-    /// waiting for different synchronisation universes. Only if the data is for the same universe and is waiting
-    /// for the same synchronisation universe is it merged.
+    /// Takes the given data and trys to add it to the waiting data.
+    /// 
+    /// Note that a receiver will only store a single packet of data per data_universe at once.
+    /// 
+    /// If there is waiting data for the same universe as the data then it will be merged as per the
+    /// merge_func which by default keeps the highest priority data, if the data has the same priority
+    /// then the newest data is kept.
     ///
     /// # Errors
     /// Will return an DmxMergeError if there is an issue merging or replacing new and existing waiting data.
     ///
     fn store_waiting_data(&mut self, data: DMXData) -> Result<()> {
-        for i in 0..self.waiting_data.len() {
-            if self.waiting_data[i].universe == data.universe
-                && self.waiting_data[i].sync_uni == data.sync_uni
-            {
-                self.waiting_data[i] = ((self.merge_func)(&self.waiting_data[i], &data))?;
-                return Ok(());
+        
+        match self.waiting_data.remove(&data.universe) {
+            Some(existing) => {
+                self.waiting_data.insert(data.universe, ((self.merge_func)(&existing, &data))?);
+            }
+            None => {
+                self.waiting_data.insert(data.universe, data);
             }
         }
-
-        self.waiting_data.push(data);
         Ok(())
     }
 
@@ -607,20 +626,23 @@ impl SacnReceiver {
     ///
     /// Arguments:
     /// sync_uni: The synchronisation universe of the data that should be retrieved.
+    /// 
     fn rtrv_waiting_data(&mut self, sync_uni: u16) -> Vec<DMXData> {
-        let mut res: Vec<DMXData> = Vec::new();
-
-        let mut i: usize = 0;
-        let mut len: usize = self.waiting_data.len();
-
-        while i < len {
-            if self.waiting_data[i].sync_uni == sync_uni {
-                res.push(self.waiting_data.remove(i));
-                len = len - 1;
-            } else {
-                i = i + 1;
+        // Get the universes (used as keys) to remove and then move the corresponding data out of the waiting data and into the result.
+        // This prevents having to copy DMXData.
+        // Cannot do both actions at once as cannot modify a data structure while iterating over it.
+        let mut keys: Vec<u16> = Vec::new();
+        for (uni, data) in self.waiting_data.iter() {
+            if data.sync_uni == sync_uni {
+                keys.push(*uni);
             }
         }
+
+        let mut res: Vec<DMXData> = Vec::new();
+        for k in keys {
+            res.push(self.waiting_data.remove(&k).unwrap());
+        }
+
         res
     }
 
