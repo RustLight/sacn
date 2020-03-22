@@ -1915,6 +1915,7 @@ fn test_receiver_source_limit_2() {
 fn test_receiver_source_limit_2_termination_check() {
     const SND_THREADS: usize = 2;
     const SRC_LIMIT: Option<usize> = Some(2);
+    const RECV_TIMEOUT: Option<Duration> = Some(Duration::from_secs(5));
 
     let mut snd_threads = Vec::new();
 
@@ -1936,7 +1937,7 @@ fn test_receiver_source_limit_2_termination_check() {
             let universe: u16 = (i as u16) + BASE_UNIVERSE; 
     
             src.register_universe(universe).unwrap(); // Senders all send on different universes.
-
+            
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
 
             // Each source sends twice (meaning 4 packets total), this checks that the receiver isn't using the number of packets as the way to check for the number
@@ -1957,15 +1958,14 @@ fn test_receiver_source_limit_2_termination_check() {
         dmx_recv.listen_universes(&[i]).unwrap();
     }
 
-    for _ in 0 .. SND_THREADS {
-        snd_rx.recv().unwrap(); // Allow each sender to progress
-    }
+    snd_rx.recv().unwrap();
+    snd_rx.recv().unwrap();
 
     // Asserts that the recv attempts are successful.
-    dmx_recv.recv(None).unwrap();
-    dmx_recv.recv(None).unwrap();
-    dmx_recv.recv(None).unwrap();
-    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(RECV_TIMEOUT).unwrap();
+    dmx_recv.recv(RECV_TIMEOUT).unwrap();
+    dmx_recv.recv(RECV_TIMEOUT).unwrap();
+    dmx_recv.recv(RECV_TIMEOUT).unwrap();
 
     // The first source is held back from terminating but the second source should terminate.
     let second_thread = snd_threads.remove(1);
@@ -1985,8 +1985,8 @@ fn test_receiver_source_limit_2_termination_check() {
     });
 
     // Asserts that the recv attempts are successful (no source exceeded).
-    dmx_recv.recv(None).unwrap();
-    dmx_recv.recv(None).unwrap();
+    dmx_recv.recv(RECV_TIMEOUT).unwrap();
+    dmx_recv.recv(RECV_TIMEOUT).unwrap();
 
     // Allow the first source to progress and finish.
     snd_rx.recv().unwrap();
