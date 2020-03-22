@@ -25,7 +25,15 @@ pub mod errors {
             SacnParsePackError(sacn_parse_pack_error::Error, sacn_parse_pack_error::ErrorKind);
         }
 
-        errors {   
+        errors {
+            /// Attempted to perform an action using a priority value that is invalid. For example sending with a priority > 200.
+            /// This is distinct from the SacnParsePackError(ParseInvalidPriority) as it is for a local use of an invalid priority
+            /// rather than receiving an invalid priority from another source.
+            InvalidPriority(msg: String) {
+                description("Attempted to perform an action using a priority value that is invalid"),
+                display("Attempted to perform an action using a priority value that is invalid, msg: {}", msg)
+            }
+            
             /// Used to indicate that the limit for the number of supported sources has been reached. 
             /// This is based on unique CID values.
             /// as per ANSI E1.31-2018 Section 6.2.3.3.
