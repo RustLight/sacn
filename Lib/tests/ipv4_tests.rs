@@ -1957,7 +1957,7 @@ fn test_receiver_source_limit_2_termination_check() {
         dmx_recv.listen_universes(&[i]).unwrap();
     }
 
-    for _i in 0 .. SND_THREADS {
+    for _ in 0 .. SND_THREADS {
         snd_rx.recv().unwrap(); // Allow each sender to progress
     }
 
