@@ -284,6 +284,7 @@ impl SacnReceiver {
         self.partially_discovered_sources.clear();
         self.discovered_sources.clear();
     }
+
     /// Sets the merge function to be used by this receiver.
     ///
     /// This merge function is called if data is waiting for a universe e.g. for syncronisation and then further data for that universe with the same
@@ -383,21 +384,55 @@ impl SacnReceiver {
         self.process_preview_data = val;
     }
 
-    /// Removes the given universe from the discovered sACN source with the given name.
+    /// Removes the given universe from the discovered sACN source with the given name, also stops tracking 
+    /// sequence numbers for that universe / sender combination.
     ///
     /// Note this is just a record keeping operation, it doesn't actually effect the real sACN sender it
     /// just updates the record of what universes are expected on this receiver.
+    /// 
+    /// If the src_cid/source_name/univese isn't currently registered then this method has no effect.
+    /// This is intentional as it allows calling this function multiple times without worrying about failure because 
+    /// it comes to the same result.
+    ///     E.g. when a source terminates it sends 3 termination packets but a receiver should only terminate once.
     ///
-    /// Arguments:
+    /// # Arguments:
+    /// 
+    /// src_cid: The CID of the source which is terminating a universe.
+    /// 
     /// source_name: The human readable name of the sACN source to remove the universe from.
+    /// 
     /// universe:    The sACN universe to remove.
-    fn terminate_stream<'a>(&mut self, source_name: Cow<'a, str>, universe: u16) {
+    /// 
+    fn terminate_stream<'a>(&mut self, src_cid: Uuid, source_name: Cow<'a, str>, universe: u16) {
+        match self.remove_seq_numbers(src_cid, universe) {
+            _ => {
+                // Will only return an error if the source/universe wasn't found which is acceptable because as it
+                // comes to the same result.
+            } 
+        }
+
         match find_discovered_src(&self.discovered_sources, &source_name.to_string()) {
             Some(index) => {
                 self.discovered_sources[index].terminate_universe(universe);
             }
-            None => {}
+            None => { 
+                // As with sequence numbers the source might not be found which is acceptable.
+            }
         }
+    }
+
+    /// Removes the sequence number tracking for the given source / universe combination.
+    /// This applies to both data and sync packets.
+    /// 
+    /// # Arguments:
+    /// 
+    /// src_cid: The CID of the source to remove the sequence numbers of.
+    /// 
+    /// universe: The universe being sent by the source from which to remove the sequence numbers.
+    /// 
+    fn remove_seq_numbers<'a>(&mut self, src_cid: Uuid, universe: u16) -> Result<()> {
+        remove_source_universe_seq(&mut self.data_sequences, src_cid, universe)?;
+        remove_source_universe_seq(&mut self.sync_sequences, src_cid, universe)
     }
 
     /// Checks if this receiver is currently listening to the given universe.
@@ -444,7 +479,7 @@ impl SacnReceiver {
         }
 
         if data_pkt.stream_terminated {
-            self.terminate_stream(data_pkt.source_name, data_pkt.universe);
+            self.terminate_stream(cid, data_pkt.source_name, data_pkt.universe);
             if self.announce_stream_termination_flag {
                 bail!(ErrorKind::UniverseTerminated(
                     "A source terminated a universe and this was detected when trying to receive data"
@@ -1562,6 +1597,51 @@ fn check_seq_number(
     };
 
     Ok(())
+}
+
+/// Removes the sequence number entry from the given sequences for the given source cid and universe.
+/// 
+/// This removes the source entirely if there are no universes left.
+/// 
+/// # Arguments
+/// src_sequences: The sequence numbers for each source and universe.
+/// 
+/// src_cid:       The CID for the source to remove the unvierse from.
+/// 
+/// universe:      The universe to remove from the source.
+/// 
+/// # Errors
+/// Returns a SourceNotFound error if the given src_cid isn't in the given collection of sources/sequence-numbers.
+/// 
+/// Returns a UniverseNotFound error if the given universe isn't registered to the given source and so cannot be removed.
+/// 
+fn remove_source_universe_seq(src_sequences: &mut HashMap<Uuid, HashMap<u16, u8>>, src_cid: Uuid, universe: u16) -> Result<()> {
+    match src_sequences.get_mut(&src_cid) {
+        Some(x) => {
+            match x.remove(&universe) {
+                Some(_) => {
+                    if x.is_empty() { // Remove the source if there are no universes registered to it.
+                        match src_sequences.remove(&src_cid) {
+                            Some (_x) => {
+                                Ok(())
+                            }
+                            None => {
+                                bail!(ErrorKind::SourceNotFound("Could not find the source so could not remove it".to_string()));
+                            }
+                        }
+                    } else {
+                        Ok(())
+                    }
+                }
+                None => {
+                    bail!(ErrorKind::UniverseNotFound("Could not find universe within source in sequence numbers so could not remove it".to_string()));
+                }
+            }
+        }
+        None => {
+            bail!(ErrorKind::SourceNotFound("Could not find the source in the sequence numbers so could not remove it".to_string()));
+        }
+    }
 }
 
 /// The default merge action for the receiver.

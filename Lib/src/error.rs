@@ -112,6 +112,13 @@ pub mod errors {
                 display("When looking for a specific universe it wasn't found, msg: {}", msg)
             }
 
+            /// Attempted to find a source and failed. This might happen on a receiver for example if trying to remove a source which was never 
+            /// registered or discovered.
+            SourceNotFound(msg: String) {
+                description("When looking for a specific source it wasn't found"),
+                display("Source not found, msg: {}", msg)
+            }
+
             /// Thrown to indicate that the operation attempted is unsupported on the current OS
             /// For example this is used to indicate that multicast-IPv6 isn't supported current on Windows.
             OsOperationUnsupported(msg: String) {
