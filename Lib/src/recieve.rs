@@ -713,8 +713,8 @@ impl SacnReceiver {
     /// is already handled.
     ///
     /// # Errors
-    /// This method will return a WouldBlock error if there is no data ready within the given timeout.
-    /// A timeout of duration 0 will instantly return a WouldBlock error without checking for data.
+    /// This method will return a WouldBlock (unix) or TimedOut (windows) error if there is no data ready within the given timeout.
+    /// A timeout of duration 0 will instantly return a WouldBlock/TimedOut error without checking for data.
     ///
     /// Will return ErrorKind::SourceDiscovered error if the announce_source_discovery flag is set and a universe discovery
     /// packet is received and a source fully discovered.
@@ -744,10 +744,17 @@ impl SacnReceiver {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
 
         if timeout == Some(Duration::from_secs(0)) {
-            bail!(std::io::Error::new(
-                std::io::ErrorKind::WouldBlock,
-                "No data avaliable in given timeout"
-            ));
+            if cfg!(target_os = "windows") { // Use the right expected error for the operating system.
+                bail!(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    "No data avaliable in given timeout"
+                ));
+            } else {
+                bail!(std::io::Error::new(
+                    std::io::ErrorKind::WouldBlock,
+                    "No data avaliable in given timeout"
+                ));
+            }
         }
 
         self.receiver

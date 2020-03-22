@@ -612,8 +612,8 @@ fn test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4(){
 
     src.register_universe(universe).unwrap();
 
-    src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(universe)).unwrap(); // First packet with higher priority.
-    src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(universe)).unwrap(); // Second packet with lower priority.
+    src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(universe)).unwrap(); // First packet
+    src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(universe)).unwrap(); // Second packet which should override first.
     src.send_sync_packet(universe, None).unwrap(); // Trigger the packet to be passed up on the receiver.
 
     let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
@@ -631,6 +631,89 @@ fn test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4(){
     assert_eq!(received_universe.universe, universe); // Check that the universe received is as expected.
 
     assert_eq!(received_universe.values, TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+}
+
+/// Sends data 2 packets with the same universe. The first packet is a synchronised packet with a synchronisation address
+/// that is > 0. The second packet isn't synchronised as it has a synchronisation address of 0. This second packet should
+/// therefore override the waiting packet as per ANSI E1.31-2018 Section 6.2.4.1. 
+/// 
+/// To check that the waiting data is discarded the receiver receives once to check the second packet gets through and then 
+/// the source sends a sync_packet and the receiver receives again, since the waiting data was discarded it is expected that the
+/// sync packet should have no effect and the receiver will timeout.
+#[test]
+fn test_send_recv_sync_then_nosync_packet_same_universe_multicast_ipv4() {
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
+
+    let thread_tx = tx.clone();
+
+    let universe = 1;
+    const TIMEOUT: Option<Duration> = Some(Duration::from_secs(2));
+
+    let rcv_thread = thread::spawn(move || {
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
+
+        dmx_recv.listen_universes(&[universe]).unwrap();
+
+        thread_tx.send(Ok(Vec::new())).unwrap();
+
+        thread_tx.send(dmx_recv.recv(None)).unwrap(); // Receive a packet, expected to be the second packet which has caused the first to be discarded.
+
+        thread_tx.send(dmx_recv.recv(TIMEOUT)).unwrap(); // Attempt to receive a packet, expected to timeout because the other data packet was discarded.
+    });
+
+    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
+
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
+
+    src.register_universe(universe).unwrap();
+
+    src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, None, None, Some(universe)).unwrap(); // First packet, with sync.
+    src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, None, None, None).unwrap(); // Second packet, no sync.
+    
+    src.send_sync_packet(universe, None).unwrap(); // Send a sync packet, if the first packet isn't discarded it should now be passed up.
+
+    let first_received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
+    let second_received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
+
+    rcv_thread.join().unwrap(); // Finished with receiver
+
+    // Check that the first lot of data received (which should be the second packet) is as expected.
+    assert!(!first_received_result.is_err(), "Unexpected error when receiving first lot of data");
+    let received_data: Vec<DMXData> = first_received_result.unwrap();
+    assert_eq!(received_data.len(), 1); // Check only 1 universe received as expected.
+    let received_universe: DMXData = received_data[0].clone();
+    assert_eq!(received_universe.universe, universe); // Check that the universe received is as expected.
+    assert_eq!(received_universe.values, TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+
+    match second_received_result {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::Io(ref s) => {
+                    match s.kind() {
+                        std::io::ErrorKind::WouldBlock => {
+                            // Expected to timeout.
+                            // The different errors are due to windows and unix returning different errors for the same thing.
+                            assert!(true, "Timed out as expected meaning waiting data was successfully discarded");
+                        },
+                        std::io::ErrorKind::TimedOut => {
+                            assert!(true, "Timed out as expected meaning waiting data was successfully discarded");
+                        },
+                        _ => {
+                            assert!(false, "Unexpected error returned");
+                        }
+                    }
+                },
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "Second receive attempt didn't timeout as expected, indicates that the synchronised data packet wasn't discarded as expected");
+        }
+    }
+
 }
 
 #[test]
