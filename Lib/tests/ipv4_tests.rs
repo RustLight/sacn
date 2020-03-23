@@ -405,15 +405,12 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
 
     match attempt_recv {
         Ok(o) => {
-            println!("{:#?}", o);
             assert!(false, "Receivers received without waiting for sync");
         },
         Err(e) => assert_eq!(e, RecvTimeoutError::Timeout)
     }
 
     src.send_sync_packet(sync_uni, None).unwrap();
-
-    println!("Waiting to receive");
 
     let received_result1: Vec<DMXData> = rx.recv().unwrap().unwrap();
     let received_result2: Vec<DMXData> = rx.recv().unwrap().unwrap();
@@ -1087,14 +1084,16 @@ fn test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4()
         values: TEST_DATA_SINGLE_UNIVERSE.to_vec(),
         sync_uni: sync_uni,
         priority: 100,
-        src_cid: None
+        src_cid: None,
+        preview: false
     },
     &DMXData {
         universe: universe,
         values: TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec(),
         sync_uni: sync_uni,
         priority: 100,
-        src_cid: None
+        src_cid: None,
+        preview: false
     },).unwrap().values);
 }
 
@@ -1521,8 +1520,6 @@ fn test_three_senders_three_recv_multicast_ipv4(){
         }
 
         rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
-
-        println!("{:?}", rcv_dmx_datas);
 
         for k in 0 .. SND_THREADS {
             assert_eq!(rcv_dmx_datas[k].universe, ((k as u16) + BASE_UNIVERSE)); // Check that the universe received is as expected.
@@ -2093,4 +2090,111 @@ fn test_receiver_source_limit_2_termination_check() {
     
     // Finish the new source.
     new_src_thread.join().unwrap();
+}
+
+/// Create 2 receivers with a single sender, one receiver listens to preview_data and the other doesn't. 
+/// The sender then sends data with the preview flag set and not and the receivers check they receive the data correctly.
+#[test]
+fn test_preview_data_2_receiver_1_sender() {
+    const RCV_THREADS: usize = 2;
+    const UNIVERSE: u16 = 1;
+    const NORMAL_DATA: [u8; 4] = [0, 1, 2, 3];
+    const PREVIEW_DATA: [u8; 4] = [9, 10, 11, 12];
+    const TIMEOUT: Option<Duration> = Some(Duration::from_secs(3));
+
+    let mut rcv_threads = Vec::new();
+
+    let (rcv_tx, rcv_rx): (SyncSender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::sync_channel(0);
+
+    // Check that the test setup is correct.
+    assert!(RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV4.len(), "Number of test network interface ips less than number of recv threads!");
+
+    for i in 0 .. RCV_THREADS {
+        let tx = rcv_tx.clone();
+
+        rcv_threads.push(thread::spawn(move || {
+            // Port kept the same so must use multiple IP's.
+            let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
+
+            if i == 0 {
+                dmx_recv.set_process_preview_data(true); // The first reciever should listen for preview data.
+            }
+
+            // Receivers listen to the same universe
+            dmx_recv.listen_universes(&[UNIVERSE]).unwrap();
+
+            tx.send(Ok(Vec::new())).unwrap(); // Receiver notifies controlling thread it is ready.
+
+            let result = dmx_recv.recv(None).unwrap();
+
+            assert_eq!(result.len(), 1);
+
+            let data = &result[0];
+
+            assert_eq!(data.universe, UNIVERSE);
+            assert_eq!(data.values, NORMAL_DATA);
+
+            assert_eq!(data.preview, false);
+
+            if i == 0 {
+                // The receiver listening to preview_data will receive twice.
+                let preview_result = dmx_recv.recv(None).unwrap();
+                assert_eq!(preview_result.len(), 1);
+
+                let preview_data = &preview_result[0];
+
+                assert_eq!(preview_data.universe, UNIVERSE);
+                assert_eq!(preview_data.values, PREVIEW_DATA);
+                assert_eq!(preview_data.preview, true);
+            } else {
+                // The other receiver should not.
+                match dmx_recv.recv(TIMEOUT) { 
+                    Err(e) => {
+                        match e.kind() {
+                            &ErrorKind::Io(ref s) => {
+                                match s.kind() {
+                                    std::io::ErrorKind::WouldBlock => {
+                                        // Expected to timeout / would block.
+                                        // The different errors are due to windows and unix returning different errors for the same thing.
+                                    },
+                                    std::io::ErrorKind::TimedOut => {},
+                                    _ => {
+                                        assert!(false, "Unexpected error returned");
+                                    }
+                                }
+                            },
+                            _ => {
+                                assert!(false, "Unexpected error returned");
+                            }
+                        }
+                    },
+                    Ok(_) => {
+                        assert!(false, "Non-preview receiver received preview data");
+                    }
+                }
+            }
+        }));
+    }
+
+    // Sender waits for both receivers to be ready.
+    for _ in 0 .. RCV_THREADS {
+        rcv_rx.recv().unwrap().unwrap();
+    }
+    
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
+    src.register_universe(UNIVERSE).unwrap();
+
+    // Send data without the preview flag.
+    src.send(&[UNIVERSE], &NORMAL_DATA, None, None, None).unwrap();
+
+    src.set_preview_mode(true);
+
+    // Send data with the preview flag.
+    src.send(&[UNIVERSE], &PREVIEW_DATA, None, None, None).unwrap();
+
+    // Finish with the recieve threads.
+    for r in rcv_threads {
+        r.join().unwrap();
+    }
 }
