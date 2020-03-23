@@ -600,11 +600,6 @@ macro_rules! impl_data_packet_framing_layer {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
 
-                // The source name must be NULL terminated and therefore the last 
-                if buf[69] != 0 {
-
-                }
-
                 // Source Name
                 let source_name = String::from(parse_source_name_str(&buf[6..70])?);
 
@@ -650,10 +645,7 @@ macro_rules! impl_data_packet_framing_layer {
                 let data = DataPacketDmpLayer::parse(&buf[77..length])?;
 
                 Ok(DataPacketFramingLayer {
-                    #[cfg(feature = "std")]
                     source_name: source_name.into(),
-                    #[cfg(not(feature = "std"))]
-                    source_name,
                     priority,
                     synchronization_address,
                     sequence_number,

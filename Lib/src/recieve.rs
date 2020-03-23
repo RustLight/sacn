@@ -93,6 +93,9 @@ pub struct DMXData {
     /// which use the identity of the source to decide behaviour.
     /// A value of None indicates that there is no clear source, for example if a merge algorithm has merged data from 2 or more sources together.
     pub src_cid: Option<Uuid>,
+
+    /// Indicates if the data is marked as 'preview' data indicating it is for use by visualisers etc. as per ANSI E1.31-2018 Section 6.2.6.
+    pub preview: bool,
 }
 
 /// Used for receiving dmx or other data on a particular universe using multicast.
@@ -161,11 +164,13 @@ pub struct SacnReceiver {
     /// The merge function used by this receiver if DMXData for the same universe and synchronisation universe is received while there
     /// is already DMXData waiting for that universe and synchronisation address.
     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData>,
+
     /// Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
     partially_discovered_sources: Vec<DiscoveredSacnSource>,
 
     /// Flag that indicates if this receiver should process packets marked as preview data.
     /// If true then the receiver will process theses packets.
+    /// Returned data contains a flag to indicate if it is preview_data which can be used by the implementer to use/discard as required.
     process_preview_data: bool,
 
     /// The limit to the number of sources for which to track sequence numbers.
@@ -491,6 +496,7 @@ impl SacnReceiver {
         cid: Uuid,
         data_pkt: DataPacketFramingLayer,
     ) -> Result<Option<Vec<DMXData>>> {
+
         if data_pkt.preview_data && !self.process_preview_data {
             // Don't process preview data unless receiver has process_preview_data flag set.
             return Ok(None);
@@ -533,6 +539,7 @@ impl SacnReceiver {
                 sync_uni: data_pkt.synchronization_address,
                 priority: data_pkt.priority,
                 src_cid: Some(cid),
+                preview: data_pkt.preview_data
             };
 
             return Ok(Some(vec![dmx_data]));
@@ -544,6 +551,7 @@ impl SacnReceiver {
                 sync_uni: data_pkt.synchronization_address,
                 priority: data_pkt.priority,
                 src_cid: Some(cid),
+                preview: data_pkt.preview_data
             };
 
             self.store_waiting_data(dmx_data)?;
@@ -1218,6 +1226,7 @@ impl Clone for DMXData {
             sync_uni: self.sync_uni,
             priority: self.priority,
             src_cid: self.src_cid,
+            preview: self.preview,
         }
     }
 }
@@ -1693,9 +1702,12 @@ pub fn discard_lowest_priority_then_previous(i: &DMXData, n: &DMXData) -> Result
 /// Performs a highest takes priority (HTP) (per byte) DMX merge of data.
 ///
 /// Note this merge is done within the explicit priorty, if i or n has an explictly higher priority it will always take precedence before this HTP merge is attempted.
-///
+/// If either data has the preview flag set then the result will have the preview flag set.
+/// 
 /// Given as an example of a possible merge algorithm.
+/// 
 /// The first argument (i) is the existing data, n is the new data.
+/// 
 /// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
 /// If this doesn't hold an error will be returned.
 /// Other merge functions may allow merging different start codes or not check for them.
@@ -1722,6 +1734,7 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData> {
         sync_uni: i.sync_uni,
         priority: i.priority,
         src_cid: None,
+        preview: i.preview || n.preview // If either data is preview then mark the result as preview.
     };
 
     let mut i_iter = i.values.iter();
@@ -1873,6 +1886,7 @@ fn test_store_retrieve_waiting_data() {
         sync_uni: sync_uni,
         priority: 100,
         src_cid: None,
+        preview: false,
     };
 
     dmx_rcv.store_waiting_data(dmx_data).unwrap();
@@ -1901,6 +1915,7 @@ fn test_store_2_retrieve_1_waiting_data() {
         sync_uni: sync_uni,
         priority: 100,
         src_cid: None,
+        preview: false,
     };
 
     let dmx_data2 = DMXData {
@@ -1909,6 +1924,7 @@ fn test_store_2_retrieve_1_waiting_data() {
         sync_uni: sync_uni + 1,
         priority: 100,
         src_cid: None,
+        preview: false,
     };
 
     dmx_rcv.store_waiting_data(dmx_data).unwrap();
@@ -1938,6 +1954,7 @@ fn test_store_2_retrieve_2_waiting_data() {
         sync_uni: sync_uni,
         priority: 100,
         src_cid: None,
+        preview: false,
     };
 
     let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
@@ -1948,6 +1965,7 @@ fn test_store_2_retrieve_2_waiting_data() {
         sync_uni: sync_uni + 1,
         priority: 100,
         src_cid: None,
+        preview: false,
     };
 
     dmx_rcv.store_waiting_data(dmx_data).unwrap();
@@ -1984,6 +2002,7 @@ fn test_store_2_same_universe_same_priority_waiting_data() {
         sync_uni: sync_uni,
         priority: 100,
         src_cid: None,
+        preview: false,
     };
 
     let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
@@ -1994,6 +2013,7 @@ fn test_store_2_same_universe_same_priority_waiting_data() {
         sync_uni: sync_uni,
         priority: 100,
         src_cid: None,
+        preview: false,
     };
 
     dmx_rcv.store_waiting_data(dmx_data).unwrap();
@@ -2025,6 +2045,7 @@ fn test_store_2_same_universe_diff_priority_waiting_data() {
         sync_uni: sync_uni,
         priority: 120,
         src_cid: None,
+        preview: false,
     };
 
     let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
@@ -2035,6 +2056,7 @@ fn test_store_2_same_universe_diff_priority_waiting_data() {
         sync_uni: sync_uni,
         priority: 100,
         src_cid: None,
+        preview: false,
     };
 
     dmx_rcv.store_waiting_data(dmx_data).unwrap();
