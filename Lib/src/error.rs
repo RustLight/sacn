@@ -105,6 +105,12 @@ pub mod errors {
                 display("A source terminated a universe and this was detected when trying to receive data, msg: {}", msg)
             }
 
+            /// A source universe timed out as no data was received on that universe within E131_NETWORK_DATA_LOSS_TIMEOUT as per ANSI E1.31-2018 Section 6.7.1.
+            UniverseTimeout(msg: String) {
+                description("A source universe timed out as no data was received within E131_NETWORK_DATA_LOSS_TIMEOUT as per ANSI E1.31-2018 Section 6.7.1"),
+                display("A source universe timed out as no data was received within E131_NETWORK_DATA_LOSS_TIMEOUT as per ANSI E1.31-2018 Section 6.7.1, msg: {}", msg)
+            }
+
             /// When looking for a specific universe it wasn't found. This might happen for example if trying to mute a universe on a receiver that
             /// wasn't being listened.
             UniverseNotFound(msg: String) {

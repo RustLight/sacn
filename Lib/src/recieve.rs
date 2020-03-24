@@ -73,6 +73,10 @@ const ANNOUNCE_SOURCE_DISCOVERY_DEFAULT: bool = false;
 /// being multiple possible sources.
 const ANNOUNCE_STREAM_TERMINATION_DEFAULT: bool = false;
 
+/// The default value of the announce_timeout flag.
+/// 
+const ANNOUNCE_TIMEOUT_DEFAULT: bool = false;
+
 /// The sequence number assigned by the receiver to a new source before it has processed the sequence numbers of any data from that source.
 /// 
 /// This should be set to the value before the initial expected sequence number from a source. Can't do this using underflow as forbidden in Rust.
@@ -194,7 +198,10 @@ pub struct SacnReceiver {
     announce_source_discovery: bool,
 
     /// Flag which indicates if a StreamTerminated error should be thrown if a receiver receives a stream terminated packet.
-    announce_stream_termination_flag: bool,
+    announce_stream_termination: bool,
+
+    /// Flag which indicates if an UniverseTimeout error should be thrown if it is detected that a source has timed out.
+    announce_timeout: bool,
 }
 
 impl fmt::Debug for SacnReceiver {
@@ -257,7 +264,8 @@ impl SacnReceiver {
             source_limit: source_limit,
             sequences: SequenceNumbering::new(),
             announce_source_discovery: ANNOUNCE_SOURCE_DISCOVERY_DEFAULT,
-            announce_stream_termination_flag: ANNOUNCE_STREAM_TERMINATION_DEFAULT
+            announce_stream_termination: ANNOUNCE_STREAM_TERMINATION_DEFAULT,
+            announce_timeout: ANNOUNCE_TIMEOUT_DEFAULT,
         };
 
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])
@@ -489,7 +497,7 @@ impl SacnReceiver {
 
         if data_pkt.stream_terminated {
             self.terminate_stream(cid, data_pkt.source_name, data_pkt.universe);
-            if self.announce_stream_termination_flag {
+            if self.announce_stream_termination {
                 bail!(ErrorKind::UniverseTerminated(
                     "A source terminated a universe and this was detected when trying to receive data"
                         .to_string()
@@ -512,6 +520,7 @@ impl SacnReceiver {
             cid,
             data_pkt.sequence_number,
             data_pkt.universe,
+            self.announce_timeout
         )?;
         if data_pkt.synchronization_address == E131_NO_SYNC_ADDR {
             self.clear_waiting_data(data_pkt.universe);
@@ -602,6 +611,7 @@ impl SacnReceiver {
             cid,
             sync_pkt.sequence_number,
             sync_pkt.synchronization_address,
+            self.announce_timeout,
         )?;
 
         let res = self.rtrv_waiting_data(sync_pkt.synchronization_address);
@@ -847,9 +857,9 @@ impl SacnReceiver {
             .retain(|s| s.last_updated.elapsed() < UNIVERSE_DISCOVERY_SOURCE_TIMEOUT);
     }
     /// Returns the current value of the announce_source_discovery flag.
-    /// See receive::set_announce_source_discovery for details of this flag.
+    /// See (set_announce_source_discovery)[receive::set_announce_source_discovery] for an explanation of the flag.
     pub fn get_announce_source_discovery(&self) -> bool {
-        return self.announce_source_discovery;
+        self.announce_source_discovery
     }
 
     /// Sets the value of the announce_source_discovery flag to the given value.
@@ -859,11 +869,47 @@ impl SacnReceiver {
     /// If set to true then it means that a SourceDiscovered error will be thrown whenever a source is discovered through a
     ///  complete universe discovery packet.
     ///
-    /// Arguments:
+    /// # Arguments:
     /// new_val: The new value for the announce_source_discovery flag.
     ///
     pub fn set_announce_source_discovery(&mut self, new_val: bool) {
         self.announce_source_discovery = new_val;
+    }
+
+    /// Returns the current value of the announce_timeout flag.
+    /// See (set_announce_timeout)[set_announce_timeout] for an explanation of the flag.
+    pub fn get_announce_timeout(&self) -> bool {
+        self.announce_timeout
+    }
+
+    /// Sets the value of the announce_timeout flag to the given value.
+    /// 
+    /// By default this flag is false which means that if a universe for a source times out due to data not being sent then
+    /// this will be updated on the receiver silently.
+    /// If set to true then a UniverseTimeout error will be thrown when attempting to receive if it is detected that a source universe has 
+    /// timed out as per ANSI E1.31-2018 Section 6.7.1.
+    /// 
+    /// # Arguments:
+    /// new_val: The new value for the announce_timeout flag.
+    /// 
+    pub fn set_announce_timeout(&mut self, new_val: bool) {
+        self.announce_timeout = new_val;
+    }
+
+    /// Returns the current value of the announce_stream_termination flag.
+    /// See (set_announce_stream_termination)[set_announce_stream_termination] for an explanation of the flag.
+    pub fn get_announce_stream_termination(&self) -> bool {
+        self.announce_stream_termination
+    }
+
+    /// Sets the value of the announce_stream_termination flag to the given value.
+    /// 
+    /// By default this flag is false. This indicates that if a source sends a stream termination packet it will be handled silently by the receiver.
+    /// If set to true then a UniverseTermination error will be thrown when attempting to receive if a termination packet is received as per
+    /// ANSI E1.31-2018 Section 6.2.6.
+    /// 
+    pub fn set_announce_stream_termination(&mut self, new_val: bool) {
+        self.announce_stream_termination = new_val;
     }
 }
 
@@ -1622,8 +1668,8 @@ impl SequenceNumbering {
     ///
     /// Return a SourcesExceededError if the cid of the source is new and would cause the number of sources to exceed the given source_limit.
     ///
-    fn check_data_seq_number(&mut self, source_limit: Option<usize>, cid: Uuid, sequence_number: u8, universe: u16) -> Result<()>{
-        check_seq_number(&mut self.data_sequences, source_limit, cid, sequence_number, universe)
+    fn check_data_seq_number(&mut self, source_limit: Option<usize>, cid: Uuid, sequence_number: u8, universe: u16, announce_timeout: bool) -> Result<()>{
+        check_seq_number(&mut self.data_sequences, source_limit, cid, sequence_number, universe, announce_timeout)
     }
 
     /// Checks the sequence number is correct for a sync packet with the given sequence_number and universe from the given source with given cid.
@@ -1646,8 +1692,8 @@ impl SequenceNumbering {
     ///
     /// Return a SourcesExceededError if the cid of the source is new and would cause the number of sources to exceed the given source_limit.
     ///
-    fn check_sync_seq_number(&mut self, source_limit: Option<usize>, cid: Uuid, sequence_number: u8, sync_uni: u16) -> Result<()>{
-        check_seq_number(&mut self.sync_sequences, source_limit, cid, sequence_number, sync_uni)
+    fn check_sync_seq_number(&mut self, source_limit: Option<usize>, cid: Uuid, sequence_number: u8, sync_uni: u16, announce_timeout: bool) -> Result<()>{
+        check_seq_number(&mut self.sync_sequences, source_limit, cid, sequence_number, sync_uni, announce_timeout)
     }
 
     /// Removes the sequence number tracking for the given source / universe combination.
@@ -1689,13 +1735,14 @@ fn check_seq_number(
     cid: Uuid,
     sequence_number: u8,
     universe: u16,
+    announce_timeout: bool,
 ) -> Result<()> {
 
     // Check all the timeouts at the start.
     // This is done for all sources/universes rather than just the source that sent the packet because a completely dead (no packets being sent) universe 
     // would not be removed otherwise and would continue to take up space. This comes at the cost of increased processing time complexity as each
     // source is checked every time.
-    check_timeouts(src_sequences, E131_NETWORK_DATA_LOSS_TIMEOUT);
+    check_timeouts(src_sequences, E131_NETWORK_DATA_LOSS_TIMEOUT, announce_timeout)?;
 
     match src_sequences.get(&cid) {
         None => {
@@ -1761,14 +1808,54 @@ fn check_seq_number(
 /// Checks the timeouts for all sources and universes for the given sequences.
 /// Removes any universes for which the last_recv time was at least the given timeout amount of time ago.
 /// Any sources which have no universes after this operation are also removed.
+/// 
+/// #Arguments
+/// 
+/// src_sequences: The source sequence numbers to check the timeout of.
+/// 
+/// timeout: The exclusive length of time permitted since a source last sent on a universe. 
+///     If the time elapsed since the last received data that is equal to or great than the timeout then the source is said to have timed out.
 ///  
-fn check_timeouts(src_sequences: &mut HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>>, timeout: Duration) {
-    for (_src_id, universes) in src_sequences.iter_mut() {
-        universes.retain(|_uni, seq_num| seq_num.last_recv.elapsed() < timeout);
-    }
+fn check_timeouts(src_sequences: &mut HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>>, timeout: Duration, announce_timeout: bool) -> Result<()> {
+    if announce_timeout {
+        let mut timedout_src_id: Option<Uuid> = None;
+        let mut timedout_uni: Option<u16> = None;
+        for (src_id, universes) in src_sequences.iter_mut() {
+            for (uni, seq_num) in universes.iter() {
+                if seq_num.last_recv.elapsed() >= timeout {
+                    timedout_src_id = Some(*src_id);
+                    timedout_uni = Some(*uni);
+                    break;
+                }
+            }
+            if timedout_uni == None {
+                break;
+            }
+        }
 
-    // Remove all empty sources.
-    src_sequences.retain(|_src_id, universes| !universes.is_empty());
+        if timedout_uni.is_some() { // If None then it indicates nothing timed out.
+            let uni_to_remove = timedout_uni.unwrap();
+            let src_universes = src_sequences.get_mut(&timedout_src_id.unwrap());
+            if src_universes.is_some() {
+                let universes = src_universes.unwrap();
+                universes.remove(&uni_to_remove);
+                if universes.is_empty() {
+                    src_sequences.remove(&timedout_src_id.unwrap());
+                    bail!(ErrorKind::UniverseTimeout("Timed out".to_string()));
+                }
+            }
+        }
+
+        Ok(())
+    } else {
+        for (_src_id, universes) in src_sequences.iter_mut() {
+            universes.retain(|_uni, seq_num| seq_num.last_recv.elapsed() < timeout);
+        }
+    
+        // Remove all empty sources.
+        src_sequences.retain(|_src_id, universes| !universes.is_empty());
+        Ok(())
+    }
 }
 
 /// Removes the sequence number entry from the given sequences for the given source cid and universe.
