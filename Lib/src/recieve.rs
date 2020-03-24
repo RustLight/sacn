@@ -168,26 +168,17 @@ pub struct SacnReceiver {
     /// Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
     partially_discovered_sources: Vec<DiscoveredSacnSource>,
 
-    /// Flag that indicates if this receiver should process packets marked as preview data.
-    /// If true then the receiver will process theses packets.
-    /// Returned data contains a flag to indicate if it is preview_data which can be used by the implementer to use/discard as required.
-    process_preview_data: bool,
-
     /// The limit to the number of sources for which to track sequence numbers.
     /// A new source after this limit will cause a SourcesExceededError as per ANSI E1.31-2018 Section 6.2.3.3.
     source_limit: Option<usize>,
 
-    /// The sequence numbers used for data packets, keeps a reference of the last sequence number received for each universe.
-    /// Sequence numbers are always in the range [0, 255] inclusive.
-    /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
-    /// The uuid refers to the source that is sending the data.
-    data_sequences: HashMap<Uuid, HashMap<u16, u8>>,
+    /// The sequence numbers being tracked by this receiver for each packet type, source and universe.
+    sequences: SequenceNumbering,
 
-    /// The sequence numbers used for synchronisation packets, keeps a reference of the last sequence number received for each universe.
-    /// Sequence numbers are always in the range [0, 255] inclusive.
-    /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
-    /// The uuid refers to the source that is sending the data.
-    sync_sequences: HashMap<Uuid, HashMap<u16, u8>>,
+    /// Flag that indicates if this receiver should process packets marked as preview data.
+    /// If true then the receiver will process theses packets.
+    /// Returned data contains a flag to indicate if it is preview_data which can be used by the implementer to use/discard as required.
+    process_preview_data: bool,
 
     /// Flag which indicates if a SourceDiscovered error should be thrown when receiving data and a source is discovered.
     announce_source_discovery: bool,
@@ -254,8 +245,7 @@ impl SacnReceiver {
             partially_discovered_sources: Vec::new(),
             process_preview_data: PROCESS_PREVIEW_DATA_DEFAULT,
             source_limit: source_limit,
-            data_sequences: HashMap::new(),
-            sync_sequences: HashMap::new(),
+            sequences: SequenceNumbering::new(),
             announce_source_discovery: ANNOUNCE_SOURCE_DISCOVERY_DEFAULT,
             announce_stream_termination_flag: ANNOUNCE_STREAM_TERMINATION_DEFAULT
         };
@@ -292,8 +282,7 @@ impl SacnReceiver {
     /// Wipes the record of discovered and sequence number tracked sources.
     /// This is one way to handle a sources exceeded condition.
     pub fn reset_sources(&mut self) {
-        self.data_sequences.clear();
-        self.sync_sequences.clear();
+        self.sequences.clear();
         self.partially_discovered_sources.clear();
         self.discovered_sources.clear();
     }
@@ -427,7 +416,7 @@ impl SacnReceiver {
     /// universe:    The sACN universe to remove.
     /// 
     fn terminate_stream<'a>(&mut self, src_cid: Uuid, source_name: Cow<'a, str>, universe: u16) {
-        match self.remove_seq_numbers(src_cid, universe) {
+        match self.sequences.remove_seq_numbers(src_cid, universe) {
             _ => {
                 // Will only return an error if the source/universe wasn't found which is acceptable because as it
                 // comes to the same result.
@@ -442,20 +431,6 @@ impl SacnReceiver {
                 // As with sequence numbers the source might not be found which is acceptable.
             }
         }
-    }
-
-    /// Removes the sequence number tracking for the given source / universe combination.
-    /// This applies to both data and sync packets.
-    /// 
-    /// # Arguments:
-    /// 
-    /// src_cid: The CID of the source to remove the sequence numbers of.
-    /// 
-    /// universe: The universe being sent by the source from which to remove the sequence numbers.
-    /// 
-    fn remove_seq_numbers<'a>(&mut self, src_cid: Uuid, universe: u16) -> Result<()> {
-        remove_source_universe_seq(&mut self.data_sequences, src_cid, universe)?;
-        remove_source_universe_seq(&mut self.sync_sequences, src_cid, universe)
     }
 
     /// Checks if this receiver is currently listening to the given universe.
@@ -522,8 +497,7 @@ impl SacnReceiver {
         // This is as per ANSI E1.31-2018 Section 6.2.6, Stream_Terminated: Bit 6, 'Any property values
         // in an E1.31 Data Packet containing this bit shall be ignored'
 
-        check_seq_number(
-            &mut self.data_sequences,
+        self.sequences.check_data_seq_number(
             self.source_limit,
             cid,
             data_pkt.sequence_number,
@@ -613,8 +587,7 @@ impl SacnReceiver {
             return Ok(None); // If not listening for this universe then ignore the packet.
         }
 
-        check_seq_number(
-            &mut self.sync_sequences,
+        self.sequences.check_sync_seq_number(
             self.source_limit,
             cid,
             sync_pkt.sequence_number,
@@ -1558,6 +1531,58 @@ fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
     Ok(())
 }
 
+struct SequenceNumbering {
+    /// The sequence numbers used for data packets, keeps a reference of the last sequence number received for each universe.
+    /// Sequence numbers are always in the range [0, 255] inclusive.
+    /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+    /// The uuid refers to the source that is sending the data.
+    data_sequences: HashMap<Uuid, HashMap<u16, u8>>,
+
+    /// The sequence numbers used for synchronisation packets, keeps a reference of the last sequence number received for each universe.
+    /// Sequence numbers are always in the range [0, 255] inclusive.
+    /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+    /// The uuid refers to the source that is sending the data.
+    sync_sequences: HashMap<Uuid, HashMap<u16, u8>>,
+
+}
+
+impl SequenceNumbering {
+    fn new() -> SequenceNumbering{
+        return SequenceNumbering {
+            data_sequences: HashMap::new(),
+            sync_sequences: HashMap::new()
+        }
+    }
+
+    fn clear(&mut self) {
+        self.data_sequences.clear();
+        self.sync_sequences.clear();
+    }
+
+
+    fn check_data_seq_number(&mut self, source_limit: Option<usize>, cid: Uuid, sequence_number: u8, universe: u16) -> Result<()>{
+        check_seq_number(&mut self.data_sequences, source_limit, cid, sequence_number, universe)
+    }
+
+    fn check_sync_seq_number(&mut self, source_limit: Option<usize>, cid: Uuid, sequence_number: u8, universe: u16) -> Result<()>{
+        check_seq_number(&mut self.sync_sequences, source_limit, cid, sequence_number, universe)
+    }
+
+    /// Removes the sequence number tracking for the given source / universe combination.
+    /// This applies to both data and sync packets.
+    /// 
+    /// # Arguments:
+    /// 
+    /// src_cid: The CID of the source to remove the sequence numbers of.
+    /// 
+    /// universe: The universe being sent by the source from which to remove the sequence numbers.
+    /// 
+    fn remove_seq_numbers<'a>(&mut self, src_cid: Uuid, universe: u16) -> Result<()> {
+        remove_source_universe_seq(&mut self.data_sequences, src_cid, universe)?;
+        remove_source_universe_seq(&mut self.sync_sequences, src_cid, universe)
+    }
+}
+
 /// Checks the given sequence number for the given universe against the given expected sequence numbers.
 ///
 /// Returns Ok(()) if the packet is detected in-order.
@@ -1607,6 +1632,9 @@ fn check_seq_number(
             seq_num
         }
         None => {
+            // Previously checked that cid is present (and added if not), if None is returned now it indicates that between that check and this 
+            // function the cid key value has been removed. This can only happen if there is a memory corruption/thread-iterleaving or similar external
+            // event which the receiver cannot handle.
             panic!();
         }
     };
@@ -1681,6 +1709,7 @@ fn remove_source_universe_seq(src_sequences: &mut HashMap<Uuid, HashMap<u16, u8>
         }
     }
 }
+
 
 /// The default merge action for the receiver.
 ///
