@@ -1547,6 +1547,10 @@ struct SequenceNumbering {
 }
 
 impl SequenceNumbering {
+    /// Creates a new SequenceNumbering for tracking sequence numbers for the various types of packets.
+    /// 
+    /// This implementation uses HashMaps internally to allow O(1) checking and updating of sequence numbers.
+    /// 
     fn new() -> SequenceNumbering{
         return SequenceNumbering {
             data_sequences: HashMap::new(),
@@ -1554,18 +1558,59 @@ impl SequenceNumbering {
         }
     }
 
+    /// Clears the sequence number records completely removing all sources/universes for all types of packet.
+    /// 
     fn clear(&mut self) {
         self.data_sequences.clear();
         self.sync_sequences.clear();
     }
 
-
+    /// Checks the sequence number is correct for a data packet with the given sequence_number and universe from the given source with given cid.
+    /// Uses the given source_limit to check that it isn't exceeded.
+    /// 
+    /// Returns Ok(()) if the packet is detected in-order.
+    ///
+    /// # Arguments
+    /// source_limit: The limit on the number of sources which are allowed, None indicates no limit, if there is a limit then a SourcesExceededError may be returned.
+    /// 
+    /// cid:    The Uuid of the source that send the packet.
+    /// 
+    /// sequence_number: The sequence number of the packet to check.
+    /// 
+    /// universe: The data niverse of the packet.
+    ///
+    /// # Errors
+    /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between
+    /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+    ///
+    /// Return a SourcesExceededError if the cid of the source is new and would cause the number of sources to exceed the given source_limit.
+    ///
     fn check_data_seq_number(&mut self, source_limit: Option<usize>, cid: Uuid, sequence_number: u8, universe: u16) -> Result<()>{
         check_seq_number(&mut self.data_sequences, source_limit, cid, sequence_number, universe)
     }
 
-    fn check_sync_seq_number(&mut self, source_limit: Option<usize>, cid: Uuid, sequence_number: u8, universe: u16) -> Result<()>{
-        check_seq_number(&mut self.sync_sequences, source_limit, cid, sequence_number, universe)
+    /// Checks the sequence number is correct for a sync packet with the given sequence_number and universe from the given source with given cid.
+    /// Uses the given source_limit to check that it isn't exceeded.
+    /// 
+    /// Returns Ok(()) if the packet is detected in-order.
+    ///
+    /// # Arguments
+    /// source_limit: The limit on the number of sources which are allowed, None indicates no limit, if there is a limit then a SourcesExceededError may be returned.
+    /// 
+    /// cid:    The Uuid of the source that send the packet.
+    /// 
+    /// sequence_number: The sequence number of the packet to check.
+    /// 
+    /// universe: The sync universe of the packet
+    ///
+    /// # Errors
+    /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between
+    /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
+    ///
+    /// Return a SourcesExceededError if the cid of the source is new and would cause the number of sources to exceed the given source_limit.
+    ///
+    fn check_sync_seq_number(&mut self, source_limit: Option<usize>, cid: Uuid, sequence_number: u8, sync_uni: u16) -> Result<()>{
+        check_seq_number(&mut self.sync_sequences, source_limit, cid, sequence_number, sync_uni)
     }
 
     /// Removes the sequence number tracking for the given source / universe combination.
