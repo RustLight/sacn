@@ -752,6 +752,12 @@ impl SacnReceiver {
     /// The method may also return an error if there is an issue handling the data as either a Data, Syncronisation or Discovery packet.
     /// See the SacnReceiver::handle_data_packet, SacnReceiver::handle_sync_packet and SacnReceiver::handle_universe_discovery_packet methods
     /// for details.
+    /// 
+    /// If the announce_timeout flag is set then the recv will return a UniverseTimeout error if a source fails to send on a universe within the timeout
+    /// specified by E131_NETWORK_DATA_LOSS_TIMEOUT (ANSI E1.31-2018 Appendix A).  This may not be detected immediately unless data is received for the timed-out
+    /// universe from the source. If it isn't detected immediately it will be detected within an interval of E131_NETWORK_DATA_LOSS_TIMEOUT (assuming code
+    /// executes in zero time).
+    /// 
     pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>> {
         if self.universes.len() == 1
             && self.universes[0] == E131_DISCOVERY_UNIVERSE
