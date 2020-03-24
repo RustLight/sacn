@@ -18,7 +18,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use sacn::source::SacnSource;
 use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
-use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT, E131_UNIVERSE_DISCOVERY_INTERVAL};
+use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT, E131_UNIVERSE_DISCOVERY_INTERVAL, E131_NETWORK_DATA_LOSS_TIMEOUT};
 use sacn::error::errors::*;
 
 // Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
@@ -2197,4 +2197,87 @@ fn test_preview_data_2_receiver_1_sender() {
     for r in rcv_threads {
         r.join().unwrap();
     }
+}
+
+/// Creates a receiver and a sender. The sender sends a data packet to the receiver and then holds.
+/// The receiver (with announce_timeout flag set to true) then waits for the timeout notification to happen.
+/// This shows that the timeout mechanism for a source works.
+#[test]
+fn test_source_1_universe_timeout(){
+    // Allow the timeout notification to come upto 2.5 seconds too late compared to the expected 2.5 seconds.
+    // (2.5s base as per ANSI E1.31-2018 Appendix A E131_NETWORK_DATA_LOSS_TIMEOUT, tolerance as per documentation for recv() method).
+    // Both tolerances allow 50 ms for code execution time.
+    let acceptable_lower_bound: Duration = E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(50);
+    let acceptable_upper_bound: Duration = 2 * E131_NETWORK_DATA_LOSS_TIMEOUT + Duration::from_millis(50);
+
+    let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+    
+    let thread_tx = tx.clone();
+
+    let universe = 1;
+
+    let snd_thread = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT + 1);
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
+        let priority = 100;
+
+        src.register_universe(universe).unwrap();
+
+        let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT);
+
+        thread_tx.send(()).unwrap(); // Sender waits till the receiver says it is ready.
+
+        src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+
+        thread_tx.send(()).unwrap(); // Sender waits till the receiver says it can terminate.
+    });
+    
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT), None).unwrap();
+    dmx_recv.listen_universes(&[universe]).unwrap();
+
+    // Want to know when the source times out.
+    dmx_recv.set_announce_timeout(true);
+
+    // Receiver created successfully so allow the sender to progress.
+    rx.recv().unwrap();
+
+    // Get the packet of data and check that it is correct.
+    let received_data: Vec<DMXData> = dmx_recv.recv(None).unwrap();
+
+    assert_eq!(received_data.len(), 1); // Check only 1 universe received as expected.
+    assert_eq!(received_data[0].universe, universe); // Check that the universe received is as expected.
+    assert_eq!(received_data[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+
+    let start_time: Instant = Instant::now();
+    match dmx_recv.recv(Some(acceptable_upper_bound)) { // This will return a WouldBlock/Timedout error if the timeout takes too long.
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::UniverseTimeout(_) => {
+                    if start_time.elapsed() < acceptable_lower_bound{
+                        assert!(false, "Timeout came quicker than expected");
+                    }
+                    assert!(true, "Universe timed out as expected");
+                }
+                ErrorKind::Io(ref s) => {
+                    match s.kind() {
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
+                            assert!(false, "Timeout took too long to come through");
+                        },
+                        _ => {
+                            assert!(false, "Unexpected error returned");
+                        }
+                    }
+                },
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(x) => {
+            assert!(false, format!("Data received unexpectedly as none sent! {:?}", x));
+        }
+    }
+
+    rx.recv().unwrap(); // Allow the sender to finish.
+    snd_thread.join().unwrap();
 }
