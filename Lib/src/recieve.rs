@@ -17,23 +17,14 @@
 // receieved, if a discovery packet is receieved but there are more pages the source won't be discovered until all the pages are receieved.
 // If a page is lost this therefore means the source update / discovery in its entirety will be lost - implementation detail.
 
-use error::errors::{ErrorKind::*, *};
-
 /// Socket 2 used for the underlying UDP socket that sACN is sent over.
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
-#[cfg(target_os = "linux")]
-use libc::{AF_INET, AF_INET6};
-
-// The libc constants required are not avaliable on many windows environments and therefore are hard-coded.
-#[cfg(target_os = "windows")]
-const AF_INET: i32 = 2;
-
-#[cfg(target_os = "windows")]
-const AF_INET6: i32 = 23;
-
-// Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
+/// Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
 use packet::{E131RootLayerData::*, *};
+
+/// Same reasoning as for packet meaning all sacn errors are imported.
+use error::errors::{ErrorKind::*, *};
 
 /// The uuid crate is used for working with/generating UUIDs which sACN uses as part of the cid field in the protocol.
 /// This is used for uniquely identifying sources when counting sequence numbers.
@@ -45,6 +36,19 @@ use std::collections::HashMap;
 use std::fmt;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::{Duration, Instant};
+
+/// Constants required to detect if an IP is IPv4 or IPv6.
+#[cfg(target_os = "linux")]
+use libc::{AF_INET, AF_INET6};
+
+/// The libc constants required are not avaliable on many windows environments and therefore are hard-coded.
+/// Defined as per https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket
+#[cfg(target_os = "windows")]
+const AF_INET: i32 = 2;
+
+/// Defined as per https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket
+#[cfg(target_os = "windows")]
+const AF_INET6: i32 = 23;
 
 /// The default size of the buffer used to recieve E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
@@ -68,6 +72,12 @@ const ANNOUNCE_SOURCE_DISCOVERY_DEFAULT: bool = false;
 /// Defaults to false based on the assumption that often receivers will want to ignore termination from a source based on there
 /// being multiple possible sources.
 const ANNOUNCE_STREAM_TERMINATION_DEFAULT: bool = false;
+
+/// The sequence number assigned by the receiver to a new source before it has processed the sequence numbers of any data from that source.
+/// 
+/// This should be set to the value before the initial expected sequence number from a source. Can't do this using underflow as forbidden in Rust.
+/// 
+const INITIAL_SEQUENCE_NUMBER: u8 = 255;
 
 const DEFAULT_MERGE_FUNC: fn(&DMXData, &DMXData) -> Result<DMXData> =
     discard_lowest_priority_then_previous;
@@ -1531,18 +1541,45 @@ fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
     Ok(())
 }
 
+/// Stores a sequence number and a timestamp.
+/// 
+/// Used internally within SequenceNumbering for tracking the last received timestamps of each packet-type, source, universe combination.
+/// 
+/// This is then used to workout timeouts to trigger network data loss as per ANSI E1.31-2018 Section 6.7.1.
+/// 
+#[derive(Copy, Clone)]
+struct TimedStampedSeqNo {
+    sequence_number: u8,
+    last_recv: Instant, 
+}
+
+impl TimedStampedSeqNo {
+    fn new(sequence_number: u8, last_recv: Instant) -> TimedStampedSeqNo{
+        TimedStampedSeqNo {
+            sequence_number: sequence_number,
+            last_recv: last_recv
+        }
+    }
+}
+
+/// Stores information about the current expected sequence numbers for each source, universe and packet type.
+/// 
+/// Also handles timeouts of sources.
+/// 
+/// Abstracts over the internal data-structures/mechanisms used allowing them be changed.
+/// 
 struct SequenceNumbering {
     /// The sequence numbers used for data packets, keeps a reference of the last sequence number received for each universe.
     /// Sequence numbers are always in the range [0, 255] inclusive.
     /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     /// The uuid refers to the source that is sending the data.
-    data_sequences: HashMap<Uuid, HashMap<u16, u8>>,
+    data_sequences: HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>>,
 
     /// The sequence numbers used for synchronisation packets, keeps a reference of the last sequence number received for each universe.
     /// Sequence numbers are always in the range [0, 255] inclusive.
     /// Each type of packet is tracked differently with respect to sequence numbers as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     /// The uuid refers to the source that is sending the data.
-    sync_sequences: HashMap<Uuid, HashMap<u16, u8>>,
+    sync_sequences: HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>>,
 
 }
 
@@ -1647,12 +1684,19 @@ impl SequenceNumbering {
 /// Return a SourcesExceededError if the cid of the source is new and would cause the number of sources to exceed the given source_limit.
 ///
 fn check_seq_number(
-    src_sequences: &mut HashMap<Uuid, HashMap<u16, u8>>,
+    src_sequences: &mut HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>>,
     source_limit: Option<usize>,
     cid: Uuid,
     sequence_number: u8,
     universe: u16,
 ) -> Result<()> {
+
+    // Check all the timeouts at the start.
+    // This is done for all sources/universes rather than just the source that sent the packet because a completely dead (no packets being sent) universe 
+    // would not be removed otherwise and would continue to take up space. This comes at the cost of increased processing time complexity as each
+    // source is checked every time.
+    check_timeouts(src_sequences, E131_NETWORK_DATA_LOSS_TIMEOUT);
+
     match src_sequences.get(&cid) {
         None => {
             // New source not previously received from.
@@ -1664,15 +1708,18 @@ fn check_seq_number(
                 ));
             }
         }
-
         Some(_) => {}
     };
 
     let expected_seq = match src_sequences.get(&cid) {
         Some(src) => {
-            let seq_num = match src.get(&universe) {
-                Some(s) => *s,
-                None => 255, // Should be set to the value before the initial sequence number. Can't do this using underflow as forbidden in rust.
+            let seq_num = match src.get(&universe) { // Get the sequence number within the source for the specific universe.
+                Some(s) => { // Indicates that the source / universe combination is known.
+                    *s
+                },
+                None => { // Indicates that this is the first time (or the first time since it timed out) the universe has been received from this source.
+                    TimedStampedSeqNo::new(INITIAL_SEQUENCE_NUMBER, Instant::now())
+                }
             };
             seq_num
         }
@@ -1684,7 +1731,7 @@ fn check_seq_number(
         }
     };
 
-    let seq_diff: isize = (sequence_number as isize) - (expected_seq as isize);
+    let seq_diff: isize = (sequence_number as isize) - (expected_seq.sequence_number as isize);
 
     if seq_diff <= E131_SEQ_DIFF_DISCARD_UPPER_BOUND && seq_diff > E131_SEQ_DIFF_DISCARD_LOWER_BOUND
     {
@@ -1692,7 +1739,7 @@ fn check_seq_number(
         bail!(ErrorKind::OutOfSequence(
             format!(
                 "Packet recieved with sequence number {} is out of sequence, last {}, seq-diff {}",
-                sequence_number, expected_seq, seq_diff
+                sequence_number, expected_seq.sequence_number, seq_diff
             )
             .to_string()
         ));
@@ -1700,7 +1747,8 @@ fn check_seq_number(
 
     match src_sequences.get_mut(&cid) {
         Some(src) => {
-            src.insert(universe, sequence_number);
+            // Replace the old sequence number with the new and reset the timeout.
+            src.insert(universe, TimedStampedSeqNo::new(sequence_number, Instant::now()));
         }
         None => {
             panic!();
@@ -1708,6 +1756,19 @@ fn check_seq_number(
     };
 
     Ok(())
+}
+
+/// Checks the timeouts for all sources and universes for the given sequences.
+/// Removes any universes for which the last_recv time was at least the given timeout amount of time ago.
+/// Any sources which have no universes after this operation are also removed.
+///  
+fn check_timeouts(src_sequences: &mut HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>>, timeout: Duration) {
+    for (_src_id, universes) in src_sequences.iter_mut() {
+        universes.retain(|_uni, seq_num| seq_num.last_recv.elapsed() < timeout);
+    }
+
+    // Remove all empty sources.
+    src_sequences.retain(|_src_id, universes| !universes.is_empty());
 }
 
 /// Removes the sequence number entry from the given sequences for the given source cid and universe.
@@ -1726,7 +1787,7 @@ fn check_seq_number(
 /// 
 /// Returns a UniverseNotFound error if the given universe isn't registered to the given source and so cannot be removed.
 /// 
-fn remove_source_universe_seq(src_sequences: &mut HashMap<Uuid, HashMap<u16, u8>>, src_cid: Uuid, universe: u16) -> Result<()> {
+fn remove_source_universe_seq(src_sequences: &mut HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>>, src_cid: Uuid, universe: u16) -> Result<()> {
     match src_sequences.get_mut(&src_cid) {
         Some(x) => {
             match x.remove(&universe) {
