@@ -737,7 +737,7 @@ impl SacnReceiver {
     ///
     /// # Errors
     /// This method will return a WouldBlock (unix) or TimedOut (windows) error if there is no data ready within the given timeout.
-    /// A timeout of duration 0 will instantly return a WouldBlock/TimedOut error without checking for data.
+    /// A timeout of duration 0 will do timeout checks but otherwise will return a WouldBlock/TimedOut error without checking for data.
     ///
     /// Will return ErrorKind::SourceDiscovered error if the announce_source_discovery flag is set and a universe discovery
     /// packet is received and a source fully discovered.
@@ -1910,7 +1910,7 @@ fn check_timeouts(src_sequences: &mut HashMap<Uuid, HashMap<u16, TimedStampedSeq
                 universes.remove(&uni_to_remove);
                 if universes.is_empty() {
                     src_sequences.remove(&timedout_src_id.unwrap());
-                    bail!(ErrorKind::UniverseTimeout("Timed out".to_string()));
+                    bail!(ErrorKind::UniverseTimeout(timedout_src_id.unwrap(), timedout_uni.unwrap()));
                 }
             }
         }

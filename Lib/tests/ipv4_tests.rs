@@ -2229,7 +2229,8 @@ fn test_source_1_universe_timeout(){
 
         src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
 
-        thread_tx.send(()).unwrap(); // Sender waits till the receiver says it can terminate.
+        // Sender waits till the receiver says it can terminate, this prevents the automatic stream_terminated packets being sent.
+        thread_tx.send(()).unwrap();
     });
     
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT), None).unwrap();
@@ -2252,16 +2253,169 @@ fn test_source_1_universe_timeout(){
     match dmx_recv.recv(Some(acceptable_upper_bound)) { // This will return a WouldBlock/Timedout error if the timeout takes too long.
         Err(e) => {
             match e.kind() {
-                ErrorKind::UniverseTimeout(_) => {
+                ErrorKind::UniverseTimeout(_src_cid, timedout_uni) => {
                     if start_time.elapsed() < acceptable_lower_bound{
                         assert!(false, "Timeout came quicker than expected");
                     }
+                    assert_eq!(*timedout_uni, universe, "Timed out universe doesn't match expected");
                     assert!(true, "Universe timed out as expected");
                 }
                 ErrorKind::Io(ref s) => {
                     match s.kind() {
                         std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
                             assert!(false, "Timeout took too long to come through");
+                        },
+                        _ => {
+                            assert!(false, "Unexpected error returned");
+                        }
+                    }
+                },
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(x) => {
+            assert!(false, format!("Data received unexpectedly as none sent! {:?}", x));
+        }
+    }
+
+    rx.recv().unwrap(); // Allow the sender to finish.
+    snd_thread.join().unwrap();
+}
+
+/// Creates a receiver and a sender. The sender sends 2 data packets to the receiver on different universes and then waits a short time 
+/// (< E131_NETWORK_DATA_LOSS_TIMEOUT) and sends another data packet for the first universe allowing the second universe to timeout.
+/// The receiver checks all 3 data packets are received correctly and that (with annouce_timeout flag set to true) only the universe on which
+/// a single packet was sent times out.
+/// 
+/// This shows that the timeout mechanism is per universe and not for an entire source as a single universe can timeout while other universe
+/// continue as normal as per ANSI E1.31-2018 Section 6.7.1.
+/// 
+#[test]
+fn test_source_2_universe_1_timeout(){
+    // Allow the timeout notification to come upto 2.5 seconds too late compared to the expected 2.5 seconds.
+    // (2.5s base as per ANSI E1.31-2018 Appendix A E131_NETWORK_DATA_LOSS_TIMEOUT, tolerance as per documentation for recv() method).
+    // Both tolerances allow 50 ms for code execution time.
+    let acceptable_lower_bound: Duration = E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(50);
+    let acceptable_upper_bound: Duration = 2 * E131_NETWORK_DATA_LOSS_TIMEOUT + Duration::from_millis(50);
+
+    let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+    
+    let thread_tx = tx.clone();
+
+    let universe_no_timeout = 1;
+    let universe_timeout = 2;
+
+    let snd_thread = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT + 1);
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
+        let priority = 100;
+
+        src.register_universes(&[universe_no_timeout, universe_timeout]).unwrap();
+
+        let dst_ip: SocketAddr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT);
+
+        thread_tx.send(()).unwrap(); // Sender waits till the receiver says it is ready.
+
+        src.send(&[universe_no_timeout], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+        src.send(&[universe_timeout], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+
+        sleep(E131_NETWORK_DATA_LOSS_TIMEOUT / 2); // Wait a small amount of time.
+
+        // Send another packet to the universe that shouldn't timeout so that it doesn't timeout.
+        src.send(&[universe_no_timeout], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+
+        // Sender waits till the receiver says it can terminate, this prevents the automatic stream_terminated packets being sent.
+        thread_tx.send(()).unwrap(); 
+    });
+    
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), ACN_SDT_MULTICAST_PORT), None).unwrap();
+    dmx_recv.listen_universes(&[universe_no_timeout, universe_timeout]).unwrap();
+
+    // Want to know when the source times out.
+    dmx_recv.set_announce_timeout(true);
+
+    // Receiver created successfully so allow the sender to progress.
+    rx.recv().unwrap();
+
+    // Get the packets of data and check that they are correct.
+    let received_data: Vec<DMXData> = dmx_recv.recv(None).unwrap();
+    assert_eq!(received_data.len(), 1); // Check only 1 universe of data received as expected.
+
+    if received_data[0].universe == universe_no_timeout {
+        assert_eq!(received_data[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+
+        // Get the next data packet and check it is the other packet as expected.
+        let received_data: Vec<DMXData> = dmx_recv.recv(None).unwrap();
+        assert_eq!(received_data.len(), 1); // Check only 1 universe received as expected.
+        if received_data[0].universe == universe_timeout {
+            assert_eq!(received_data[0].values, TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+        } else {
+            assert!(false, "Data packet from unexpected universe received");
+        }
+    } else if received_data[0].universe == universe_timeout {
+        assert_eq!(received_data[0].values, TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+
+        // Get the next data packet and check it is the other packet as expected.
+        let received_data: Vec<DMXData> = dmx_recv.recv(None).unwrap();
+        assert_eq!(received_data.len(), 1); // Check only 1 universe received as expected.
+        if received_data[0].universe == universe_no_timeout {
+            assert_eq!(received_data[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+        } else {
+            assert!(false, "Data packet from unexpected universe received");
+        }
+    } else {
+        assert!(false, "Data packet from unexpected universe received");
+    }
+    // Start the expected timeout timer.
+    let start_time: Instant = Instant::now();
+
+    // Wait for the next data packet
+    let next_data = dmx_recv.recv(None).unwrap();
+    assert_eq!(next_data.len(), 1, "Third data packet universe count doesn't match expected");
+    assert_eq!(next_data[0].universe, universe_no_timeout, "Third data packet universe doesn't match expected");
+    assert_eq!(next_data[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Third data packet values don't match expected");
+    
+    match dmx_recv.recv(Some(acceptable_upper_bound)) { // This will return a WouldBlock/Timedout error if the timeout takes too long.
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::UniverseTimeout(_src_cid, universe) => {
+                    if start_time.elapsed() < acceptable_lower_bound{
+                        assert!(false, "Timeout came quicker than expected");
+                    }
+                    assert_eq!(*universe, universe_timeout, "Unexpected universe timed out");
+                    assert!(true, "Universe timed out as expected");
+
+                    // Know that the timeout universe timed out as expected so check that the other universe hasn't timed out.
+                    // Makes use of a timeout of 0 which should check the source timeouts and timeout recieving instantly.
+                    match dmx_recv.recv(Some(Duration::from_millis(0))) {
+                        Err(e) => {
+                            match e.kind() {
+                                ErrorKind::Io(ref s) => {
+                                    match s.kind() {
+                                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
+                                            assert!(true, "Other universe hasn't timedout as expected");
+                                        },
+                                        _ => {
+                                            assert!(false, "Unexpected error returned");
+                                        }
+                                    }
+                                },
+                                _ => {
+                                    assert!(false, "Unexpected error returned");
+                                }
+                            }
+                        }
+                        Ok(x) => {
+                            assert!(false, format!("Data received unexpectedly as none sent! {:?}", x));
+                        }
+                    }
+                }
+                ErrorKind::Io(ref s) => {
+                    match s.kind() {
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
+                            assert!(false, format!("Timeout took too long to come through: {:?}", start_time.elapsed()));
                         },
                         _ => {
                             assert!(false, "Unexpected error returned");
