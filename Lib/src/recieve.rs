@@ -764,7 +764,7 @@ impl SacnReceiver {
             bail!(ErrorKind::UniverseNotRegistered("Attempting to receive data with no data universes registered, an infinite timeout and no discovery announcements".to_string()));
         }
 
-        let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
+        self.sequences.check_timeouts(self.announce_timeout)?;
 
         if timeout == Some(Duration::from_secs(0)) {
             if cfg!(target_os = "windows") { // Use the right expected error for the operating system.
@@ -780,11 +780,22 @@ impl SacnReceiver {
             }
         }
 
+        // Forces the actual timeout used for receiving from the underlying network to never exceed E131_NETWORK_DATA_LOSS_TIMEOUT.
+        // This means that the timeouts for the sequence numbers will be checked at least every E131_NETWORK_DATA_LOSS_TIMEOUT even if 
+        // recv is called with a longer timeout.
+        let actual_timeout = 
+        if timeout.is_some() && timeout.unwrap() < E131_NETWORK_DATA_LOSS_TIMEOUT {
+            timeout
+        } else {
+            Some(E131_NETWORK_DATA_LOSS_TIMEOUT)
+        };
+
         self.receiver
-            .set_timeout(timeout)
+            .set_timeout(actual_timeout)
             .chain_err(|| "Failed to sent a timeout value for the receiver")?;
         let start_time = Instant::now();
 
+        let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
         match self.receiver.recv(&mut buf) {
             Ok(pkt) => {
                 let pdu: E131RootLayer = pkt.pdu;
@@ -832,7 +843,46 @@ impl SacnReceiver {
                     }
                 }
             }
-            Err(err) => Err(err),
+            Err(err) => {
+                match err.kind() {
+                    &ErrorKind::Io(ref s) => {
+                        match s.kind() {
+                            // Windows and Unix use different error types (WouldBlock/TimedOut) for the same error.
+                            std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
+                                if !timeout.is_none() {
+                                    let elapsed = start_time.elapsed();
+                                    match timeout.unwrap().checked_sub(elapsed) {
+                                        None => {
+                                            // Indicates that elapsed is bigger than timeout so its time to return.
+                                            if cfg!(target_os = "windows") { // Use the right expected error for the operating system.
+                                                bail!(std::io::Error::new(
+                                                    std::io::ErrorKind::TimedOut,
+                                                    "No data avaliable in given timeout"
+                                                ));
+                                            } else {
+                                                bail!(std::io::Error::new(
+                                                    std::io::ErrorKind::WouldBlock,
+                                                    "No data avaliable in given timeout"
+                                                ));
+                                            }
+                                        }
+                                        Some(new_timeout) => return self.recv(Some(new_timeout)),
+                                    }
+                                } else {
+                                    // If the timeout was none then would keep looping till data is returned as the method should keep blocking till then.
+                                    self.recv(timeout)
+                                }
+                            },
+                            _ => { // Not a timeout/wouldblock error meaning the recv should stop with the given error.
+                                Err(err)
+                            }
+                        }
+                    },
+                    _ => { // Not a timeout/wouldblock error meaning the recv should stop with the given error.
+                        Err(err)
+                    }
+                }
+            }
         }
     }
 
@@ -1646,6 +1696,19 @@ impl SequenceNumbering {
     fn clear(&mut self) {
         self.data_sequences.clear();
         self.sync_sequences.clear();
+    }
+
+    /// Checks the timeouts for all packet types, sources and universes with sequence numbers registed.
+    /// Removes any universes for which the last_recv time was at least the given timeout amount of time ago.
+    /// Any sources which have no universes after this operation are also removed.
+    /// 
+    /// #Arguments
+    /// 
+    /// announce_timeout: A flag, if true it indicates than a UniverseTimeout error should be thrown if a universe times out on a source.
+    ///  
+    fn check_timeouts(&mut self, announce_timeout: bool) -> Result<()> {
+        check_timeouts(&mut self.data_sequences, E131_NETWORK_DATA_LOSS_TIMEOUT, announce_timeout)?;
+        check_timeouts(&mut self.sync_sequences, E131_NETWORK_DATA_LOSS_TIMEOUT, announce_timeout)
     }
 
     /// Checks the sequence number is correct for a data packet with the given sequence_number and universe from the given source with given cid.
