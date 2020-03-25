@@ -46,9 +46,9 @@ pub mod errors {
             }
 
             /// A source was discovered by a receiver with the announce_discovery_flag set to true.
-            SourceDiscovered(msg: String) {
+            SourceDiscovered(source_name: String) {
                 description("A source was discovered by a receiver with the announce_discovery_flag set to true"),
-                display("A source was discovered by a receiver with the announce_discovery_flag set to true, msg: {}", msg)
+                display("A source was discovered by a receiver with the announce_discovery_flag set to true, source name: {}", source_name)
             }
 
             /// Attempted to exceed the capacity of a single universe (packet::UNIVERSE_CHANNEL_CAPACITY).

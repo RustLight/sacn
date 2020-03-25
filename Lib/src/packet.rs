@@ -1270,16 +1270,15 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
     };
 }
 
-#[cfg(feature = "std")]
 impl_universe_discovery_packet_universe_discovery_layer!(<'a>);
-
-#[cfg(not(feature = "std"))]
-impl_universe_discovery_packet_universe_discovery_layer!();
 
 #[cfg(test)]
 mod test {
     use super::*;
     use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
+
+    /// The universe_to tests below check that the conversion from a universe to an IPv6 or IPv4 multicast address is done as
+    /// per ANSI E1.31-2018 Section 9.3.1 Table 9-10 (IPv4) and ANSI E1.31-2018 Section 9.3.2 Table 9-11 + Table 9-12.
     #[test]
     fn test_universe_to_ipv4_lowest_byte_normal() {
         let val: u16 = 119;
