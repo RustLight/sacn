@@ -2555,3 +2555,72 @@ fn test_send_recv_wrong_multicast_universe(){
 
     snd_thread.join().unwrap();
 }
+
+/// A receiver and a sender are created which both listen/register to multiple universes.
+/// The sender then sends multiple data packets with different sync addresses and then follows up with the various sync packets.
+/// The receiver checks that the right data packets are received in the right order based on the sync packets sent. 
+/// 
+/// This shows that multiple syncronisation addresses can be used simultaneously.
+/// 
+#[test]
+fn test_send_recv_multiple_sync_universes(){
+    const TIMEOUT: Option<Duration> = Some(Duration::from_secs(3));
+
+    let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+    
+    let thread_tx = tx.clone();
+
+    let universes = [1, 2, 3];
+
+    let snd_thread = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1);
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
+
+        src.register_universes(&universes).unwrap();
+
+        // Sender waits till the receiver says it is ready.
+        thread_tx.send(()).unwrap();
+
+        // Send on all 3 universes, the first universe waits for a sync packet on the second, the second on the third and the third
+        // universe waits for a sync packet on its own universe.
+        src.send(&[universes[0]], &TEST_DATA_SINGLE_UNIVERSE, None, None, Some(universes[1])).unwrap();
+        src.send(&[universes[1]], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, None, None, Some(universes[2])).unwrap();
+        src.send(&[universes[2]], &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, None, None, Some(universes[2])).unwrap();
+
+        src.send_sync_packet(universes[1], None).unwrap(); // Should trigger the first universe to be received.
+        src.send_sync_packet(universes[2], None).unwrap(); // Should trigger the second and third universe to be received together.
+    });
+    
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap(), ACN_SDT_MULTICAST_PORT), None).unwrap();
+    dmx_recv.listen_universes(&universes).unwrap();
+
+    // Receiver created successfully so allow the sender to progress.
+    rx.recv().unwrap();
+
+    // Get the packets of data and check that they are correct.
+
+    // First set of data should be the first universe.
+    let received_data: Vec<DMXData> = dmx_recv.recv(TIMEOUT).unwrap();
+    assert_eq!(received_data.len(), 1, "First set of data universe count doesn't match expected");
+    assert_eq!(received_data[0].universe, universes[0], "Packet universe doesn't match expected");
+    assert_eq!(received_data[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Data packet values don't match expected");
+
+    // Second set of data should be the second and third universe.
+    let received_data2: Vec<DMXData> = dmx_recv.recv(TIMEOUT).unwrap();
+    assert_eq!(received_data2.len(), 2, "Second set of data universe count doesn't match expected");
+    if received_data2[0].universe == universes[1] { // Allow the data to be in any order as no ordering enforced within a set of data.
+        assert_eq!(received_data2[0].values, TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE.to_vec(), "Second set of data part 1 packet values don't match expected");
+
+        assert_eq!(received_data2[1].universe, universes[2], "Second set of data universes don't match expected");
+        assert_eq!(received_data2[1].values, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec(), "Second set of data part 2 packet values don't match expected");
+    } else if received_data2[0].universe == universes[2] {
+        assert_eq!(received_data2[0].values, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE.to_vec(), "Second set of data part 1 packet values don't match expected");
+
+        assert_eq!(received_data2[1].universe, universes[1], "Second set of data universes don't match expected");
+        assert_eq!(received_data2[1].values, TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE.to_vec(), "Second set of data part 2 packet values don't match expected");
+    } else {
+        assert!(false, "Unexpected universe of data received");
+    }
+
+    snd_thread.join().unwrap();
+}
