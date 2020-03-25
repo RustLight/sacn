@@ -110,6 +110,9 @@ pub struct DMXData {
 
     /// Indicates if the data is marked as 'preview' data indicating it is for use by visualisers etc. as per ANSI E1.31-2018 Section 6.2.6.
     pub preview: bool,
+
+    /// The timestamp that the data was received. 
+    pub recv_timestamp: Instant,
 }
 
 /// Used for receiving dmx or other data on a particular universe using multicast.
@@ -136,8 +139,9 @@ pub struct DiscoveredSacnSource {
     /// The time at which the discovered source was last updated / a discovery packet was received by the source.
     pub last_updated: Instant,
 
-    /// The pages that have been sent so far by this source when enumerating the universes it is currently sending on.   
+    /// The pages that have been sent so far by this source when enumerating the universes it is currently sending on.
     pages: Vec<UniversePage>,
+
     /// The last page that will be sent by this source.
     last_page: u8,
 }
@@ -533,7 +537,8 @@ impl SacnReceiver {
                 sync_uni: data_pkt.synchronization_address,
                 priority: data_pkt.priority,
                 src_cid: Some(cid),
-                preview: data_pkt.preview_data
+                preview: data_pkt.preview_data,
+                recv_timestamp: Instant::now()
             };
 
             return Ok(Some(vec![dmx_data]));
@@ -545,7 +550,8 @@ impl SacnReceiver {
                 sync_uni: data_pkt.synchronization_address,
                 priority: data_pkt.priority,
                 src_cid: Some(cid),
-                preview: data_pkt.preview_data
+                preview: data_pkt.preview_data,
+                recv_timestamp: Instant::now()
             };
 
             self.store_waiting_data(dmx_data)?;
@@ -772,6 +778,7 @@ impl SacnReceiver {
         }
 
         self.sequences.check_timeouts(self.announce_timeout)?;
+        self.check_waiting_data_timeouts();
 
         if timeout == Some(Duration::from_secs(0)) {
             if cfg!(target_os = "windows") { // Use the right expected error for the operating system.
@@ -891,6 +898,12 @@ impl SacnReceiver {
                 }
             }
         }
+    }
+
+    /// Goes through all the waiting data and removes any which has timed out as a sync-packet for it hasn't been received within the E131_NETWORK_DATA_LOSS_TIMEOUT
+    /// period as specified by ANSI E1.31-2018 Section 11.1.2.
+    fn check_waiting_data_timeouts(&mut self) {
+        self.waiting_data.retain(|_uni, data| data.recv_timestamp.elapsed() < E131_NETWORK_DATA_LOSS_TIMEOUT);
     }
 
     /// Returns a list of the sources that have been discovered on the network by this receiver through the E1.31 universe discovery mechanism.
@@ -1313,6 +1326,7 @@ impl Clone for DMXData {
             priority: self.priority,
             src_cid: self.src_cid,
             preview: self.preview,
+            recv_timestamp: self.recv_timestamp
         }
     }
 }
@@ -2025,7 +2039,8 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData> {
         sync_uni: i.sync_uni,
         priority: i.priority,
         src_cid: None,
-        preview: i.preview || n.preview // If either data is preview then mark the result as preview.
+        preview: i.preview || n.preview, // If either data is preview then mark the result as preview.
+        recv_timestamp: i.recv_timestamp
     };
 
     let mut i_iter = i.values.iter();
@@ -2183,6 +2198,7 @@ fn test_store_retrieve_waiting_data() {
         priority: 100,
         src_cid: None,
         preview: false,
+        recv_timestamp: Instant::now()
     };
 
     dmx_rcv.store_waiting_data(dmx_data).unwrap();
@@ -2212,6 +2228,7 @@ fn test_store_2_retrieve_1_waiting_data() {
         priority: 100,
         src_cid: None,
         preview: false,
+        recv_timestamp: Instant::now()
     };
 
     let dmx_data2 = DMXData {
@@ -2221,6 +2238,7 @@ fn test_store_2_retrieve_1_waiting_data() {
         priority: 100,
         src_cid: None,
         preview: false,
+        recv_timestamp: Instant::now()
     };
 
     dmx_rcv.store_waiting_data(dmx_data).unwrap();
@@ -2251,6 +2269,7 @@ fn test_store_2_retrieve_2_waiting_data() {
         priority: 100,
         src_cid: None,
         preview: false,
+        recv_timestamp: Instant::now()
     };
 
     let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
@@ -2262,6 +2281,7 @@ fn test_store_2_retrieve_2_waiting_data() {
         priority: 100,
         src_cid: None,
         preview: false,
+        recv_timestamp: Instant::now()
     };
 
     dmx_rcv.store_waiting_data(dmx_data).unwrap();
@@ -2299,6 +2319,7 @@ fn test_store_2_same_universe_same_priority_waiting_data() {
         priority: 100,
         src_cid: None,
         preview: false,
+        recv_timestamp: Instant::now()
     };
 
     let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
@@ -2310,6 +2331,7 @@ fn test_store_2_same_universe_same_priority_waiting_data() {
         priority: 100,
         src_cid: None,
         preview: false,
+        recv_timestamp: Instant::now()
     };
 
     dmx_rcv.store_waiting_data(dmx_data).unwrap();
@@ -2342,6 +2364,7 @@ fn test_store_2_same_universe_diff_priority_waiting_data() {
         priority: 120,
         src_cid: None,
         preview: false,
+        recv_timestamp: Instant::now()
     };
 
     let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
@@ -2353,6 +2376,7 @@ fn test_store_2_same_universe_diff_priority_waiting_data() {
         priority: 100,
         src_cid: None,
         preview: false,
+        recv_timestamp: Instant::now()
     };
 
     dmx_rcv.store_waiting_data(dmx_data).unwrap();

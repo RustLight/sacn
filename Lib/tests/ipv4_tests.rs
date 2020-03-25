@@ -1085,7 +1085,8 @@ fn test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4()
         sync_uni: sync_uni,
         priority: 100,
         src_cid: None,
-        preview: false
+        preview: false,
+        recv_timestamp: Instant::now()
     },
     &DMXData {
         universe: universe,
@@ -1093,7 +1094,8 @@ fn test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4()
         sync_uni: sync_uni,
         priority: 100,
         src_cid: None,
-        preview: false
+        preview: false,
+        recv_timestamp: Instant::now()
     },).unwrap().values);
 }
 
