@@ -691,7 +691,7 @@ impl SacnSourceInternal {
     /// Will return an error if the data fails to be sent on the socket. See send_to(fn.send_to.Socket).
     /// 
     fn send_sync_packet(&self, universe: u16, dst_ip: Option<SocketAddr>) -> Result<()> {
-        self.universe_allowed(&universe).chain_err(|| format!("Universe {} not allowed", universe))?;
+        self.universe_allowed(&universe)?;
 
         let ip;
 

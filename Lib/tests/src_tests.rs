@@ -182,6 +182,29 @@ fn test_register_min_universe() {
     }
 }
 
+/// Attempts to send a synchronisation packet with the syncronisation address/universe set to 0 which should be rejected as per ANSI E1.31-2018 Section 6.3.3.1.
+#[test]
+fn test_sync_addr_0() {
+    let src = SacnSource::new_v4("Controller").unwrap();
+    const SYNC_UNI: u16 = 0;
+
+    match src.send_sync_packet(SYNC_UNI, None) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::IllegalUniverse(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error type returned");
+                }
+            }
+        }
+        _ => {
+            assert!(false, "Attempt to send a syncronisation packet with a synchronisation address of 0 succeeded when it should have been rejected");
+        }
+    }
+}
+
 const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
