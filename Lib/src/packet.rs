@@ -1483,4 +1483,20 @@ mod test {
             },
         }
     }
+
+    /// Verifies that the parameters are set correctly as per ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
+    #[test]
+    fn check_ansi_e131_2018_parameter_values() {
+        assert_eq!(VECTOR_ROOT_E131_DATA, 0x0000_0004);
+        assert_eq!(VECTOR_ROOT_E131_EXTENDED, 0x0000_0008);
+        assert_eq!(VECTOR_DMP_SET_PROPERTY, 0x02);
+        assert_eq!(VECTOR_E131_DATA_PACKET, 0x0000_0002);
+        assert_eq!(VECTOR_E131_EXTENDED_SYNCHRONIZATION, 0x0000_0001);
+        assert_eq!(VECTOR_E131_EXTENDED_DISCOVERY, 0x0000_0002);
+        assert_eq!(VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST, 0x0000_0001);
+        assert_eq!(E131_UNIVERSE_DISCOVERY_INTERVAL, Duration::from_secs(10));
+        assert_eq!(E131_NETWORK_DATA_LOSS_TIMEOUT, Duration::from_millis(2500));
+        assert_eq!(E131_DISCOVERY_UNIVERSE, 64214);
+        assert_eq!(ACN_SDT_MULTICAST_PORT, 5568);
+    }
 }
