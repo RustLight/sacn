@@ -1901,17 +1901,16 @@ fn check_timeouts(src_sequences: &mut HashMap<Uuid, HashMap<u16, TimedStampedSeq
                 break;
             }
         }
-
         if timedout_uni.is_some() { // If None then it indicates nothing timed out.
             let uni_to_remove = timedout_uni.unwrap();
             let src_universes = src_sequences.get_mut(&timedout_src_id.unwrap());
             if src_universes.is_some() {
                 let universes = src_universes.unwrap();
                 universes.remove(&uni_to_remove);
-                if universes.is_empty() {
+                if universes.is_empty() { // Remove source if all its universes have timed out
                     src_sequences.remove(&timedout_src_id.unwrap());
-                    bail!(ErrorKind::UniverseTimeout(timedout_src_id.unwrap(), timedout_uni.unwrap()));
                 }
+                bail!(ErrorKind::UniverseTimeout(timedout_src_id.unwrap(), timedout_uni.unwrap()));
             }
         }
 
