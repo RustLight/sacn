@@ -2321,7 +2321,22 @@ fn test_source_2_universe_1_timeout(){
         src.send(&[universe_no_timeout], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
         src.send(&[universe_timeout], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
 
-        sleep(E131_NETWORK_DATA_LOSS_TIMEOUT / 2); // Wait a small amount of time.
+        sleep(Duration::from_secs(1)); // Wait a small amount of time.
+
+        // Send another packet to the universe that shouldn't timeout so that it doesn't timeout.
+        src.send(&[universe_no_timeout], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+
+        sleep(Duration::from_secs(1)); // Wait a small amount of time.
+
+        // Send another packet to the universe that shouldn't timeout so that it doesn't timeout.
+        src.send(&[universe_no_timeout], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+
+        sleep(Duration::from_secs(1)); // Wait a small amount of time.
+
+        // Send another packet to the universe that shouldn't timeout so that it doesn't timeout.
+        src.send(&[universe_no_timeout], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+
+        sleep(Duration::from_secs(1)); // Wait a small amount of time.
 
         // Send another packet to the universe that shouldn't timeout so that it doesn't timeout.
         src.send(&[universe_no_timeout], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
@@ -2370,65 +2385,64 @@ fn test_source_2_universe_1_timeout(){
     }
     // Start the expected timeout timer.
     let start_time: Instant = Instant::now();
-
-    // Wait for the next data packet
-    let next_data = dmx_recv.recv(None).unwrap();
-    assert_eq!(next_data.len(), 1, "Third data packet universe count doesn't match expected");
-    assert_eq!(next_data[0].universe, universe_no_timeout, "Third data packet universe doesn't match expected");
-    assert_eq!(next_data[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Third data packet values don't match expected");
     
-    match dmx_recv.recv(Some(acceptable_upper_bound)) { // This will return a WouldBlock/Timedout error if the timeout takes too long.
-        Err(e) => {
-            match e.kind() {
-                ErrorKind::UniverseTimeout(_src_cid, universe) => {
-                    if start_time.elapsed() < acceptable_lower_bound{
-                        assert!(false, "Timeout came quicker than expected");
-                    }
-                    assert_eq!(*universe, universe_timeout, "Unexpected universe timed out");
-                    assert!(true, "Universe timed out as expected");
+    loop { // Loop till a timeout happens, ignoring the data packets send to the non-timeout uni.
+        match dmx_recv.recv(Some(acceptable_upper_bound)) { // This will return a WouldBlock/Timedout error if the timeout takes too long.
+            Err(e) => {
+                match e.kind() {
+                    ErrorKind::UniverseTimeout(_src_cid, universe) => {
+                        if start_time.elapsed() < acceptable_lower_bound{
+                            assert!(false, "Timeout came quicker than expected");
+                        }
+                        assert_eq!(*universe, universe_timeout, "Unexpected universe timed out");
+                        assert!(true, "Universe timed out as expected");
 
-                    // Know that the timeout universe timed out as expected so check that the other universe hasn't timed out.
-                    // Makes use of a timeout of 0 which should check the source timeouts and timeout recieving instantly.
-                    match dmx_recv.recv(Some(Duration::from_millis(0))) {
-                        Err(e) => {
-                            match e.kind() {
-                                ErrorKind::Io(ref s) => {
-                                    match s.kind() {
-                                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
-                                            assert!(true, "Other universe hasn't timedout as expected");
-                                        },
-                                        _ => {
-                                            assert!(false, "Unexpected error returned");
+                        // Know that the timeout universe timed out as expected so check that the other universe hasn't timed out.
+                        // Makes use of a timeout of 0 which should check the source timeouts and timeout recieving instantly.
+                        match dmx_recv.recv(Some(Duration::from_millis(0))) {
+                            Err(e) => {
+                                match e.kind() {
+                                    ErrorKind::Io(ref s) => {
+                                        match s.kind() {
+                                            std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
+                                                assert!(true, "Other universe hasn't timedout as expected");
+                                            },
+                                            _ => {
+                                                assert!(false, "Unexpected error returned");
+                                            }
                                         }
+                                    },
+                                    _ => {
+                                        assert!(false, "Unexpected error returned");
                                     }
-                                },
-                                _ => {
-                                    assert!(false, "Unexpected error returned");
                                 }
                             }
+                            Ok(x) => {
+                                assert!(false, format!("Data received unexpectedly as none sent! {:?}", x));
+                            }
                         }
-                        Ok(x) => {
-                            assert!(false, format!("Data received unexpectedly as none sent! {:?}", x));
-                        }
+                        break;
                     }
-                }
-                ErrorKind::Io(ref s) => {
-                    match s.kind() {
-                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
-                            assert!(false, format!("Timeout took too long to come through: {:?}", start_time.elapsed()));
-                        },
-                        _ => {
-                            assert!(false, "Unexpected error returned");
+                    ErrorKind::Io(ref s) => {
+                        match s.kind() {
+                            std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
+                                assert!(false, format!("Timeout took too long to come through: {:?}", start_time.elapsed()));
+                            },
+                            _ => {
+                                assert!(false, "Unexpected error returned");
+                            }
                         }
+                    },
+                    _ => {
+                        assert!(false, "Unexpected error returned");
                     }
-                },
-                _ => {
-                    assert!(false, "Unexpected error returned");
                 }
             }
-        }
-        Ok(x) => {
-            assert!(false, format!("Data received unexpectedly as none sent! {:?}", x));
+            Ok(p) => { // Check that only data from the non-timed out universe is received.
+                assert_eq!(p.len(), 1, "Third data packet universe count doesn't match expected");
+                assert_eq!(p[0].universe, universe_no_timeout, "Third data packet universe doesn't match expected");
+                assert_eq!(p[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Third data packet values don't match expected");
+            }
         }
     }
 
