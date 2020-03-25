@@ -1858,6 +1858,63 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
     }
 }
 
+/// Creates a sender and a receiver with the sender having no registered universes.
+/// Receiver waits for a discovery packet from the sender and uses it to show that the sender is transmitting
+/// an empty list of universes as expected.
+#[test]
+fn test_universe_discovery_no_universes_ipv4(){
+    const SND_THREADS: usize = 1;
+    const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+
+    let mut snd_threads = Vec::new();
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+
+            tx.send(()).unwrap(); // Force the send thread to wait before creating the sender, should sync once the receiver has been created.
+
+            let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
+
+            // Explicitly make sure that the src is sending discovery packets (by default not).
+            src.set_is_sending_discovery(true);
+
+            // No universes registered so should transmit an empty list.
+
+            tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
+        }));
+    }
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
+    dmx_recv.set_announce_source_discovery(true); // Make the receiver explicitly notify when it receives a universe discovery packet.
+
+    snd_rx.recv().unwrap(); // Receiver created and ready so allow the sender to be created.
+
+    match dmx_recv.recv(None) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SourceDiscovered(src_name) => {
+                    assert_eq!(src_name, SOURCE_NAMES[0], "Name of source discovered doesn't match expected");
+                    let sources = dmx_recv.get_discovered_sources();
+                    assert_eq!(sources.len(), 1, "Number of sources discovered doesn't match expected (1)");
+                    assert_eq!(sources[0].get_all_universes(), Vec::new(), "Number of universes on source is greater than expected (0)");
+                }
+                k => {
+                    assert!(false, "Unexpected error kind, {:?}", k);
+                }
+            }
+        }
+        Ok(d) => {
+            assert!(false, "No data expected, {:?}", d);
+        }
+    }
+
+    snd_rx.recv().unwrap(); // Allow sender to finish.
+}
+
 /// Creates a receiver with a source limit of 2 and then creates 3 sources to trigger a sources exceeded condition.
 #[test]
 fn test_receiver_sources_exceeded_3() {

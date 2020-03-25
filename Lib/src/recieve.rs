@@ -669,7 +669,7 @@ impl SacnReceiver {
     /// This universe discovery packet might be the whole thing or may be just one page of a discovery packet.
     /// This method puts the pages to produce the DiscoveredSacnSource which is stored in the receiver.
     ///
-    /// Returns true if a source was fully discovered or false if the source was only partially discovered.
+    /// Returns the source name if a source was fully discovered or None if the source was only partially discovered.
     ///
     /// Arguments:
     /// discovery_pkt: The universe discovery part of the universe discovery packet to handle.
@@ -677,7 +677,7 @@ impl SacnReceiver {
     fn handle_universe_discovery_packet(
         &mut self,
         discovery_pkt: UniverseDiscoveryPacketFramingLayer,
-    ) -> bool {
+    ) -> Option<String> {
         let data: UniverseDiscoveryPacketUniverseDiscoveryLayer = discovery_pkt.data;
 
         let page: u8 = data.page;
@@ -705,7 +705,7 @@ impl SacnReceiver {
                     let discovered_src: DiscoveredSacnSource =
                         self.partially_discovered_sources.remove(index);
                     self.update_discovered_srcs(discovered_src);
-                    return true;
+                    return Some(discovery_pkt.source_name.to_string());
                 }
             }
             None => {
@@ -720,7 +720,7 @@ impl SacnReceiver {
                 if page == 0 && page == last_page {
                     // Indicates that this is a single page universe discovery packet.
                     self.update_discovered_srcs(discovered_src);
-                    return true;
+                    return Some(discovery_pkt.source_name.to_string());
                 } else {
                     // Indicates that this is a page in a set of pages as part of a sources universe discovery.
                     self.partially_discovered_sources.push(discovered_src);
@@ -728,7 +728,7 @@ impl SacnReceiver {
             }
         }
 
-        return false;
+        return None; // No source fully discovered.
     }
 
     /// Attempt to recieve data from any of the registered universes.
@@ -813,18 +813,17 @@ impl SacnReceiver {
                     SynchronizationPacket(s) => self
                         .handle_sync_packet(pdu.cid, s)?,
                     UniverseDiscoveryPacket(u) => {
-                        if self.handle_universe_discovery_packet(u)
+                        let discovered_src: Option<String> = self.handle_universe_discovery_packet(u);
+                        if discovered_src.is_some()
                             && self.announce_source_discovery
                         {
-                            bail!(ErrorKind::SourceDiscovered(
-                                "Receiver discovered a source".to_string()
-                            ));
+                            bail!(ErrorKind::SourceDiscovered(discovered_src.unwrap()));
                         } else {
                             None
                         }
                     }
                 };
-                
+
                 match res {
                     Some(r) => Ok(r),
                     None => {
@@ -902,7 +901,7 @@ impl SacnReceiver {
 
     /// Gets all discovered sources without checking if any are timed out.
     /// As the sources may be timed out get_discovered_sources is the preferred method but this is included
-    /// to allow receivers to disable source timeouts which may be useful in very high latency networks.
+    /// to allow receivers to disable universe discovery source timeouts which may be useful in very high latency networks.
     pub fn get_discovered_sources_no_check(&mut self) -> Vec<DiscoveredSacnSource> {
         self.discovered_sources.clone()
     }
@@ -2076,9 +2075,10 @@ fn test_handle_single_page_discovery_packet() {
             universes: universes.clone().into(),
         },
     };
-    let res: bool = dmx_rcv.handle_universe_discovery_packet(discovery_pkt);
+    let res: Option<String> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt);
 
-    assert!(res);
+    assert!(res.is_some());
+    assert_eq!(res.unwrap(), name);
 
     assert_eq!(dmx_rcv.discovered_sources.len(), 1);
 
@@ -2139,11 +2139,15 @@ fn test_handle_multi_page_discovery_packet() {
                 universes: universes_page_2.clone().into(),
             },
         };
-    let res1: bool = dmx_rcv.handle_universe_discovery_packet(discovery_pkt_1);
-    let res2: bool = dmx_rcv.handle_universe_discovery_packet(discovery_pkt_2);
+    
+    let res: Option<String> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt_1);
 
-    assert!(!res1); // Should be false because first packet isn't complete as its only the first page.
-    assert!(res2); // Should be true because the second and last page is now received.
+    assert!(res.is_none()); // Should be none because first packet isn't complete as its only the first page.
+
+    let res2: Option<String> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt_2);
+
+    assert!(res2.is_some()); // Source should be discovered because the second and last page is now received.
+    assert_eq!(res2.unwrap(), name);
 
     assert_eq!(dmx_rcv.discovered_sources.len(), 1);
 
