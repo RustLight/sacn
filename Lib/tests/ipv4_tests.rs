@@ -2626,3 +2626,80 @@ fn test_send_recv_multiple_sync_universes(){
 
     snd_thread.join().unwrap();
 }
+
+/// A receiver and a sender are created which both listen to a data universe and a sync universe.
+/// The sender then sends a synchronised data packet, the sender then waits for slightly longer than the E131_NETWORK_DATA_LOSS_TIMEOUT before sending
+/// the corresponding sync packet. As per ANSI E1.31-2018 Section 11.1.2 this data should be discarded as universe synchronisation should stop if the
+/// sync packet isn't received within the E131_NETWORK_DATA_LOSS_TIMEOUT.
+/// 
+/// This shows that this timeout mechanism to stop universe sychronisation works.
+/// 
+/// Note that this library does not attempt to implement the force_syncronisation bit behaviour and so therefore always stops universe synchronisation if the
+/// sync packet is not received within the timeout.
+/// 
+#[test]
+fn test_send_sync_timeout(){
+    const TIMEOUT: Option<Duration> = Some(Duration::from_secs(5));
+
+    // Need to wait slightly longer than the E131_NETWORK_DATA_LOSS_TIMEOUT so that the synchronised data packet should timeout.
+    let sender_wait_period: Duration = E131_NETWORK_DATA_LOSS_TIMEOUT + Duration::from_millis(100);
+
+    let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+    
+    let thread_tx = tx.clone();
+
+    let data_universe = 1;
+    let sync_universe = 2;
+
+    let snd_thread = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1);
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
+
+        src.register_universes(&[data_universe, sync_universe]).unwrap();
+
+        // Sender waits till the receiver says it is ready.
+        thread_tx.send(()).unwrap();
+
+        // Sender sends a data packet synchronised to the synchronisation universe.
+        src.send(&[data_universe], &TEST_DATA_SINGLE_UNIVERSE, None, None, Some(sync_universe)).unwrap();
+
+        // Sender waits too long to send the sync packet meaning that the synchronisation should have timed out.
+        sleep(sender_wait_period);
+
+        // Since the data packet should have timed out this should have no effect on the receiver.
+        src.send_sync_packet(sync_universe, None).unwrap();
+    });
+    
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap(), ACN_SDT_MULTICAST_PORT), None).unwrap();
+    dmx_recv.listen_universes(&[data_universe, sync_universe]).unwrap();
+
+    // Receiver created successfully so allow the sender to progress.
+    rx.recv().unwrap();
+
+    // Data should never be passed up because the data packet should have timed-out before the sync packet is processed.
+    match dmx_recv.recv(TIMEOUT) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::Io(ref s) => {
+                    match s.kind() {
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
+                            // Timeout as expected because the data packet that is awaiting a sync packet has timed out.
+                            // The different errors are due to windows and unix returning different errors for the same thing.
+                            assert!(true, "Timed out as expected meaning synchronised data packet timed out as expected");
+                        },
+                        _ => {
+                            assert!(false, "Unexpected error returned");
+                        }
+                    }
+                },
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(p) => {
+            assert!(false, format!("Received data unexpectedly: {:?}", p));
+        }
+    }
+    snd_thread.join().unwrap();
+}
