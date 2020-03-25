@@ -18,7 +18,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use sacn::source::SacnSource;
 use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
-use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT, E131_UNIVERSE_DISCOVERY_INTERVAL, E131_NETWORK_DATA_LOSS_TIMEOUT};
+use sacn::packet::*;
 use sacn::error::errors::*;
 
 // Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
@@ -2439,13 +2439,62 @@ fn test_source_2_universe_1_timeout(){
                 }
             }
             Ok(p) => { // Check that only data from the non-timed out universe is received.
-                assert_eq!(p.len(), 1, "Third data packet universe count doesn't match expected");
-                assert_eq!(p[0].universe, universe_no_timeout, "Third data packet universe doesn't match expected");
-                assert_eq!(p[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Third data packet values don't match expected");
+                assert_eq!(p.len(), 1, "Data packet universe count doesn't match expected");
+                assert_eq!(p[0].universe, universe_no_timeout, "Data packet universe doesn't match expected");
+                assert_eq!(p[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Data packet values don't match expected");
             }
         }
     }
 
     rx.recv().unwrap(); // Allow the sender to finish.
+    snd_thread.join().unwrap();
+}
+
+// A receiver listens to 2 universes. A sender then sends a packet on the multicast address for the first universe but with the packet
+// being for the second universe.
+// The receiver should process the packet for the second universe as normal because the multicast address used shouldn't be used to decide
+// the universe of the packet.
+#[test]
+fn test_send_recv_wrong_multicast_universe(){
+    const TIMEOUT: Option<Duration> = Some(Duration::from_secs(3));
+
+    let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+    
+    let thread_tx = tx.clone();
+
+    let multicast_universe = 1;
+    let actual_universe = 2;
+
+    let snd_thread = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1);
+        let mut src = SacnSource::with_ip("Source", ip).unwrap();
+        let priority = 100;
+
+        src.register_universes(&[multicast_universe, actual_universe]).unwrap();
+
+        // The multicast address for the multicast universe as per ANSI E1.31-2018 Section 9.3.1 Table 9-10.
+        let dst_ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(239, 255, 0, 1)), ACN_SDT_MULTICAST_PORT);
+
+        // Sender waits till the receiver says it is ready.
+        thread_tx.send(()).unwrap();
+
+        // Send the second universe using the multicast address for the first universe.
+        src.send(&[actual_universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
+    });
+    
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap(), ACN_SDT_MULTICAST_PORT), None).unwrap();
+    dmx_recv.listen_universes(&[multicast_universe, actual_universe]).unwrap();
+
+    // Receiver created successfully so allow the sender to progress.
+    rx.recv().unwrap();
+
+    // Get the packets of data and check that they are correct.
+    let received_data: Vec<DMXData> = dmx_recv.recv(TIMEOUT).unwrap();
+    assert_eq!(received_data.len(), 1, "Data packet universe count doesn't match expected");
+
+    // Particularly important that the universe is the actual universe of the data rather than the universe which corresponds to the multicast address.
+    assert_eq!(received_data[0].universe, actual_universe, "Packet universe doesn't match expected");
+    assert_eq!(received_data[0].values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Data packet values don't match expected");
+
     snd_thread.join().unwrap();
 }

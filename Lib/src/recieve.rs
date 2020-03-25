@@ -522,6 +522,7 @@ impl SacnReceiver {
             data_pkt.universe,
             self.announce_timeout
         )?;
+
         if data_pkt.synchronization_address == E131_NO_SYNC_ADDR {
             self.clear_waiting_data(data_pkt.universe);
 
@@ -823,6 +824,7 @@ impl SacnReceiver {
                         }
                     }
                 };
+                
                 match res {
                     Some(r) => Ok(r),
                     None => {
