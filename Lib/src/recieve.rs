@@ -2396,3 +2396,200 @@ fn test_store_2_same_universe_diff_priority_waiting_data() {
     assert_eq!(dmx_rcv.rtrv_waiting_data(sync_uni).len(), 0);
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use std::{thread};
+    use std::thread::sleep;
+    use std::sync::mpsc;
+    use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
+    use std::time::{Duration, Instant};
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+    use std::borrow::Cow;
+
+    use uuid::Uuid;
+
+    const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
+
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
+
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
+
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
+
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
+
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+    ];
+
+    /// Generates a data packet framing layer with arbitary values except for the sequence number which is set to the given value.
+    /// This is used for tests targeted at checking sequence number behaviour that don't care about other fields.
+    /// The generated data packet framing layer has structure
+    /// DataPacketFramingLayer {
+    ///     source_name: "Source_A".into(),
+    ///     priority: 100,
+    ///     synchronization_address: <given sequence number>,
+    ///     sequence_number: sequence_number,
+    ///     preview_data: false,
+    ///     stream_terminated: false,
+    ///     force_synchronization: false,
+    ///     universe: <given universe>,
+    ///     data: DataPacketDmpLayer {
+    ///         property_values: Cow::from(&TEST_DATA_SINGLE_UNIVERSE[0..]),
+    ///     },
+    /// }
+    /// 
+    fn generate_data_packet_framing_layer_seq_num<'a>(universe: u16, sequence_number: u8) -> DataPacketFramingLayer<'a> {
+        DataPacketFramingLayer {
+            source_name: "Source_A".into(),
+            priority: 100,
+            synchronization_address: 0,
+            sequence_number: sequence_number,
+            preview_data: false,
+            stream_terminated: false,
+            force_synchronization: false,
+            universe: universe,
+            data: DataPacketDmpLayer {
+                property_values: Cow::from(&TEST_DATA_SINGLE_UNIVERSE[0..]),
+            },
+        }
+    }
+
+    /// Generates a sync packet framing layer with arbitary values except for the sequence number which is set to the given value.
+    /// This is used for tests targeted at checking sequence number behaviour that don't care about other fields.
+    /// The generated Generates a sync packet framing layer has structure:
+    /// SynchronizationPacketFramingLayer {
+    ///     sequence_number: <given sequence number>,
+    ///     synchronization_address: <given syncronisation address>
+    /// }
+    /// 
+    fn generate_sync_packet_seq_num<'a>(sync_address: u16, sequence_number: u8) -> SynchronizationPacketFramingLayer {
+        SynchronizationPacketFramingLayer {
+            sequence_number: sequence_number,
+            synchronization_address: sync_address
+        }
+    }
+
+    /// Creates a receiver and then makes it handle 2 data packets with sequence numbers 0 and 1 respectively.
+    /// The receiver is then given a data packet with sequence number 0 which is the lower than the expected value of 2 so should be rejected.
+    /// 
+    /// This shows that sequence numbers are correctly evaluated and packets rejected if the sequence number is too low.
+    ///  
+    #[test]
+    fn test_sequence_number_below_expected() {
+        const UNIVERSE1: u16 = 1;
+        
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
+
+        let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+
+        let data_packet = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 0);
+        let data_packet2 = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 1);
+        let data_packet3 = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 0); // This data packet has a sequence number lower than the expected value of 2 so should be rejected.
+
+        // Not interested in specific return values from this test, just assert the data is processed successfully.
+        assert!(dmx_rcv.handle_data_packet(src_cid, data_packet).unwrap().is_some(), "Receiver incorrectly rejected first data packet");
+        assert!(dmx_rcv.handle_data_packet(src_cid, data_packet2).unwrap().is_some(), "Receiver incorrectly rejected second data packet");
+
+        // Check that the third data packet with the low sequence number is rejected correctly with the expected OutOfSequence error.
+        match dmx_rcv.handle_data_packet(src_cid, data_packet3) {
+            Err(Error(OutOfSequence(_), _)) => {
+                assert!(true, "Receiver correctly rejected third data packet with correct error");
+            }
+            Ok(_) => {
+                assert!(false, "Receiver incorrectly accepted third data packet");
+            }
+            Err(e) => {
+                assert!(false, format!("Receiver correctly rejected third data packet but with unexpected error: {}", e));
+            }
+        }
+    }
+
+    /// Creates a receiver and then makes it handle 2 data packets with sequence numbers 0 and 1.
+    /// This then means the receiver will reject another data packet with sequence number 0.
+    /// The receiver is then passed a sync packet with sequence number 0 which shouldn't be rejected as it is a different packet type.
+    /// 
+    /// Shows sequence numbers are evaluated seperately for each packet type as per ANSI E1.31-2018 Section 6.7.2.
+    /// 
+    #[test]
+    fn test_sequence_number_packet_type_independence() {
+        const UNIVERSE: u16 = 1;
+
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        dmx_rcv.listen_universes(&[UNIVERSE]).unwrap();
+
+        let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+
+        let data_packet = generate_data_packet_framing_layer_seq_num(UNIVERSE, 0);
+        let data_packet2 = generate_data_packet_framing_layer_seq_num(UNIVERSE, 1);
+
+        let sync_packet = generate_sync_packet_seq_num(UNIVERSE, 0);
+
+        // Not interested in specific return values from this test, just assert the data is processed successfully.
+        assert!(dmx_rcv.handle_data_packet(src_cid, data_packet).unwrap().is_some(), "Receiver incorrectly rejected first data packet");
+        assert!(dmx_rcv.handle_data_packet(src_cid, data_packet2).unwrap().is_some(), "Receiver incorrectly rejected second data packet");
+
+        // At this point the receiver should be expecting data_packet sequence number 2.
+        // Pass the receiver a sync packet with sequence number 0.
+        // If this isn't rejected it shows that the receiver correctly treats different packet types individually.
+        assert!(dmx_rcv.handle_sync_packet(src_cid, sync_packet).unwrap().is_none(), "Receiver incorrectly rejected syncronisation packet");
+    }
+
+    #[test]
+    fn test_sequence_number_universe_independence() {
+        const UNIVERSE1: u16 = 1;
+        const UNIVERSE2: u16 = 2;
+        
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        dmx_rcv.listen_universes(&[UNIVERSE1, UNIVERSE2]).unwrap();
+
+        let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+
+        let data_packet = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 0);
+        let data_packet2 = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 1);
+        let data_packet3 = generate_data_packet_framing_layer_seq_num(UNIVERSE2, 0);
+
+        // Not interested in specific return values from this test, just assert the data is processed successfully.
+        assert!(dmx_rcv.handle_data_packet(src_cid, data_packet).unwrap().is_some(), "Receiver incorrectly rejected first data packet");
+        assert!(dmx_rcv.handle_data_packet(src_cid, data_packet2).unwrap().is_some(), "Receiver incorrectly rejected second data packet");
+
+        // At this point the receiver will (as shown by test_sequence_number_below_expected) reject a data packet to UNIVERSE1 with sequence number 0 
+        // however this data packet is for UNIVERSE2 and so therefore should be accepted.
+        assert!(dmx_rcv.handle_data_packet(src_cid, data_packet3).unwrap().is_some(), "Receiver incorrectly rejected third data packet");
+    }
+}
+
+// TODO:
+// Spell check for 'receiver' and 'synchronisation'
