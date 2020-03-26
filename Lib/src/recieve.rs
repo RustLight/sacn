@@ -543,6 +543,10 @@ impl SacnReceiver {
 
             return Ok(Some(vec![dmx_data]));
         } else {
+            // As per ANSI E1.31-2018 Appendix B.2 the receiver should listen at the synchronisation address when a data packet is received with a non-zero
+            // synchronisation address.
+            self.listen_universes(&[data_pkt.synchronization_address])?;
+
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
             let dmx_data: DMXData = DMXData {
                 universe: data_pkt.universe,

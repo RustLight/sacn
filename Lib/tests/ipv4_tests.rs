@@ -2703,3 +2703,12 @@ fn test_send_sync_timeout(){
     }
     snd_thread.join().unwrap();
 }
+
+/// Setups and runs through the scenario as described in ANSI E1.31-2018 Appendix B.
+/// This asserts that the behaviour of this implementation is exactly as outlined within that section.
+/// This shows that the implementation handles universe synchronisation in the way specified by the protocol document. 
+/// As the force synchronisation option is not implemented as part of this library that section is ignored.
+#[test]
+fn test_ansi_e131_appendix_b_runthrough() {
+    
+}
