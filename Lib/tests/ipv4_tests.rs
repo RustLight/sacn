@@ -8,6 +8,7 @@
 // This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
 extern crate sacn;
+extern crate uuid;
 
 use std::{thread};
 use std::thread::sleep;
@@ -20,6 +21,9 @@ use sacn::source::SacnSource;
 use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
 use sacn::packet::*;
 use sacn::error::errors::*;
+
+/// UUID library used to handle the UUID's used in the CID fields.
+use self::uuid::Uuid;
 
 // Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
 // - Decided it shouldn't be seperated.
@@ -2710,5 +2714,115 @@ fn test_send_sync_timeout(){
 /// As the force synchronisation option is not implemented as part of this library that section is ignored.
 #[test]
 fn test_ansi_e131_appendix_b_runthrough() {
+    // The number of set of (data packets + sync packet) to send.
+    const SYNC_PACKET_COUNT: usize = 5;
+
+    // The number of data packets sent before each sync packet.
+    const DATA_PACKETS_PER_SYNC_PACKET: usize = 2;
+
+    // The 'slight pause' as specified by ANSI E1.31-2018 Section 11.2.2 between data and sync packets.
+    const PAUSE_PERIOD: Duration = Duration::from_millis(100);
+
+    let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
     
+    let thread_tx = tx.clone();
+
+    let data_universes = [1, 2];
+    let sync_universe = 7962;
+    let priority = 100;
+    let source_name = "Source_A";
+    let data = [0x00, 0xe, 0x0, 0xc, 0x1, 0x7, 0x1, 0x4, 0x8, 0x0, 0xd, 0xa, 0x7, 0xa];
+    let data2 = [0x00, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa];
+    let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+
+    let snd_thread = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1);
+        let mut src = SacnSource::with_cid_ip(source_name, src_cid, ip).unwrap();
+
+        src.register_universes(&data_universes).unwrap();
+        src.register_universe(sync_universe).unwrap();
+
+        // Sender waits till the receiver says it is ready.
+        thread_tx.send(()).unwrap();
+
+        for _ in 0 .. SYNC_PACKET_COUNT {
+            // Sender sends data packets to the 2 data universes using the same synchronisation address.
+            src.send(&[data_universes[0]], &data, Some(priority), None, Some(sync_universe)).unwrap();
+            src.send(&[data_universes[1]], &data2, Some(priority), None, Some(sync_universe)).unwrap();
+
+            // Sender observes a slight pause to allow for processing delays (ANSI E1.31-2018 Section 11.2.2).
+            sleep(PAUSE_PERIOD);
+
+            // Sender sends a syncronisation packet to the sync universe.
+            src.send_sync_packet(sync_universe, None).unwrap();
+        }
+
+        // Sender sends a data packet to the data universe using a zero synchronisation address indicating synchronisation is now over.
+        src.send(&[data_universes[0]], &data, Some(priority), None, None).unwrap();
+        src.send(&[data_universes[1]], &data2, Some(priority), None, None).unwrap();
+    });
+    
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap(), ACN_SDT_MULTICAST_PORT), None).unwrap();
+
+    // Receiver only listening to the data universe, the sync universe should be joined automatically when a data packet that requires it arrives.
+    dmx_recv.listen_universes(&data_universes).unwrap();
+
+    // Receiver created successfully so allow the sender to progress.
+    rx.recv().unwrap();
+
+    for _ in 0 .. SYNC_PACKET_COUNT {
+        // "When the E1.31 Synchronization Packet arrives from Source A, Receiver B acts on the data."
+        match dmx_recv.recv(None) {
+            Ok(p) => { 
+                assert_eq!(p.len(), DATA_PACKETS_PER_SYNC_PACKET);
+                if p[0].universe == data_universes[0] {
+                    assert_eq!(p[0].values, data, "Unexpected data within first data packet of a set of synchronised packets");
+
+                    assert_eq!(p[1].universe, data_universes[1], "Unrecognised universe as second data packet in set of synchronised packets");
+                    assert_eq!(p[1].values, data2, "Unexpected data within second data packet of a set of synchronised packets");
+                } else if p[0].universe == data_universes[1] {
+                    assert_eq!(p[0].values, data2, "Unexpected data within first data packet of a set of synchronised packets");
+
+                    assert_eq!(p[1].universe, data_universes[0], "Unrecognised universe as second data packet in set of synchronised packets");
+                    assert_eq!(p[1].values, data, "Unexpected data within second data packet of a set of synchronised packets");
+                } else {
+                    assert!(false, "Unrecognised universe within data packet");
+                }
+            }
+            Err(e) => {
+                assert!(false, format!("Unexpected error returned: {:?}", e));
+            }
+        }
+    }
+    // "This process continues until Receiver B receives an E1.31 Data Packet with a Synchronization Address of 0."
+    // "Receiver B may then unsubscribe from the synchronization multicast address" - This implementation does not automatically unsubscribe
+    //        This is based on the reasoning that a synchronisation universe will be used multiple times and subscribing/unsubscribing is unneeded overhead.
+    // Synchronisation is now over so should receive 2 packets individually.
+    let rcv_data = dmx_recv.recv(None).unwrap();
+    assert_eq!(rcv_data.len(), 1);
+    assert_eq!(rcv_data[0].universe, data_universes[0]);
+    assert_eq!(rcv_data[0].values, data);
+
+    let rcv_data2 = dmx_recv.recv(None).unwrap();
+    assert_eq!(rcv_data2.len(), 1);
+    assert_eq!(rcv_data2[0].universe, data_universes[1]);
+    assert_eq!(rcv_data2[0].values, data2);
+
+    // "If, at any time, Receiver B receives more than one E1.31 Data Packet with the same Synchronization
+    // Address in it, before receiving an E1.31 Universe Synchronization Packet, it will discard all but the most
+    // recent E1.31 Data Packet. Those packets are only acted upon when the synchronization command
+    // arrives."
+    // This is taken to refer to a data packet within the same universe and synchronisation address not a packet with any universe
+    // this assumption is based on the wording "Universe synchronization is required for applications where receivers require more than one universe to
+    // be controlled, multiple receivers produce synchronized output, or unsynchronized control of receivers may
+    // result in undesired visual effects." from ANSI E1.31-2018 Section 11. This wording indicates that one use case of synchronisation is to allow
+    // receivers with more than one universe to be controlled however this would be impossible if the statement above (from ANSI E1.31-2018 Appendix B) 
+    // indicated that data packets for all but one universe should be discarded.
+
+    // "Since the the Force_Synchronization bit in the Options field of the E1.31 Data Packet has been set to 0,
+    // even if Source A times out the E131_NETWORK_DATA_LOSS_TIMEOUT, Receiver B will stay in its last
+    // look until a new E1.31 Synchronization Packet arrives."
+    // The implementation does not support the force synchronisation bit so always acts as if is set to 1 and times out.
+
+    snd_thread.join().unwrap();
 }
