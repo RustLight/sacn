@@ -2069,342 +2069,11 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData> {
     Ok(r)
 }
 
-#[test]
-fn test_handle_single_page_discovery_packet() {
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
-
-    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
-
-    let name = "Test Src 1";
-    let page: u8 = 0;
-    let last_page: u8 = 0;
-    let universes: Vec<u16> = vec![0, 1, 2, 3, 4, 5];
-
-    let discovery_pkt: UniverseDiscoveryPacketFramingLayer = UniverseDiscoveryPacketFramingLayer {
-        source_name: name.into(),
-
-        /// Universe discovery layer.
-        data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
-            page: page,
-
-            /// The number of the final page.
-            last_page: last_page,
-
-            /// List of universes.
-            universes: universes.clone().into(),
-        },
-    };
-    let res: Option<String> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt);
-
-    assert!(res.is_some());
-    assert_eq!(res.unwrap(), name);
-
-    assert_eq!(dmx_rcv.discovered_sources.len(), 1);
-
-    assert_eq!(dmx_rcv.discovered_sources[0].name, name);
-    assert_eq!(dmx_rcv.discovered_sources[0].last_page, last_page);
-    assert_eq!(dmx_rcv.discovered_sources[0].pages.len(), 1);
-    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].page, page);
-    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].universes, universes);
-}
-
-#[test]
-fn test_handle_multi_page_discovery_packet() {
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
-
-    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
-
-    let name = "Test Src 1";
-    let last_page: u8 = 1;
-    let mut universes_page_1: Vec<u16> = Vec::new();
-    let mut universes_page_2: Vec<u16> = Vec::new();
-
-    for i in 1..513 {
-        universes_page_1.push(i);
-    }
-
-    for i in 513..1024 {
-        universes_page_2.push(i);
-    }
-
-    let discovery_pkt_1: UniverseDiscoveryPacketFramingLayer =
-        UniverseDiscoveryPacketFramingLayer {
-            source_name: name.into(),
-
-            /// Universe discovery layer.
-            data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
-                page: 0,
-
-                /// The number of the final page.
-                last_page: last_page,
-
-                /// List of universes.
-                universes: universes_page_1.clone().into(),
-            },
-        };
-
-    let discovery_pkt_2: UniverseDiscoveryPacketFramingLayer =
-        UniverseDiscoveryPacketFramingLayer {
-            source_name: name.into(),
-
-            /// Universe discovery layer.
-            data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
-                page: 1,
-
-                /// The number of the final page.
-                last_page: last_page,
-
-                /// List of universes.
-                universes: universes_page_2.clone().into(),
-            },
-        };
-    
-    let res: Option<String> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt_1);
-
-    assert!(res.is_none()); // Should be none because first packet isn't complete as its only the first page.
-
-    let res2: Option<String> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt_2);
-
-    assert!(res2.is_some()); // Source should be discovered because the second and last page is now received.
-    assert_eq!(res2.unwrap(), name);
-
-    assert_eq!(dmx_rcv.discovered_sources.len(), 1);
-
-    assert_eq!(dmx_rcv.discovered_sources[0].name, name);
-    assert_eq!(dmx_rcv.discovered_sources[0].last_page, last_page);
-    assert_eq!(dmx_rcv.discovered_sources[0].pages.len(), 2);
-    assert_eq!(dmx_rcv.discovered_sources[0].pages[0].page, 0);
-    assert_eq!(dmx_rcv.discovered_sources[0].pages[1].page, 1);
-    assert_eq!(
-        dmx_rcv.discovered_sources[0].pages[0].universes,
-        universes_page_1
-    );
-    assert_eq!(
-        dmx_rcv.discovered_sources[0].pages[1].universes,
-        universes_page_2
-    );
-}
-
-#[test]
-fn test_store_retrieve_waiting_data() {
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
-
-    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
-
-    let sync_uni: u16 = 1;
-    let universe: u16 = 1;
-    let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-    let dmx_data = DMXData {
-        universe: universe,
-        values: vals.clone(),
-        sync_uni: sync_uni,
-        priority: 100,
-        src_cid: None,
-        preview: false,
-        recv_timestamp: Instant::now()
-    };
-
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
-
-    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
-
-    assert_eq!(res.len(), 1);
-    assert_eq!(res[0].universe, universe);
-    assert_eq!(res[0].sync_uni, sync_uni);
-    assert_eq!(res[0].values, vals);
-}
-
-#[test]
-fn test_store_2_retrieve_1_waiting_data() {
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
-
-    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
-
-    let sync_uni: u16 = 1;
-    let universe: u16 = 1;
-    let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-    let dmx_data = DMXData {
-        universe: universe,
-        values: vals.clone(),
-        sync_uni: sync_uni,
-        priority: 100,
-        src_cid: None,
-        preview: false,
-        recv_timestamp: Instant::now()
-    };
-
-    let dmx_data2 = DMXData {
-        universe: universe + 1,
-        values: vals.clone(),
-        sync_uni: sync_uni + 1,
-        priority: 100,
-        src_cid: None,
-        preview: false,
-        recv_timestamp: Instant::now()
-    };
-
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
-    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
-
-    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
-
-    assert_eq!(res.len(), 1);
-    assert_eq!(res[0].universe, universe);
-    assert_eq!(res[0].sync_uni, sync_uni);
-    assert_eq!(res[0].values, vals);
-}
-
-#[test]
-fn test_store_2_retrieve_2_waiting_data() {
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
-
-    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
-
-    let sync_uni: u16 = 1;
-    let universe: u16 = 1;
-    let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-    let dmx_data = DMXData {
-        universe: universe,
-        values: vals.clone(),
-        sync_uni: sync_uni,
-        priority: 100,
-        src_cid: None,
-        preview: false,
-        recv_timestamp: Instant::now()
-    };
-
-    let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
-
-    let dmx_data2 = DMXData {
-        universe: universe + 1,
-        values: vals2.clone(),
-        sync_uni: sync_uni + 1,
-        priority: 100,
-        src_cid: None,
-        preview: false,
-        recv_timestamp: Instant::now()
-    };
-
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
-    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
-
-    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
-
-    assert_eq!(res.len(), 1);
-    assert_eq!(res[0].universe, universe);
-    assert_eq!(res[0].sync_uni, sync_uni);
-    assert_eq!(res[0].values, vals);
-
-    let res2: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni + 1);
-
-    assert_eq!(res2.len(), 1);
-    assert_eq!(res2[0].universe, universe + 1);
-    assert_eq!(res2[0].sync_uni, sync_uni + 1);
-    assert_eq!(res2[0].values, vals2);
-}
-
-#[test]
-fn test_store_2_same_universe_same_priority_waiting_data() {
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
-
-    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
-
-    let sync_uni: u16 = 1;
-    let universe: u16 = 1;
-    let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-    let dmx_data = DMXData {
-        universe: universe,
-        values: vals.clone(),
-        sync_uni: sync_uni,
-        priority: 100,
-        src_cid: None,
-        preview: false,
-        recv_timestamp: Instant::now()
-    };
-
-    let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
-
-    let dmx_data2 = DMXData {
-        universe: universe,
-        values: vals2.clone(),
-        sync_uni: sync_uni,
-        priority: 100,
-        src_cid: None,
-        preview: false,
-        recv_timestamp: Instant::now()
-    };
-
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
-    dmx_rcv.store_waiting_data(dmx_data2).unwrap();
-
-    let res2: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
-
-    assert_eq!(res2.len(), 1);
-    assert_eq!(res2[0].universe, universe);
-    assert_eq!(res2[0].sync_uni, sync_uni);
-    assert_eq!(res2[0].values, vals2);
-
-    assert_eq!(dmx_rcv.rtrv_waiting_data(sync_uni).len(), 0);
-}
-
-#[test]
-fn test_store_2_same_universe_diff_priority_waiting_data() {
-    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
-
-    let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
-
-    let sync_uni: u16 = 1;
-    let universe: u16 = 1;
-    let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-    let dmx_data = DMXData {
-        universe: universe,
-        values: vals.clone(),
-        sync_uni: sync_uni,
-        priority: 120,
-        src_cid: None,
-        preview: false,
-        recv_timestamp: Instant::now()
-    };
-
-    let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
-
-    let dmx_data2 = DMXData {
-        universe: universe,
-        values: vals2.clone(),
-        sync_uni: sync_uni,
-        priority: 100,
-        src_cid: None,
-        preview: false,
-        recv_timestamp: Instant::now()
-    };
-
-    dmx_rcv.store_waiting_data(dmx_data).unwrap();
-    dmx_rcv.store_waiting_data(dmx_data2).unwrap(); // Won't be added as lower priority than already waiting data.
-
-    let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
-
-    assert_eq!(res.len(), 1);
-    assert_eq!(res[0].universe, universe);
-    assert_eq!(res[0].sync_uni, sync_uni);
-    assert_eq!(res[0].values, vals);
-
-    assert_eq!(dmx_rcv.rtrv_waiting_data(sync_uni).len(), 0);
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
 
-    use std::{thread};
-    use std::thread::sleep;
-    use std::sync::mpsc;
-    use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
-    use std::time::{Duration, Instant};
+    use std::time::{Instant};
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::borrow::Cow;
 
@@ -2443,6 +2112,333 @@ mod test {
 
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
     ];
+
+    #[test]
+    fn test_handle_single_page_discovery_packet() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        let name = "Test Src 1";
+        let page: u8 = 0;
+        let last_page: u8 = 0;
+        let universes: Vec<u16> = vec![0, 1, 2, 3, 4, 5];
+
+        let discovery_pkt: UniverseDiscoveryPacketFramingLayer = UniverseDiscoveryPacketFramingLayer {
+            source_name: name.into(),
+
+            /// Universe discovery layer.
+            data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+                page: page,
+
+                /// The number of the final page.
+                last_page: last_page,
+
+                /// List of universes.
+                universes: universes.clone().into(),
+            },
+        };
+        let res: Option<String> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt);
+
+        assert!(res.is_some());
+        assert_eq!(res.unwrap(), name);
+
+        assert_eq!(dmx_rcv.discovered_sources.len(), 1);
+
+        assert_eq!(dmx_rcv.discovered_sources[0].name, name);
+        assert_eq!(dmx_rcv.discovered_sources[0].last_page, last_page);
+        assert_eq!(dmx_rcv.discovered_sources[0].pages.len(), 1);
+        assert_eq!(dmx_rcv.discovered_sources[0].pages[0].page, page);
+        assert_eq!(dmx_rcv.discovered_sources[0].pages[0].universes, universes);
+    }
+
+    #[test]
+    fn test_handle_multi_page_discovery_packet() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        let name = "Test Src 1";
+        let last_page: u8 = 1;
+        let mut universes_page_1: Vec<u16> = Vec::new();
+        let mut universes_page_2: Vec<u16> = Vec::new();
+
+        for i in 1..513 {
+            universes_page_1.push(i);
+        }
+
+        for i in 513..1024 {
+            universes_page_2.push(i);
+        }
+
+        let discovery_pkt_1: UniverseDiscoveryPacketFramingLayer =
+            UniverseDiscoveryPacketFramingLayer {
+                source_name: name.into(),
+
+                /// Universe discovery layer.
+                data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+                    page: 0,
+
+                    /// The number of the final page.
+                    last_page: last_page,
+
+                    /// List of universes.
+                    universes: universes_page_1.clone().into(),
+                },
+            };
+
+        let discovery_pkt_2: UniverseDiscoveryPacketFramingLayer =
+            UniverseDiscoveryPacketFramingLayer {
+                source_name: name.into(),
+
+                /// Universe discovery layer.
+                data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+                    page: 1,
+
+                    /// The number of the final page.
+                    last_page: last_page,
+
+                    /// List of universes.
+                    universes: universes_page_2.clone().into(),
+                },
+            };
+        
+        let res: Option<String> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt_1);
+
+        assert!(res.is_none()); // Should be none because first packet isn't complete as its only the first page.
+
+        let res2: Option<String> = dmx_rcv.handle_universe_discovery_packet(discovery_pkt_2);
+
+        assert!(res2.is_some()); // Source should be discovered because the second and last page is now received.
+        assert_eq!(res2.unwrap(), name);
+
+        assert_eq!(dmx_rcv.discovered_sources.len(), 1);
+
+        assert_eq!(dmx_rcv.discovered_sources[0].name, name);
+        assert_eq!(dmx_rcv.discovered_sources[0].last_page, last_page);
+        assert_eq!(dmx_rcv.discovered_sources[0].pages.len(), 2);
+        assert_eq!(dmx_rcv.discovered_sources[0].pages[0].page, 0);
+        assert_eq!(dmx_rcv.discovered_sources[0].pages[1].page, 1);
+        assert_eq!(
+            dmx_rcv.discovered_sources[0].pages[0].universes,
+            universes_page_1
+        );
+        assert_eq!(
+            dmx_rcv.discovered_sources[0].pages[1].universes,
+            universes_page_2
+        );
+    }
+
+    #[test]
+    fn test_store_retrieve_waiting_data() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        let sync_uni: u16 = 1;
+        let universe: u16 = 1;
+        let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+        let dmx_data = DMXData {
+            universe: universe,
+            values: vals.clone(),
+            sync_uni: sync_uni,
+            priority: 100,
+            src_cid: None,
+            preview: false,
+            recv_timestamp: Instant::now()
+        };
+
+        dmx_rcv.store_waiting_data(dmx_data).unwrap();
+
+        let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].universe, universe);
+        assert_eq!(res[0].sync_uni, sync_uni);
+        assert_eq!(res[0].values, vals);
+    }
+
+    #[test]
+    fn test_store_2_retrieve_1_waiting_data() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        let sync_uni: u16 = 1;
+        let universe: u16 = 1;
+        let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+        let dmx_data = DMXData {
+            universe: universe,
+            values: vals.clone(),
+            sync_uni: sync_uni,
+            priority: 100,
+            src_cid: None,
+            preview: false,
+            recv_timestamp: Instant::now()
+        };
+
+        let dmx_data2 = DMXData {
+            universe: universe + 1,
+            values: vals.clone(),
+            sync_uni: sync_uni + 1,
+            priority: 100,
+            src_cid: None,
+            preview: false,
+            recv_timestamp: Instant::now()
+        };
+
+        dmx_rcv.store_waiting_data(dmx_data).unwrap();
+        dmx_rcv.store_waiting_data(dmx_data2).unwrap();
+
+        let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].universe, universe);
+        assert_eq!(res[0].sync_uni, sync_uni);
+        assert_eq!(res[0].values, vals);
+    }
+
+    #[test]
+    fn test_store_2_retrieve_2_waiting_data() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        let sync_uni: u16 = 1;
+        let universe: u16 = 1;
+        let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+        let dmx_data = DMXData {
+            universe: universe,
+            values: vals.clone(),
+            sync_uni: sync_uni,
+            priority: 100,
+            src_cid: None,
+            preview: false,
+            recv_timestamp: Instant::now()
+        };
+
+        let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
+
+        let dmx_data2 = DMXData {
+            universe: universe + 1,
+            values: vals2.clone(),
+            sync_uni: sync_uni + 1,
+            priority: 100,
+            src_cid: None,
+            preview: false,
+            recv_timestamp: Instant::now()
+        };
+
+        dmx_rcv.store_waiting_data(dmx_data).unwrap();
+        dmx_rcv.store_waiting_data(dmx_data2).unwrap();
+
+        let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].universe, universe);
+        assert_eq!(res[0].sync_uni, sync_uni);
+        assert_eq!(res[0].values, vals);
+
+        let res2: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni + 1);
+
+        assert_eq!(res2.len(), 1);
+        assert_eq!(res2[0].universe, universe + 1);
+        assert_eq!(res2[0].sync_uni, sync_uni + 1);
+        assert_eq!(res2[0].values, vals2);
+    }
+
+    #[test]
+    fn test_store_2_same_universe_same_priority_waiting_data() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        let sync_uni: u16 = 1;
+        let universe: u16 = 1;
+        let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+        let dmx_data = DMXData {
+            universe: universe,
+            values: vals.clone(),
+            sync_uni: sync_uni,
+            priority: 100,
+            src_cid: None,
+            preview: false,
+            recv_timestamp: Instant::now()
+        };
+
+        let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
+
+        let dmx_data2 = DMXData {
+            universe: universe,
+            values: vals2.clone(),
+            sync_uni: sync_uni,
+            priority: 100,
+            src_cid: None,
+            preview: false,
+            recv_timestamp: Instant::now()
+        };
+
+        dmx_rcv.store_waiting_data(dmx_data).unwrap();
+        dmx_rcv.store_waiting_data(dmx_data2).unwrap();
+
+        let res2: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
+
+        assert_eq!(res2.len(), 1);
+        assert_eq!(res2[0].universe, universe);
+        assert_eq!(res2[0].sync_uni, sync_uni);
+        assert_eq!(res2[0].values, vals2);
+
+        assert_eq!(dmx_rcv.rtrv_waiting_data(sync_uni).len(), 0);
+    }
+
+    #[test]
+    fn test_store_2_same_universe_diff_priority_waiting_data() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        let sync_uni: u16 = 1;
+        let universe: u16 = 1;
+        let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+        let dmx_data = DMXData {
+            universe: universe,
+            values: vals.clone(),
+            sync_uni: sync_uni,
+            priority: 120,
+            src_cid: None,
+            preview: false,
+            recv_timestamp: Instant::now()
+        };
+
+        let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
+
+        let dmx_data2 = DMXData {
+            universe: universe,
+            values: vals2.clone(),
+            sync_uni: sync_uni,
+            priority: 100,
+            src_cid: None,
+            preview: false,
+            recv_timestamp: Instant::now()
+        };
+
+        dmx_rcv.store_waiting_data(dmx_data).unwrap();
+        dmx_rcv.store_waiting_data(dmx_data2).unwrap(); // Won't be added as lower priority than already waiting data.
+
+        let res: Vec<DMXData> = dmx_rcv.rtrv_waiting_data(sync_uni);
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].universe, universe);
+        assert_eq!(res[0].sync_uni, sync_uni);
+        assert_eq!(res[0].values, vals);
+
+        assert_eq!(dmx_rcv.rtrv_waiting_data(sync_uni).len(), 0);
+    }
 
     /// Generates a data packet framing layer with arbitary values except for the sequence number which is set to the given value.
     /// This is used for tests targeted at checking sequence number behaviour that don't care about other fields.
@@ -2485,7 +2481,7 @@ mod test {
     ///     synchronization_address: <given syncronisation address>
     /// }
     /// 
-    fn generate_sync_packet_seq_num<'a>(sync_address: u16, sequence_number: u8) -> SynchronizationPacketFramingLayer {
+    fn generate_sync_packet_framing_layer_seq_num<'a>(sync_address: u16, sequence_number: u8) -> SynchronizationPacketFramingLayer {
         SynchronizationPacketFramingLayer {
             sequence_number: sequence_number,
             synchronization_address: sync_address
@@ -2495,10 +2491,10 @@ mod test {
     /// Creates a receiver and then makes it handle 2 data packets with sequence numbers 0 and 1 respectively.
     /// The receiver is then given a data packet with sequence number 0 which is the lower than the expected value of 2 so should be rejected.
     /// 
-    /// This shows that sequence numbers are correctly evaluated and packets rejected if the sequence number is too low.
+    /// This shows that sequence numbers are correctly evaluated and packets rejected if the sequence number is too low for data packets.
     ///  
     #[test]
-    fn test_sequence_number_below_expected() {
+    fn test_data_packet_sequence_number_below_expected() {
         const UNIVERSE1: u16 = 1;
         
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
@@ -2531,6 +2527,45 @@ mod test {
         }
     }
 
+    /// Creates a receiver and then makes it handle 2 sync packets with sequence numbers 0 and 1 respectively.
+    /// The receiver is then given a sync packet with sequence number 0 which is the lower than the expected value of 2 so should be rejected.
+    /// 
+    /// This shows that sequence numbers are correctly evaluated and packets rejected if the sequence number is too low for synchronisation packets.
+    ///  
+    #[test]
+    fn test_sync_packet_sequence_number_below_expected() {
+        const UNIVERSE1: u16 = 1;
+        
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
+
+        let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+
+        let sync_packet = generate_sync_packet_framing_layer_seq_num(UNIVERSE1, 0);
+        let sync_packet2 = generate_sync_packet_framing_layer_seq_num(UNIVERSE1, 1);
+        let sync_packet3 = generate_sync_packet_framing_layer_seq_num(UNIVERSE1, 0); // This sync packet has a sequence number lower than the expected value of 2 so should be rejected.
+
+        // Not interested in specific return values from this test, just assert the packets are processed successfully.
+        assert!(dmx_rcv.handle_sync_packet(src_cid, sync_packet).unwrap().is_none(), "Receiver incorrectly rejected first sync packet");
+        assert!(dmx_rcv.handle_sync_packet(src_cid, sync_packet2).unwrap().is_none(), "Receiver incorrectly rejected second sync packet");
+
+        // Check that the third sync packet with the low sequence number is rejected correctly with the expected OutOfSequence error.
+        match dmx_rcv.handle_sync_packet(src_cid, sync_packet3) {
+            Err(Error(OutOfSequence(_), _)) => {
+                assert!(true, "Receiver correctly rejected third sync packet with correct error");
+            }
+            Ok(_) => {
+                assert!(false, "Receiver incorrectly accepted third sync packet");
+            }
+            Err(e) => {
+                assert!(false, format!("Receiver correctly rejected third sync packet but with unexpected error: {}", e));
+            }
+        }
+    }
+
     /// Creates a receiver and then makes it handle 2 data packets with sequence numbers 0 and 1.
     /// This then means the receiver will reject another data packet with sequence number 0.
     /// The receiver is then passed a sync packet with sequence number 0 which shouldn't be rejected as it is a different packet type.
@@ -2552,7 +2587,7 @@ mod test {
         let data_packet = generate_data_packet_framing_layer_seq_num(UNIVERSE, 0);
         let data_packet2 = generate_data_packet_framing_layer_seq_num(UNIVERSE, 1);
 
-        let sync_packet = generate_sync_packet_seq_num(UNIVERSE, 0);
+        let sync_packet = generate_sync_packet_framing_layer_seq_num(UNIVERSE, 0);
 
         // Not interested in specific return values from this test, just assert the data is processed successfully.
         assert!(dmx_rcv.handle_data_packet(src_cid, data_packet).unwrap().is_some(), "Receiver incorrectly rejected first data packet");
@@ -2564,8 +2599,14 @@ mod test {
         assert!(dmx_rcv.handle_sync_packet(src_cid, sync_packet).unwrap().is_none(), "Receiver incorrectly rejected syncronisation packet");
     }
 
+    /// Creates a receiver and then makes it handle 2 data packets for the same universe with sequence numbers 0 and 1.
+    /// This then means the receiver will reject another data packet for that universe with sequence number 0.
+    /// The receiver is then passed a data packet with sequence number 0 for a different universe which shouldn't be rejected as it is for a different universe.
+    /// 
+    /// Shows sequence numbers are evaluated seperately for each universe as per ANSI E1.31-2018 Section 6.7.2.
+    /// 
     #[test]
-    fn test_sequence_number_universe_independence() {
+    fn test_data_packet_sequence_number_universe_independence() {
         const UNIVERSE1: u16 = 1;
         const UNIVERSE2: u16 = 2;
         
@@ -2585,11 +2626,45 @@ mod test {
         assert!(dmx_rcv.handle_data_packet(src_cid, data_packet).unwrap().is_some(), "Receiver incorrectly rejected first data packet");
         assert!(dmx_rcv.handle_data_packet(src_cid, data_packet2).unwrap().is_some(), "Receiver incorrectly rejected second data packet");
 
-        // At this point the receiver will (as shown by test_sequence_number_below_expected) reject a data packet to UNIVERSE1 with sequence number 0 
+        // At this point the receiver will (as shown by test_data_packet_sequence_number_below_expected) reject a data packet to UNIVERSE1 with sequence number 0 
         // however this data packet is for UNIVERSE2 and so therefore should be accepted.
         assert!(dmx_rcv.handle_data_packet(src_cid, data_packet3).unwrap().is_some(), "Receiver incorrectly rejected third data packet");
+    }
+
+    /// Creates a receiver and then makes it handle 2 sync packets for the same synchronisation address with sequence numbers 0 and 1.
+    /// This then means the receiver will reject another sync packet for that universe with sequence number 0.
+    /// The receiver is then passed a sync packet with sequence number 0 for a different synchronisation address which shouldn't be rejected as it is for 
+    /// a different syncronisation address.
+    /// 
+    /// Shows sequence numbers are evaluated seperately for each synchronisation address individually as per ANSI E1.31-2018 Section 6.7.2.
+    /// 
+    #[test]
+    fn test_sync_packet_sequence_number_universe_independence() {
+        const SYNC_ADDR_1: u16 = 1;
+        const SYNC_ADDR_2: u16 = 2;
+        
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        dmx_rcv.listen_universes(&[SYNC_ADDR_1, SYNC_ADDR_2]).unwrap();
+
+        let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+
+        let sync_packet = generate_sync_packet_framing_layer_seq_num(SYNC_ADDR_1, 0);
+        let sync_packet2 = generate_sync_packet_framing_layer_seq_num(SYNC_ADDR_1, 1);
+        let sync_packet3 = generate_sync_packet_framing_layer_seq_num(SYNC_ADDR_2, 0);
+
+        // Not interested in specific return values from this test, just assert the data is processed successfully.
+        assert!(dmx_rcv.handle_sync_packet(src_cid, sync_packet).unwrap().is_none(), "Receiver incorrectly rejected first sync packet");
+        assert!(dmx_rcv.handle_sync_packet(src_cid, sync_packet2).unwrap().is_none(), "Receiver incorrectly rejected second sync packet");
+
+        // At this point the receiver will (as shown by test_sync_packet_sequence_number_below_expected) reject a sync packet for SYNC_ADDR_1 with sequence number 0 
+        // however this sync packet is for SYNC_ADDR_2 and so therefore should be accepted.
+        assert!(dmx_rcv.handle_sync_packet(src_cid, sync_packet3).unwrap().is_none(), "Receiver incorrectly rejected third sync packet");
     }
 }
 
 // TODO:
 // Spell check for 'receiver' and 'synchronisation'
+// More sequence number tests, above below (outwith range of -20)...
