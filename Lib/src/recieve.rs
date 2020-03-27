@@ -2524,6 +2524,81 @@ mod test {
         }
     }
 
+    /// Creates a receiver and then makes it handle 2 data packets with sequence numbers 0 and 1 respectively meaning the next expected sequence number should be 2.
+    /// The receiver is then given a data packet with sequence number x.
+    /// This is repeated for all x in [0, 255].
+    /// 
+    /// This exhaustively checks that only sequence numbers outwith the reject range as specified by ANSI E1.31-2018 Section 6.7.2 are accepted.
+    ///  
+    #[test]
+    fn test_data_packet_sequence_number_exhaustive() {
+        const UNIVERSE1: u16 = 1;
+        
+        // The inclusive lower limit used for the sequence numbers tried. Chosen as the minimum value that can fit in an unsigned byte.
+        const SEQ_NUM_LOWER_BOUND: u8 = 0;
+        
+        // The inclusive upper limit used for the sequence numbers tried. Chosen as the maximum value that can fit in an unsigned byte.
+        const SEQ_NUM_UPPER_BOUND: u8 = 255; 
+
+        // The last sequence number received before the exhaustive checking.
+        const LAST_SEQ_NUM: u8 = 1;
+
+        // Reject range set as per ANSI E1.31-2018 Section 6.7.2 "Having first received a packet with sequence number A, a second packet with sequence number B
+        // arrives. If, using signed 8-bit binary arithmetic, B - A is less than or equal to 0, but greater than -20, then
+        // the packet containing sequence number B shall be deemed out of sequence and discarded."
+
+        // The inclusive upper bound on the diff values (new_packet_seq_num - last_packet_seq_num) that will be rejected.
+        const REJECT_RANGE_UPPER_BOUND: i16 = 0;
+
+        // The exclusive lower bound on the diff values (new_packet_seq_num - last_packet_seq_num) that will be rejected.
+        const REJECT_RANGE_LOWER_BOUND: i16 = -20;
+        
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+
+        for i in SEQ_NUM_LOWER_BOUND .. SEQ_NUM_UPPER_BOUND{
+            // Create the receiver.
+            let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+            dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
+
+            // Generate the packets used to put the receiver in a known start state.
+            let data_packet = generate_data_packet_framing_layer_seq_num(UNIVERSE1, LAST_SEQ_NUM - 1);
+            let data_packet2 = generate_data_packet_framing_layer_seq_num(UNIVERSE1, LAST_SEQ_NUM);
+
+            // Not interested in specific return values from this test, just assert the data is processed successfully.
+            assert!(dmx_rcv.handle_data_packet(src_cid, data_packet).unwrap().is_some(), "Receiver incorrectly rejected first data packet");
+            assert!(dmx_rcv.handle_data_packet(src_cid, data_packet2).unwrap().is_some(), "Receiver incorrectly rejected second data packet");
+
+            // The receiver is now setup correctly ready for the test with a known start state that expects the next data packet sequence number
+            // to be 2.
+
+            let res = dmx_rcv.handle_data_packet(src_cid, generate_data_packet_framing_layer_seq_num(UNIVERSE1, i));
+
+            let diff: i16 = ((i as i16) - (LAST_SEQ_NUM as i16)) as i16;
+
+            match res {
+                Err(Error(OutOfSequence(_), _)) => { // Data packet was rejected due to sequence number.
+                    if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
+                        assert!(true, "Rejection is correct as per ANSI E1.31-2018 Section 6.7.2");
+                    } else {
+                        assert!(false, format!("Data packet with sequence number: {} was rejected incorrectly", i));
+                    }
+                }
+                Ok(_p) => { // Data packet and therefore sequence number was accepted.
+                    if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
+                        assert!(false, format!("Data packet with sequence number: {} was accepted incorrectly", i));
+                    } else {
+                        assert!(true, "Acceptance is correct as per ANSI E1.31-2018 Section 6.7.2");
+                    }
+                }
+                Err(e) => {
+                    // This is never expected and always means test failure.
+                    assert!(false, format!("Receiver produced unexpected error: {}", e));
+                }
+            }
+        }
+    }
+
     /// Creates a receiver and then makes it handle 2 sync packets with sequence numbers 0 and 1 respectively.
     /// The receiver is then given a sync packet with sequence number 0 which is the lower than the expected value of 2 so should be rejected.
     /// 
