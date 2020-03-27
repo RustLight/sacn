@@ -502,10 +502,7 @@ impl SacnReceiver {
         if data_pkt.stream_terminated {
             self.terminate_stream(cid, data_pkt.source_name, data_pkt.universe);
             if self.announce_stream_termination {
-                bail!(ErrorKind::UniverseTerminated(
-                    "A source terminated a universe and this was detected when trying to receive data"
-                        .to_string()
-                ));
+                bail!(ErrorKind::UniverseTerminated(cid, data_pkt.universe));
             }
             
             return Ok(None);
@@ -2668,3 +2665,4 @@ mod test {
 // TODO:
 // Spell check for 'receiver' and 'synchronisation'
 // More sequence number tests, above below (outwith range of -20)...
+// Check the public functions/methods make sense, limit pubic functions that shouldn't be.
