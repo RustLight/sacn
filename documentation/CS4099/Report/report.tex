@@ -352,6 +352,7 @@ The library is based on wrapping an underlying socket which is used to access th
 -- By using this abstraction and allowing a more modular design it makes later changes easier. This reduces the cost of making changes or bug fixes especially in the maintenance phase as changes to the underlying implementation don't effect the rest of the code base. This also allows the underlying protocol to change, similarly to how between ANSI E1.31-2016 and -2018 IPv6 was added it allows later versions to add support for other network or transport protocols. The abstraction also allows the user to add support for more platforms for example how in the implementation there are 2 versions of the network receiver one for Windows and one for Linux/Fedora. These different versions are required as different operating systems treat sockets differently as not all operating systems comply to standards such as POSIX. This is especially true with embedded devices which might have hardware specific mechanisms for sending/receiving due to limited resources.
 
 
+-- Only supports Windows/Linux, outwith scope to supports more operating systems, no test devices.
 -- Library doesn't aim to be fully compliant with every feature.
 \subsection{Extraneous Circumstances}
 -- COVID-19

@@ -2845,7 +2845,7 @@ fn test_send_sync_timeout(){
 /// This shows that the implementation handles universe synchronisation in the way specified by the protocol document. 
 /// As the force synchronisation option is not implemented as part of this library that section is ignored.
 #[test]
-fn test_ansi_e131_appendix_b_runthrough() {
+fn test_ansi_e131_appendix_b_runthrough_ipv4() {
     // The number of set of (data packets + sync packet) to send.
     const SYNC_PACKET_COUNT: usize = 5;
 
@@ -2967,7 +2967,7 @@ fn test_ansi_e131_appendix_b_runthrough() {
 /// This shows that the implementation works in a simulated scenario that makes use of multiple features / parts.
 /// It also shows the receiver 'jumping into' a stream of data that has already started (meaning sequence numbers are already > 0).
 #[test]
-fn test_discover_recv_sync_runthrough() {
+fn test_discover_recv_sync_runthrough_ipv4() {
     // The number of set of (data packets + sync packet) to send.
     const SYNC_PACKET_COUNT: usize = 250;
 
