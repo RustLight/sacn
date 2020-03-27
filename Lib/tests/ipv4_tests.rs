@@ -2958,3 +2958,136 @@ fn test_ansi_e131_appendix_b_runthrough() {
 
     snd_thread.join().unwrap();
 }
+
+/// Sets up a single source and receiver. Like in a real-world scenario the source sends data continously on 2 universes syncronised 
+/// on a third universe with a small interval between data sends.
+/// The receiver starts with no knowledge of what universe the source is sending on so starts by using Universe Discovery to discover the universes
+/// it then joins these universes and receives the data. The sender eventually stops sending data and terminates by sending stream termination packets.
+/// The receiver receives these packets and also terminates.
+/// This shows that the implementation works in a simulated scenario that makes use of multiple features / parts.
+/// It also shows the receiver 'jumping into' a stream of data that has already started (meaning sequence numbers are already > 0).
+#[test]
+fn test_discover_recv_sync_runthrough() {
+    // The number of set of (data packets + sync packet) to send.
+    const SYNC_PACKET_COUNT: usize = 250;
+
+    // The number of data packets sent before each sync packet.
+    const DATA_PACKETS_PER_SYNC_PACKET: usize = 2;
+
+    // The 'slight pause' as specified by ANSI E1.31-2018 Section 11.2.2 between data and sync packets.
+    const PAUSE_PERIOD: Duration = Duration::from_millis(50);
+    
+    // The interval between sets of sync/data packets.
+    const INTERVAL: Duration = Duration::from_millis(100);
+
+    // The universes used for data.
+    const DATA_UNIVERSES: [u16; 2] = [1, 2];
+
+    // The universe used for synchronisation packets.
+    const SYNC_UNIVERSE: u16 = 4;
+
+    // The source name
+    const SOURCE_NAME: &str = "Test Source";
+
+    // The data send on the first and second universes.
+    const DATA: [u8; 16] = [0x00, 0xe, 0x0, 0xc, 0x1, 0x7, 0x1, 0x4, 0x8, 0x0, 0xd, 0xa, 0x7, 0xa, 0x9, 0x8];
+    const DATA2: [u8; 16] =[0x00, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa, 0x9, 0x8];
+
+    // The source CID.
+    let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+
+    let snd_thread = thread::spawn(move || {
+        let ip: SocketAddr = SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1);
+        let mut src = SacnSource::with_cid_ip(SOURCE_NAME, src_cid, ip).unwrap();
+
+        src.register_universes(&DATA_UNIVERSES).unwrap();
+        src.register_universe(SYNC_UNIVERSE).unwrap();
+
+        for _ in 0 .. SYNC_PACKET_COUNT {
+            // Sender sends data packets to the 2 data universes using the same synchronisation address.
+            src.send(&[DATA_UNIVERSES[0]], &DATA, None, None, Some(SYNC_UNIVERSE)).unwrap();
+            src.send(&[DATA_UNIVERSES[1]], &DATA2, None, None, Some(SYNC_UNIVERSE)).unwrap();
+
+            // Sender observes a slight pause to allow for processing delays (ANSI E1.31-2018 Section 11.2.2).
+            sleep(PAUSE_PERIOD);
+
+            // Sender sends a syncronisation packet to the sync universe.
+            src.send_sync_packet(SYNC_UNIVERSE, None).unwrap();
+
+            sleep(INTERVAL);
+        }
+
+        // Sender goes out of scope so will automatically send termination packets.
+    });
+    
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap(), ACN_SDT_MULTICAST_PORT), None).unwrap();
+
+    // Receiver starts by not listening to any data universes (automatically listens to discovery universe).
+    
+    dmx_recv.set_announce_source_discovery(true);
+
+    let universes: Vec<u16> = match dmx_recv.recv(None) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SourceDiscovered(_name) => {
+                    let discovered_sources = dmx_recv.get_discovered_sources();
+                    assert_eq!(discovered_sources.len(), 1);
+
+                    // Found the source so don't want to be notified about other sources.
+                    dmx_recv.set_announce_source_discovery(false);
+
+                    // Do want to be notified about stream termination in this case.
+                    dmx_recv.set_announce_stream_termination(true);
+
+                    discovered_sources[0].get_all_universes()
+                }
+                _ => {
+                    // A real-user would want to look at using more detailed error handling as appropriate to their use case but for this test panic 
+                    // (which will fail the test) is sutiable.
+                    panic!("Unexpected error");
+                }
+            }
+        }
+        Ok(_) => {
+            panic!("Unexpected data packet before any data universes registered");
+        }
+    };
+
+    dmx_recv.listen_universes(&universes).unwrap(); // Assert Successful
+
+    loop {
+        match dmx_recv.recv(None) {
+            Err(e) => {
+                match e.kind() {
+                    ErrorKind::UniverseTerminated(_src_cid, _universe) => {
+                        // A real use-case may also want to not terminate when the source does and instead remain waiting but in this
+                        // case the for the test the receiver terminates with the source.
+                        break;
+                    }
+                    _ => {
+                        assert!(false, "Unexpected error returned");
+                    }
+                }
+            }
+            Ok(rcv_data) => {
+                assert_eq!(rcv_data.len(), DATA_PACKETS_PER_SYNC_PACKET);
+                if rcv_data[0].universe == DATA_UNIVERSES[0] {
+                    assert_eq!(rcv_data[0].values, DATA, "Unexpected data within first data packet of a set of synchronised packets");
+
+                    assert_eq!(rcv_data[1].universe, DATA_UNIVERSES[1], "Unrecognised universe as second data packet in set of synchronised packets");
+                    assert_eq!(rcv_data[1].values, DATA2, "Unexpected data within second data packet of a set of synchronised packets");
+                } else if rcv_data[0].universe == DATA_UNIVERSES[1] {
+                    assert_eq!(rcv_data[0].values, DATA2, "Unexpected data within first data packet of a set of synchronised packets");
+
+                    assert_eq!(rcv_data[1].universe, DATA_UNIVERSES[0], "Unrecognised universe as second data packet in set of synchronised packets");
+                    assert_eq!(rcv_data[1].values, DATA, "Unexpected data within second data packet of a set of synchronised packets");
+                } else {
+                    assert!(false, "Unrecognised universe within data packet");
+                }
+            } 
+        }
+    }
+
+    // Finished receiving from the sender.
+    snd_thread.join().unwrap();
+}

@@ -103,9 +103,10 @@ pub mod errors {
             }
 
             /// A source terminated a universe and this was detected when trying to receive data.
-            UniverseTerminated(msg: String) {
+            /// This is only returned if the announce_stream_termination flag is set to true (default false).
+            UniverseTerminated(src_cid: Uuid, uni: u16) {
                 description("A source terminated a universe and this was detected when trying to receive data"),
-                display("A source terminated a universe and this was detected when trying to receive data, msg: {}", msg)
+                display("Source cid: {:?} terminated universe: {}", src_cid, uni)
             }
 
             /// A source universe timed out as no data was received on that universe within E131_NETWORK_DATA_LOSS_TIMEOUT as per ANSI E1.31-2018 Section 6.7.1.
