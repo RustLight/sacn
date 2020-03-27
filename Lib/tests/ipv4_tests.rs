@@ -529,6 +529,55 @@ fn test_send_recv_single_universe_multicast_ipv4(){
     assert_eq!(received_universe.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
 }
 
+/// A single sender transfers 260 data packets to a single receiver.
+/// Since the sequence number field is a single unsigned byte (highest value 255) this should over flow the sequence number and so therefore this 
+/// test checks that the implementations handle this as expected by continuing as normal.
+/// 
+#[test]
+fn test_send_recv_single_universe_overflow_sequence_number_multicast_ipv4(){
+    const DATA_PACKETS_TO_SEND: usize = 260;
+
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
+
+    let thread_tx = tx.clone();
+
+    let universe = 1;
+
+    // By having the receiver be 'remote' and then send back to the sender it means the sender can check the data it has sent is correct.
+    let rcv_thread = thread::spawn(move || {
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
+
+        dmx_recv.listen_universes(&[universe]).unwrap();
+
+        thread_tx.send(Ok(Vec::new())).unwrap();
+
+        for _ in 0 .. DATA_PACKETS_TO_SEND {
+            thread_tx.send(dmx_recv.recv(None)).unwrap();
+        }
+    });
+
+    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
+
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
+
+    src.register_universe(universe).unwrap();
+    
+    for i in 0 .. DATA_PACKETS_TO_SEND {
+        src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE[0 .. i + 1], None, None, None).unwrap(); // Vary the data each packet.
+        let received_data: Vec<DMXData> = rx.recv().unwrap().unwrap(); // Asserts that the data was received successfully without error.
+        assert_eq!(received_data.len(), 1); // Check only 1 universe received at a time as expected.
+        let received_universe: DMXData = received_data[0].clone();
+
+        assert_eq!(received_universe.universe, universe); // Check that the universe received is as expected.
+
+        assert_eq!(received_universe.values, TEST_DATA_SINGLE_UNIVERSE[0 .. i + 1].to_vec(), "Received payload values don't match sent!");
+    }
+
+    // Finished with the receiver.
+    rcv_thread.join().unwrap();
+}
+
 /// Sends 2 packets with the same universe and synchronisation address from a sender to a receiver, the first packet has a priority of 110 
 /// and the second a priority of 109. The receiver should discard the second packet when received due to its higher priority as per ANSI E1.31-2018 Section 6.2.3.
 /// A sync packet is then sent and the receiver output checked that the right packet was kept.
@@ -1647,6 +1696,89 @@ fn test_universe_discovery_interval_ipv4(){
             let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
 
             src.register_universes(&[BASE_UNIVERSE]).unwrap();
+
+            tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
+        }));
+    }
+
+    let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
+    dmx_recv.set_announce_source_discovery(true); // Make the receiver explicitly notify when it receives a universe discovery packet.
+
+    snd_rx.recv().unwrap(); // Receiver created and ready so allow the sender to be created.
+
+    let mut interval_start = Instant::now(); // Assignment never used.
+
+    match dmx_recv.recv(None) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SourceDiscovered(_) => {
+                    // Measure the time between the first and second discovery packets, this removes the uncertainty in the time taken for the sender to start.
+                    interval_start = Instant::now();
+                }
+                k => {
+                    assert!(false, "Unexpected error kind, {:?}", k);
+                }
+            }
+        }
+        Ok(d) => {
+            assert!(false, "No data expected, {:?}", d);
+        }
+    }
+
+    match dmx_recv.recv(None) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::SourceDiscovered(_) => {
+                    let interval = interval_start.elapsed();
+                    let interval_millis = interval.as_millis();
+                    assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), format!("Discovery interval is shorter than expected, {} ms", interval_millis));
+                    assert!(interval_millis < (INTERVAL_EXPECTED_MILLIS + INTERVAL_TOLERANCE_MILLIS), format!("Discovery interval is longer than expected, {} ms", interval_millis));
+                }
+                k => {
+                    assert!(false, "Unexpected error kind, {:?}", k);
+                }
+            }
+        }
+        Ok(d) => {
+            assert!(false, "No data expected, {:?}", d);
+        }
+    }
+
+    snd_rx.recv().unwrap(); // Allow sender to finish.
+}
+
+/// Sets up a sender and a receiver, the sender then updates its sending universes multiple times within an ANSI E1.31-2018 
+/// E131_UNIVERSE_DISCOVERY_INTERVAL and the receiver asserts that it only receives updates on the interval as expected / compliant
+/// with ANSI E1.31-2018 Section 4.3
+/// 
+#[test]
+fn test_universe_discovery_interval_with_updates_ipv4(){
+    const SND_THREADS: usize = 1;
+    const BASE_UNIVERSE: u16 = 1;
+    const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
+    const INTERVAL_EXPECTED_MILLIS: u128 = E131_UNIVERSE_DISCOVERY_INTERVAL.as_millis(); // Expected discovery packet interval is every 10 seconds (10000 milliseconds).
+    const INTERVAL_TOLERANCE_MILLIS: u128 = 1000; // Allow upto a second either side of this interval to account for random variations.
+    const SENDER_REGISTER_DELAY: Duration = Duration::from_secs(1); // The time between registering new universe on the sender.
+    const UNIVERSES_TO_REGISTER: usize = 5; // The number of universes to register on the src.
+
+    let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+
+    let mut snd_threads = Vec::new();
+
+    for i in 0 .. SND_THREADS {
+        let tx = snd_tx.clone();
+
+        snd_threads.push(thread::spawn(move || {
+            let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
+
+            tx.send(()).unwrap(); // Force the send thread to wait before creating the sender, should sync once the receiver has been created.
+
+            let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
+
+            for _ in 0 .. UNIVERSES_TO_REGISTER {
+                src.register_universes(&[BASE_UNIVERSE]).unwrap();
+                sleep(SENDER_REGISTER_DELAY);
+            }
 
             tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
         }));
