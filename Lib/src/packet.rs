@@ -63,10 +63,9 @@ use core::str;
 use std::borrow::Cow;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::vec::Vec;
+use std::{time, time::Duration};
 
 use socket2::SockAddr;
-
-use std::{time, time::Duration};
 
 /// The byteorder crate is used for marshalling data on/off the network in Network Byte Order.
 use byteorder::{ByteOrder, NetworkEndian};
@@ -342,7 +341,6 @@ macro_rules! impl_acn_root_layer_protocol {
             }
 
             /// Packs the packet into heap allocated memory.
-            #[cfg(feature = "std")]
             pub fn pack_alloc(&self) -> Result<Vec<u8>> {
                 let mut buf = Vec::with_capacity(self.len());
                 self.pack_vec(&mut buf)?;
@@ -352,7 +350,6 @@ macro_rules! impl_acn_root_layer_protocol {
             /// Packs the packet into the given vector.
             ///
             /// Grows the vector `buf` if necessary.
-            #[cfg(feature = "std")]
             pub fn pack_vec(&self, buf: &mut Vec<u8>) -> Result<()> {
                 buf.clear();
                 buf.reserve_exact(self.len());
@@ -401,6 +398,7 @@ impl_acn_root_layer_protocol!(<'a>);
 
 #[cfg(not(feature = "std"))]
 impl_acn_root_layer_protocol!();
+
 struct PduInfo {
     length: usize,
     vector: u32,
@@ -1485,6 +1483,7 @@ mod test {
     }
 
     /// Verifies that the parameters are set correctly as per ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
+    /// This test is particularly useful at the maintainance stage as it will flag up if any protocol defined constant is changed. 
     #[test]
     fn check_ansi_e131_2018_parameter_values() {
         assert_eq!(VECTOR_ROOT_E131_DATA, 0x0000_0004);
