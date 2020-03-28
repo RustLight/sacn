@@ -50,15 +50,12 @@ const AF_INET: i32 = 2;
 #[cfg(target_os = "windows")]
 const AF_INET6: i32 = 23;
 
-/// The default size of the buffer used to recieve E1.31 packets.
+/// The default size of the buffer used to receive E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
 pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
 
 /// DMX payload size in bytes (512 bytes of data + 1 byte start code).
 pub const DMX_PAYLOAD_SIZE: usize = 513;
-
-/// The name of the thread which runs periodically to perform actions on the receiver such as update discovered universes.
-pub const RCV_UPDATE_THREAD_NAME: &'static str = "rust_sacn_rcv_update_thread";
 
 /// The default value of the process_preview_data flag.
 const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
@@ -83,6 +80,13 @@ const ANNOUNCE_TIMEOUT_DEFAULT: bool = false;
 /// 
 const INITIAL_SEQUENCE_NUMBER: u8 = 255;
 
+/// If a packet for a universe is waiting to be synchronised and then another packet is received with the same universe and synchronisation address
+/// this situation must be handled. By default the implementation discards the lowest priority packet and if equal priority it discards the oldest
+/// packet as per ANSI E1.31-2018 Section 6.2.3.
+/// 
+/// This can be changed by providing a new function to handle the situation of the user implementing a custom merge/arbitration algorithm as per 
+/// ANSI E1.31-2018 Section 6.2.3.2.
+/// 
 const DEFAULT_MERGE_FUNC: fn(&DMXData, &DMXData) -> Result<DMXData> =
     discard_lowest_priority_then_previous;
 
@@ -149,8 +153,9 @@ pub struct DiscoveredSacnSource {
 /// Universe discovery packets are broken down into pages to allow sending a large list of universes, each page contains a list of universes and
 /// which page it is. The receiver then puts the pages together to get the complete list of universes that the discovered source is sending on.
 ///
-/// The concept of pages is intentionally hidden from the end-user of the library as they are a network realisation of what is just an
-/// abstract list of universes and don't play any part out-side of the protocol.
+/// The concept of pages is intentionally hidden from the end-user of the library as they are a way of fragmenting large discovery
+/// universe lists so that they can work over the network and don't play any part out-side of the protocol.
+/// 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Clone, Debug)]
 struct UniversePage {
     /// The page number of this page.
@@ -173,7 +178,7 @@ pub struct SacnReceiver {
     /// 1 or more bits of data wait for 1 sync.
     waiting_data: HashMap<u16, DMXData>,
 
-    /// Universes that this receiver is currently listening for
+    /// Universes that this receiver is currently listening for.
     universes: Vec<u16>,
 
     /// Sacn sources that have been discovered by this receiver through universe discovery packets.
@@ -208,6 +213,8 @@ pub struct SacnReceiver {
     announce_timeout: bool,
 }
 
+/// Allows debug ({:?}) printing of the SacnReceiver, used during debugging.
+///  
 impl fmt::Debug for SacnReceiver {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.receiver)?;
@@ -224,7 +231,7 @@ impl SacnReceiver {
     /// SacnReceiverInternal is used for actually receiving the sACN data but is wrapped in SacnReceiver to allow the update thread to handle
     /// timeout etc.
     ///
-    /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    /// By default for an IPv6 address this will only receive IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     /// A receiver with an IPv4 address will only receive IPv4 data.
     ///
     /// IPv6 multicast is unsupported on Windows in Rust. This is due to the underlying library (Socket2) not providing support.
@@ -234,7 +241,7 @@ impl SacnReceiver {
     ///
     /// Arguments:
     ///     ip: The address of the interface for this receiver to join, by default this address should use the ACN_SDT_MULTICAST_PORT as defined in
-    ///         ANSI E1.31-2018 Appendix A: Defined Parameters (Normative) however another address might be used in some situation.
+    ///         ANSI E1.31-2018 Appendix A: Defined Parameters (Normative) however another address might be used in some situations.
     ///     source_limit: The limit to the number of sources, past this limit a new source will cause a SourcesExceededError as per ANSI E1.31-2018 Section 6.2.3.3.
     ///                     A source limit of None means no limit to the number of sources.
     ///
@@ -257,8 +264,7 @@ impl SacnReceiver {
             None => {}
         }
         let mut sri = SacnReceiver {
-            receiver: SacnNetworkReceiver::new(ip)
-                .chain_err(|| "Failed to create SacnNetworkReceiver")?,
+            receiver: SacnNetworkReceiver::new(ip)?,
             waiting_data: HashMap::new(),
             universes: Vec::new(),
             discovered_sources: Vec::new(),
@@ -272,8 +278,7 @@ impl SacnReceiver {
             announce_timeout: ANNOUNCE_TIMEOUT_DEFAULT,
         };
 
-        sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])
-            .chain_err(|| "Failed to listen to discovery universe")?;
+        sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])?;
 
         Ok(sri)
     }
@@ -290,6 +295,7 @@ impl SacnReceiver {
     /// # Errors
     /// Will return an OsOperationUnsupported error if attempting to set the flag to true in an environment that multicast
     /// isn't supported i.e. Ipv6 on Windows.
+    /// 
     pub fn set_is_multicast_enabled(&mut self, val: bool) -> Result<()> {
         self.receiver.set_is_multicast_enabled(val)
     }
@@ -297,28 +303,55 @@ impl SacnReceiver {
     /// Returns true if multicast is enabled on this receiver and false if not.
     /// This flag is set when the receiver is created as not all environments currently support IP multicast.
     /// E.g. IPv6 Windows IP Multicast is currently unsupported.
+    /// 
     pub fn is_multicast_enabled(&self) -> bool {
         self.receiver.is_multicast_enabled()
     }
 
     /// Wipes the record of discovered and sequence number tracked sources.
     /// This is one way to handle a sources exceeded condition.
+    /// 
+    /// If only want to wipe data awaiting synchronisation then see (clear_all_waiting_data)[clear_all_waiting_data].
+    /// 
     pub fn reset_sources(&mut self) {
         self.sequences.clear();
         self.partially_discovered_sources.clear();
         self.discovered_sources.clear();
     }
 
+    /// Deletes all data currently waiting to be passed up - e.g. waiting for a synchronisation packet.
+    /// 
+    /// This allows clearing all data awaiting synchronisation but without forgetting sequence numbers. To wipe sequence numbers
+    /// and discovered sources see (reset_sources)[reset_sources].
+    /// 
+    /// To clear only a specific universe of waiting data see (clear_waiting_data)[clear_waiting_data].
+    /// 
+    pub fn clear_all_waiting_data(&mut self) {
+        self.waiting_data.clear();
+    }
+
+    /// Clears data (if any) waiting to be passed up for the specific universe.
+    /// 
+    /// Returns true if data was removed and false if there wasn't any data to remove for this universe.
+    /// 
+    /// # Arguments
+    /// universe: The universe that the data that is waiting was sent to.
+    /// 
+    pub fn clear_waiting_data(&mut self, universe: u16) -> bool {
+        self.waiting_data.remove(&universe).is_some()
+    }
+
     /// Sets the merge function to be used by this receiver.
     ///
-    /// This merge function is called if data is waiting for a universe e.g. for syncronisation and then further data for that universe with the same
-    /// syncronisation address arrives.
+    /// This merge function is called if data is waiting for a universe e.g. for synchronisation and then further data for that universe with the same
+    /// synchronisation address arrives.
     ///
     /// This merge function MUST return a DmxMergeError if there is a problem merging. This error can optionally encapsulate further errors using the Error-chain system
     ///     to provide a more informative backtrace.
     ///
     /// Arguments:
     /// func: The merge function to use. Should take 2 DMXData references as arguments and return a Result<DMXData>.
+    /// 
     pub fn set_merge_fn(&mut self, func: fn(&DMXData, &DMXData) -> Result<DMXData>) -> Result<()> {
         self.merge_func = func;
         Ok(())
@@ -327,21 +360,6 @@ impl SacnReceiver {
     /// Allow only receiving on Ipv6.
     pub fn set_ipv6_only(&mut self, val: bool) -> Result<()> {
         self.receiver.set_only_v6(val)
-    }
-
-    /// Deletes all data currently waiting to be passed up - e.g. waiting for a synchronisation packet.
-    pub fn clear_all_waiting_data(&mut self) {
-        self.waiting_data.clear();
-    }
-
-    /// Clears data (if any) waiting to be passed up for the specific universe.
-    /// 
-    /// # Arguments
-    /// 
-    /// universe: The universe that the data that is waiting was sent to.
-    /// 
-    pub fn clear_waiting_data(&mut self, universe: u16) {
-        self.waiting_data.remove(&universe);
     }
 
     /// Allows receiving from the given universe and starts listening to the multicast addresses which corresponds to the given universe.
@@ -355,7 +373,7 @@ impl SacnReceiver {
     /// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
     /// see (is_universe_in_range)[fn.is_universe_in_range.packet].
     ///
-    /// Will also return an Error if there is an issue listening to the multicast universe, see SacnNetworkReceiver::listen_multicast_universe().
+    /// 
     ///
     pub fn listen_universes(&mut self, universes: &[u16]) -> Result<()> {
         for u in universes {
@@ -370,8 +388,7 @@ impl SacnReceiver {
 
                     if self.is_multicast_enabled() {
                         self.receiver
-                            .listen_multicast_universe(*u)
-                            .chain_err(|| "Failed to listen to multicast universe")?;
+                            .listen_multicast_universe(*u)?;
                     }
                 }
                 Ok(_) => { // If value found then don't insert to avoid duplicates.
@@ -381,6 +398,7 @@ impl SacnReceiver {
 
         Ok(())
     }
+
     /// Stops listening to the given universe.
     ///
     /// # Errors
@@ -1044,12 +1062,14 @@ impl SacnNetworkReceiver {
         })
     }
 
-    /// Connects this SacnNetworkReceiver to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
+    /// Connects this SacnNetworkReceiver to the multicast address which corresponds to the given universe to allow receiving packets for that universe.
     ///
     /// # Errors
     /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an
     /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
-    ///
+    /// 
+    /// Will return an Io error if cannot join the universes corresponding multicast group address.
+    /// 
     pub fn listen_multicast_universe(&self, universe: u16) -> Result<()> {
         let multicast_addr;
 
@@ -1061,8 +1081,7 @@ impl SacnNetworkReceiver {
                 .chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
         }
 
-        Ok(join_win_multicast(&self.socket, multicast_addr)
-            .chain_err(|| "Failed to join multicast")?)
+        Ok(join_win_multicast(&self.socket, multicast_addr)?)
     }
 
     /// Removes this SacnNetworkReceiver from the multicast group which corresponds to the given universe.
@@ -1114,7 +1133,7 @@ impl SacnNetworkReceiver {
         return self.is_multicast_enabled;
     }
 
-    /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6.
+    /// If set to true then only receive over IPv6. If false then receiving will be over both IPv4 and IPv6.
     /// This will return an error if the SacnReceiver wasn't created using an IPv6 address to bind to.
     pub fn set_only_v6(&mut self, val: bool) -> Result<()> {
         if self.addr.is_ipv4() {
@@ -1134,7 +1153,8 @@ impl SacnNetworkReceiver {
     ///
     /// IMPORTANT NOTE:
     /// An explicit lifetime is given to the AcnRootLayerProtocol which comes from the lifetime of the given buffer.
-    /// The compiler will prevent usage of the returned AcnRootLayerProtocol after the buffer is dropped.
+    /// The compiler will prevent usage of the returned AcnRootLayerProtocol after the buffer is dropped normally but may not in the case 
+    /// of unsafe code .
     ///
     /// Arguments:
     /// buf: The buffer to use for storing the received data into. This buffer shouldn't be accessed or used directly as the data
@@ -1185,7 +1205,7 @@ impl SacnNetworkReceiver {
     /// Will return an error if the SacnReceiver fails to bind to a socket with the given ip.
     /// For more details see socket2::Socket::new().
     ///
-    pub fn new(ip: SocketAddr) -> Result<SacnNetworkReceiver> {
+    pub(crate) fn new(ip: SocketAddr) -> Result<SacnNetworkReceiver> {
         Ok(SacnNetworkReceiver {
             socket: create_unix_socket(ip)?,
             addr: ip,
@@ -1193,12 +1213,14 @@ impl SacnNetworkReceiver {
         })
     }
 
-    /// Connects this SacnNetworkReceiver to the multicast address which corresponds to the given universe to allow recieving packets for that universe.
+    /// Connects this SacnNetworkReceiver to the multicast address which corresponds to the given universe to allow receiving packets for that universe.
     ///
     /// # Errors
-    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an
+    /// Will return an Error if the given universe cannot be converted to an IPv4 or IPv6 multicast_addr depending on if the Receiver is bound to an
     /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
-    ///
+    /// 
+    /// Will return an Io error if cannot join the universes corresponding multicast group address.
+    /// 
     pub fn listen_multicast_universe(&self, universe: u16) -> Result<()> {
         let multicast_addr;
 
@@ -1211,8 +1233,7 @@ impl SacnNetworkReceiver {
         }
 
         Ok(
-            join_unix_multicast(&self.socket, multicast_addr, self.addr.ip())
-                .chain_err(|| "Failed to join multicast")?,
+            join_unix_multicast(&self.socket, multicast_addr, self.addr.ip())?,
         )
     }
 
