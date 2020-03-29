@@ -95,6 +95,7 @@ const DEFAULT_MERGE_FUNC: fn(&DMXData, &DMXData) -> Result<DMXData> =
 pub struct DMXData {
     /// The universe that the data was sent to.
     pub universe: u16,
+    
     /// The actual universe data, if less than 512 values in length then implies trailing 0's to pad to a full-universe of data.
     pub values: Vec<u8>,
 
