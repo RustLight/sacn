@@ -142,8 +142,8 @@ pub mod errors {
             /// This prevents the panic propagating to the user of this library and allows them to handle it appropriately
             /// such as by creating a new source.
             SourceCorrupt(msg: String) {
-                description("The sACN source has corrupted due to an internal panic! and should no longer be used")
-                display("The sACN source has corrupted due to an internal panic! and should no longer be used, {}", msg);
+                description("The sACN source has corrupted due to an internal panic! and should no longer be used"),
+                display("The sACN source has corrupted due to an internal panic! and should no longer be used, {}", msg)
             }
         }
     }
