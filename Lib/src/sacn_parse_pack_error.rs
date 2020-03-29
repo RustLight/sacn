@@ -1,3 +1,14 @@
+// Copyright 2020 sacn Developers
+//
+// Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
+// http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
+// http://opensource.org/licenses/MIT>, at your option. This file may not be
+// copied, modified, or distributed except according to those terms.
+//
+// This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
+
+/// The errors used within the SacnLibrary specifically those related to parsing and packeting packets received/sent on the network.
+/// 
 pub mod sacn_parse_pack_error {
     error_chain! {
         errors {   
@@ -16,7 +27,7 @@ pub mod sacn_parse_pack_error {
 
             /// Attempted to parse a page value that is invalid - e.g. the page value is higher than the last_page value.
             ParseInvalidPage(msg: String) {
-                description("Atttempted to parse a page value that is invalid"),
+                description("Attempted to parse a page value that is invalid"),
                 display("Error when parsing page value, msg: {}", msg)
             }
 
