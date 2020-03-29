@@ -25,7 +25,8 @@ pub mod errors {
         }
 
         links {
-            SacnParsePackError(sacn_parse_pack_error::Error, sacn_parse_pack_error::ErrorKind);
+            // All parse/pack errors live within the same chain ('family') of errors as described in sacn_parse_packet_error.
+            SacnParsePackError(sacn_parse_pack_error::Error, sacn_parse_pack_error::ErrorKind); 
         }
 
         errors {
@@ -134,6 +135,15 @@ pub mod errors {
             OsOperationUnsupported(msg: String) {
                 description("Thrown to indicate that the operation attempted is unsupported on the current OS"),
                 display("Operation attempted is unsupported on the current OS, msg: {}", msg)
+            }
+
+            /// Thrown to indicate that the source has corrupted for the reason specified by the error chain.
+            /// This is currently only thrown if the source mutex is poisoned by a thread with access panic-ing.
+            /// This prevents the panic propagating to the user of this library and allows them to handle it appropriately
+            /// such as by creating a new source.
+            SourceCorrupt(msg: String) {
+                description("The sACN source has corrupted due to an internal panic! and should no longer be used")
+                display("The sACN source has corrupted due to an internal panic! and should no longer be used, {}", msg);
             }
         }
     }

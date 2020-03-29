@@ -1202,7 +1202,7 @@ impl SacnNetworkReceiver {
     /// will only work between IPv6 devices by default but IPv4 receiving can be enabled using set_ipv6_only(false).
     ///
     /// # Errors
-    /// Will return an error if the SacnReceiver fails to bind to a socket with the given ip.
+    /// Will return an Io error if the SacnReceiver fails to bind to a socket with the given ip.
     /// For more details see socket2::Socket::new().
     ///
     pub(crate) fn new(ip: SocketAddr) -> Result<SacnNetworkReceiver> {
@@ -1374,6 +1374,7 @@ impl PartialOrd for DMXData {
 ///     - The universes are the same
 ///     - The synchronisation universes are the same
 ///     - The values are all the same
+///
 impl PartialEq for DMXData {
     fn eq(&self, other: &Self) -> bool {
         self.universe == other.universe
@@ -2837,8 +2838,3 @@ mod test {
         assert!(dmx_rcv.handle_sync_packet(src_cid, sync_packet3).unwrap().is_none(), "Receiver incorrectly rejected third sync packet");
     }
 }
-
-// TODO:
-// Spell check for 'receiver' and 'synchronisation'
-// More sequence number tests, above below (outwith range of -20)...
-// Check the public functions/methods make sense, limit pubic functions that shouldn't be.

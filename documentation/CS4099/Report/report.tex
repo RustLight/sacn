@@ -354,6 +354,17 @@ The library is based on wrapping an underlying socket which is used to access th
 
 -- Only supports Windows/Linux, outwith scope to supports more operating systems, no test devices.
 -- Library doesn't aim to be fully compliant with every feature.
+
+// Report note:
+// One of the problems with the existing SACN sending is how it didn't treat the payload transparently because it 
+// would add on the start code. As this is part of the DMX protocol and not the SACN protocol this was removed as it 
+// violated the extends of SACN.
+// Report: The first universe for the data to be synchronised across multiple universes is 
+// used as the synchronisation universe by default. This is done as it means that the receiver should
+// be listening for this universe. 
+
+The PoisonError problem, rust is still developing and there isn't a standard error system, PoisonError cannot be used with other error types... 
+
 \subsection{Extraneous Circumstances}
 -- COVID-19
 -- No direct access to labs (SSH used)

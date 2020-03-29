@@ -8,15 +8,23 @@
 // copied, modified, or distributed except according to those terms.
 //
 // This file was modified as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
+//
+// Documentation of private or crate local items that effects public items, such as errors from private functions which get passed up to a 
+// public function, should be copied into the documentation of the public item so that the public facing documentation is a complete documentation
+// of each public item without relying on referring to private items.
+//
 
 
-// Report note:
-// One of the problems with the existing SACN sending is how it didn't treat the payload transparently because it 
-// would add on the start code. As this is part of the DMX protocol and not the SACN protocol this was removed as it 
-// violated the extends of SACN.
-// Report: The first universe for the data to be synchronised across multiple universes is 
-// used as the syncronisation universe by default. This is done as it means that the receiever should
-// be listening for this universe. 
+// TODO
+// The internal corruption error handling?
+// Keep pulling documentation up
+// Spell check for 'receiver' and 'synchronisation'
+// Generate documentation, check links
+// Fix SSH tests
+// Conduct compliance tests
+// Generate wireshark packets to use for inspection
+// Do wireshark inspection / test
+// Pack code.
 
 use error::errors::{*};
 use packet::*;
@@ -29,7 +37,7 @@ use std::time;
 use std::time::{Duration, Instant};
 use std::thread::{JoinHandle};
 use std::thread;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, MutexGuard, Mutex};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 /// Socket2 used to create the underlying UDP socket that sACN is sent on.
@@ -39,13 +47,13 @@ use socket2::{Socket, Domain, Type};
 use uuid::Uuid;
 
 /// The name of the thread which runs periodically to perform various actions such as universe discovery adverts for the source.
-pub const SND_UPDATE_THREAD_NAME: &'static str = "rust_sacn_snd_update_thread"; 
+const SND_UPDATE_THREAD_NAME: &'static str = "rust_sacn_snd_update_thread"; 
 
 /// The default startcode used to send stream termination packets when the SacnSource is closed.
-pub const DEFAULT_TERMINATE_START_CODE: u8 = 0; 
+const DEFAULT_TERMINATE_START_CODE: u8 = 0; 
 
 /// The poll rate of the update thread.
-pub const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
+const DEFAULT_POLL_PERIOD: Duration = time::Duration::from_millis(1000);
 
 /// A DMX over sACN sender.
 ///
@@ -135,31 +143,47 @@ struct SacnSourceInternal {
 
 impl SacnSource {
     /// Constructs a new SacnSource with the given name, binding to an IPv4 address.
+    /// This generates a new CID automatically using random values.
+    /// 
+    /// # Errors
+    /// See (with_cid_ip)[with_cid_ip]
     pub fn new_v4(name: &str) -> Result<SacnSource> {
         let cid = Uuid::new_v4();
         SacnSource::with_cid_v4(name, cid)
     }
 
     /// Constructs a new SacnSource with the given name and specified CID binding to an IPv4 address.
+    /// 
+    /// # Errors
+    /// See (with_cid_ip)[with_cid_ip]
     pub fn with_cid_v4(name: &str, cid: Uuid) -> Result<SacnSource> {
         let ip = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
         SacnSource::with_cid_ip(name, cid, ip)
     }
 
     /// Constructs a new SacnSource with the given name, binding to an IPv6 address.
-    /// By default this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    /// By default this will only receive IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    /// 
+    /// # Errors
+    /// See (with_cid_ip)[with_cid_ip]
     pub fn new_v6(name: &str) -> Result<SacnSource> {
         let cid = Uuid::new_v4();
         SacnSource::with_cid_v6(name, cid)
     }
 
     /// Constructs a new SacnSource with the given name and specified CID binding to an IPv6 address.
+    /// 
+    /// # Errors
+    /// See (with_cid_ip)[with_cid_ip]
     pub fn with_cid_v6(name: &str, cid: Uuid) -> Result<SacnSource> {
         let ip = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
         SacnSource::with_cid_ip(name, cid, ip)
     }
 
-    /// Consturcts a new SacnSource with the given name and binding to the supplied ip.
+    /// Constructs a new SacnSource with the given name and binding to the supplied ip.
+    /// 
+    /// # Errors
+    /// See (with_cid_ip)[with_cid_ip]
     pub fn with_ip(name: &str, ip: SocketAddr) -> Result<SacnSource> {
         SacnSource::with_cid_ip(name, Uuid::new_v4(), ip)
     }
@@ -167,12 +191,16 @@ impl SacnSource {
     /// Constructs a new SacnSource with the given name, cid and binding to the supplied ip.
     /// 
     /// # Errors
-    /// Will return an Error if the internal SacnSourceInternal fails to be created with the reasoning error-chained.
-    /// See source::SacnSourceInternal::with_cid_ip() for more details.
+    /// Will return an Io family error if the underlying UDP socket cannot be created and bound.
+    /// 
+    /// Will return an Io family error if the thread used for sending periodic discovery adverts is 
+    /// 
+    /// Will return UnsupportedIpVersion if the SockAddr is not IPv4 or IPv6.
+    /// 
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
         let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
 
-        let internal_src = Arc::new(Mutex::new(SacnSourceInternal::with_cid_ip(name, cid, ip).chain_err(|| "Failed to create SacnSourceInternal")?));
+        let internal_src = Arc::new(Mutex::new(SacnSourceInternal::with_cid_ip(name, cid, ip)?));
 
         let mut trd_src = internal_src.clone();
 
@@ -182,58 +210,79 @@ impl SacnSource {
                 while trd_src.lock().unwrap().running {
                     thread::sleep(DEFAULT_POLL_PERIOD);
                     match perform_periodic_update(&mut trd_src) {
-                        Err(_e) => {// TODO HANDLE
-                        },
-                        Ok(_) => {}
+                        _ => {
+                            // In-case of an error on the discovery thread the source continues to operate and tries again.
+                            // As no unsafe code blocks are used the rust compiler guarantees this is memory safe.
+                        }
                     }
                 }
-            }).unwrap()),
+            })?),
         };
 
         Ok(src)
     }
-
-    /// Allow sending on ipv6 
-    pub fn set_ipv6_only(&mut self, val: bool) -> Result<()>{
-        Ok(self.internal.lock().unwrap().socket.set_only_v6(val)?)
-    }
     
     /// Sets the Time To Live for packets sent by this source.
+    /// 
+    /// # Arguments
+    /// ttl: The new time to live value for new packets.
+    /// 
+    /// # Errors
+    /// Returns an Io family error if the ttl value cannot be changed.
+    /// 
     pub fn set_ttl(&mut self, ttl: u32) -> Result<()>{
-        self.internal.lock().unwrap().set_ttl(ttl)
+        self.get_internal()?.set_ttl(ttl)
     }
 
     /// Sets the is_sending_discovery flag to the given value.
     /// 
-    /// If set to true then the source will send universe discovery packets periodically.
-    /// If set to false then it won't.
+    /// # Arguments
+    /// val: The new value for the is_sending_discovery flag, if true then source will send periodic universe discovery packets
+    /// and if false it won't.
+    /// 
     pub fn set_is_sending_discovery(&mut self, val: bool) {
         self.internal.lock().unwrap().set_is_sending_discovery(val);
     }
 
     /// Registers the given universes on this source in addition to already registered universes.
     /// 
-    /// This allows sending data to those universes aswell as adding them to the list of universes
-    /// that appear in universe discovery packets that are sent (depending on set_is_sending_discovery flag) periodically. 
+    /// This allows sending data to those universes or using them as synchronisation addresses as well as adding them to 
+    /// the list of universes that appear in universe discovery packets that are sent (depending on the 
+    /// set_is_sending_discovery flag) periodically. 
+    /// 
+    /// This is more efficient than repeated calls to register_universe as it means only 1 mutex unlock is required.
+    /// 
+    /// # Arguments
+    /// universes: The sACN universes to register for usage as data universes and/or synchronisation addresses. Note that sACN
+    ///     universes start at 1 not 0.
     /// 
     /// # Errors
-    /// See (register_universes)[fn.register_universes.SacnSourceInternal]
+    /// Returns an IllegalUniverse error if a universe is outwith the range permitted by ANSI E1.31-2018. 
+    /// 
     pub fn register_universes(&mut self, universes: &[u16]) -> Result<()> {
         self.internal.lock().unwrap().register_universes(universes)
     }
 
     /// Registers a single universe on this source in addition to already registered universes.
     /// 
-    /// This allows sending data to those universes aswell as adding them to the list of universes
-    /// that appear in universe discovery packets that are sent (depending on set_is_sending_discovery flag) periodically. 
+    /// This allows sending data to those universes or using them as synchronisation addresses as well as adding them to 
+    /// the list of universes that appear in universe discovery packets that are sent (depending on the 
+    /// set_is_sending_discovery flag) periodically. 
+    /// 
+    /// If registering multiple universes see (register_universes)[register_universes].
+    /// 
+    /// # Arguments
+    /// universe: The sACN universe to register for usage as a data universe and/or synchronisation address. Note that sACN
+    ///     universes start at 1 not 0.
     /// 
     /// # Errors
-    /// See (register_universes)[fn.register_universe.SacnSourceInternal]
+    /// Returns an IllegalUniverse error if the universe is outwith the range permitted by ANSI E1.31-2018. 
+    /// 
     pub fn register_universe(&mut self, universe: u16) -> Result<()> {
         self.internal.lock().unwrap().register_universe(universe)
     }
 
-    /// Sends the given data to the given universes with the given priority, syncronisation address (universe) and destination ip.
+    /// Sends the given data to the given universes with the given priority, synchronisation address (universe) and destination ip.
     /// 
     /// # Arguments
     /// 
@@ -253,7 +302,7 @@ impl SacnSource {
     /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate than specified in ANSI E1.11 [DMX] unless 
     ///     configured by the user to do so in an environment which doesn't contain any E1.31 to DMX512-A converters.
     /// 
-    /// Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the followup sync packet.
+    /// Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the follow up sync packet.
     /// 
     /// # Errors
     /// Will return a SenderAlreadyTerminated error if this method is called on an SacnReceiverInternal that has already terminated.
@@ -273,13 +322,29 @@ impl SacnSource {
     /// 
     /// Will return an error if the data fails to be sent on the socket. See send_to(fn.send_to.Socket).
     /// 
-    pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
-        self.internal.lock().unwrap().send(universes, data, priority, dst_ip, syncronisation_addr)
+    pub fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, synchronisation_addr: Option<u16>) -> Result<()> {
+        self.internal.lock().unwrap().send(universes, data, priority, dst_ip, synchronisation_addr)
     }
 
-    /// Sends a synchronisation packet.
+    /// Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.
     /// 
-    /// See [send_sync_packet](fn.send_sync_packet.SacnSourceInternal) for more details
+    /// A common pattern would be to use the send method to send data to all the universes that should be synchronised using a 
+    /// chosen synchronisation universe then wait for a small time as per the recommendation in ANSI-E1.31-2018 Appendix B.1 and 
+    /// then send a synchronisation packet with the address of the synchronisation universe chosen to trigger the packets.
+    /// 
+    /// # Arguments
+    /// universe: The universe of this synchronisation packet.
+    /// dst_ip:   The destination IP address for this packet or None if it should be sent using multicast.
+    /// 
+    /// # Errors
+    /// Returns an IllegalUniverse error if the universe is outwith the allowed range of sACN universes as defined in ANSI E1.31-2018 Section 6.2.7.
+    /// 
+    /// Returns an UniverseNotRegistered error if the universe is not registered on the given SacnSourceInternal.
+    /// 
+    /// Returns an Io family error if the packet fails to be sent using the underlying network socket.
+    /// 
+    /// Returns an SacnParsePackError family error if the sync packet fails to be packed.
+    /// 
     pub fn send_sync_packet(&self, universe: u16, dst_ip: Option<SocketAddr>) -> Result<()> {
         self.internal.lock().unwrap().send_sync_packet(universe, dst_ip)
     }
@@ -349,9 +414,32 @@ impl SacnSource {
     pub fn multicast_loop(&self) -> Result<bool> {
         self.internal.lock().unwrap().multicast_loop()
     }
+
+    /// Returns the locked internal SacnSourceInternal used within the SacnSource.
+    /// 
+    /// This centralises the locking of the source caused by user method calls to a single point within the code.
+    /// 
+    /// # Errors
+    /// Returns an SourceCorrupt error if the Mutex used to control access to the internal sender is poisoned by a thread encountering
+    /// a panic while accessing causing the source to be left in a potentially inconsistent state. 
+    /// 
+    fn get_internal(&mut self) -> Result<MutexGuard<SacnSourceInternal>> {
+        match self.internal.lock() {
+            Err(_) => {
+                // The PoisonError returned doesn't contain further information and just allows access to the internal potentially inconsistent sender which 
+                // shouldn't be exposed to the user (as its internal and would have no use).
+                // Cannot directly return the PoisonError due to PoisonError using a different error system to other std modules which doesn't work with
+                // error_chain.
+                bail!(ErrorKind::SourceCorrupt("Mutex poisoned".to_string()));
+            }
+            Ok(lock) => {
+                Ok(lock)
+            }
+        }
+    }
 }
 
-/// By implementing the Drop trait for SacnSource it means that the user doesn't have to explicitly cleanup the source
+/// By implementing the Drop trait for SacnSource it means that the user doesn't have to explicitly clean up the source
 /// and if it goes out of reference it will clean itself up and send the required termination packets etc.
 impl Drop for SacnSource {
     fn drop(&mut self){
@@ -371,19 +459,19 @@ impl Drop for SacnSource {
 impl SacnSourceInternal {
     /// Constructs a new SacnSourceInternal with DMX START code set to 0 with specified CID and binding IP address.
     /// 
-    /// By default for an IPv6 address this will only receieve IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    /// By default for an IPv6 address this will only receive IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
     /// By default the TTL for ipv4 packets is 1 to keep them within the local network.
     /// 
-    /// Arguments:
+    /// # Arguments:
     /// name: The human readable name for this sacn source.
     /// cid:  The UUID for this source.
     /// ip:   The address that this source should bind to.
     /// 
     /// # Errors
-    /// Will return an error if the UDP socket builder cannot be created. 
+    /// Will return an Io error if the UDP socket builder cannot be created. 
     /// See (UdpBuilder::new_v4)[fn.new_v4.UdpBuilder] and (UdpBuilder::new_v6)[fn.new_v6.UdpBuilder] for details.
     /// 
-    /// Will return an error if the IP cannot be bound to the underlying socket. See (Socket::bind)[fn.bind.Socket2].
+    /// Will return an Io error if the IP cannot be bound to the underlying socket. See (Socket::bind)[fn.bind.Socket2].
     /// 
     /// Will return UnsupportedIpVersion if the SockAddr is not IPv4 or IPv6.
     /// 
@@ -397,11 +485,11 @@ impl SacnSourceInternal {
         };
         
         // Multiple different processes might want to send to the sACN stream so therefore need to allow re-using the ACN port.
-        // This doesn't work on windows.
+        // Set reuse port is only supported on linux.
         #[cfg(target_os = "linux")]
         socket.set_reuse_port(true)?;
 
-
+        // Set reuse address supported on linux and windows.
         socket.set_reuse_address(true)?;
         socket.bind(&ip.into())?;
 
@@ -427,9 +515,10 @@ impl SacnSourceInternal {
     /// If is_sending_discovery is set to false then no discovery adverts for this source
     /// will be sent otherwise (and by default) they will be sent every UNIVERSE_DISCOVERY_INTERVAL.
     /// 
-    /// Arguments:
+    /// # Arguments:
     /// val: The new value of the is_sending_discovery flag.
-    pub fn set_is_sending_discovery(&mut self, val: bool) {
+    /// 
+    fn set_is_sending_discovery(&mut self, val: bool) {
         self.is_sending_discovery = val;
     }
 
@@ -437,8 +526,12 @@ impl SacnSourceInternal {
     /// 
     /// Any universes already registered won't be re-registered and will have no effect.
     /// 
+    /// # Arguments:
+    /// universes: The sACN universe to register. Note that sACN universes start at 1 not 0.
+    /// 
+    /// # Errors
     /// See register_universe(fn.register_universe.source) for more details.
-    pub fn register_universes(&mut self, universes: &[u16]) -> Result<()> {
+    fn register_universes(&mut self, universes: &[u16]) -> Result<()> {
         for u in universes {
             self.register_universe(*u)?;
         }
@@ -593,7 +686,7 @@ impl SacnSourceInternal {
 
     /// Sends the given data to the given universe with the given priority, syncronisation address (universe) and destination ip.
     /// 
-    /// Arguments
+    /// # Arguments
     /// universe:     The sACN universe that the data should be set on.
     /// data:         The data that should be sent, must be less than or equal in length to UNIVERSE_CHANNEL_CAPACITY(const.UNIVERSE_CHANNEL_CAPACITY.packet).
     /// priority:     The E131 priority that the data should be sent with, must be less than E131_MAX_PRIORITY (const.E131_MAX_PRIORITY.packet), default E131_DEFAULT_PRIORITY.
@@ -674,21 +767,20 @@ impl SacnSourceInternal {
     /// 
     /// A common pattern would be to use the send method to send data to all the universes that should be synchronised using a 
     /// chosen synchronisation universe then wait for a small time as per the recommendation in ANSI-E1.31-2018 Appendix B.1 and 
-    /// then send a synchronisation packet with the address of the syhcnronisation universe chosen to trigger the packets.
+    /// then send a synchronisation packet with the address of the synchronisation universe chosen to trigger the packets.
     /// 
-    /// Arguments
+    /// # Arguments
     /// universe: The universe of this synchronisation packet.
     /// dst_ip:   The destination IP address for this packet or None if it should be sent using multicast.
     /// 
     /// # Errors
-    /// Will return an error if sending using multicast and the universe cannot be converted to a multicast address, 
-    /// see universe_to_ipv4_multicast_addr(fn.universe_to_ipv4_multicast_addr.packet) and 
-    /// universe_to_ipv6_multicast_addr(fn.universe_to_ipv6_multicast_addr.packet).
+    /// Returns an IllegalUniverse error if the universe is outwith the allowed range of sACN universes as defined in ANSI E1.31-2018 Section 6.2.7.
     /// 
-    /// Will return an error if the universe is outwith the allowed range for data packets, see (universe_allowed)[fn.universe_allowed.source] 
-    ///     or if a universe is not already registered with this source.
+    /// Returns an UniverseNotRegistered error if the universe is not registered on the given SacnSourceInternal.
     /// 
-    /// Will return an error if the data fails to be sent on the socket. See send_to(fn.send_to.Socket).
+    /// Returns an Io family error if the packet fails to be sent using the underlying network socket.
+    /// 
+    /// Returns an SacnParsePackError family error if the sync packet fails to be packed.
     /// 
     fn send_sync_packet(&self, universe: u16, dst_ip: Option<SocketAddr>) -> Result<()> {
         self.universe_allowed(&universe)?;
@@ -697,9 +789,9 @@ impl SacnSourceInternal {
 
         if dst_ip.is_none() {
             if self.addr.is_ipv6(){
-                ip = universe_to_ipv6_multicast_addr(universe).chain_err(|| "Failed to convert universe to ipv6 multicast addr")?;
+                ip = universe_to_ipv6_multicast_addr(universe)?;
             } else {
-                ip = universe_to_ipv4_multicast_addr(universe).chain_err(|| "Failed to convert universe to ipv4 multicast addr")?;
+                ip = universe_to_ipv4_multicast_addr(universe)?;
             }
         } else {
             ip = dst_ip.unwrap().into();
@@ -719,7 +811,7 @@ impl SacnSourceInternal {
                 })
             }
         };
-        self.socket.send_to(&packet.pack_alloc().unwrap(), &ip).chain_err(|| "Failed to send sync packet on socket")?;
+        self.socket.send_to(&packet.pack_alloc()?, &ip).chain_err(|| "Failed to send sync packet on socket")?;
 
         if sequence == 255 {
             sequence = 0;
@@ -733,9 +825,9 @@ impl SacnSourceInternal {
     /// Sends a stream termination packet for the given universe.
     /// 
     /// In normal usage this method would be called three times to send three packets for termination as per 
-    ///     section 6.2.6 , Stream_Teminated: Bit 6, of ANSI E1.31-2018.
+    ///     ANSI E1.31-2018 Section 6.2.6, Stream_Terminated: Bit 6.
     /// 
-    /// Arguments
+    /// # Arguments
     /// universe: The universe of this synchronisation packet.
     /// dst_ip:   The destination IP address for this packet or None if it should be sent using multicast.
     /// 
@@ -943,7 +1035,7 @@ impl SacnSourceInternal {
     }
 
     /// Sets the Time To Live for packets sent by this source.
-    pub fn set_ttl(&mut self, ttl: u32) -> Result<()> {
+    fn set_ttl(&mut self, ttl: u32) -> Result<()> {
         Ok(self.socket.set_ttl(ttl)?)
     }
 
@@ -976,7 +1068,7 @@ impl SacnSourceInternal {
 fn perform_periodic_update(src: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<()>{
     let mut unwrap_src = src.lock().unwrap();
     if unwrap_src.is_sending_discovery && Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_UNIVERSE_DISCOVERY_INTERVAL {
-        unwrap_src.send_universe_discovery().chain_err(|| "Failed to send universe discovery packet")?;
+        unwrap_src.send_universe_discovery()?;
         unwrap_src.last_discovery_advert_timestamp = Instant::now();
     }
     Ok(())
