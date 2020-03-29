@@ -3065,13 +3065,4 @@ mod test {
             "Receiver incorrectly rejected third sync packet"
         );
     }
-<<<<<<< HEAD
 }
-=======
-}
-
-// TODO:
-// Spell check for 'receiver' and 'synchronisation'
-// More sequence number tests, above below (outwith range of -20)...
-// Check the public functions/methods make sense, limit pubic functions that shouldn't be.
->>>>>>> 6a80b43027b7e084d4478b260965f96dd5a036f7
