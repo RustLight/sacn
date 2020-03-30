@@ -1213,14 +1213,14 @@ fn test_send_recv_single_universe_unicast_ipv6(){
 
     let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     let priority = 100;
 
     src.register_universe(universe).unwrap();
 
-    let dst_ip: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+    let dst_ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT);
 
     let _ = src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), Some(dst_ip), None).unwrap();
 
@@ -1270,7 +1270,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
 
     src.register_universes(&UNIVERSES).unwrap();
 
-    let _ = src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT).into()), Some(UNIVERSES[0])).unwrap();
+    let _ = src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT).into()), Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
     src.send_sync_packet(UNIVERSES[0], Some(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT).into())).unwrap();
 

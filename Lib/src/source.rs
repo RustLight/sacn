@@ -54,6 +54,7 @@ const DEFAULT_TERMINATE_START_CODE: u8 = 0;
 
 /// The poll rate of the update thread.
 /// Discovery updates are sent every E131_UNIVERSE_DISCOVERY_INTERVAL so the poll rate must be lower than or equal to this.
+// const DEFAULT_POLL_PERIOD: Duration = E131_UNIVERSE_DISCOVERY_INTERVAL;
 const DEFAULT_POLL_PERIOD: Duration = Duration::from_secs(1);
 
 /// A DMX over sACN sender.
@@ -211,9 +212,14 @@ impl SacnSource {
                 while trd_src.lock().unwrap().running {
                     thread::sleep(DEFAULT_POLL_PERIOD);
                     match perform_periodic_update(&mut trd_src) {
+                        Err(e) => {
+                            println!("Periodic error: {:?}", e);
+                        }
+                        
                         _ => {
                             // In-case of an error on the discovery thread the source continues to operate and tries again.
                             // As no unsafe code blocks are used the rust compiler guarantees this is memory safe.
+                            
                         }
                     }
                 }
