@@ -216,8 +216,9 @@ pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_T
 /// Returns the multicast address.
 ///
 /// # Errors
-/// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
-/// see (is_universe_in_range)[fn.is_universe_in_range.packet].
+/// IllegalUniverse: Returned if the given universe is outwith the allowed range of universes,
+///     see (is_universe_in_range)[fn.is_universe_in_range.packet].
+/// 
 pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SockAddr> {
     is_universe_in_range(universe)?;
 
@@ -240,8 +241,9 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SockAddr> {
 /// Returns the multicast address.
 ///
 /// # Errors
-/// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
-/// see (is_universe_in_range)[fn.is_universe_in_range.packet].
+/// IllegalUniverse: Returned if the given universe is outwith the allowed range of universes,
+///     see (is_universe_in_range)[fn.is_universe_in_range.packet].
+/// 
 pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SockAddr> {
     is_universe_in_range(universe)?;
 
@@ -256,7 +258,7 @@ pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SockAddr> {
 /// Checks if the given universe is a valid universe to send on (within allowed range).
 ///
 /// # Errors
-/// Returns an IllegalUniverse error if the universe is outwith the allowed range of universes
+/// IllegalUniverse: Returned if the universe is outwith the allowed range of universes
 ///     [E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE] + E131_DISCOVERY_UNIVERSE.
 ///
 pub fn is_universe_in_range(universe: u16) -> Result<()> {
@@ -288,7 +290,7 @@ fn zeros(buf: &mut [u8], n: usize) {
 /// buf: The byte buffer to parse into a str.
 /// 
 /// # Errors
-/// Returns SourceNameInvalid if the source name is not null terminated as required by ANSI E1.31-2018 Section 6.2.2
+/// SourceNameInvalid: Returned if the source name is not null terminated as required by ANSI E1.31-2018 Section 6.2.2
 /// 
 #[inline]
 fn parse_source_name_str(buf: &[u8]) -> Result<&str> {
