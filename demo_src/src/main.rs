@@ -302,7 +302,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
 
                     match val {
                         Ok(v) => {
-                            src.set_preview_mode(v);
+                            src.set_preview_mode(v)?;
                         },
                         Err(_e) => {
                             bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Preview flag option not 'true'/'false' or otherwise parsable as boolean"));

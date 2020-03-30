@@ -408,7 +408,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     let attempt_recv = rx.recv_timeout(Duration::from_secs(WAIT_RECV_TIMEOUT));
 
     match attempt_recv {
-        Ok(o) => {
+        Ok(_) => {
             assert!(false, "Receivers received without waiting for sync");
         },
         Err(e) => assert_eq!(e, RecvTimeoutError::Timeout)
@@ -2383,7 +2383,7 @@ fn test_preview_data_2_receiver_1_sender() {
     // Send data without the preview flag.
     src.send(&[UNIVERSE], &NORMAL_DATA, None, None, None).unwrap();
 
-    src.set_preview_mode(true);
+    src.set_preview_mode(true).unwrap();
 
     // Send data with the preview flag.
     src.send(&[UNIVERSE], &PREVIEW_DATA, None, None, None).unwrap();

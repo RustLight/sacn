@@ -54,7 +54,7 @@ const DEFAULT_TERMINATE_START_CODE: u8 = 0;
 
 /// The poll rate of the update thread.
 /// Discovery updates are sent every E131_UNIVERSE_DISCOVERY_INTERVAL so the poll rate must be lower than or equal to this.
-const DEFAULT_POLL_PERIOD: Duration = E131_UNIVERSE_DISCOVERY_INTERVAL;
+const DEFAULT_POLL_PERIOD: Duration = Duration::from_secs(1);
 
 /// A DMX over sACN sender.
 ///
@@ -505,14 +505,21 @@ impl SacnSource {
 /// 
 impl Drop for SacnSource {
     fn drop(&mut self){
-        let mut internal = unlock_internal_mut(&mut self.internal).unwrap();
-        internal.running = false;
+        match unlock_internal_mut(&mut self.internal) {
+            Ok(mut i) => { i.running = false; }
+            Err(_) => { return; } // As drop isn't always explicitly called and cannot return an error the error is ignored. Memory safety is maintain and this prevents causing a panic!.
+        };
+
         if let Some(thread) = self.update_thread.take() {
             {
-                match internal.terminate(DEFAULT_TERMINATE_START_CODE) {
-                    Err(_e) => {},
-                    Ok(_) => {}
-                }
+                match unlock_internal_mut(&mut self.internal) { // Internal is accessed twice seperately, this allows the discovery thread to interleave between running being set to false speeding up termination.
+                    Ok(mut i) => { 
+                        match i.terminate(DEFAULT_TERMINATE_START_CODE) {
+                            _ => {} // For same reasons as above a potential error is ignored and a 'best attempt' is used to clean up.
+                        }
+                    }
+                    Err(_) => {} // As drop isn't always explicitly called and cannot return an error the error is ignored. Memory safety is maintain and this prevents causing a panic!.
+                };
             }
             thread.join().unwrap();
         }
@@ -1318,7 +1325,7 @@ mod test {
         let mut source = SacnSourceInternal::with_cid_ip(&source_name, Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
 
         source.set_preview_mode(preview_data);
-        source.set_multicast_loop(true).unwrap();
+        source.set_multicast_loop_v4(true).unwrap();
 
         let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
         
@@ -1348,7 +1355,7 @@ mod test {
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
         let mut source = SacnSourceInternal::with_cid_ip(&"Source", Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
 
-        source.set_multicast_loop(true).unwrap();
+        source.set_multicast_loop_v4(true).unwrap();
 
         let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
         
