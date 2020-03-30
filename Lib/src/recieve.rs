@@ -897,7 +897,10 @@ impl SacnReceiver {
 
         let mut res: Vec<DMXData> = Vec::new();
         for k in keys {
-            res.push(self.waiting_data.remove(&k).unwrap());
+            let data = self.waiting_data.remove(&k).unwrap();
+            if data.recv_timestamp.elapsed() < E131_NETWORK_DATA_LOSS_TIMEOUT {
+                res.push(data);
+            }
         }
 
         res
