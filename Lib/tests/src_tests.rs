@@ -16,8 +16,8 @@ use sacn::packet::*;
 
 #[test]
 fn test_send_without_registering(){
-    let src = SacnSource::new_v4("Controller").unwrap();
-
+    let mut src = SacnSource::new_v4("Controller").unwrap();
+    
     let priority = 100;
 
     match src.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
@@ -185,7 +185,7 @@ fn test_register_min_universe() {
 /// Attempts to send a synchronisation packet with the syncronisation address/universe set to 0 which should be rejected as per ANSI E1.31-2018 Section 6.3.3.1.
 #[test]
 fn test_sync_addr_0() {
-    let src = SacnSource::new_v4("Controller").unwrap();
+    let mut src = SacnSource::new_v4("Controller").unwrap();
     const SYNC_UNI: u16 = 0;
 
     match src.send_sync_packet(SYNC_UNI, None) {
