@@ -3631,3 +3631,88 @@ fn test_track_sync_packet_seq_numbers() {
         }
     }
 }
+
+/// Creates 5 receiver sockets each listening to a different multicast address for a specific synchronisation address.
+/// Then creates a source which sends syncronisation packets meant for different synchronisation addresses.
+/// The receiver sockets check that they only receive synchronisation packets meant for their synchronisation address / multicast address.
+/// 
+/// This shows that synchronisation packets are only sent to the multicast address which corresponds to the synchronisation address as per
+/// ANSI E1.31-2018 Section 6.3.3.1.
+/// 
+#[test]
+#[cfg_attr(rustfmt, rustfmt_skip)]
+fn test_sync_packet_multicast_address() {
+    // Source CID and name, set to arbitrary values as not the focus of the test.
+    const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+    let source_name = "SourceName".to_string() +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0";
+
+    // The expected starting sequence number of sync packets from the source.
+    const START_SEQ_NUM: usize = 0;
+
+    // The number of sync packets to send per sync_address. Chosen arbitrarily to be high enough that if there was going to be a mix up in the addressing there would be a
+    // sufficient chance of it being seen.
+    const SYNC_PACKETS_TO_SEND: usize = 250;
+
+    // The universes that the sync packets are sent on.
+    // Chosen to contain adjacent universes and a separate universe to check that this doesn't effect the address sending.
+    const SYNC_ADDRESSES: [u16; 3] = [1, 2, 63999];
+
+    // Create a source.
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+    source.set_multicast_loop_v4(true).unwrap();
+
+    // Register the synchronisation addresses.
+    source.register_universes(&SYNC_ADDRESSES).unwrap();
+
+    // Don't want universe discovery packets to be sent which might interfer with checking sync packets.
+    source.set_is_sending_discovery(false);
+
+    // Create receiver sockets.
+    let mut recv_sockets: Vec<Socket> = Vec::new();
+
+    let mut i = 0;
+    for sync_addr in SYNC_ADDRESSES.iter() {
+        recv_sockets.push(Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap());
+        let addr: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT);
+        recv_sockets[i].bind(&addr.into()).unwrap();
+
+        // Join only the multicast address corresponding to the synchronisation address.
+        let multicast_addr = universe_to_ipv4_multicast_addr(*sync_addr).unwrap().as_inet();
+        recv_sockets[i]
+            .join_multicast_v4(&multicast_addr.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
+            .unwrap();
+
+        i = i + 1;
+    }
+
+    for s in START_SEQ_NUM .. START_SEQ_NUM + SYNC_PACKETS_TO_SEND {
+        let expected_seq_num: u8 = (s % 256).try_into().unwrap();
+
+        let mut i = 0;
+        for sync_addr in SYNC_ADDRESSES.iter() {
+            let expected_packet = generate_sync_packet_raw(CID, *sync_addr, expected_seq_num);
+            source.send_sync_packet(*sync_addr, None).unwrap();
+
+            let mut recv_buf = [0; 1024];
+
+            // Receive only from the corresponding socket for that sync address.
+            // This means that the sync address must have been sent to the correct multicast address.
+            // If it was also sent to other addresses then this will be caught the next time the other sockets
+            // receive as they will receive the wrong packet.
+            println!("Waiting for recv from {}", sync_addr);
+            let (amt, _) = recv_sockets[i].recv_from(&mut recv_buf).unwrap();
+
+            assert_eq!(&recv_buf[0..amt], &expected_packet[..]);
+
+            i = i + 1;
+        }
+    }
+}
