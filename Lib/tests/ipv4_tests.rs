@@ -3681,13 +3681,12 @@ fn test_sync_packet_multicast_address() {
     let mut i = 0;
     for sync_addr in SYNC_ADDRESSES.iter() {
         recv_sockets.push(Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap());
-        let addr: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT);
-        recv_sockets[i].bind(&addr.into()).unwrap();
 
         // Join only the multicast address corresponding to the synchronisation address.
-        let multicast_addr = universe_to_ipv4_multicast_addr(*sync_addr).unwrap().as_inet();
+        let multicast_addr = universe_to_ipv4_multicast_addr(*sync_addr).unwrap();
+        recv_sockets[i].bind(&multicast_addr).unwrap();
         recv_sockets[i]
-            .join_multicast_v4(&multicast_addr.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
+            .join_multicast_v4(&multicast_addr.as_inet().unwrap().ip(), &TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap())
             .unwrap();
 
         i = i + 1;
@@ -3707,7 +3706,6 @@ fn test_sync_packet_multicast_address() {
             // This means that the sync address must have been sent to the correct multicast address.
             // If it was also sent to other addresses then this will be caught the next time the other sockets
             // receive as they will receive the wrong packet.
-            println!("Waiting for recv from {}", sync_addr);
             let (amt, _) = recv_sockets[i].recv_from(&mut recv_buf).unwrap();
 
             assert_eq!(&recv_buf[0..amt], &expected_packet[..]);
