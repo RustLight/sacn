@@ -20,6 +20,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::iter;
 use std::convert::TryInto; // Used for converting between u8 and u16 representations. 
 use std::str; // Used for converting between bytes and strings.
+use std::collections::HashMap; // Used for keeping track of sequence numbers in some tests.
 
 use sacn::source::SacnSource;
 use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
@@ -3100,23 +3101,13 @@ fn test_discover_recv_sync_runthrough_ipv4() {
     snd_thread.join().unwrap();
 }
 
-/// Creates a test data packet and tests sending it to a udp socket and then checking that the output bytes match expected.
-/// This shows that the SacnSource sends a data packet in the correct format.
-/// 
-/// The use of a UDP socket also shows that the protocol uses UDP at the transport layer.
-/// 
-#[test]
-#[cfg_attr(rustfmt, rustfmt_skip)]
-fn test_data_packet_transmit_format() {
-    let cid = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-    let universe = 1;
-    let source_name = "SourceName";
-    let priority = 150;
-    let sequence = 0;
-    let preview_data = false;
-    let mut dmx_data: Vec<u8> = Vec::new();
-    dmx_data.push(0); // Start code
-    dmx_data.extend(iter::repeat(100).take(255));
+/// Generates a data packet as raw bytes with the given parameters.
+/// Assert parameters are correct sizes / in-range as appropriate.
+fn generate_data_packet_raw(cid: [u8; 16], universe: u16, source_name: String, priority: u8, seq_num: u8, options: u8, dmx_data: Vec<u8>) -> Vec<u8> {
+    assert!(universe >= E131_MIN_MULTICAST_UNIVERSE && universe <= E131_MAX_MULTICAST_UNIVERSE, "Generated data packet universe out of range");
+    assert!(priority <= E131_MAX_PRIORITY, "Generated data packet priority too high");
+    assert!(dmx_data.len() <= UNIVERSE_CHANNEL_CAPACITY);
+    assert_eq!(source_name.len(), 64);
 
     // Root ACN Layer
     let mut packet = Vec::new();
@@ -3149,14 +3140,6 @@ fn test_data_packet_transmit_format() {
     packet.extend("\x00\x00\x00\x02".bytes());
 
     // Source Name
-    let source_name = source_name.to_string() +
-                        "\0\0\0\0\0\0\0\0\0\0" +
-                        "\0\0\0\0\0\0\0\0\0\0" +
-                        "\0\0\0\0\0\0\0\0\0\0" +
-                        "\0\0\0\0\0\0\0\0\0\0" +
-                        "\0\0\0\0\0\0\0\0\0\0" +
-                        "\0\0\0\0";
-    assert_eq!(source_name.len(), 64);
     packet.extend(source_name.bytes());
 
     // Priority
@@ -3166,14 +3149,15 @@ fn test_data_packet_transmit_format() {
     packet.extend("\x00\x00".bytes());
 
     // Sequence Number
-    packet.push(sequence);
+    packet.push(seq_num);
 
     // Options
-    packet.push(0); // Shows that all option bits are transmitted as 0's.
+    packet.push(options);
 
-    // Universe
-    packet.push(0);
-    packet.push(1);
+    // Universe, conversion to BigEndian bytes as Network Byte Order is BigEndian.
+    let universe_bytes = universe.to_be_bytes();
+    packet.push(universe_bytes[0]);
+    packet.push(universe_bytes[1]);
 
     // DMP Layer
     // Flags and Length (266)
@@ -3192,17 +3176,96 @@ fn test_data_packet_transmit_format() {
     // Address Increment
     packet.extend("\x00\x01".bytes());
 
-    // Property value count
+    // Property value count = 255.
     packet.push(0b1);
     packet.push(0b00000000);
 
     // Property values
     packet.extend(&dmx_data);
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&source_name, Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
+    packet
+}
 
-    source.set_preview_mode(preview_data).unwrap();
+/// Generates a sync packet as raw bytes with the given parameters.
+fn generate_sync_packet_raw(cid: [u8; 16], sync_addr: u16, seq_num: u8) -> Vec<u8> {
+    // Root ACN Layer
+    let mut sync_packet = Vec::new();
+
+    // Preamble Size
+    sync_packet.extend("\x00\x10".bytes());
+
+    // Post-amble Size
+    sync_packet.extend("\x00\x00".bytes());
+
+    // ACN Packet Identifier
+    sync_packet.extend("\x41\x53\x43\x2d\x45\x31\x2e\x31\x37\x00\x00\x00".bytes());
+
+    // Flags and Length (0x70, 33)
+    sync_packet.push(0b01110000);
+    sync_packet.push(0b00100001);
+
+    // Vector, VECTOR_ROOT_E131_EXTENDED as per ANSI E1.31-2018 Section 4.2 Table 4-2.
+    sync_packet.extend("\x00\x00\x00\x08".bytes());
+
+    // CID
+    sync_packet.extend(&cid);
+
+    // E1.31 Framing Layer
+    // Flags and Length (0x70, 11)
+    sync_packet.push(0b01110000);
+    sync_packet.push(0b00001011);
+
+    // Vector, VECTOR_E131_EXTENDED_SYNCHRONISATION as per ANSI E1.31-2018 Appendix A.
+    sync_packet.extend("\x00\x00\x00\x01".bytes());
+
+    // Sequence Number
+    sync_packet.push(seq_num);
+
+    // Synchronisation Address, conversion to BigEndian bytes as Network Byte Order is BigEndian.
+    let sync_addr_bytes = sync_addr.to_be_bytes();
+    sync_packet.push(sync_addr_bytes[0]);
+    sync_packet.push(sync_addr_bytes[1]);
+
+    // Reserve bytes as 0 as per ANSI E1.31-2018 Section 6.3.4.
+    sync_packet.push(0);
+    sync_packet.push(0);
+
+    sync_packet
+}
+
+/// Creates a test data packet and tests sending it to a udp socket and then checking that the output bytes match expected.
+/// This shows that the SacnSource sends a data packet in the correct format.
+/// 
+/// The use of a UDP socket also shows that the protocol uses UDP at the transport layer.
+/// 
+#[test]
+#[cfg_attr(rustfmt, rustfmt_skip)]
+fn test_data_packet_transmit_format() {
+    const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    const OPTIONS: u8 = 0; // Checks that the options field is transmitted as 0's.
+    const PRIORITY: u8 = 150;
+
+    let universe: u16 = 1;
+
+    let source_name = "SourceName".to_string() +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0";
+    
+    let sequence = 0;
+    let mut dmx_data: Vec<u8> = Vec::new();
+    dmx_data.push(0); // Start code
+    dmx_data.extend(iter::repeat(100).take(255));
+
+    let packet = generate_data_packet_raw(CID, universe, source_name.clone(), PRIORITY, sequence, OPTIONS, dmx_data.clone());
+
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+
+    source.set_preview_mode(false).unwrap();
     source.set_multicast_loop_v4(true).unwrap();
 
     let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
@@ -3218,7 +3281,7 @@ fn test_data_packet_transmit_format() {
 
     source.register_universes(&[universe]).unwrap();
 
-    source.send(&[universe], &dmx_data, Some(priority), None, None).unwrap();
+    source.send(&[universe], &dmx_data, Some(PRIORITY), None, None).unwrap();
     let (amt, _) = recv_socket.recv_from(&mut recv_buf).unwrap();
 
     assert_eq!(&packet[..], &recv_buf[0..amt]);
@@ -3273,7 +3336,7 @@ fn test_terminate_packet_transmit_format() {
 fn test_sync_packet_transmit_format() {
     const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
-    const UNIVERSE: u16 = 1;
+    const SYNC_ADDR: u16 = 1;
 
     // Sync packet length 49 bytes as per ANSI E1.31-2018 Section 4.2 Table 4-2.
     const E131_SYNC_PACKET_LENGTH: usize = 49;
@@ -3281,46 +3344,7 @@ fn test_sync_packet_transmit_format() {
     // Sequence number of initial syncronisation packet is expected to be 0.
     const SEQUENCE_NUM: u8 = 0;
 
-    // Root ACN Layer
-    let mut sync_packet = Vec::new();
-
-    // Preamble Size
-    sync_packet.extend("\x00\x10".bytes());
-
-    // Post-amble Size
-    sync_packet.extend("\x00\x00".bytes());
-
-    // ACN Packet Identifier
-    sync_packet.extend("\x41\x53\x43\x2d\x45\x31\x2e\x31\x37\x00\x00\x00".bytes());
-
-    // Flags and Length (0x70, 33)
-    sync_packet.push(0b01110000);
-    sync_packet.push(0b00100001);
-
-    // Vector, VECTOR_ROOT_E131_EXTENDED as per ANSI E1.31-2018 Section 4.2 Table 4-2.
-    sync_packet.extend("\x00\x00\x00\x08".bytes());
-
-    // CID
-    sync_packet.extend(&CID);
-
-    // E1.31 Framing Layer
-    // Flags and Length (0x70, 11)
-    sync_packet.push(0b01110000);
-    sync_packet.push(0b00001011);
-
-    // Vector, VECTOR_E131_EXTENDED_SYNCHRONISATION as per ANSI E1.31-2018 Appendix A.
-    sync_packet.extend("\x00\x00\x00\x01".bytes());
-
-    // Sequence Number
-    sync_packet.push(SEQUENCE_NUM);
-
-    // Synchronisation Address, 1
-    sync_packet.push(0);
-    sync_packet.push(1);
-
-    // Reserve bytes as 0 as per ANSI E1.31-2018 Section 6.3.4.
-    sync_packet.push(0);
-    sync_packet.push(0);
+    let sync_packet = generate_sync_packet_raw(CID, SYNC_ADDR, SEQUENCE_NUM);
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
     let mut source = SacnSource::with_cid_ip(&"Source", Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
@@ -3341,8 +3365,8 @@ fn test_sync_packet_transmit_format() {
     let mut recv_buf = [0; E131_SYNC_PACKET_LENGTH];
 
     // Send the synchronisation packet.
-    source.register_universes(&[UNIVERSE]).unwrap();
-    source.send_sync_packet(UNIVERSE, None).unwrap();
+    source.register_universes(&[SYNC_ADDR]).unwrap();
+    source.send_sync_packet(SYNC_ADDR, None).unwrap();
 
     // Receive the packet and compare its content to the expected.
     recv_socket.recv_from(&mut recv_buf).unwrap();
@@ -3469,3 +3493,141 @@ fn test_discovery_packet_transmit_format() {
     assert_eq!(recv_buf[..], discovery_packet[..], "Discovery packet sent by source doesn't match expected format");
 }
 
+/// Creates a source and a receiver socket. The source then sends data packets meant for different universes and the receiver checks
+/// that the sequence numbers are incremented by 1 for each packet and are incremented independently for each universe.SockAddr
+/// 
+/// This shows the source complies with ANSI E1.31-2018 Section 6.2.5 "E1.31 Data Packet: Sequence Number". 
+/// 
+#[test]
+#[cfg_attr(rustfmt, rustfmt_skip)]
+fn test_track_data_packet_seq_numbers() {
+    /* Packet parameters */
+    const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    const OPTIONS: u8 = 0; // Checks that the options field is transmitted as 0's.
+    const PRIORITY: u8 = 150;
+    let source_name = "SourceName".to_string() +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0";
+    let mut dmx_data: Vec<u8> = Vec::new();
+    dmx_data.push(0); // Start code
+    dmx_data.extend(iter::repeat(100).take(255));
+
+    /* The parameters above are set to arbitrary values as they aren't the focus of the test*/
+
+    // The expected starting sequence number of data packets from the source.
+    const START_SEQ_NUM: usize = 0;
+
+    // The number of data packets to send per universe.
+    const DATA_PACKETS_TO_SEND: usize = 300;
+
+    // The universes that the data packets are sent on.
+    const UNIVERSES: [u16; 5] = [1, 3, 5, 7, 9];
+
+    // Create a source.
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+    source.set_multicast_loop_v4(true).unwrap();
+    source.register_universes(&UNIVERSES).unwrap();
+
+    // Don't want universe discovery packets to be sent which might interfer with checking data packets.
+    source.set_is_sending_discovery(false);
+
+    // Create receiver socket.
+    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
+    recv_socket.bind(&addr.into()).unwrap();
+
+    // Join the multicast groups for each of the universes.
+    for u in UNIVERSES.iter() {
+        let address = universe_to_ipv4_multicast_addr(*u).unwrap().as_inet();
+
+        recv_socket
+            .join_multicast_v4(&address.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
+            .unwrap();
+    }
+
+    for s in START_SEQ_NUM .. START_SEQ_NUM + DATA_PACKETS_TO_SEND {
+        let expected_seq_num: u8 = (s % 256).try_into().unwrap();
+        for u in UNIVERSES.iter() {
+            let expected_packet = generate_data_packet_raw(CID, *u, source_name.clone(), PRIORITY, expected_seq_num, OPTIONS, dmx_data.clone());
+            source.send(&[*u], &dmx_data, Some(PRIORITY), None, None).unwrap();
+
+            let mut recv_buf = [0; 1024];
+            let (amt, _) = recv_socket.recv_from(&mut recv_buf).unwrap();
+
+            assert_eq!(&recv_buf[0..amt], &expected_packet[..]);
+        }
+    }
+}
+
+/// Creates a source and a receiver socket. The source then sends data packets meant for different universes and the receiver checks
+/// that the sequence numbers are incremented by 1 for each packet and are incremented independently for each universe.SockAddr
+/// 
+/// This shows the source complies with ANSI E1.31-2018 Section 6.2.5 "E1.31 Data Packet: Sequence Number". 
+/// 
+#[test]
+#[cfg_attr(rustfmt, rustfmt_skip)]
+fn test_track_sync_packet_seq_numbers() {
+    // Source CID and name, set to arbitrary values as not the focus of the test.
+    const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+    let source_name = "SourceName".to_string() +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0\0\0\0\0\0\0" +
+                        "\0\0\0\0";
+
+    // The expected starting sequence number of sync packets from the source.
+    const START_SEQ_NUM: usize = 0;
+
+    // The number of sync packets to send per universe. Chosen to be high enough that a sequence number wrap around due to the maximum possible value in a u8 is required. 
+    // This checks that the sequence numbers wrap around correctly.
+    const SYNC_PACKETS_TO_SEND: usize = 300;
+
+    // The universes that the sync packets are sent on.
+    const SYNC_ADDRESSES: [u16; 5] = [1, 3, 5, 7, 9];
+
+    // Create a source.
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+    source.set_multicast_loop_v4(true).unwrap();
+
+    // Register the synchronisation addresses.
+    source.register_universes(&SYNC_ADDRESSES).unwrap();
+
+    // Don't want universe discovery packets to be sent which might interfer with checking sync packets.
+    source.set_is_sending_discovery(false);
+
+    // Create receiver socket.
+    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
+    recv_socket.bind(&addr.into()).unwrap();
+
+    // Join the multicast groups for each of the synchronisation addresses.
+    for u in SYNC_ADDRESSES.iter() {
+        let address = universe_to_ipv4_multicast_addr(*u).unwrap().as_inet();
+
+        recv_socket
+            .join_multicast_v4(&address.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
+            .unwrap();
+    }
+
+    for s in START_SEQ_NUM .. START_SEQ_NUM + SYNC_PACKETS_TO_SEND {
+        let expected_seq_num: u8 = (s % 256).try_into().unwrap();
+        for a in SYNC_ADDRESSES.iter() {
+            let expected_packet = generate_sync_packet_raw(CID, *a, expected_seq_num);
+            source.send_sync_packet(*a, None).unwrap();
+
+            let mut recv_buf = [0; 1024];
+            let (amt, _) = recv_socket.recv_from(&mut recv_buf).unwrap();
+
+            assert_eq!(&recv_buf[0..amt], &expected_packet[..]);
+        }
+    }
+}
