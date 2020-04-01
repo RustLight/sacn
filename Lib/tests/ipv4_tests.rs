@@ -18,6 +18,8 @@ use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::iter;
+use std::convert::TryInto; // Used for converting between u8 and u16 representations. 
+use std::str; // Used for converting between bytes and strings.
 
 use sacn::source::SacnSource;
 use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
@@ -28,7 +30,7 @@ use sacn::error::errors::*;
 use uuid::Uuid;
 
 /// Socket2 used to create sockets for testing.
-use socket2::{Socket, Domain, Type};
+use socket2::{Socket, Domain, Type, SockAddr};
 
 // Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
 // - Decided it shouldn't be seperated.
@@ -3116,19 +3118,25 @@ fn test_data_packet_transmit_format() {
     dmx_data.push(0); // Start code
     dmx_data.extend(iter::repeat(100).take(255));
 
-    // Root Layer
+    // Root ACN Layer
     let mut packet = Vec::new();
+
     // Preamble Size
     packet.extend("\x00\x10".bytes());
+
     // Post-amble Size
     packet.extend("\x00\x00".bytes());
+
     // ACN Packet Identifier
     packet.extend("\x41\x53\x43\x2d\x45\x31\x2e\x31\x37\x00\x00\x00".bytes());
+
     // Flags and Length (22 + 343)
     packet.push(0b01110001);
     packet.push(0b01101101);
+
     // Vector
     packet.extend("\x00\x00\x00\x04".bytes());
+
     // CID
     packet.extend(&cid);
 
@@ -3136,8 +3144,10 @@ fn test_data_packet_transmit_format() {
     // Flags and Length (77 + 266)
     packet.push(0b01110001);
     packet.push(0b01010111);
+
     // Vector
     packet.extend("\x00\x00\x00\x02".bytes());
+
     // Source Name
     let source_name = source_name.to_string() +
                         "\0\0\0\0\0\0\0\0\0\0" +
@@ -3148,14 +3158,19 @@ fn test_data_packet_transmit_format() {
                         "\0\0\0\0";
     assert_eq!(source_name.len(), 64);
     packet.extend(source_name.bytes());
+
     // Priority
     packet.push(priority);
+
     // Reserved
     packet.extend("\x00\x00".bytes());
+
     // Sequence Number
     packet.push(sequence);
+
     // Options
-    packet.push(0); // Checks that all bits are 
+    packet.push(0); // Shows that all option bits are transmitted as 0's.
+
     // Universe
     packet.push(0);
     packet.push(1);
@@ -3164,17 +3179,23 @@ fn test_data_packet_transmit_format() {
     // Flags and Length (266)
     packet.push(0b01110001);
     packet.push(0b00001010);
+
     // Vector
     packet.push(0x02);
+
     // Address Type & Data Type
     packet.push(0xa1);
+
     // First Property Address
     packet.extend("\x00\x00".bytes());
+
     // Address Increment
     packet.extend("\x00\x01".bytes());
+
     // Property value count
     packet.push(0b1);
     packet.push(0b00000000);
+
     // Property values
     packet.extend(&dmx_data);
 
@@ -3260,7 +3281,7 @@ fn test_sync_packet_transmit_format() {
     // Sequence number of initial syncronisation packet is expected to be 0.
     const SEQUENCE_NUM: u8 = 0;
 
-    // Root Layer
+    // Root ACN Layer
     let mut sync_packet = Vec::new();
 
     // Preamble Size
@@ -3328,3 +3349,123 @@ fn test_sync_packet_transmit_format() {
 
     assert_eq!(recv_buf[..], sync_packet[..], "Sync packet sent by source doesn't match expected format");
 }
+
+/// Similar to test_data_packet_transmit_format, creates a SacnSender and then a receiver socket. The sender then sends
+/// a discovery packet and the receive socket receives the packet and checks that the format of the packet is as expected.
+/// 
+/// The use of a UDP socket also shows that the protocol uses UDP at the transport layer.
+/// 
+#[test]
+fn test_discovery_packet_transmit_format() {
+    const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+    // Source name = "Controller"
+    const SOURCE_NAME: [u8; 64] = [b'C', b'o', b'n', b't', b'r', b'o', b'l', b'l', b'e', b'r', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                    0, 0, 0, 0];
+
+    // Represents 3 16 bit universes.
+    const UNIVERSES: [u8; 6] = [0x0, 0x1 , 0x0, 0x2, 0x0, 0x3];
+
+    // Discovery packet length 49 bytes as per ANSI E1.31-2018 Section 8 Table 8-9.
+    const DISCOVERY_PACKET_LENGTH_EXPECTED: usize = 120 + UNIVERSES.len();
+
+    // As the number of universes will fit on one page expect the page number and last page number to both be 0.
+    const PAGE: u8 = 0;
+    const LAST_PAGE: u8 = 0;
+
+    // Root ACN Layer
+    let mut discovery_packet = Vec::new();
+
+    // Preamble Size
+    discovery_packet.extend("\x00\x10".bytes());
+
+    // Post-amble Size
+    discovery_packet.extend("\x00\x00".bytes());
+
+    // ACN Packet Identifier
+    discovery_packet.extend("\x41\x53\x43\x2d\x45\x31\x2e\x31\x37\x00\x00\x00".bytes());
+
+    // Flags and Length (0x70, 110)
+    discovery_packet.push(0b01110000);
+    discovery_packet.push(0b01101110);
+
+    // Vector, VECTOR_ROOT_E131_EXTENDED as per ANSI E1.31-2018 Section 4.3 Table 4-3 and Appendix A.
+    discovery_packet.extend("\x00\x00\x00\x08".bytes());
+
+    // CID
+    discovery_packet.extend(&CID);
+
+    // E1.31 Framing Layer
+    // Flags and Length (0x70, 88)
+    discovery_packet.push(0b01110000);
+    discovery_packet.push(0b01011000);
+
+    // Vector, VECTOR_E131_EXTENDED_DISCOVERY as per ANSI E1.31-2018 Section 4.3 Table 4-3 and Appendix A.
+    discovery_packet.extend("\x00\x00\x00\x02".bytes());
+
+    // Source Name
+    discovery_packet.extend(SOURCE_NAME.iter());
+
+    // Reserve bytes, should be transmitted as 0's as per ANSI E1.31-2018 Section 6.4.3.
+    discovery_packet.push(0);
+    discovery_packet.push(0);
+    discovery_packet.push(0);
+    discovery_packet.push(0);
+    
+    // Universe Discovery Layer
+    // Flags and Length (0x70, 14)
+    discovery_packet.push(0b01110000);
+    discovery_packet.push(0b00001110);
+
+    // Vector, VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST as per ANSI E1.31-2018 Section 4.3 Table 4-3 and Appendix A.
+    discovery_packet.extend("\x00\x00\x00\x01".bytes());
+
+    // Page and last page
+    discovery_packet.push(PAGE);
+    discovery_packet.push(LAST_PAGE);
+
+    // The list of universes that are being advertised by the discovery packet.
+    discovery_packet.extend(UNIVERSES.iter());
+
+    assert_eq!(discovery_packet.len(), DISCOVERY_PACKET_LENGTH_EXPECTED, "Example discovery packet length doesn't match expected");
+
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+
+    // Creates the source.
+    let mut source = SacnSource::with_cid_ip(&str::from_utf8(&SOURCE_NAME).unwrap(), Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+
+    source.set_multicast_loop_v4(true).unwrap();
+
+    // Create a standard udp receive socket to receive the packet sent by the source.
+    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    
+    let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
+
+    recv_socket.bind(&addr.into()).unwrap();
+
+    // Receiving on the discovery universe shows that the discovery universe is correctly used for discovery packets as per ANSI E1.31-2018 Section 6.2.7.
+    let address = universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap().as_inet();
+
+    recv_socket
+        .join_multicast_v4(&address.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
+        .unwrap();
+
+    let mut recv_buf = [0; DISCOVERY_PACKET_LENGTH_EXPECTED];
+
+    // Register the universes, note be = BigEndian which is used as network byte order is BigEndian.
+    source.register_universes(&[
+        u16::from_be_bytes(UNIVERSES[0..2].try_into().unwrap()), 
+        u16::from_be_bytes(UNIVERSES[2..4].try_into().unwrap()), 
+        u16::from_be_bytes(UNIVERSES[4..6].try_into().unwrap())
+        ]).unwrap();
+
+    // The source is expected to eventually send a universe discovery packet. 
+
+    // Receive the packet and compare its content to the expected.
+    recv_socket.recv_from(&mut recv_buf).unwrap();
+
+    assert_eq!(recv_buf[..], discovery_packet[..], "Discovery packet sent by source doesn't match expected format");
+}
+

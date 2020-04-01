@@ -32,7 +32,7 @@ fn test_send_without_registering(){
 
 /// Attempts to send a packet with a priority higher (> 200) than the maximum allowed as per ANSI E1.31-2018 Section 6.2.3. 
 #[test]
-fn test_send_above_priorty(){
+fn test_send_above_priority(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
     let universe = 1;
     let priority = 201;
