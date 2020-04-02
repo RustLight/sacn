@@ -3328,3 +3328,89 @@ fn test_sync_packet_transmit_format() {
 
     assert_eq!(recv_buf[..], sync_packet[..], "Sync packet sent by source doesn't match expected format");
 }
+
+/// Similar to test_data_packet_transmit_format, creates a SacnSender and then a receiver socket. The sender then sends
+/// a synchronisation packet and the receive socket receives the packet and checks that the format of the packet is as expected.
+/// 
+/// The use of a UDP socket also shows that the protocol uses UDP at the transport layer.
+/// 
+#[test]
+fn test_sync_packet_transmit_seq_numbers() {
+    const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+    const UNIVERSE: u16 = 1;
+
+    // Sync packet length 49 bytes as per ANSI E1.31-2018 Section 4.2 Table 4-2.
+    const E131_SYNC_PACKET_LENGTH: usize = 49;
+
+    // Sequence number of initial syncronisation packet is expected to be 0.
+    const SEQUENCE_NUM: u8 = 0;
+
+    // Root Layer
+    let mut sync_packet = Vec::new();
+
+    // Preamble Size
+    sync_packet.extend("\x00\x10".bytes());
+
+    // Post-amble Size
+    sync_packet.extend("\x00\x00".bytes());
+
+    // ACN Packet Identifier
+    sync_packet.extend("\x41\x53\x43\x2d\x45\x31\x2e\x31\x37\x00\x00\x00".bytes());
+
+    // Flags and Length (0x70, 33)
+    sync_packet.push(0b01110000);
+    sync_packet.push(0b00100001);
+
+    // Vector, VECTOR_ROOT_E131_EXTENDED as per ANSI E1.31-2018 Section 4.2 Table 4-2.
+    sync_packet.extend("\x00\x00\x00\x08".bytes());
+
+    // CID
+    sync_packet.extend(&CID);
+
+    // E1.31 Framing Layer
+    // Flags and Length (0x70, 11)
+    sync_packet.push(0b01110000);
+    sync_packet.push(0b00001011);
+
+    // Vector, VECTOR_E131_EXTENDED_SYNCHRONISATION as per ANSI E1.31-2018 Appendix A.
+    sync_packet.extend("\x00\x00\x00\x01".bytes());
+
+    // Sequence Number
+    sync_packet.push(SEQUENCE_NUM);
+
+    // Synchronisation Address, 1
+    sync_packet.push(0);
+    sync_packet.push(1);
+
+    // Reserve bytes as 0 as per ANSI E1.31-2018 Section 6.3.4.
+    sync_packet.push(0);
+    sync_packet.push(0);
+
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
+    let mut source = SacnSource::with_cid_ip(&"Source", Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+
+    source.set_multicast_loop_v4(true).unwrap();
+
+    // Create a standard udp receive socket to receive the packet sent by the source.
+    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    
+    let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
+
+    recv_socket.bind(&addr.into()).unwrap();
+
+    recv_socket
+        .join_multicast_v4(&Ipv4Addr::new(239, 255, 0, 1), &Ipv4Addr::new(0, 0, 0, 0))
+        .unwrap();
+
+    let mut recv_buf = [0; E131_SYNC_PACKET_LENGTH];
+
+    // Send the synchronisation packet.
+    source.register_universes(&[UNIVERSE]).unwrap();
+    source.send_sync_packet(UNIVERSE, None).unwrap();
+
+    // Receive the packet and compare its content to the expected.
+    recv_socket.recv_from(&mut recv_buf).unwrap();
+
+    assert_eq!(recv_buf[..], sync_packet[..], "Sync packet sent by source doesn't match expected format");
+}
