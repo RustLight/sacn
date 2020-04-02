@@ -966,9 +966,9 @@ impl SacnSourceInternal {
     }
 
     /// Terminates a universe stream.
-    ///
-    /// Terminates a stream to the specified universe by sending three packets with the Stream_Terminated flag set to 1.
-    /// Three packets sent as per section 6.2.6 , Stream_Teminated: Bit 6 of ANSI E1.31-2018.
+    /// 
+    /// Terminates a stream to the specified universe by sending packets with the Stream_Terminated flag set to 1.
+    /// Number of packets sent as per section 6.2.6 , Stream_Terminated: Bit 6 of ANSI E1.31-2018.
     /// 
     /// Arguments:
     /// universe: The universe that is being terminated.
@@ -982,7 +982,7 @@ impl SacnSourceInternal {
     /// Io: Returned if the termination packets fail to be sent on the socket.
     /// 
     fn terminate_stream(&mut self, universe: u16, start_code: u8) -> Result<()> {
-        for _ in 0..3 {
+        for _ in 0 .. E131_TERMINATE_STREAM_PACKET_COUNT {
             self.send_terminate_stream_pkt(universe, None, start_code)?;
         }
 
