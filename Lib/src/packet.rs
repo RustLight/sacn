@@ -425,7 +425,7 @@ macro_rules! impl_acn_root_layer_protocol {
                 // Post-amble Field Size (Bytes)
                 2 +
                 // ACN Packet Identifier Field Size (Bytes)
-                12 +
+                E131_ACN_PACKET_IDENTIFIER.len() +
                 // PDU block
                 self.pdu.len()
             }
@@ -586,11 +586,11 @@ macro_rules! impl_e131_root_layer {
 
             fn len(&self) -> usize {
                 // Length and Flags
-                2 +
+                E131_PDU_LENGTH_FLAGS_LENGTH +
                 // Vector
-                4 +
+                E131_ROOT_LAYER_VECTOR_LENGTH +
                 // CID
-                16 +
+                E131_CID_FIELD_LENGTH +
                 // Data
                 match self.data {
                     E131RootLayerData::DataPacket(ref data) => data.len(),
