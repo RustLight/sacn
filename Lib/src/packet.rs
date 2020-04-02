@@ -156,6 +156,18 @@ pub const E131_UNIVERSE_DISCOVERY_FRAMING_LAYER_MIN_LENGTH: usize = 82;
 /// Set to 3 as per section 6.2.6 , Stream_Terminated: Bit 6 of ANSI E1.31-2018.
 pub const E131_TERMINATE_STREAM_PACKET_COUNT: usize = 3;
 
+/// The length of the pdu flags and length field in bytes.
+pub const E131_PDU_LENGTH_FLAGS_LENGTH: usize = 2;
+
+/// The pdu flags expected for an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
+pub const E131_PDU_FLAGS: u8 = 0x70;
+
+/// The length in bytes of the root layer vector field as per ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
+pub const E131_ROOT_LAYER_VECTOR_LENGTH: usize = 4;
+
+/// The length in bytes of the E1.31 framing layer vector field as per ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
+pub const E131_FRAMING_LAYER_VECTOR_LENGTH: usize = 4;
+
 /// The size of the ACN root layer preamble, must be 0x0010 bytes as per ANSI E1.31-2018 Section 5.1.
 /// Often treated as a usize for comparison or use with arrays however stored as u16 as this represents its field size
 /// within a packet and converting u16 -> usize is always safe as len(usize) is always greater than len(u16), usize -> u16 is unsafe.
@@ -167,6 +179,12 @@ const E131_POSTAMBLE_SIZE: u16 = 0x0;
 /// The E131 ACN packet identifier field value. Must be 0x41 0x53 0x43 0x2d 0x45 0x31 0x2e 0x31 0x37 0x00 0x00 0x00 as per
 /// ANSI E1.31-2018 Section 5.3.
 const E131_ACN_PACKET_IDENTIFIER: [u8; 12] = [0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00];
+
+/// The E131 CID field length in bytes as per ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
+pub const E131_CID_FIELD_LENGTH: usize = 16;
+
+// The exclusive end index of the CID field. Calculated based on previous values defined in ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
+const E131_CID_END_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH + E131_ROOT_LAYER_VECTOR_LENGTH + E131_CID_FIELD_LENGTH;
 
 /// The initial/starting sequence number used.
 pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
@@ -402,11 +420,11 @@ macro_rules! impl_acn_root_layer_protocol {
 
             /// The length of the packet when packed.
             pub fn len(&self) -> usize {
-                // Preamble Size
+                // Preamble Field Size (Bytes)
                 2 +
-                // Post-amble Size
+                // Post-amble Field Size (Bytes)
                 2 +
-                // ACN Packet Identifier
+                // ACN Packet Identifier Field Size (Bytes)
                 12 +
                 // PDU block
                 self.pdu.len()
@@ -415,35 +433,40 @@ macro_rules! impl_acn_root_layer_protocol {
     };
 }
 
-#[cfg(feature = "std")]
 impl_acn_root_layer_protocol!(<'a>);
-
-#[cfg(not(feature = "std"))]
-impl_acn_root_layer_protocol!();
 
 struct PduInfo {
     length: usize,
     vector: u32,
 }
 
+/// Takes the given byte buffer and parses the flags, length and vector fields into a PduInfo struct.
+/// 
+/// # Arguments
+/// buf: The raw byte buffer.
+/// 
+/// vector_length: The length of the vectorfield in bytes.
+/// 
+/// # Errors
+/// ParseInsufficientData: If the length of the buffer is less than the flag, length and vector fields (E131_PDU_LENGTH_FLAGS_LENGTH + vector_length).
+/// 
+/// ParsePduInvalidFlags: If the flags parsed don't match the flags expected for an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
+/// 
 fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo> {
-    if buf.len() < 2 {
+    if buf.len() < E131_PDU_LENGTH_FLAGS_LENGTH + vector_length {
         bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Insufficient data when parsing pdu_info, no flags or length field".to_string())));
     }
 
     // Flags
-    let flags = buf[0] & 0xf0;
-    if flags != 0x70 {
+    let flags = buf[0] & 0xf0; // Flags are stored in the top 4 bits.
+    if flags != E131_PDU_FLAGS {
         bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParsePduInvalidFlags(flags)));
     }
     // Length
-    let length = (NetworkEndian::read_u16(&buf[0..2]) & 0x0fff) as usize;
-    if buf.len() < length {
-        bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Insufficient data when parsing pdu_info".to_string())));
-    }
+    let length = (NetworkEndian::read_u16(&buf[0 .. E131_PDU_LENGTH_FLAGS_LENGTH]) & 0x0fff) as usize;
 
     // Vector
-    let vector = NetworkEndian::read_uint(&buf[2..], vector_length) as u32;
+    let vector = NetworkEndian::read_uint(&buf[E131_PDU_LENGTH_FLAGS_LENGTH .. ], vector_length) as u32;
 
     Ok(PduInfo { length, vector })
 }
@@ -483,22 +506,29 @@ macro_rules! impl_e131_root_layer {
         impl$( $lt )* Pdu for E131RootLayer$( $lt )* {
             fn parse(buf: &[u8]) -> Result<E131RootLayer$( $lt )*> {
                 // Length and Vector
-                let PduInfo { length, vector } = pdu_info(&buf, 4)?;
+                let PduInfo { length, vector } = pdu_info(&buf, E131_ROOT_LAYER_VECTOR_LENGTH)?;
+                if buf.len() < length {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on ACN root layer pdu length field".to_string())));
+                }
+
                 if vector != VECTOR_ROOT_E131_DATA && vector != VECTOR_ROOT_E131_EXTENDED {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
-
+                
                 // CID
-                let cid = Uuid::from_bytes(&buf[6..22])?;
+                let cid = Uuid::from_bytes(&buf[E131_PDU_LENGTH_FLAGS_LENGTH + E131_ROOT_LAYER_VECTOR_LENGTH .. E131_CID_END_INDEX])?;
 
                 // Data
                 let data = match vector {
                     VECTOR_ROOT_E131_DATA => {
-                        E131RootLayerData::DataPacket(DataPacketFramingLayer::parse(&buf[22..length])?)
+                        E131RootLayerData::DataPacket(DataPacketFramingLayer::parse(&buf[E131_CID_END_INDEX .. length])?)
                     }
                     VECTOR_ROOT_E131_EXTENDED => {
-                        let data_buf = &buf[22..length];
-                        let PduInfo { length, vector} = pdu_info(&data_buf, 4)?;
+                        let data_buf = &buf[E131_CID_END_INDEX .. length];
+                        let PduInfo { length, vector} = pdu_info(&data_buf, E131_FRAMING_LAYER_VECTOR_LENGTH)?;
+                        if buf.len() < length {
+                            bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on E131 framing layer pdu length field".to_string())));
+                        }
 
                         match vector {
                             VECTOR_E131_EXTENDED_SYNCHRONIZATION => {
@@ -528,29 +558,29 @@ macro_rules! impl_e131_root_layer {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackBufferInsufficient("".to_string())))
                 }
 
-                // Flags and Length
-                let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
-                NetworkEndian::write_u16(&mut buf[0..2], flags_and_length);
+                // Flags and Length, flags are stored in the top 4 bits.
+                let flags_and_length = NetworkEndian::read_u16(&[E131_PDU_FLAGS, 0x0]) | (self.len() as u16) & 0x0fff;
+                NetworkEndian::write_u16(&mut buf[0 .. E131_PDU_LENGTH_FLAGS_LENGTH], flags_and_length);
 
                 // Vector
                 match self.data {
                     E131RootLayerData::DataPacket(_) => {
-                        NetworkEndian::write_u32(&mut buf[2..6], VECTOR_ROOT_E131_DATA)
+                        NetworkEndian::write_u32(&mut buf[E131_PDU_LENGTH_FLAGS_LENGTH .. E131_PDU_LENGTH_FLAGS_LENGTH + E131_ROOT_LAYER_VECTOR_LENGTH], VECTOR_ROOT_E131_DATA)
                     }
                     E131RootLayerData::SynchronizationPacket(_)
                     | E131RootLayerData::UniverseDiscoveryPacket(_) => {
-                        NetworkEndian::write_u32(&mut buf[2..6], VECTOR_ROOT_E131_EXTENDED)
+                        NetworkEndian::write_u32(&mut buf[E131_PDU_LENGTH_FLAGS_LENGTH .. E131_PDU_LENGTH_FLAGS_LENGTH + E131_ROOT_LAYER_VECTOR_LENGTH], VECTOR_ROOT_E131_EXTENDED)
                     }
                 }
 
                 // CID
-                buf[6..22].copy_from_slice(self.cid.as_bytes());
+                buf[E131_PDU_LENGTH_FLAGS_LENGTH + E131_ROOT_LAYER_VECTOR_LENGTH .. E131_CID_END_INDEX].copy_from_slice(self.cid.as_bytes());
 
                 // Data
                 match self.data {
-                    E131RootLayerData::DataPacket(ref data) => Ok(data.pack(&mut buf[22..])?),
-                    E131RootLayerData::SynchronizationPacket(ref data) => Ok(data.pack(&mut buf[22..])?),
-                    E131RootLayerData::UniverseDiscoveryPacket(ref data) => Ok(data.pack(&mut buf[22..])?),
+                    E131RootLayerData::DataPacket(ref data) => Ok(data.pack(&mut buf[E131_CID_END_INDEX .. ])?),
+                    E131RootLayerData::SynchronizationPacket(ref data) => Ok(data.pack(&mut buf[E131_CID_END_INDEX .. ])?),
+                    E131RootLayerData::UniverseDiscoveryPacket(ref data) => Ok(data.pack(&mut buf[E131_CID_END_INDEX .. ])?),
                 }
             }
 
@@ -572,11 +602,7 @@ macro_rules! impl_e131_root_layer {
     };
 }
 
-#[cfg(feature = "std")]
 impl_e131_root_layer!(<'a>);
-
-#[cfg(not(feature = "std"))]
-impl_e131_root_layer!();
 
 macro_rules! impl_data_packet_framing_layer {
     ( $( $lt:tt )* ) => {
@@ -584,7 +610,6 @@ macro_rules! impl_data_packet_framing_layer {
         #[derive(Eq, PartialEq, Debug)]
         pub struct DataPacketFramingLayer$( $lt )* {
             /// The name of the source.
-            #[cfg(feature = "std")]
             pub source_name: Cow<'a, str>,
 
             /// Priority of this data packet.
@@ -616,6 +641,10 @@ macro_rules! impl_data_packet_framing_layer {
             fn parse(buf: &[u8]) -> Result<DataPacketFramingLayer$( $lt )*> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
+                if buf.len() < length {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on data packet framing layer pdu length field".to_string())));
+                }
+
                 if vector != VECTOR_E131_DATA_PACKET {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
@@ -807,6 +836,10 @@ macro_rules! impl_data_packet_dmp_layer {
             fn parse(buf: &[u8]) -> Result<DataPacketDmpLayer$( $lt )*> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 1)?;
+                if buf.len() < length {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on data packet dmp layer pdu length field".to_string())));
+                }
+
                 if vector != u32::from(VECTOR_DMP_SET_PROPERTY) {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
@@ -953,6 +986,10 @@ impl Pdu for SynchronizationPacketFramingLayer {
     fn parse(buf: &[u8]) -> Result<SynchronizationPacketFramingLayer> {
         // Length and Vector
         let PduInfo { length, vector } = pdu_info(&buf, 4)?;
+        if buf.len() < length {
+            bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on synchronisation packet framing layer pdu length field".to_string())));
+        }
+
         if vector != VECTOR_E131_EXTENDED_SYNCHRONIZATION {
             bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
         }
@@ -1039,6 +1076,10 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
             fn parse(buf: &[u8]) -> Result<UniverseDiscoveryPacketFramingLayer$( $lt )*> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
+                if buf.len() < length {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on universe discovery packet framing layer pdu length field".to_string())));
+                }
+
                 if vector != VECTOR_E131_EXTENDED_DISCOVERY {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
@@ -1123,11 +1164,7 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
     };
 }
 
-#[cfg(feature = "std")]
 impl_universe_discovery_packet_framing_layer!(<'a>);
-
-#[cfg(not(feature = "std"))]
-impl_universe_discovery_packet_framing_layer!();
 
 macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
     ( $( $lt:tt )* ) => {
@@ -1149,6 +1186,10 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
             fn parse(buf: &[u8]) -> Result<UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )*> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, 4)?;
+                if buf.len() < length {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on universe discovery packet universe discovery layer pdu length field".to_string())));
+                }
+
                 if vector != VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
