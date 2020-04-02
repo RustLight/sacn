@@ -152,6 +152,22 @@ pub const E131_UNIVERSE_SYNC_PACKET_FRAMING_LAYER_LENGTH: usize = 11;
 /// 84 bytes as per ANSI E1.31-2018 Section 4.3 Table 4-3.
 pub const E131_UNIVERSE_DISCOVERY_FRAMING_LAYER_MIN_LENGTH: usize = 82;
 
+/// The number of stream termination packets sent when a source terminates a stream.
+/// Set to 3 as per section 6.2.6 , Stream_Terminated: Bit 6 of ANSI E1.31-2018.
+pub const E131_TERMINATE_STREAM_PACKET_COUNT: usize = 3;
+
+/// The size of the ACN root layer preamble, must be 0x0010 bytes as per ANSI E1.31-2018 Section 5.1.
+/// Often treated as a usize for comparison or use with arrays however stored as u16 as this represents its field size
+/// within a packet and converting u16 -> usize is always safe as len(usize) is always greater than len(u16), usize -> u16 is unsafe.
+const E131_PREAMBLE_SIZE: u16 = 0x0010;
+
+/// The size of the ACN root layer postamble, must be 0x0 bytes as per ANSI E1.31-2018 Section 5.2.
+const E131_POSTAMBLE_SIZE: u16 = 0x0;
+
+/// The E131 ACN packet identifier field value. Must be 0x41 0x53 0x43 0x2d 0x45 0x31 0x2e 0x31 0x37 0x00 0x00 0x00 as per
+/// ANSI E1.31-2018 Section 5.3.
+const E131_ACN_PACKET_IDENTIFIER: [u8; 12] = [0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00];
+
 /// The initial/starting sequence number used.
 pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
 
@@ -202,7 +218,7 @@ pub const UNIVERSE_CHANNEL_CAPACITY: usize = 513;
 /// The synchronisation universe/address of packets which do not require synchronisation as specified in section 6.2.4.1 of ANSI E1.31-2018.
 pub const NO_SYNC_UNIVERSE: u16 = 0;
 
-/// The timeout before data loss is assumed for an E131 source, as defined in Apendix A of ANSI E1.31-2018.
+/// The timeout before data loss is assumed for an E131 source, as defined in Appendix A of ANSI E1.31-2018.
 pub const E131_NETWORK_DATA_LOSS_TIMEOUT: Duration = Duration::from_millis(2500);
 
 /// The timeout before a discovered source is assumed to be lost as defined in section 12.2 of ANSI E1.31-2018.
@@ -211,7 +227,7 @@ pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_T
 /// Converts the given ANSI E1.31-2018 universe into an Ipv4 multicast address with the port set to the acn multicast port as defined
 /// in packet::ACN_SDT_MULTICAST_PORT.
 ///
-/// Converstion done as specified in section 9.3.1 of ANSI E1.31-2018
+/// Conversion done as specified in section 9.3.1 of ANSI E1.31-2018
 ///
 /// Returns the multicast address.
 ///
@@ -321,24 +337,28 @@ macro_rules! impl_acn_root_layer_protocol {
         impl$( $lt )* AcnRootLayerProtocol$( $lt )* {
             /// Parse the packet from the given buffer.
             pub fn parse(buf: &[u8]) -> Result<AcnRootLayerProtocol> {
+                if buf.len() <  (E131_PREAMBLE_SIZE as usize) {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Insufficient data for ACN root layer preamble".to_string())));
+                }
+
                 // Preamble Size
-                if NetworkEndian::read_u16(&buf[0..2]) != 0x0010 {
+                if NetworkEndian::read_u16(&buf[0..2]) != E131_PREAMBLE_SIZE {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Preamble Size".to_string())));
                 }
 
                 // Post-amble Size
-                if NetworkEndian::read_u16(&buf[2..4]) != 0 {
+                if NetworkEndian::read_u16(&buf[2..4]) != E131_POSTAMBLE_SIZE {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Post-amble Size".to_string())));
                 }
 
                 // ACN Packet Identifier
-                if &buf[4..16] != b"ASC-E1.17\x00\x00\x00" {
-                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid ACN packet indentifier".to_string())));
+                if &buf[4 .. (E131_PREAMBLE_SIZE as usize)] != E131_ACN_PACKET_IDENTIFIER {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid ACN packet identifier".to_string())));
                 }
 
                 // PDU block
                 Ok(AcnRootLayerProtocol {
-                    pdu: E131RootLayer::parse(&buf[16..])?,
+                    pdu: E131RootLayer::parse(&buf[(E131_PREAMBLE_SIZE as usize) ..])?,
                 })
             }
 
@@ -364,7 +384,7 @@ macro_rules! impl_acn_root_layer_protocol {
             /// Packs the packet into the given buffer.
             pub fn pack(&self, buf: &mut [u8]) -> Result<()> {
                 if buf.len() < self.len() {
-                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid ACN packet indentifier".to_string())));
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid ACN packet identifier".to_string())));
                 }
 
                 // Preamble Size
