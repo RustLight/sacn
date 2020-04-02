@@ -186,6 +186,12 @@ pub const E131_CID_FIELD_LENGTH: usize = 16;
 // The exclusive end index of the CID field. Calculated based on previous values defined in ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
 const E131_CID_END_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH + E131_ROOT_LAYER_VECTOR_LENGTH + E131_CID_FIELD_LENGTH;
 
+/// The length of the Source Name field in bytes in an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4, Table 4-1, 4-2, 4-3.
+pub const E131_SOURCE_NAME_FIELD_LENGTH: usize = 64;
+
+/// The length of the Synchronisation Address field in bytes in an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4, Table 4-1, 4-2, 4-3.
+pub const E131_SYNC_ADDR_FIELD_LENGTH: usize = 2;
+
 /// The initial/starting sequence number used.
 pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
 
@@ -640,7 +646,7 @@ macro_rules! impl_data_packet_framing_layer {
         impl$( $lt )* Pdu for DataPacketFramingLayer$( $lt )* {
             fn parse(buf: &[u8]) -> Result<DataPacketFramingLayer$( $lt )*> {
                 // Length and Vector
-                let PduInfo { length, vector } = pdu_info(&buf, 4)?;
+                let PduInfo { length, vector } = pdu_info(&buf, E131_FRAMING_LAYER_VECTOR_LENGTH)?;
                 if buf.len() < length {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on data packet framing layer pdu length field".to_string())));
                 }
@@ -650,10 +656,14 @@ macro_rules! impl_data_packet_framing_layer {
                 }
 
                 // Source Name
-                let source_name = String::from(parse_source_name_str(&buf[6..70])?);
+                let source_name = String::from(
+                    parse_source_name_str(
+                        &buf[E131_PDU_LENGTH_FLAGS_LENGTH + E131_FRAMING_LAYER_VECTOR_LENGTH .. E131_PDU_LENGTH_FLAGS_LENGTH + E131_FRAMING_LAYER_VECTOR_LENGTH + E131_SOURCE_NAME_FIELD_LENGTH]
+                    )?
+                );
 
                 // Priority
-                let priority = buf[70];
+                let priority = buf[E131_PDU_LENGTH_FLAGS_LENGTH + E131_FRAMING_LAYER_VECTOR_LENGTH + E131_SOURCE_NAME_FIELD_LENGTH];
                 if priority > E131_MAX_PRIORITY {
                     bail!(
                         ErrorKind::SacnParsePackError(
@@ -662,7 +672,7 @@ macro_rules! impl_data_packet_framing_layer {
                 }
 
                 // Synchronization Address
-                let synchronization_address = NetworkEndian::read_u16(&buf[71..73]);
+                let synchronization_address = NetworkEndian::read_u16(&buf[71.. 71 + E131_SYNC_ADDR_FIELD_LENGTH]);
                 if synchronization_address > E131_MAX_MULTICAST_UNIVERSE {
                     bail!(
                         ErrorKind::SacnParsePackError(
