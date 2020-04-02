@@ -152,6 +152,10 @@ pub const E131_UNIVERSE_SYNC_PACKET_FRAMING_LAYER_LENGTH: usize = 11;
 /// 84 bytes as per ANSI E1.31-2018 Section 4.3 Table 4-3.
 pub const E131_UNIVERSE_DISCOVERY_FRAMING_LAYER_MIN_LENGTH: usize = 82;
 
+/// The number of stream termination packets sent when a source terminates a stream.
+/// Set to 3 as per section 6.2.6 , Stream_Terminated: Bit 6 of ANSI E1.31-2018.
+pub const E131_TERMINATE_STREAM_PACKET_COUNT: usize = 3;
+
 /// The initial/starting sequence number used.
 pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
 
