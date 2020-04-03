@@ -168,6 +168,18 @@ pub const E131_ROOT_LAYER_VECTOR_LENGTH: usize = 4;
 /// The length in bytes of the E1.31 framing layer vector field as per ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
 pub const E131_FRAMING_LAYER_VECTOR_LENGTH: usize = 4;
 
+/// The length in bytes of the priority field within an ANSI E1.31-2018 data packet as defined in ANSI E1.31-2018 Section 4, Table 4-1.
+const E131_PRIORITY_FIELD_LENGTH: usize = 1;
+
+/// The length in bytes of the sequence number field within an ANSI E1.31-2018 packet as defined in ANSI E1.31-2018 Section 4, Table 4-1, 4-2.
+const E131_SEQ_NUM_FIELD_LENGTH: usize = 1;
+
+/// The length in bytes of the options field within an ANSI E1.31-2018 data packet as defined in ANSI E1.31-2018 Section 4, Table 4-1.
+const E131_OPTIONS_FIELD_LENGTH: usize = 1;
+
+/// The length in bytes of a universe field within an ANSI E1.31-2018 packet as defined in ANSI E1.31-2018 Section 4, Table 4-1, 4-3. 
+const E131_UNIVERSE_FIELD_LENGTH: usize = 2;
+
 /// The size of the ACN root layer preamble, must be 0x0010 bytes as per ANSI E1.31-2018 Section 5.1.
 /// Often treated as a usize for comparison or use with arrays however stored as u16 as this represents its field size
 /// within a packet and converting u16 -> usize is always safe as len(usize) is always greater than len(u16), usize -> u16 is unsafe.
@@ -276,7 +288,7 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SockAddr> {
 /// Converts the given ANSI E1.31-2018 universe into an Ipv6 multicast address with the port set to the acn multicast port as defined
 /// in packet::ACN_SDT_MULTICAST_PORT.
 ///
-/// Converstion done as specified in section 9.3.2 of ANSI E1.31-2018
+/// Conversion done as specified in section 9.3.2 of ANSI E1.31-2018
 ///
 /// Returns the multicast address.
 ///
@@ -722,67 +734,79 @@ macro_rules! impl_data_packet_framing_layer {
                 }
 
                 // Flags and Length
-                let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
-                NetworkEndian::write_u16(&mut buf[0..2], flags_and_length);
+                let flags_and_length = NetworkEndian::read_u16(&[E131_PDU_FLAGS, 0x0]) | (self.len() as u16) & 0x0fff;
+                NetworkEndian::write_u16(&mut buf[0.. E131_PDU_LENGTH_FLAGS_LENGTH], flags_and_length);
+
+                // The index 1 beyond the end of the vector field in this DataPacketFramingLayer.
+                const VECTOR_END_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH + E131_FRAMING_LAYER_VECTOR_LENGTH;
 
                 // Vector
-                NetworkEndian::write_u32(&mut buf[2..6], VECTOR_E131_DATA_PACKET);
+                NetworkEndian::write_u32(&mut buf[E131_PDU_LENGTH_FLAGS_LENGTH .. VECTOR_END_INDEX], VECTOR_E131_DATA_PACKET);
 
-                // Source Name
-                zeros(&mut buf[6..70], 64);
-                buf[6..6 + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
+                // Source Name, padded with 0's up to the required 64 byte length.
+                zeros(&mut buf[VECTOR_END_INDEX .. VECTOR_END_INDEX + E131_SOURCE_NAME_FIELD_LENGTH], E131_SOURCE_NAME_FIELD_LENGTH);
+                buf[VECTOR_END_INDEX .. VECTOR_END_INDEX + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
+
+                // Calculate the indexes of the fields within the buffer based on the size of the fields previous.
+                // Constants are replaced inline so this increases readability by removing magic numbers without affecting runtime performance.
+                const PRIORITY_INDEX: usize = VECTOR_END_INDEX + E131_SOURCE_NAME_FIELD_LENGTH;
+                const SYNC_ADDR_INDEX: usize = PRIORITY_INDEX + E131_PRIORITY_FIELD_LENGTH;
+                const SEQ_NUM_INDEX: usize = SYNC_ADDR_INDEX + E131_SYNC_ADDR_FIELD_LENGTH;
+                const OPTIONS_FIELD_INDEX: usize = SEQ_NUM_INDEX + E131_SEQ_NUM_FIELD_LENGTH;
+                const UNIVERSE_INDEX: usize = OPTIONS_FIELD_INDEX + E131_OPTIONS_FIELD_LENGTH;
+                const DATA_INDEX: usize = UNIVERSE_INDEX + E131_UNIVERSE_FIELD_LENGTH;
 
                 // Priority
-                buf[70] = self.priority;
+                buf[PRIORITY_INDEX] = self.priority;
 
                 // Synchronization Address
-                NetworkEndian::write_u16(&mut buf[71..73], self.synchronization_address);
+                NetworkEndian::write_u16(&mut buf[SYNC_ADDR_INDEX .. SEQ_NUM_INDEX], self.synchronization_address);
 
                 // Sequence Number
-                buf[73] = self.sequence_number;
+                buf[SEQ_NUM_INDEX] = self.sequence_number;
 
-                // Options
-                buf[74] = 0;
+                // Options, zero out all the bits to start including bits 0-4 as per ANSI E1.31-2018 Section 6.2.6.
+                buf[OPTIONS_FIELD_INDEX] = 0;
 
                 // Preview Data
                 if self.preview_data {
-                    buf[74] = E131_PREVIEW_DATA_OPTION_BIT_MASK;
+                    buf[OPTIONS_FIELD_INDEX] = E131_PREVIEW_DATA_OPTION_BIT_MASK;
                 }
 
                 // Stream Terminated
                 if self.stream_terminated {
-                    buf[74] |= E131_STREAM_TERMINATION_OPTION_BIT_MASK;
+                    buf[OPTIONS_FIELD_INDEX] |= E131_STREAM_TERMINATION_OPTION_BIT_MASK;
                 }
 
                 // Force Synchronization
                 if self.force_synchronization {
-                    buf[74] |= E131_FORCE_SYNCHRONISATION_OPTION_BIT_MASK;
+                    buf[OPTIONS_FIELD_INDEX] |= E131_FORCE_SYNCHRONISATION_OPTION_BIT_MASK;
                 }
 
                 // Universe
-                NetworkEndian::write_u16(&mut buf[75..77], self.universe);
+                NetworkEndian::write_u16(&mut buf[UNIVERSE_INDEX .. DATA_INDEX], self.universe);
 
                 // Data
-                Ok(self.data.pack(&mut buf[77..])?)
+                Ok(self.data.pack(&mut buf[DATA_INDEX .. ])?)
             }
 
             fn len(&self) -> usize {
                 // Length and Flags
-                2 +
+                E131_PDU_LENGTH_FLAGS_LENGTH +
                 // Vector
-                4 +
+                E131_FRAMING_LAYER_VECTOR_LENGTH +
                 // Source Name
-                64 +
+                E131_SOURCE_NAME_FIELD_LENGTH +
                 // Priority
-                1 +
+                E131_PRIORITY_FIELD_LENGTH +
                 // Synchronization Address
-                2 +
+                E131_SYNC_ADDR_FIELD_LENGTH +
                 // Sequence Number
-                1 +
+                E131_SEQ_NUM_FIELD_LENGTH +
                 // Options
-                1 +
+                E131_OPTIONS_FIELD_LENGTH +
                 // Universe
-                2 +
+                E131_UNIVERSE_FIELD_LENGTH +
                 // Data
                 self.data.len()
             }
@@ -791,10 +815,7 @@ macro_rules! impl_data_packet_framing_layer {
         impl$( $lt )* Clone for DataPacketFramingLayer$( $lt )* {
             fn clone(&self) -> Self {
                 DataPacketFramingLayer {
-                    #[cfg(feature = "std")]
                     source_name: self.source_name.clone(),
-                    #[cfg(not(feature = "std"))]
-                    source_name: self.source_name.as_str().into(),
                     priority: self.priority,
                     synchronization_address: self.synchronization_address,
                     sequence_number: self.sequence_number,
@@ -824,11 +845,7 @@ macro_rules! impl_data_packet_framing_layer {
     };
 }
 
-#[cfg(feature = "std")]
 impl_data_packet_framing_layer!(<'a>);
-
-#[cfg(not(feature = "std"))]
-impl_data_packet_framing_layer!();
 
 macro_rules! impl_data_packet_dmp_layer {
     ( $( $lt:tt )* ) => {
@@ -838,7 +855,6 @@ macro_rules! impl_data_packet_dmp_layer {
         #[derive(Eq, PartialEq, Debug)]
         pub struct DataPacketDmpLayer$( $lt )* {
             /// DMX data property values (DMX start coder + 512 slots).
-            #[cfg(feature = "std")]
             pub property_values: Cow<'a, [u8]>,
         }
 
@@ -880,21 +896,12 @@ macro_rules! impl_data_packet_dmp_layer {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("only 512 DMX slots allowed".to_string())));
                 }
 
-                #[cfg(feature = "std")]
                 let mut property_values = Vec::with_capacity(property_values_length);
-                #[cfg(not(feature = "std"))]
-                let mut property_values = Vec::new();
 
-                #[cfg(feature = "std")]
                 property_values.extend_from_slice(&buf[10..length]);
-                #[cfg(not(feature = "std"))]
-                property_values.extend_from_slice(&buf[10..length]).unwrap();
 
                 Ok(DataPacketDmpLayer {
-                    #[cfg(feature = "std")]
                     property_values: property_values.into(),
-                    #[cfg(not(feature = "std"))]
-                    property_values,
                 })
             }
 
