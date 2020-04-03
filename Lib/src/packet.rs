@@ -198,7 +198,7 @@ const E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT_FIELD_LENGTH: usize = 2;
 
 /// The length in bytes of the "Property value count" field within an ANSI E1.31-2018 data packet DMP layer as per 
 /// ANSI E1.31-2018 Section 4, Table 4-1.
-const E131_DATA_PACKET_DMP_LAYER_PROPERTY_COUNT_FIELD_LENGTH: usize = 2;
+const E131_DATA_PACKET_DMP_LAYER_PROPERTY_VALUE_COUNT_FIELD_LENGTH: usize = 2;
 
 /// The value of the "Address Type and Data Type" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018 
 /// Section 4, Table 4-1.
@@ -687,6 +687,17 @@ macro_rules! impl_data_packet_framing_layer {
             pub data: DataPacketDmpLayer$( $lt )*,
         }
 
+        // Calculate the indexes of the fields within the buffer based on the size of the fields previous.
+        // Constants are replaced inline so this increases readability by removing magic numbers without affecting runtime performance.
+        // Theses indexes are only valid within the scope of this part of the protocol (DataPacketFramingLayer).
+        const SOURCE_NAME_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH + E131_FRAMING_LAYER_VECTOR_LENGTH;
+        const PRIORITY_INDEX: usize = SOURCE_NAME_INDEX + E131_SOURCE_NAME_FIELD_LENGTH;
+        const SYNC_ADDR_INDEX: usize = PRIORITY_INDEX + E131_PRIORITY_FIELD_LENGTH;
+        const SEQ_NUM_INDEX: usize = SYNC_ADDR_INDEX + E131_SYNC_ADDR_FIELD_LENGTH;
+        const OPTIONS_FIELD_INDEX: usize = SEQ_NUM_INDEX + E131_SEQ_NUM_FIELD_LENGTH;
+        const UNIVERSE_INDEX: usize = OPTIONS_FIELD_INDEX + E131_OPTIONS_FIELD_LENGTH;
+        const DATA_INDEX: usize = UNIVERSE_INDEX + E131_UNIVERSE_FIELD_LENGTH;
+
         impl$( $lt )* Pdu for DataPacketFramingLayer$( $lt )* {
             fn parse(buf: &[u8]) -> Result<DataPacketFramingLayer$( $lt )*> {
                 // Length and Vector
@@ -702,12 +713,12 @@ macro_rules! impl_data_packet_framing_layer {
                 // Source Name
                 let source_name = String::from(
                     parse_source_name_str(
-                        &buf[E131_PDU_LENGTH_FLAGS_LENGTH + E131_FRAMING_LAYER_VECTOR_LENGTH .. E131_PDU_LENGTH_FLAGS_LENGTH + E131_FRAMING_LAYER_VECTOR_LENGTH + E131_SOURCE_NAME_FIELD_LENGTH]
+                        &buf[SOURCE_NAME_INDEX .. PRIORITY_INDEX]
                     )?
                 );
 
                 // Priority
-                let priority = buf[E131_PDU_LENGTH_FLAGS_LENGTH + E131_FRAMING_LAYER_VECTOR_LENGTH + E131_SOURCE_NAME_FIELD_LENGTH];
+                let priority = buf[PRIORITY_INDEX];
                 if priority > E131_MAX_PRIORITY {
                     bail!(
                         ErrorKind::SacnParsePackError(
@@ -716,7 +727,7 @@ macro_rules! impl_data_packet_framing_layer {
                 }
 
                 // Synchronization Address
-                let synchronization_address = NetworkEndian::read_u16(&buf[71.. 71 + E131_SYNC_ADDR_FIELD_LENGTH]);
+                let synchronization_address = NetworkEndian::read_u16(&buf[SYNC_ADDR_INDEX .. SEQ_NUM_INDEX]);
                 if synchronization_address > E131_MAX_MULTICAST_UNIVERSE {
                     bail!(
                         ErrorKind::SacnParsePackError(
@@ -726,15 +737,15 @@ macro_rules! impl_data_packet_framing_layer {
                 }
 
                 // Sequence Number
-                let sequence_number = buf[73];
+                let sequence_number = buf[SEQ_NUM_INDEX];
 
-                // Options
-                let preview_data = buf[74] & E131_PREVIEW_DATA_OPTION_BIT_MASK != 0;
-                let stream_terminated = buf[74] & E131_STREAM_TERMINATION_OPTION_BIT_MASK != 0;
-                let force_synchronization = buf[74] & E131_FORCE_SYNCHRONISATION_OPTION_BIT_MASK != 0;
+                // Options, Stored as bit flag.
+                let preview_data = buf[OPTIONS_FIELD_INDEX] & E131_PREVIEW_DATA_OPTION_BIT_MASK != 0;
+                let stream_terminated = buf[OPTIONS_FIELD_INDEX] & E131_STREAM_TERMINATION_OPTION_BIT_MASK != 0;
+                let force_synchronization = buf[OPTIONS_FIELD_INDEX] & E131_FORCE_SYNCHRONISATION_OPTION_BIT_MASK != 0;
 
                 // Universe
-                let universe = NetworkEndian::read_u16(&buf[75..77]);
+                let universe = NetworkEndian::read_u16(&buf[UNIVERSE_INDEX .. DATA_INDEX]);
 
                 if universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE {
                     bail!(
@@ -744,8 +755,8 @@ macro_rules! impl_data_packet_framing_layer {
                     );
                 }
 
-                // Data
-                let data = DataPacketDmpLayer::parse(&buf[77..length])?;
+                // Data layer.
+                let data = DataPacketDmpLayer::parse(&buf[DATA_INDEX .. length])?;
 
                 Ok(DataPacketFramingLayer {
                     source_name: source_name.into(),
@@ -769,24 +780,12 @@ macro_rules! impl_data_packet_framing_layer {
                 let flags_and_length = NetworkEndian::read_u16(&[E131_PDU_FLAGS, 0x0]) | (self.len() as u16) & 0x0fff;
                 NetworkEndian::write_u16(&mut buf[0.. E131_PDU_LENGTH_FLAGS_LENGTH], flags_and_length);
 
-                // The index 1 beyond the end of the vector field in this DataPacketFramingLayer.
-                const VECTOR_END_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH + E131_FRAMING_LAYER_VECTOR_LENGTH;
-
                 // Vector
-                NetworkEndian::write_u32(&mut buf[E131_PDU_LENGTH_FLAGS_LENGTH .. VECTOR_END_INDEX], VECTOR_E131_DATA_PACKET);
+                NetworkEndian::write_u32(&mut buf[E131_PDU_LENGTH_FLAGS_LENGTH .. SOURCE_NAME_INDEX], VECTOR_E131_DATA_PACKET);
 
                 // Source Name, padded with 0's up to the required 64 byte length.
-                zeros(&mut buf[VECTOR_END_INDEX .. VECTOR_END_INDEX + E131_SOURCE_NAME_FIELD_LENGTH], E131_SOURCE_NAME_FIELD_LENGTH);
-                buf[VECTOR_END_INDEX .. VECTOR_END_INDEX + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
-
-                // Calculate the indexes of the fields within the buffer based on the size of the fields previous.
-                // Constants are replaced inline so this increases readability by removing magic numbers without affecting runtime performance.
-                const PRIORITY_INDEX: usize = VECTOR_END_INDEX + E131_SOURCE_NAME_FIELD_LENGTH;
-                const SYNC_ADDR_INDEX: usize = PRIORITY_INDEX + E131_PRIORITY_FIELD_LENGTH;
-                const SEQ_NUM_INDEX: usize = SYNC_ADDR_INDEX + E131_SYNC_ADDR_FIELD_LENGTH;
-                const OPTIONS_FIELD_INDEX: usize = SEQ_NUM_INDEX + E131_SEQ_NUM_FIELD_LENGTH;
-                const UNIVERSE_INDEX: usize = OPTIONS_FIELD_INDEX + E131_OPTIONS_FIELD_LENGTH;
-                const DATA_INDEX: usize = UNIVERSE_INDEX + E131_UNIVERSE_FIELD_LENGTH;
+                zeros(&mut buf[SOURCE_NAME_INDEX .. PRIORITY_INDEX], E131_SOURCE_NAME_FIELD_LENGTH);
+                buf[SOURCE_NAME_INDEX .. SOURCE_NAME_INDEX + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
 
                 // Priority
                 buf[PRIORITY_INDEX] = self.priority;
@@ -890,7 +889,18 @@ macro_rules! impl_data_packet_dmp_layer {
             pub property_values: Cow<'a, [u8]>,
         }
 
+        // Calculate the indexes of the fields within the buffer based on the size of the fields previous.
+        // Constants are replaced inline so this increases readability by removing magic numbers without affecting runtime performance.
+        // Theses indexes are only valid within the scope of this part of the protocol (DataPacketDmpLayer).
+        const VECTOR_FIELD_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH;
+        const ADDRESS_DATA_FIELD_INDEX: usize = VECTOR_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_VECTOR_FIELD_LENGTH;
+        const FIRST_PRIORITY_FIELD_INDEX: usize = ADDRESS_DATA_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_ADDRESS_DATA_FIELD_LENGTH;
+        const ADDRESS_INCREMENT_FIELD_INDEX: usize = FIRST_PRIORITY_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_FIRST_PROPERTY_ADDRESS_FIELD_LENGTH;
+        const PROPERTY_VALUE_COUNT_FIELD_INDEX: usize = ADDRESS_INCREMENT_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT_FIELD_LENGTH;
+        const PROPERTY_VALUES_FIELD_INDEX: usize = PROPERTY_VALUE_COUNT_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_PROPERTY_VALUE_COUNT_FIELD_LENGTH;
+
         impl$( $lt )* Pdu for DataPacketDmpLayer$( $lt )* {
+
             fn parse(buf: &[u8]) -> Result<DataPacketDmpLayer$( $lt )*> {
                 // Length and Vector
                 let PduInfo { length, vector } = pdu_info(&buf, E131_DATA_PACKET_DMP_LAYER_VECTOR_FIELD_LENGTH)?;
@@ -901,12 +911,6 @@ macro_rules! impl_data_packet_dmp_layer {
                 if vector != u32::from(VECTOR_DMP_SET_PROPERTY) {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
-
-                const ADDRESS_DATA_FIELD_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH + E131_DATA_PACKET_DMP_LAYER_VECTOR_FIELD_LENGTH;
-                const FIRST_PRIORITY_FIELD_INDEX: usize = ADDRESS_DATA_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_ADDRESS_DATA_FIELD_LENGTH;
-                const ADDRESS_INCREMENT_FIELD_INDEX: usize = FIRST_PRIORITY_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_FIRST_PROPERTY_ADDRESS_FIELD_LENGTH;
-                const PROPERTY_COUNT_FIELD_INDEX: usize = ADDRESS_INCREMENT_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT_FIELD_LENGTH;
-                const PROPERTY_VALUE_INDEX: usize = PROPERTY_COUNT_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_PROPERTY_COUNT_FIELD_LENGTH;
 
                 // Address and Data Type
                 if buf[ADDRESS_DATA_FIELD_INDEX] != E131_DMP_LAYER_ADDRESS_DATA_FIELD {
@@ -919,25 +923,34 @@ macro_rules! impl_data_packet_dmp_layer {
                 }
 
                 // Address Increment
-                if NetworkEndian::read_u16(&buf[ADDRESS_INCREMENT_FIELD_INDEX .. PROPERTY_COUNT_FIELD_INDEX]) != E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT {
+                if NetworkEndian::read_u16(&buf[ADDRESS_INCREMENT_FIELD_INDEX .. PROPERTY_VALUE_COUNT_FIELD_INDEX]) != E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Address Increment".to_string())));
                 }
 
                 // Property value count
-                if NetworkEndian::read_u16(&buf[PROPERTY_COUNT_FIELD_INDEX .. PROPERTY_VALUE_INDEX]) as usize + PROPERTY_VALUE_INDEX != length {
-                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("invalid Property value count".to_string())));
+                let property_value_count = NetworkEndian::read_u16(&buf[PROPERTY_VALUE_COUNT_FIELD_INDEX .. PROPERTY_VALUES_FIELD_INDEX]);
+
+                // Check that the property value count matches the expected count based on the pdu length given previously.
+                if property_value_count as usize + PROPERTY_VALUES_FIELD_INDEX != length {
+                    bail!(ErrorKind::SacnParsePackError(
+                        sacn_parse_pack_error::ErrorKind::ParseInsufficientData(
+                            format!("Invalid data packet dmp layer property value count, pdu length indicates {} property values, property value count field indicates {} property values",
+                                length , property_value_count)
+                            .to_string()
+                        )
+                    ));
                 }
 
                 // Property values
                 // The property value length is only of the property values and not the headers so start counting at the index that the property values start.
-                let property_values_length = length - PROPERTY_VALUE_INDEX;
+                let property_values_length = length - PROPERTY_VALUES_FIELD_INDEX;
                 if property_values_length > UNIVERSE_CHANNEL_CAPACITY {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("only 512 DMX slots allowed".to_string())));
                 }
 
                 let mut property_values = Vec::with_capacity(property_values_length);
 
-                property_values.extend_from_slice(&buf[PROPERTY_VALUE_INDEX .. length]);
+                property_values.extend_from_slice(&buf[PROPERTY_VALUES_FIELD_INDEX .. length]);
 
                 Ok(DataPacketDmpLayer {
                     property_values: property_values.into(),
@@ -954,43 +967,43 @@ macro_rules! impl_data_packet_dmp_layer {
                 }
 
                 // Flags and Length
-                let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
-                NetworkEndian::write_u16(&mut buf[0..2], flags_and_length);
+                let flags_and_length = NetworkEndian::read_u16(&[E131_PDU_FLAGS, 0x0]) | (self.len() as u16) & 0x0fff;
+                NetworkEndian::write_u16(&mut buf[0.. E131_PDU_LENGTH_FLAGS_LENGTH], flags_and_length);
 
                 // Vector
-                buf[2] = VECTOR_DMP_SET_PROPERTY;
+                buf[VECTOR_FIELD_INDEX] = VECTOR_DMP_SET_PROPERTY;
 
                 // Address and Data Type
-                buf[3] = 0xa1;
+                buf[ADDRESS_DATA_FIELD_INDEX] = E131_DMP_LAYER_ADDRESS_DATA_FIELD;
 
                 // First Property Address
-                zeros(&mut buf[4..6], 2);
+                zeros(&mut buf[FIRST_PRIORITY_FIELD_INDEX .. ADDRESS_INCREMENT_FIELD_INDEX], E131_DATA_PACKET_DMP_LAYER_FIRST_PROPERTY_ADDRESS_FIELD_LENGTH);
 
                 // Address Increment
-                NetworkEndian::write_u16(&mut buf[6..8], 0x0001);
+                NetworkEndian::write_u16(&mut buf[ADDRESS_INCREMENT_FIELD_INDEX .. PROPERTY_VALUE_COUNT_FIELD_INDEX], E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT);
 
                 // Property value count
-                NetworkEndian::write_u16(&mut buf[8..10], self.property_values.len() as u16);
+                NetworkEndian::write_u16(&mut buf[PROPERTY_VALUE_COUNT_FIELD_INDEX .. PROPERTY_VALUES_FIELD_INDEX], self.property_values.len() as u16);
 
                 // Property values
-                buf[10..10 + self.property_values.len()].copy_from_slice(&self.property_values);
+                buf[PROPERTY_VALUES_FIELD_INDEX .. PROPERTY_VALUES_FIELD_INDEX + self.property_values.len()].copy_from_slice(&self.property_values);
 
                 Ok(())
             }
 
             fn len(&self) -> usize {
                 // Length and Flags
-                2 +
+                E131_PDU_LENGTH_FLAGS_LENGTH +
                 // Vector
-                1 +
+                E131_DATA_PACKET_DMP_LAYER_VECTOR_FIELD_LENGTH +
                 // Address and Data Type
-                1 +
+                E131_DATA_PACKET_DMP_LAYER_ADDRESS_DATA_FIELD_LENGTH +
                 // First Property Address
-                2 +
-                // Address Increment, PackError>
-                2 +
+                E131_DATA_PACKET_DMP_LAYER_FIRST_PROPERTY_ADDRESS_FIELD_LENGTH +
+                // Address Increment
+                E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT_FIELD_LENGTH +
                 // Property value count
-                2 +
+                E131_DATA_PACKET_DMP_LAYER_PROPERTY_VALUE_COUNT_FIELD_LENGTH +
                 // Property values
                 self.property_values.len()
             }
@@ -999,16 +1012,7 @@ macro_rules! impl_data_packet_dmp_layer {
         impl$( $lt )* Clone for DataPacketDmpLayer$( $lt )* {
             fn clone(&self) -> Self {
                 DataPacketDmpLayer {
-                    #[cfg(feature = "std")]
                     property_values: self.property_values.clone(),
-                    #[cfg(not(feature = "std"))]
-                    property_values: {
-                        let mut property_values = Vec::new();
-                        property_values
-                            .extend_from_slice(&self.property_values)
-                            .unwrap();
-                        property_values
-                    },
                 }
             }
         }
@@ -1022,11 +1026,7 @@ macro_rules! impl_data_packet_dmp_layer {
     };
 }
 
-#[cfg(feature = "std")]
 impl_data_packet_dmp_layer!(<'a>);
-
-#[cfg(not(feature = "std"))]
-impl_data_packet_dmp_layer!();
 
 /// sACN synchronization packet PDU.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Copy)]
@@ -1121,10 +1121,9 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
         #[derive(Eq, PartialEq, Debug)]
         pub struct UniverseDiscoveryPacketFramingLayer$( $lt )* {
             /// Name of the source.
-            #[cfg(feature = "std")]
             pub source_name: Cow<'a, str>,
 
-            /// Universe dicovery layer.
+            /// Universe discovery layer.
             pub data: UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )*,
         }
 
