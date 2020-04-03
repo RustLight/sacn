@@ -236,6 +236,14 @@ pub const E131_SOURCE_NAME_FIELD_LENGTH: usize = 64;
 /// The length of the Synchronisation Address field in bytes in an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4, Table 4-1, 4-2, 4-3.
 pub const E131_SYNC_ADDR_FIELD_LENGTH: usize = 2;
 
+/// The length in bytes of the sequence number field within the framing layer of an E1.31 synchronisation packet.
+/// AS per ANSI E1.31-2018 Section 4, Table 4-2.
+const E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_LENGTH: usize = 1;
+
+/// The length in bytes of the reserved field within the framing layer of an E1.31 synchronisation packet.
+/// AS per ANSI E1.31-2018 Section 4, Table 4-2.
+const E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_LENGTH: usize = 2;
+
 /// The initial/starting sequence number used.
 pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
 
@@ -1038,10 +1046,17 @@ pub struct SynchronizationPacketFramingLayer {
     pub synchronization_address: u16,
 }
 
+const E131_SYNC_FRAMING_LAYER_VECTOR_FIELD_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH;
+const E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_INDEX: usize = E131_SYNC_FRAMING_LAYER_VECTOR_FIELD_INDEX + E131_FRAMING_LAYER_VECTOR_LENGTH;
+const E131_SYNC_FRAMING_LAYER_SYNC_ADDRESS_FIELD_INDEX: usize = E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_INDEX + E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_LENGTH;
+const E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_INDEX: usize = E131_SYNC_FRAMING_LAYER_SYNC_ADDRESS_FIELD_INDEX + E131_SYNC_ADDR_FIELD_LENGTH;
+const E131_SYNC_FRAMING_LAYER_END_INDEX: usize = E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_INDEX + E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_LENGTH;
+
 impl Pdu for SynchronizationPacketFramingLayer {
+
     fn parse(buf: &[u8]) -> Result<SynchronizationPacketFramingLayer> {
         // Length and Vector
-        let PduInfo { length, vector } = pdu_info(&buf, 4)?;
+        let PduInfo { length, vector } = pdu_info(&buf, E131_FRAMING_LAYER_VECTOR_LENGTH)?;
         if buf.len() < length {
             bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on synchronisation packet framing layer pdu length field".to_string())));
         }
@@ -1056,10 +1071,10 @@ impl Pdu for SynchronizationPacketFramingLayer {
         }
 
         // Sequence Number
-        let sequence_number = buf[6];
+        let sequence_number = buf[E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_INDEX];
 
         // Synchronization Address
-        let synchronization_address = NetworkEndian::read_u16(&buf[7..9]);
+        let synchronization_address = NetworkEndian::read_u16(&buf[E131_SYNC_FRAMING_LAYER_SYNC_ADDRESS_FIELD_INDEX .. E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_INDEX]);
 
         if synchronization_address > E131_MAX_MULTICAST_UNIVERSE || synchronization_address < E131_MIN_MULTICAST_UNIVERSE {
             bail!(
@@ -1069,7 +1084,8 @@ impl Pdu for SynchronizationPacketFramingLayer {
             );
         }
 
-        // Reserved fields (buf[9..11]) should be ignored by receivers as per ANSI E1.31-2018 Section 6.3.4.
+        // Reserved fields (2 bytes right immediately after the synchronisation address) should be ignored by receivers as per 
+        // ANSI E1.31-2018 Section 6.3.4.
 
         Ok(SynchronizationPacketFramingLayer {
             sequence_number,
@@ -1083,35 +1099,35 @@ impl Pdu for SynchronizationPacketFramingLayer {
         }
 
         // Flags and Length
-        let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
-        NetworkEndian::write_u16(&mut buf[0..2], flags_and_length);
+        let flags_and_length = NetworkEndian::read_u16(&[E131_PDU_FLAGS, 0x0]) | (self.len() as u16) & 0x0fff;
+        NetworkEndian::write_u16(&mut buf[0.. E131_PDU_LENGTH_FLAGS_LENGTH], flags_and_length);
 
         // Vector
-        NetworkEndian::write_u32(&mut buf[2..6], VECTOR_E131_EXTENDED_SYNCHRONIZATION);
+        NetworkEndian::write_u32(&mut buf[E131_SYNC_FRAMING_LAYER_VECTOR_FIELD_INDEX .. E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_INDEX], VECTOR_E131_EXTENDED_SYNCHRONIZATION);
 
         // Sequence Number
-        buf[6] = self.sequence_number;
+        buf[E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_INDEX] = self.sequence_number;
 
         // Synchronization Address
-        NetworkEndian::write_u16(&mut buf[7..9], self.synchronization_address);
+        NetworkEndian::write_u16(&mut buf[E131_SYNC_FRAMING_LAYER_SYNC_ADDRESS_FIELD_INDEX .. E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_INDEX], self.synchronization_address);
 
-        // Reserved
-        zeros(&mut buf[9..11], 2);
+        // Reserved, transmitted as zeros as per ANSI E1.31-2018 Section 6.3.4.
+        zeros(&mut buf[E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_INDEX .. E131_SYNC_FRAMING_LAYER_END_INDEX], E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_LENGTH);
 
         Ok(())
     }
 
     fn len(&self) -> usize {
         // Length and Flags
-        2 +
+        E131_PDU_LENGTH_FLAGS_LENGTH +
         // Vector
-        4 +
+        E131_FRAMING_LAYER_VECTOR_LENGTH +
         // Sequence Number
-        1 +
+        E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_LENGTH +
         // Synchronization Address
-        2 +
+        E131_SYNC_ADDR_FIELD_LENGTH +
         // Reserved
-        2
+        E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_LENGTH
     }
 }
 
