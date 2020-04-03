@@ -182,7 +182,7 @@ fn test_register_min_universe() {
     }
 }
 
-/// Attempts to send a synchronisation packet with the syncronisation address/universe set to 0 which should be rejected as per ANSI E1.31-2018 Section 6.3.3.1.
+/// Attempts to send a synchronisation packet with the synchronisation address/universe set to 0 which should be rejected as per ANSI E1.31-2018 Section 6.3.3.1.
 #[test]
 fn test_sync_addr_0() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
@@ -200,7 +200,7 @@ fn test_sync_addr_0() {
             }
         }
         _ => {
-            assert!(false, "Attempt to send a syncronisation packet with a synchronisation address of 0 succeeded when it should have been rejected");
+            assert!(false, "Attempt to send a synchronisation packet with a synchronisation address of 0 succeeded when it should have been rejected");
         }
     }
 }

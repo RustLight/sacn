@@ -56,7 +56,7 @@
 use error::errors::*;
 use sacn_parse_pack_error::sacn_parse_pack_error;
 
-/// The core crate is used for string processing during packet parsing/packing aswell as to provide access to the Hash trait.
+/// The core crate is used for string processing during packet parsing/packing as well as to provide access to the Hash trait.
 use core::hash::{self, Hash};
 use core::str;
 
@@ -689,7 +689,7 @@ macro_rules! impl_data_packet_framing_layer {
             /// Priority of this data packet.
             pub priority: u8,
 
-            /// Synchronization adress.
+            /// Synchronization address.
             pub synchronization_address: u16,
 
             /// The sequence number of this packet.
@@ -1656,7 +1656,7 @@ mod test {
     }
 
     /// Verifies that the parameters are set correctly as per ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
-    /// This test is particularly useful at the maintainance stage as it will flag up if any protocol defined constant is changed. 
+    /// This test is particularly useful at the maintenance stage as it will flag up if any protocol defined constant is changed. 
     #[test]
     fn check_ansi_e131_2018_parameter_values() {
         assert_eq!(VECTOR_ROOT_E131_DATA, 0x0000_0004);

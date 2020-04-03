@@ -365,6 +365,13 @@ The library is based on wrapping an underlying socket which is used to access th
 
 The PoisonError problem, rust is still developing and there isn't a standard error system, PoisonError cannot be used with other error types... 
 
+// Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
+// - Decided it shouldn't be seperated.
+
+/// For some tests to work multiple instances of the protocol must be on the same network with the same port for example to test multiple simultaneous receivers, this means multiple IP's are needed.
+/// This is achieved by assigning multiple static IP's to the test machine and theses IP's are specified below.
+/// Theses must be changed depending on the network that the test machine is on.
+
 \subsection{Extraneous Circumstances}
 -- COVID-19
 -- No direct access to labs (SSH used)
