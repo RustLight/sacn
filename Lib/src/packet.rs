@@ -1143,10 +1143,19 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
             pub data: UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )*,
         }
 
+        // The length in bytes of the reserve field in the universe discovery framing layer of an ANSI E1.31-2018 Universe Discovery Packet.
+        // Length as per ANSI E1.31-2018 Section 4, Table 4-3.
+        const E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_LENGTH: usize = 4;
+
+        const E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH;
+        const E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX: usize = E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX + E131_FRAMING_LAYER_VECTOR_LENGTH;
+        const E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_INDEX: usize = E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX + E131_SOURCE_NAME_FIELD_LENGTH;
+        const E131_DISCOVERY_FRAMING_LAYER_DATA_INDEX: usize = E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_INDEX + E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_LENGTH;
+
         impl$( $lt )* Pdu for UniverseDiscoveryPacketFramingLayer$( $lt )* {
             fn parse(buf: &[u8]) -> Result<UniverseDiscoveryPacketFramingLayer$( $lt )*> {
                 // Length and Vector
-                let PduInfo { length, vector } = pdu_info(&buf, 4)?;
+                let PduInfo { length, vector } = pdu_info(&buf, E131_FRAMING_LAYER_VECTOR_LENGTH)?;
                 if buf.len() < length {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on universe discovery packet framing layer pdu length field".to_string())));
                 }
@@ -1160,18 +1169,15 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                 }
 
                 // Source Name
-                let source_name = String::from(parse_source_name_str(&buf[6..70])?);
+                let source_name = String::from(parse_source_name_str(&buf[E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX .. E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_INDEX])?);
 
-                // Reserved data (buf[70..74]) ignored as per ANSI E1.31-2018 Section 6.4.3.
+                // Reserved data (immediately after source_name) ignored as per ANSI E1.31-2018 Section 6.4.3.
 
-                // Data
-                let data = UniverseDiscoveryPacketUniverseDiscoveryLayer::parse(&buf[74..length])?;
+                // The universe discovery data.
+                let data = UniverseDiscoveryPacketUniverseDiscoveryLayer::parse(&buf[E131_DISCOVERY_FRAMING_LAYER_DATA_INDEX .. length])?;
 
                 Ok(UniverseDiscoveryPacketFramingLayer {
-                    #[cfg(feature = "std")]
                     source_name: source_name.into(),
-                    #[cfg(not(feature = "std"))]
-                    source_name,
                     data,
                 })
             }
@@ -1182,14 +1188,14 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                 }
 
                 // Flags and Length
-                let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
-                NetworkEndian::write_u16(&mut buf[0..2], flags_and_length);
+                let flags_and_length = NetworkEndian::read_u16(&[E131_PDU_FLAGS, 0x0]) | (self.len() as u16) & 0x0fff;
+                NetworkEndian::write_u16(&mut buf[0.. E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX], flags_and_length);
 
                 // Vector
-                NetworkEndian::write_u32(&mut buf[2..6], VECTOR_E131_EXTENDED_DISCOVERY);
+                NetworkEndian::write_u32(&mut buf[E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX .. E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX], VECTOR_E131_EXTENDED_DISCOVERY);
 
                 // Source Name
-                zeros(&mut buf[6..70], 64);
+                zeros(&mut buf[E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX .. E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_INDEX], E131_SOURCE_NAME_FIELD_LENGTH);
                 buf[6..6 + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
 
                 // Reserved
@@ -1216,10 +1222,7 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
         impl$( $lt )* Clone for UniverseDiscoveryPacketFramingLayer$( $lt )* {
             fn clone(&self) -> Self {
                 UniverseDiscoveryPacketFramingLayer {
-                    #[cfg(feature = "std")]
                     source_name: self.source_name.clone(),
-                    #[cfg(not(feature = "std"))]
-                    source_name: self.source_name.as_str().into(),
                     data: self.data.clone(),
                 }
             }
@@ -1249,7 +1252,6 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
             pub last_page: u8,
 
             /// List of universes.
-            #[cfg(feature = "std")]
             pub universes: Cow<'a, [u16]>,
         }
 
@@ -1314,10 +1316,7 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 Ok(UniverseDiscoveryPacketUniverseDiscoveryLayer {
                     page,
                     last_page,
-                    #[cfg(feature = "std")]
                     universes: universes.into(),
-                    #[cfg(not(feature = "std"))]
-                    universes,
                 })
             }
 
@@ -1379,14 +1378,7 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 UniverseDiscoveryPacketUniverseDiscoveryLayer {
                     page: self.page,
                     last_page: self.last_page,
-                    #[cfg(feature = "std")]
                     universes: self.universes.clone(),
-                    #[cfg(not(feature = "std"))]
-                    universes: {
-                        let mut universes = Vec::new();
-                        universes.extend_from_slice(&self.universes[..]).unwrap();
-                        universes
-                    },
                 }
             }
         }
