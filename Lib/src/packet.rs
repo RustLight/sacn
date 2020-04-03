@@ -1310,33 +1310,33 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 }
 
                 // The number of universes, calculated by dividing the remaining space in the packet by the size of a single universe.
-                // let universes_length = (length - E131_DISCOVERY_LAYER_UNIVERSE_LIST_FIELD_INDEX) / E131_UNIVERSE_FIELD_LENGTH;
-                // let universes: Cow<'a, [u16]> = parse_universe_list(&buf[E131_DISCOVERY_LAYER_UNIVERSE_LIST_FIELD_INDEX ..], universes_length)?;
+                let universes_length = (length - E131_DISCOVERY_LAYER_UNIVERSE_LIST_FIELD_INDEX) / E131_UNIVERSE_FIELD_LENGTH;
+                let universes: Cow<'a, [u16]> = parse_universe_list(&buf[E131_DISCOVERY_LAYER_UNIVERSE_LIST_FIELD_INDEX ..], universes_length)?;
 
                 // Universes
-                let universes_length = (length - 8) / 2;
-                let mut universes = Vec::with_capacity(universes_length);
+                // let universes_length = (length - 8) / 2;
+                // let mut universes = Vec::with_capacity(universes_length);
 
-                let mut i = 8;
-                let mut last_universe: i32 = -1;
-                while ((i+2) <= length) {
-                    let u = NetworkEndian::read_u16(&buf[i .. i+2]);
+                // let mut i = 8;
+                // let mut last_universe: i32 = -1;
+                // while ((i+2) <= length) {
+                //     let u = NetworkEndian::read_u16(&buf[i .. i+2]);
 
-                    if ((u as i32) > last_universe) { // Enforce assending ordering of universes as per ANSI E1.31-2018 Section 8.5. 
-                        universes.push(u);
-                        last_universe = (u as i32);
-                        i = i + 2; // Each universe takes 2 bytes so jump by 2.
-                    } else {
-                        bail!(ErrorKind::SacnParsePackError(
-                            sacn_parse_pack_error::ErrorKind::ParseInvalidUniverseOrder(
-                                format!("Universe {} is out of order, discovery packet universe list must be in accending order!", u).to_string())));
-                    }
-                }
+                //     if ((u as i32) > last_universe) { // Enforce assending ordering of universes as per ANSI E1.31-2018 Section 8.5. 
+                //         universes.push(u);
+                //         last_universe = (u as i32);
+                //         i = i + 2; // Each universe takes 2 bytes so jump by 2.
+                //     } else {
+                //         bail!(ErrorKind::SacnParsePackError(
+                //             sacn_parse_pack_error::ErrorKind::ParseInvalidUniverseOrder(
+                //                 format!("Universe {} is out of order, discovery packet universe list must be in accending order!", u).to_string())));
+                //     }
+                // }
 
                 Ok(UniverseDiscoveryPacketUniverseDiscoveryLayer {
                     page,
                     last_page,
-                    universes: universes.into(),
+                    universes: universes,
                 })
             }
 
@@ -1432,7 +1432,11 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
 fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> {
     let mut universes: Vec<u16> = Vec::with_capacity(length);
     let mut i = 0;
-    let mut last_universe: i32 = -1; // Placeholder value that is guaranteed to be less than the lowest possible advertised universe.
+
+    // Last_universe starts as a placeholder value that is guaranteed to be less than the lowest possible advertised universe.
+    // Cannot use 0 even though under ANSI E1.31-2018 it cannot be used for data or as a sync_address as it is reserved for future use 
+    // so may be used in future.
+    let mut last_universe: i32 = -1; 
 
     if buf.len() < length * E131_UNIVERSE_FIELD_LENGTH {
         bail!(ErrorKind::SacnParsePackError(
@@ -1445,7 +1449,7 @@ fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> 
 
         if (u as i32) > last_universe { // Enforce assending ordering of universes as per ANSI E1.31-2018 Section 8.5. 
             universes.push(u);
-            last_universe = (u as i32);
+            last_universe = u as i32;
             i = i + E131_UNIVERSE_FIELD_LENGTH; // Jump to the next universe.
         } else {
             bail!(ErrorKind::SacnParsePackError(

@@ -1300,7 +1300,7 @@ fn generate_test_universe_discovery_packet(universes_to_generate: u16) -> Vec<u8
     2
     };
 
-    for i in 0 .. universes_to_generate {
+    for i in E131_MIN_MULTICAST_UNIVERSE .. E131_MIN_MULTICAST_UNIVERSE + universes_to_generate {
         let vals = i.to_be_bytes();
         test_universe_discovery_packet.push(vals[0]);
         test_universe_discovery_packet.push(vals[1]);
