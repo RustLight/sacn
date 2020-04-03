@@ -57,8 +57,8 @@ const TEST_UNIVERSE_DISCOVERY_PACKET: &[u8] = &[
     1,
     /* Last Page */
     2, 
-    /* Universes */
-    0, 1, 2, 3, 4, 5,
+    /* Universes, note each universe takes 2 bytes so this represents 3 universes (0x0001, 0x0203, 0x0405) not 6. */
+    0x0, 0x1, 0x2, 0x3, 0x4, 0x5,
 ];
 
 /// Universe discovery packet with the root layer vector set to a vector unknown to ANSI E1.31-2018.

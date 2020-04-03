@@ -200,6 +200,18 @@ const E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT_FIELD_LENGTH: usize = 2;
 /// ANSI E1.31-2018 Section 4, Table 4-1.
 const E131_DATA_PACKET_DMP_LAYER_PROPERTY_VALUE_COUNT_FIELD_LENGTH: usize = 2;
 
+/// The length in bytes of the Vector field in the Universe Discovery Layer of an ANSI E1.31-2018 Universe Discovery Packet.
+/// 4 bytes as per ANSI E1.31-2018 Section 4, Table 4-3.
+const E131_DISCOVERY_LAYER_VECTOR_FIELD_LENGTH: usize = 4;
+
+/// The length in bytes of the Page field in the Universe Discovery Layer of an ANSI E1.31-2018 Universe Discovery Packet.
+/// 1 bytes as per ANSI E1.31-2018 Section 4, Table 4-3.
+const E131_DISCOVERY_LAYER_PAGE_FIELD_LENGTH: usize = 1;
+
+/// The length in bytes of the Last Page field in the Universe Discovery Layer of an ANSI E1.31-2018 Universe Discovery Packet.
+/// 1 bytes as per ANSI E1.31-2018 Section 4, Table 4-3.
+const E131_DISCOVERY_LAYER_LAST_PAGE_FIELD_LENGTH: usize = 1;
+
 /// The value of the "Address Type and Data Type" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018 
 /// Section 4, Table 4-1.
 const E131_DMP_LAYER_ADDRESS_DATA_FIELD: u8 = 0xa1;
@@ -243,6 +255,10 @@ const E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_LENGTH: usize = 1;
 /// The length in bytes of the reserved field within the framing layer of an E1.31 synchronisation packet.
 /// AS per ANSI E1.31-2018 Section 4, Table 4-2.
 const E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_LENGTH: usize = 2;
+
+// The length in bytes of the reserve field in the universe discovery framing layer of an ANSI E1.31-2018 Universe Discovery Packet.
+// Length as per ANSI E1.31-2018 Section 4, Table 4-3.
+const E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_LENGTH: usize = 4;
 
 /// The initial/starting sequence number used.
 pub const STARTING_SEQUENCE_NUMBER: u8 = 0;
@@ -1046,6 +1062,9 @@ pub struct SynchronizationPacketFramingLayer {
     pub synchronization_address: u16,
 }
 
+// Calculate the indexes of the fields within the buffer based on the size of the fields previous.
+// Constants are replaced inline so this increases readability by removing magic numbers without affecting runtime performance.
+// Theses indexes are only valid within the scope of this part of the protocol (SynchronisationPacketFramingLayer).
 const E131_SYNC_FRAMING_LAYER_VECTOR_FIELD_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH;
 const E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_INDEX: usize = E131_SYNC_FRAMING_LAYER_VECTOR_FIELD_INDEX + E131_FRAMING_LAYER_VECTOR_LENGTH;
 const E131_SYNC_FRAMING_LAYER_SYNC_ADDRESS_FIELD_INDEX: usize = E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_INDEX + E131_SYNC_FRAMING_LAYER_SEQ_NUM_FIELD_LENGTH;
@@ -1143,10 +1162,9 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
             pub data: UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )*,
         }
 
-        // The length in bytes of the reserve field in the universe discovery framing layer of an ANSI E1.31-2018 Universe Discovery Packet.
-        // Length as per ANSI E1.31-2018 Section 4, Table 4-3.
-        const E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_LENGTH: usize = 4;
-
+        // Calculate the indexes of the fields within the buffer based on the size of the fields previous.
+        // Constants are replaced inline so this increases readability by removing magic numbers without affecting runtime performance.
+        // Theses indexes are only valid within the scope of this part of the protocol (UniverseDiscoveryPacketFramingLayer).
         const E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH;
         const E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX: usize = E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX + E131_FRAMING_LAYER_VECTOR_LENGTH;
         const E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_INDEX: usize = E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX + E131_SOURCE_NAME_FIELD_LENGTH;
@@ -1189,31 +1207,31 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
 
                 // Flags and Length
                 let flags_and_length = NetworkEndian::read_u16(&[E131_PDU_FLAGS, 0x0]) | (self.len() as u16) & 0x0fff;
-                NetworkEndian::write_u16(&mut buf[0.. E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX], flags_and_length);
+                NetworkEndian::write_u16(&mut buf[0 .. E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX], flags_and_length);
 
                 // Vector
                 NetworkEndian::write_u32(&mut buf[E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX .. E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX], VECTOR_E131_EXTENDED_DISCOVERY);
 
                 // Source Name
                 zeros(&mut buf[E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX .. E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_INDEX], E131_SOURCE_NAME_FIELD_LENGTH);
-                buf[6..6 + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
+                buf[E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX  .. E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX  + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
 
                 // Reserved
-                zeros(&mut buf[70..74], 4);
+                zeros(&mut buf[E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_INDEX .. E131_DISCOVERY_FRAMING_LAYER_DATA_INDEX], E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_LENGTH);
 
                 // Data
-                Ok(self.data.pack(&mut buf[74..])?)
+                Ok(self.data.pack(&mut buf[E131_DISCOVERY_FRAMING_LAYER_DATA_INDEX .. ])?)
             }
 
             fn len(&self) -> usize {
                 // Length and Flags
-                2 +
+                E131_PDU_LENGTH_FLAGS_LENGTH +
                 // Vector
-                4 +
+                E131_FRAMING_LAYER_VECTOR_LENGTH +
                 // Source Name
-                64 +
+                E131_SOURCE_NAME_FIELD_LENGTH +
                 // Reserved
-                4 +
+                E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_LENGTH +
                 // Data
                 self.data.len()
             }
@@ -1245,7 +1263,7 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
         /// Universe discovery layer PDU.
         #[derive(Eq, PartialEq, Debug)]
         pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )* {
-            /// Current page of the dicovery packet.
+            /// Current page of the discovery packet.
             pub page: u8,
 
             /// The number of the final page.
@@ -1255,12 +1273,22 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
             pub universes: Cow<'a, [u16]>,
         }
 
+        // Calculate the indexes of the fields within the buffer based on the size of the fields previous.
+        // Constants are replaced inline so this increases readability by removing magic numbers without affecting runtime performance.
+        // Theses indexes are only valid within the scope of this part of the protocol (UniverseDiscoveryPacketUniverseDiscoveryLayer).
+        const E131_DISCOVERY_LAYER_VECTOR_FIELD_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH;
+        const E131_DISCOVERY_LAYER_PAGE_FIELD_INDEX: usize = E131_DISCOVERY_LAYER_VECTOR_FIELD_INDEX + E131_DISCOVERY_LAYER_VECTOR_FIELD_LENGTH;
+        const E131_DISCOVERY_LAYER_LAST_PAGE_FIELD_INDEX: usize = E131_DISCOVERY_LAYER_PAGE_FIELD_INDEX + E131_DISCOVERY_LAYER_PAGE_FIELD_LENGTH;
+        const E131_DISCOVERY_LAYER_UNIVERSE_LIST_FIELD_INDEX: usize = E131_DISCOVERY_LAYER_LAST_PAGE_FIELD_INDEX + E131_DISCOVERY_LAYER_LAST_PAGE_FIELD_LENGTH;
+
         impl$( $lt )* Pdu for UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )* {
             fn parse(buf: &[u8]) -> Result<UniverseDiscoveryPacketUniverseDiscoveryLayer$( $lt )*> {
                 // Length and Vector
-                let PduInfo { length, vector } = pdu_info(&buf, 4)?;
-                if buf.len() < length {
-                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on universe discovery packet universe discovery layer pdu length field".to_string())));
+                let PduInfo { length, vector } = pdu_info(&buf, E131_DISCOVERY_LAYER_VECTOR_FIELD_LENGTH)?;
+                if buf.len() != length {
+                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(
+                        format!("Buffer contains incorrect amount of data ({} bytes) based on universe discovery packet universe discovery layer pdu length field ({} bytes)"
+                        , buf.len() ,length).to_string())));
                 }
 
                 if vector != VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST {
@@ -1272,14 +1300,18 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 }
 
                 // Page
-                let page = buf[6];
+                let page = buf[E131_DISCOVERY_LAYER_PAGE_FIELD_INDEX];
 
                 // Last Page
-                let last_page = buf[7];
+                let last_page = buf[E131_DISCOVERY_LAYER_LAST_PAGE_FIELD_INDEX];
 
                 if page > last_page {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidPage("Page value higher than last_page".to_string())));
                 }
+
+                // The number of universes, calculated by dividing the remaining space in the packet by the size of a single universe.
+                // let universes_length = (length - E131_DISCOVERY_LAYER_UNIVERSE_LIST_FIELD_INDEX) / E131_UNIVERSE_FIELD_LENGTH;
+                // let universes: Cow<'a, [u16]> = parse_universe_list(&buf[E131_DISCOVERY_LAYER_UNIVERSE_LIST_FIELD_INDEX ..], universes_length)?;
 
                 // Universes
                 let universes_length = (length - 8) / 2;
@@ -1301,18 +1333,6 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                     }
                 }
 
-                if i != length { 
-                    // Indicates that there is data left over, this can happen if the bytes for the universes is not an even number meaning 
-                    // that every byte cannot be used to create 16 bit universe numbers, this shouldn't happen and indicates that the packet
-                    // is the wrong length / malformed (with extra data on the end).
-                    bail!(ErrorKind::SacnParsePackError(
-                            sacn_parse_pack_error::ErrorKind::ParseInsufficientData(
-                                "A non-even (odd) amount of data left at end of packet, cannot parsed a single byte into a 16 bit universe number".to_string()
-                            )
-                        )
-                    );
-                }
-
                 Ok(UniverseDiscoveryPacketUniverseDiscoveryLayer {
                     page,
                     last_page,
@@ -1321,8 +1341,10 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
             }
 
             fn pack(&self, buf: &mut [u8]) -> Result<()> {
-                if self.universes.len() > 512 {
-                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackInvalidData("only 512 universes allowed".to_string())));
+                if self.universes.len() > DISCOVERY_UNI_PER_PAGE {
+                    bail!(ErrorKind::SacnParsePackError(
+                        sacn_parse_pack_error::ErrorKind::PackInvalidData(
+                            format!("Maximum {} universes allowed per discovery page", DISCOVERY_UNI_PER_PAGE).to_string())));
                 }
 
                 if buf.len() < self.len() {
@@ -1330,17 +1352,17 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 }
 
                 // Flags and Length
-                let flags_and_length = 0x7000 | (self.len() as u16) & 0x0fff;
-                NetworkEndian::write_u16(&mut buf[0..2], flags_and_length);
+                let flags_and_length = NetworkEndian::read_u16(&[E131_PDU_FLAGS, 0x0]) | (self.len() as u16) & 0x0fff;
+                NetworkEndian::write_u16(&mut buf[0 .. E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX], flags_and_length);
 
                 // Vector
-                NetworkEndian::write_u32(&mut buf[2..6], VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST);
+                NetworkEndian::write_u32(&mut buf[E131_DISCOVERY_LAYER_VECTOR_FIELD_INDEX .. E131_DISCOVERY_LAYER_PAGE_FIELD_INDEX], VECTOR_UNIVERSE_DISCOVERY_UNIVERSE_LIST);
 
                 // Page
-                buf[6] = self.page;
+                buf[E131_DISCOVERY_LAYER_PAGE_FIELD_INDEX] = self.page;
 
                 // Last Page
-                buf[7] = self.last_page;
+                buf[E131_DISCOVERY_LAYER_LAST_PAGE_FIELD_INDEX] = self.last_page;
 
                 // Universes
                 for i in 1..self.universes.len() {
@@ -1353,7 +1375,7 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 }
                 NetworkEndian::write_u16_into(
                     &self.universes[..self.universes.len()],
-                    &mut buf[8..8 + self.universes.len() * 2],
+                    &mut buf[E131_DISCOVERY_LAYER_UNIVERSE_LIST_FIELD_INDEX .. E131_DISCOVERY_LAYER_UNIVERSE_LIST_FIELD_INDEX + self.universes.len() * E131_UNIVERSE_FIELD_LENGTH],
                 );
 
                 Ok(())
@@ -1361,15 +1383,15 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
 
             fn len(&self) -> usize {
                 // Length and Flags
-                2 +
+                E131_PDU_LENGTH_FLAGS_LENGTH +
                 // Vector
-                4 +
+                E131_DISCOVERY_LAYER_VECTOR_FIELD_LENGTH +
                 // Page
-                1 +
+                E131_DISCOVERY_LAYER_PAGE_FIELD_LENGTH +
                 // Last Page
-                1 +
+                E131_DISCOVERY_LAYER_LAST_PAGE_FIELD_LENGTH +
                 // Universes
-                self.universes.len() * 2
+                self.universes.len() * E131_UNIVERSE_FIELD_LENGTH
             }
         }
 
@@ -1392,6 +1414,47 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
             }
         }
     };
+}
+
+/// Takes the given buffer representing the "List of Universe" field in an ANSI E1.31-2018 discovery packet and parses it into the universe values.
+/// 
+/// This enforces the requirement from ANSI E1.31-2018 Section 8.5 that the universes must be numerically sorted.
+/// 
+/// # Arguments
+/// buf: The byte buffer to parse into the universe.
+/// length: The number of universes to attempt to parse from the buffer.
+/// 
+/// # Errors
+/// ParseInvalidUniverseOrder: If the universes are not sorted in ascending order with no duplicates.
+/// 
+/// ParseInsufficientData: If the buffer doesn't contain sufficient bytes and so cannot be parsed into the specified number of u16 universes.
+/// 
+fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> {
+    let mut universes: Vec<u16> = Vec::with_capacity(length);
+    let mut i = 0;
+    let mut last_universe: i32 = -1; // Placeholder value that is guaranteed to be less than the lowest possible advertised universe.
+
+    if buf.len() < length * E131_UNIVERSE_FIELD_LENGTH {
+        bail!(ErrorKind::SacnParsePackError(
+            sacn_parse_pack_error::ErrorKind::ParseInsufficientData(
+                format!("The given buffer of length {} bytes cannot be parsed into the given number of universes {}", buf.len(), length).to_string())));
+    }
+
+    while i < (length * E131_UNIVERSE_FIELD_LENGTH)  {
+        let u = NetworkEndian::read_u16(&buf[i .. i + E131_UNIVERSE_FIELD_LENGTH]);
+
+        if (u as i32) > last_universe { // Enforce assending ordering of universes as per ANSI E1.31-2018 Section 8.5. 
+            universes.push(u);
+            last_universe = (u as i32);
+            i = i + E131_UNIVERSE_FIELD_LENGTH; // Jump to the next universe.
+        } else {
+            bail!(ErrorKind::SacnParsePackError(
+                sacn_parse_pack_error::ErrorKind::ParseInvalidUniverseOrder(
+                    format!("Universe {} is out of order, discovery packet universe list must be in accending order!", u).to_string())));
+        }
+    }
+
+    Ok(universes.into())
 }
 
 impl_universe_discovery_packet_universe_discovery_layer!(<'a>);
