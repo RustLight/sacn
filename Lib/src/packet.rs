@@ -180,6 +180,38 @@ const E131_OPTIONS_FIELD_LENGTH: usize = 1;
 /// The length in bytes of a universe field within an ANSI E1.31-2018 packet as defined in ANSI E1.31-2018 Section 4, Table 4-1, 4-3. 
 const E131_UNIVERSE_FIELD_LENGTH: usize = 2;
 
+/// The length in bytes of the Vector field within the DMP layer of an ANSI E1.31-2018 data packet as per ANSI E1.31-2018
+/// Section 4, Table 4-1.
+const E131_DATA_PACKET_DMP_LAYER_VECTOR_FIELD_LENGTH: usize = 1;
+
+/// The length in bytes of the "Address Type and Data Type" field within an ANSI E1.31-2018 data packet DMP layer as per 
+/// ANSI E1.31-2018 Section 4, Table 4-1.
+const E131_DATA_PACKET_DMP_LAYER_ADDRESS_DATA_FIELD_LENGTH: usize = 1;
+
+/// The length in bytes of the "First Property Address" field within an ANSI E1.31-2018 data packet DMP layer as per 
+/// ANSI E1.31-2018 Section 4, Table 4-1.
+const E131_DATA_PACKET_DMP_LAYER_FIRST_PROPERTY_ADDRESS_FIELD_LENGTH: usize = 2;
+
+/// The length in bytes of the "Address Increment" field within an ANSI E1.31-2018 data packet DMP layer as per 
+/// ANSI E1.31-2018 Section 4, Table 4-1.
+const E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT_FIELD_LENGTH: usize = 2;
+
+/// The length in bytes of the "Property value count" field within an ANSI E1.31-2018 data packet DMP layer as per 
+/// ANSI E1.31-2018 Section 4, Table 4-1.
+const E131_DATA_PACKET_DMP_LAYER_PROPERTY_COUNT_FIELD_LENGTH: usize = 2;
+
+/// The value of the "Address Type and Data Type" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018 
+/// Section 4, Table 4-1.
+const E131_DMP_LAYER_ADDRESS_DATA_FIELD: u8 = 0xa1;
+
+/// The value of the "First Property Address" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018 
+/// Section 4, Table 4-1.
+const E131_DATA_PACKET_DMP_LAYER_FIRST_PROPERTY_FIELD: u16 = 0x0000;
+
+/// The value of the "Address Increment" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018 
+/// Section 4, Table 4-1.
+const E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT: u16 = 0x0001;
+
 /// The size of the ACN root layer preamble, must be 0x0010 bytes as per ANSI E1.31-2018 Section 5.1.
 /// Often treated as a usize for comparison or use with arrays however stored as u16 as this represents its field size
 /// within a packet and converting u16 -> usize is always safe as len(usize) is always greater than len(u16), usize -> u16 is unsafe.
@@ -861,7 +893,7 @@ macro_rules! impl_data_packet_dmp_layer {
         impl$( $lt )* Pdu for DataPacketDmpLayer$( $lt )* {
             fn parse(buf: &[u8]) -> Result<DataPacketDmpLayer$( $lt )*> {
                 // Length and Vector
-                let PduInfo { length, vector } = pdu_info(&buf, 1)?;
+                let PduInfo { length, vector } = pdu_info(&buf, E131_DATA_PACKET_DMP_LAYER_VECTOR_FIELD_LENGTH)?;
                 if buf.len() < length {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("Buffer contains insufficient data based on data packet dmp layer pdu length field".to_string())));
                 }
@@ -870,35 +902,42 @@ macro_rules! impl_data_packet_dmp_layer {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
 
+                const ADDRESS_DATA_FIELD_INDEX: usize = E131_PDU_LENGTH_FLAGS_LENGTH + E131_DATA_PACKET_DMP_LAYER_VECTOR_FIELD_LENGTH;
+                const FIRST_PRIORITY_FIELD_INDEX: usize = ADDRESS_DATA_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_ADDRESS_DATA_FIELD_LENGTH;
+                const ADDRESS_INCREMENT_FIELD_INDEX: usize = FIRST_PRIORITY_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_FIRST_PROPERTY_ADDRESS_FIELD_LENGTH;
+                const PROPERTY_COUNT_FIELD_INDEX: usize = ADDRESS_INCREMENT_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT_FIELD_LENGTH;
+                const PROPERTY_VALUE_INDEX: usize = PROPERTY_COUNT_FIELD_INDEX + E131_DATA_PACKET_DMP_LAYER_PROPERTY_COUNT_FIELD_LENGTH;
+
                 // Address and Data Type
-                if buf[3] != 0xa1 {
+                if buf[ADDRESS_DATA_FIELD_INDEX] != E131_DMP_LAYER_ADDRESS_DATA_FIELD {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Address and Data Type".to_string())));
                 }
 
                 // First Property Address
-                if NetworkEndian::read_u16(&buf[4..6]) != 0 {
+                if NetworkEndian::read_u16(&buf[FIRST_PRIORITY_FIELD_INDEX .. ADDRESS_INCREMENT_FIELD_INDEX]) != E131_DATA_PACKET_DMP_LAYER_FIRST_PROPERTY_FIELD {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid First Property Address".to_string())));
                 }
 
                 // Address Increment
-                if NetworkEndian::read_u16(&buf[6..8]) != 0x0001 {
+                if NetworkEndian::read_u16(&buf[ADDRESS_INCREMENT_FIELD_INDEX .. PROPERTY_COUNT_FIELD_INDEX]) != E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Address Increment".to_string())));
                 }
 
                 // Property value count
-                if NetworkEndian::read_u16(&buf[8..10]) as usize + 10 != length {
+                if NetworkEndian::read_u16(&buf[PROPERTY_COUNT_FIELD_INDEX .. PROPERTY_VALUE_INDEX]) as usize + PROPERTY_VALUE_INDEX != length {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData("invalid Property value count".to_string())));
                 }
 
                 // Property values
-                let property_values_length = length - 10;
-                if property_values_length > 513 {
+                // The property value length is only of the property values and not the headers so start counting at the index that the property values start.
+                let property_values_length = length - PROPERTY_VALUE_INDEX;
+                if property_values_length > UNIVERSE_CHANNEL_CAPACITY {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("only 512 DMX slots allowed".to_string())));
                 }
 
                 let mut property_values = Vec::with_capacity(property_values_length);
 
-                property_values.extend_from_slice(&buf[10..length]);
+                property_values.extend_from_slice(&buf[PROPERTY_VALUE_INDEX .. length]);
 
                 Ok(DataPacketDmpLayer {
                     property_values: property_values.into(),
@@ -906,7 +945,7 @@ macro_rules! impl_data_packet_dmp_layer {
             }
 
             fn pack(&self, buf: &mut [u8]) -> Result<()> {
-                if self.property_values.len() > 513 {
+                if self.property_values.len() > UNIVERSE_CHANNEL_CAPACITY {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PackInvalidData("only 512 DMX values allowed".to_string())));
                 }
 
