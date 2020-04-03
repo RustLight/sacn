@@ -453,7 +453,7 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_UNKNOWN_FRAMING_VECTOR: &[u8] = &[
 
 /// Universe discovery packet with the reserved bytes set to values, this should be ignored and the packet 
 /// parsed normally as per ANSI E1.31-2018 Section 6.4.3.
-const TEST_UNIVERSE_DISCOVERY_PACKET_ARBITARY_RESERVED: &[u8] = &[
+const TEST_UNIVERSE_DISCOVERY_PACKET_ARBITRARY_RESERVED: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
     0x00, 0x10, 
@@ -476,7 +476,7 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_ARBITARY_RESERVED: &[u8] = &[
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 
-    /* Reserved, Set to arbitary values */
+    /* Reserved, Set to arbitrary values */
     255, 254, 253, 252, 
     /* Universe Discovery Layer */
     /* Flags and Length */
@@ -1045,8 +1045,8 @@ fn test_discovery_packet_unknown_framing_vector_parse() {
 }
 
 #[test]
-fn test_discovery_packet_arbitary_reserved_parse() {
-    match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_ARBITARY_RESERVED) {
+fn test_discovery_packet_arbitrary_reserved_parse() {
+    match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_ARBITRARY_RESERVED) {
         Err(e) => {
                 assert!(false, format!("Unexpected error returned: {}", e));
             }
@@ -1228,7 +1228,7 @@ fn test_discovery_packet_random_order_parse() {
 }
 
 /// Generates a test universe discovery packet with the given number of universes.
-/// This function has no usage outside the parse tests - it is just used as an auxillary function.
+/// This function has no usage outside the parse tests - it is just used as an auxiliary function.
 fn generate_test_universe_discovery_packet(universes_to_generate: u16) -> Vec<u8> {
     let flags_val: u8 = 0x70;
 

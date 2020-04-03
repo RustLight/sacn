@@ -33,7 +33,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::cmp;
 use std::cmp::min;
-use std::time;
 use std::time::{Duration, Instant};
 use std::thread::{JoinHandle};
 use std::thread;
@@ -80,7 +79,7 @@ const DEFAULT_POLL_PERIOD: Duration = Duration::from_secs(1);
 ///
 /// src.register_universe(universe).unwrap(); // Register with the source that will be sending on the given universe.
 ///
-/// let mut data: Vec<u8> = vec![0, 0, 0, 0, 255, 255, 128, 128]; // Some arbitary data, must have length <= 513 (including start-code).
+/// let mut data: Vec<u8> = vec![0, 0, 0, 0, 255, 255, 128, 128]; // Some arbitrary data, must have length <= 513 (including start-code).
 ///
 /// src.send(&[universe], &data, Some(priority), dst_ip, sync_uni).unwrap(); // Actually send the data
 /// ```
@@ -518,7 +517,7 @@ impl Drop for SacnSource {
 
         if let Some(thread) = self.update_thread.take() {
             {
-                match unlock_internal_mut(&mut self.internal) { // Internal is accessed twice seperately, this allows the discovery thread to interleave between running being set to false speeding up termination.
+                match unlock_internal_mut(&mut self.internal) { // Internal is accessed twice separately, this allows the discovery thread to interleave between running being set to false speeding up termination.
                     Ok(mut i) => { 
                         match i.terminate(DEFAULT_TERMINATE_START_CODE) {
                             _ => {} // For same reasons as above a potential error is ignored and a 'best attempt' is used to clean up.
@@ -680,7 +679,7 @@ impl SacnSourceInternal {
         Ok(())
     }
 
-    /// Sends the given data to the given universes with the given priority, syncronisation address (universe) and destination ip.
+    /// Sends the given data to the given universes with the given priority, synchronisation address (universe) and destination ip.
     /// 
     /// # Arguments
     /// 
@@ -700,7 +699,7 @@ impl SacnSourceInternal {
     /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate than specified in ANSI E1.11 [DMX] unless 
     ///     configured by the user to do so in an environment which doesn't contain any E1.31 to DMX512-A converters.
     /// 
-    /// Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the followup sync packet.
+    /// Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the follow up sync packet.
     /// 
     /// # Errors
     /// SenderAlreadyTerminated: Returned if this method is called on an SacnReceiverInternal that has already terminated.
@@ -717,7 +716,7 @@ impl SacnSourceInternal {
     /// 
     /// Io: Returned if the data fails to be sent on the socket, see send_to(fn.send_to.Socket).
     /// 
-    fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, syncronisation_addr: Option<u16>) -> Result<()> {
+    fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, synchronisation_addr: Option<u16>) -> Result<()> {
         if self.running == false { // Indicates that this sender has been terminated.
             bail!(ErrorKind::SenderAlreadyTerminated("Attempted to send".to_string())); 
         }
@@ -733,8 +732,8 @@ impl SacnSourceInternal {
         }
 
         // Check that the synchronisation universe is also valid.
-        if syncronisation_addr.is_some() {
-            self.universe_allowed(&syncronisation_addr.unwrap()).chain_err(|| "Synchronisation universe not allowed")?;
+        if synchronisation_addr.is_some() {
+            self.universe_allowed(&synchronisation_addr.unwrap()).chain_err(|| "Synchronisation universe not allowed")?;
         }
 
         // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
@@ -750,13 +749,13 @@ impl SacnSourceInternal {
             let end_index = cmp::min((i + 1) * UNIVERSE_CHANNEL_CAPACITY, data.len());
 
             self.send_universe(universes[i], &data[start_index .. end_index], 
-                priority.unwrap_or(E131_DEFAULT_PRIORITY), &dst_ip, syncronisation_addr.unwrap_or(NO_SYNC_UNIVERSE))?;
+                priority.unwrap_or(E131_DEFAULT_PRIORITY), &dst_ip, synchronisation_addr.unwrap_or(NO_SYNC_UNIVERSE))?;
         }
 
         Ok(())
     }
 
-    /// Sends the given data to the given universe with the given priority, syncronisation address (universe) and destination ip.
+    /// Sends the given data to the given universe with the given priority, synchronisation address (universe) and destination ip.
     /// 
     /// # Arguments
     /// universe:     The sACN universe that the data should be set on.
@@ -1031,7 +1030,7 @@ impl SacnSourceInternal {
 
     /// Sends a page of a universe discovery packet.
     /// 
-    /// There may be 1 or more pages for each full universe discovery packet with each page sent seperately.
+    /// There may be 1 or more pages for each full universe discovery packet with each page sent separately.
     /// 
     /// # Arguments
     /// 
@@ -1241,10 +1240,4 @@ fn perform_periodic_update(src: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<(
         unwrap_src.last_discovery_advert_timestamp = Instant::now();
     }
     Ok(())
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    
 }

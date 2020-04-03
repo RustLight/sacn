@@ -29,10 +29,10 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
 use std::iter;
 
-use socket2::{Socket, Domain, Type, SockAddr};
+use socket2::{Socket, Domain, Type};
 
 use sacn::source::SacnSource;
-use sacn::recieve::{SacnReceiver, DMXData};
+use sacn::receive::{SacnReceiver, DMXData};
 use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT, universe_to_ipv4_multicast_addr, 
     universe_to_ipv6_multicast_addr, E131_DISCOVERY_UNIVERSE, E131_TERMINATE_STREAM_PACKET_COUNT};
 use sacn::error::errors::*;
@@ -40,7 +40,7 @@ use sacn::error::errors::*;
 /// UUID library used to handle the UUID's used in the CID fields.
 use uuid::Uuid;
 
-use ipv4_tests::{TEST_NETWORK_INTERFACE_IPV4, TEST_DATA_SINGLE_UNIVERSE, 
+use ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE, 
     TEST_DATA_MULTIPLE_UNIVERSE, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, 
     TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE,
     TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE};
@@ -82,7 +82,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
 
@@ -131,7 +131,7 @@ fn test_send_recv_single_universe_alternative_startcode_multicast_ipv6(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
 
@@ -180,11 +180,11 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!sync_pkt_res.is_err(), "Failed: Error when receving packets");
+    assert!(!sync_pkt_res.is_err(), "Failed: Error when receiving packets");
 
     let mut received_data: Vec<DMXData> = sync_pkt_res.unwrap();
 
-    received_data.sort(); // No guarantee on the ordering of the receieved data so sort it first to allow easier checking.
+    received_data.sort(); // No guarantee on the ordering of the received data so sort it first to allow easier checking.
 
     assert_eq!(received_data.len(), 2); // Check 2 universes received as expected.
 
@@ -238,11 +238,11 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!sync_pkt_res.is_err(), "Failed: Error when receving packets");
+    assert!(!sync_pkt_res.is_err(), "Failed: Error when receiving packets");
 
     let mut received_data: Vec<DMXData> = sync_pkt_res.unwrap();
 
-    received_data.sort(); // No guarantee on the ordering of the receieved data so sort it first to allow easier checking.
+    received_data.sort(); // No guarantee on the ordering of the received data so sort it first to allow easier checking.
 
     assert_eq!(received_data.len(), 2); // Check 2 universes received as expected.
 
@@ -295,7 +295,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
 
@@ -345,11 +345,11 @@ fn test_send_recv_across_universe_multicast_ipv6(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!sync_pkt_res.is_err(), "Failed: Error when receving packets");
+    assert!(!sync_pkt_res.is_err(), "Failed: Error when receiving packets");
 
     let mut received_data: Vec<DMXData> = sync_pkt_res.unwrap();
 
-    received_data.sort(); // No guarantee on the ordering of the receieved data so sort it first to allow easier checking.
+    received_data.sort(); // No guarantee on the ordering of the received data so sort it first to allow easier checking.
 
     assert_eq!(received_data.len(), 2); // Check 2 universes received as expected.
 
@@ -523,7 +523,7 @@ fn test_three_senders_three_recv_multicast_ipv6(){
                 res.push(dmx_recv.recv(None)); // Receiver won't complete this until it receives from the senders which are all held waiting on the controlling thread.
             }
 
-            // Results of each receive are sent back, this allows checking that each reciever was an expected universe, all universes were received and there were no errors.
+            // Results of each receive are sent back, this allows checking that each receiver was an expected universe, all universes were received and there were no errors.
             tx.send(res).unwrap(); 
         }));
 
@@ -543,11 +543,11 @@ fn test_three_senders_three_recv_multicast_ipv6(){
 
         for r in res {
             let data: Vec<DMXData> = r.unwrap(); // Check that there are no errors when receiving.
-            assert_eq!(data.len(), 1); // Check that each universe was received seperately.
+            assert_eq!(data.len(), 1); // Check that each universe was received separately.
             rcv_dmx_datas.push(data[0].clone());
         }
 
-        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
+        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order received may vary depending on network.
 
         println!("{:?}", rcv_dmx_datas);
 
@@ -849,8 +849,8 @@ fn test_send_recv_two_universe_multicast_ipv6(){
     // Receiver can be terminated.
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving 1st universe of data");
-    assert!(!received_result_2.is_err(), "Failed: Error when receving 2nd universe of data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving 1st universe of data");
+    assert!(!received_result_2.is_err(), "Failed: Error when receiving 2nd universe of data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
     let received_data_2: Vec<DMXData> = received_result_2.unwrap();
@@ -965,7 +965,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
             // Sender observes a slight pause to allow for processing delays (ANSI E1.31-2018 Section 11.2.2).
             sleep(PAUSE_PERIOD);
 
-            // Sender sends a syncronisation packet to the sync universe.
+            // Sender sends a synchronisation packet to the sync universe.
             src.send_sync_packet(sync_universe, None).unwrap();
         }
 
@@ -1008,7 +1008,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
     }
     // "This process continues until Receiver B receives an E1.31 Data Packet with a Synchronization Address of 0."
     // "Receiver B may then unsubscribe from the synchronization multicast address" - This implementation does not automatically unsubscribe
-    //        This is based on the reasoning that a synchronisation universe will be used multiple times and subscribing/unsubscribing is unneeded overhead.
+    //        This is based on the reasoning that a synchronisation universe will be used multiple times and subscribing/un-subscribing is unneeded overhead.
     // Synchronisation is now over so should receive 2 packets individually.
     let rcv_data = dmx_recv.recv(None).unwrap();
     assert_eq!(rcv_data.len(), 1);
@@ -1039,7 +1039,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
     snd_thread.join().unwrap();
 }
 
-/// Sets up a single source and receiver. Like in a real-world scenario the source sends data continously on 2 universes syncronised 
+/// Sets up a single source and receiver. Like in a real-world scenario the source sends data continuously on 2 universes synchronised 
 /// on a third universe with a small interval between data sends.
 /// The receiver starts with no knowledge of what universe the source is sending on so starts by using Universe Discovery to discover the universes
 /// it then joins these universes and receives the data. The sender eventually stops sending data and terminates by sending stream termination packets.
@@ -1094,7 +1094,7 @@ fn test_discover_recv_sync_runthrough_ipv6() {
             // Sender observes a slight pause to allow for processing delays (ANSI E1.31-2018 Section 11.2.2).
             sleep(PAUSE_PERIOD);
 
-            // Sender sends a syncronisation packet to the sync universe.
+            // Sender sends a synchronisation packet to the sync universe.
             src.send_sync_packet(SYNC_UNIVERSE, None).unwrap();
 
             sleep(INTERVAL);
@@ -1126,7 +1126,7 @@ fn test_discover_recv_sync_runthrough_ipv6() {
                 }
                 _ => {
                     // A real-user would want to look at using more detailed error handling as appropriate to their use case but for this test panic 
-                    // (which will fail the test) is sutiable.
+                    // (which will fail the test) is suitable.
                     panic!("Unexpected error");
                 }
             }
@@ -1308,9 +1308,9 @@ use std::thread::sleep;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, Receiver};
 
-use std::net::{IpAddr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use sacn::source::SacnSource;
-use sacn::recieve::{SacnReceiver, DMXData};
+use sacn::receive::{SacnReceiver, DMXData};
 use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT};
 
 use std::time::Duration;
@@ -1355,7 +1355,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
 
@@ -1405,11 +1405,11 @@ fn test_send_recv_across_universe_unicast_ipv6(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!sync_pkt_res.is_err(), "Failed: Error when receving packets");
+    assert!(!sync_pkt_res.is_err(), "Failed: Error when receiving packets");
 
     let mut received_data: Vec<DMXData> = sync_pkt_res.unwrap();
 
-    received_data.sort(); // No guarantee on the ordering of the receieved data so sort it first to allow easier checking.
+    received_data.sort(); // No guarantee on the ordering of the received data so sort it first to allow easier checking.
 
     assert_eq!(received_data.len(), 2); // Check 2 universes received as expected.
 

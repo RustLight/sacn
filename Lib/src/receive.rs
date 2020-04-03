@@ -14,7 +14,7 @@
 // be clear which one is sending what universes as they will appear as one source.
 
 // Report point: partially discovered sources are only marked as discovered when a full set of discovery packets has been
-// receieved, if a discovery packet is receieved but there are more pages the source won't be discovered until all the pages are receieved.
+// received, if a discovery packet is received but there are more pages the source won't be discovered until all the pages are received.
 // If a page is lost this therefore means the source update / discovery in its entirety will be lost - implementation detail.
 
 /// Socket 2 used for the underlying UDP socket that sACN is sent over.
@@ -41,7 +41,7 @@ use std::time::{Duration, Instant};
 #[cfg(target_os = "linux")]
 use libc::{AF_INET, AF_INET6};
 
-/// The libc constants required are not avaliable on many windows environments and therefore are hard-coded.
+/// The libc constants required are not available on many windows environments and therefore are hard-coded.
 /// Defined as per https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket
 #[cfg(target_os = "windows")]
 const AF_INET: i32 = 2;
@@ -449,7 +449,7 @@ impl SacnReceiver {
         self.universes.contains(universe)
     }
 
-    /// Attempt to recieve data from any of the registered universes.
+    /// Attempt to receive data from any of the registered universes.
     /// This is the main method for receiving data.
     /// Any data returned will be ready to act on immediately i.e. waiting e.g. for universe synchronisation
     /// is already handled.
@@ -468,7 +468,7 @@ impl SacnReceiver {
     /// The method may also return an error if there is an issue setting a timeout on the receiver. See
     /// SacnNetworkReceiver::set_timeout for details.
     ///
-    /// The method may also return an error if there is an issue handling the data as either a Data, Syncronisation or Discovery packet.
+    /// The method may also return an error if there is an issue handling the data as either a Data, Synchronisation or Discovery packet.
     /// See the SacnReceiver::handle_data_packet, SacnReceiver::handle_sync_packet and SacnReceiver::handle_universe_discovery_packet methods
     /// for details.
     ///
@@ -497,12 +497,12 @@ impl SacnReceiver {
                 // Use the right expected error for the operating system.
                 bail!(std::io::Error::new(
                     std::io::ErrorKind::TimedOut,
-                    "No data avaliable in given timeout"
+                    "No data available in given timeout"
                 ));
             } else {
                 bail!(std::io::Error::new(
                     std::io::ErrorKind::WouldBlock,
-                    "No data avaliable in given timeout"
+                    "No data available in given timeout"
                 ));
             }
         }
@@ -555,7 +555,7 @@ impl SacnReceiver {
                                     // Indicates that elapsed is bigger than timeout so its time to return.
                                     bail!(std::io::Error::new(
                                         std::io::ErrorKind::WouldBlock,
-                                        "No data avaliable in given timeout"
+                                        "No data available in given timeout"
                                     ));
                                 }
                                 Some(new_timeout) => return self.recv(Some(new_timeout)),
@@ -582,12 +582,12 @@ impl SacnReceiver {
                                                 // Use the right expected error for the operating system.
                                                 bail!(std::io::Error::new(
                                                     std::io::ErrorKind::TimedOut,
-                                                    "No data avaliable in given timeout"
+                                                    "No data available in given timeout"
                                                 ));
                                             } else {
                                                 bail!(std::io::Error::new(
                                                     std::io::ErrorKind::WouldBlock,
-                                                    "No data avaliable in given timeout"
+                                                    "No data available in given timeout"
                                                 ));
                                             }
                                         }
@@ -682,7 +682,7 @@ impl SacnReceiver {
         self.announce_stream_termination = new_val;
     }
 
-    /// Handles the given data packet for this DMX reciever.
+    /// Handles the given data packet for this DMX receiver.
     ///
     /// Returns the universe data if successful.
     /// If the returned value is None it indicates that the data was received successfully but isn't ready to act on.
@@ -777,7 +777,7 @@ impl SacnReceiver {
     /// Note this is just a record keeping operation, it doesn't actually effect the real sACN sender it
     /// just updates the record of what universes are expected on this receiver.
     ///
-    /// If the src_cid/source_name/univese isn't currently registered then this method has no effect.
+    /// If the src_cid/source_name/universe isn't currently registered then this method has no effect.
     /// This is intentional as it allows calling this function multiple times without worrying about failure because
     /// it comes to the same result.
     ///     E.g. when a source terminates it sends 3 termination packets but a receiver should only terminate once.
@@ -808,7 +808,7 @@ impl SacnReceiver {
         }
     }
 
-    /// Takes the given data and trys to add it to the waiting data.
+    /// Takes the given data and tries to add it to the waiting data.
     ///
     /// Note that a receiver will only store a single packet of data per data_universe at once.
     ///
@@ -1005,7 +1005,7 @@ impl SacnReceiver {
     }
 }
 
-/// By implementing the Drop trait for SacnNetworkReceiver it means that the user doesn't have to explicitly cleanup the receiver
+/// By implementing the Drop trait for SacnNetworkReceiver it means that the user doesn't have to explicitly clean up the receiver
 /// and if it goes out of reference it will clean itself up.
 impl Drop for SacnReceiver {
     fn drop(&mut self) {
@@ -1015,9 +1015,9 @@ impl Drop for SacnReceiver {
             // Therefore if there is an error cleaning up the only options are ignore, notify or panic.
             // Notify using stdout might pollute the application using the library so would require a flag to enable/disable but the function of this
             // is unclear and the problem isn't solved if the flag is disabled.
-            // A panic might be unnessesary or pollute another in-progress panic hiding the true problem. It would also prevent muting the other
+            // A panic might be unnecessary or pollute another in-progress panic hiding the true problem. It would also prevent muting the other
             // universes.
-            // The error is therefore ignored as it can't be fixed eitherway as the SacnReceiver has gone out of scope and won't lead to memory unsafety.
+            // The error is therefore ignored as it can't be fixed eitherway as the SacnReceiver has gone out of scope and won't lead to memory un-safety.
             match self.mute_universe(u) {
                 Ok(_) => {}
                 Err(_e) => { /* Ignored */ }
@@ -1140,7 +1140,7 @@ impl SacnNetworkReceiver {
     fn set_only_v6(&mut self, val: bool) -> Result<()> {
         if self.addr.is_ipv4() {
             bail!(IpVersionError(
-                "No data avaliable in given timeout".to_string()
+                "No data available in given timeout".to_string()
             ))
         } else {
             Ok(self.socket.set_only_v6(val)?)
@@ -1289,12 +1289,12 @@ impl SacnNetworkReceiver {
         return self.is_multicast_enabled;
     }
 
-    /// If set to true then only receieve over IPv6. If false then receiving will be over both IPv4 and IPv6.
+    /// If set to true then only receive over IPv6. If false then receiving will be over both IPv4 and IPv6.
     /// This will return an error if the SacnReceiver wasn't created using an IPv6 address to bind to.
     fn set_only_v6(&mut self, val: bool) -> Result<()> {
         if self.addr.is_ipv4() {
             bail!(IpVersionError(
-                "No data avaliable in given timeout".to_string()
+                "No data available in given timeout".to_string()
             ))
         } else {
             Ok(self.socket.set_only_v6(val)?)
@@ -1357,7 +1357,7 @@ impl Clone for DMXData {
     }
 }
 
-/// DMXData has a total ordering based on the unvierse, then sync-universe and finally values.
+/// DMXData has a total ordering based on the universe, then sync-universe and finally values.
 impl Ord for DMXData {
     fn cmp(&self, other: &Self) -> Ordering {
         self.universe
@@ -1391,7 +1391,7 @@ impl PartialEq for DMXData {
 impl Eq for DMXData {}
 
 impl DiscoveredSacnSource {
-    /// Returns true if all the pages sent by this DiscoveredSacnSource have been receieved.
+    /// Returns true if all the pages sent by this DiscoveredSacnSource have been received.
     ///
     /// This is based on each page containing a last-page value which indicates the number of the last page expected.
     pub fn has_all_pages(&mut self) -> bool {
@@ -1778,7 +1778,7 @@ impl SequenceNumbering {
     ///
     /// sequence_number: The sequence number of the packet to check.
     ///
-    /// universe: The data niverse of the packet.
+    /// universe: The data universe of the packet.
     ///
     /// # Errors
     /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between
@@ -1924,7 +1924,7 @@ fn check_seq_number(
         }
         None => {
             // Previously checked that cid is present (and added if not), if None is returned now it indicates that between that check and this
-            // function the cid key value has been removed. This can only happen if there is a memory corruption/thread-iterleaving or similar external
+            // function the cid key value has been removed. This can only happen if there is a memory corruption/thread-interleaving or similar external
             // event which the receiver cannot handle.
             panic!();
         }
@@ -1937,7 +1937,7 @@ fn check_seq_number(
         // Reject the out of order packet as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
         bail!(ErrorKind::OutOfSequence(
             format!(
-                "Packet recieved with sequence number {} is out of sequence, last {}, seq-diff {}",
+                "Packet received with sequence number {} is out of sequence, last {}, seq-diff {}",
                 sequence_number, expected_seq.sequence_number, seq_diff
             )
             .to_string()
@@ -2027,7 +2027,7 @@ fn check_timeouts(
 /// # Arguments
 /// src_sequences: The sequence numbers for each source and universe.
 ///
-/// src_cid:       The CID for the source to remove the unvierse from.
+/// src_cid:       The CID for the source to remove the universe from.
 ///
 /// universe:      The universe to remove from the source.
 ///
@@ -2092,7 +2092,7 @@ pub fn discard_lowest_priority_then_previous(i: &DMXData, n: &DMXData) -> Result
 
 /// Performs a highest takes priority (HTP) (per byte) DMX merge of data.
 ///
-/// Note this merge is done within the explicit priorty, if i or n has an explictly higher priority it will always take precedence before this HTP merge is attempted.
+/// Note this merge is done within the explicit priority, if i or n has an explicitly higher priority it will always take precedence before this HTP merge is attempted.
 /// If either data has the preview flag set then the result will have the preview flag set.
 ///
 /// Given as an example of a possible merge algorithm.
@@ -2109,7 +2109,7 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData> {
         || i.values[0] != n.values[0]
         || i.sync_uni != n.sync_uni
     {
-        bail!(DmxMergeError("Attempted DMX merge on dmx data with different universes, syncronisation universes or data with no values".to_string()));
+        bail!(DmxMergeError("Attempted DMX merge on dmx data with different universes, synchronisation universes or data with no values".to_string()));
     }
 
     if i.priority > n.priority {
@@ -2509,7 +2509,7 @@ mod test {
         assert_eq!(dmx_rcv.rtrv_waiting_data(sync_uni).len(), 0);
     }
 
-    /// Generates a data packet framing layer with arbitary values except for the sequence number which is set to the given value.
+    /// Generates a data packet framing layer with arbitrary values except for the sequence number which is set to the given value.
     /// This is used for tests targeted at checking sequence number behaviour that don't care about other fields.
     /// The generated data packet framing layer has structure
     /// DataPacketFramingLayer {
@@ -2545,12 +2545,12 @@ mod test {
         }
     }
 
-    /// Generates a sync packet framing layer with arbitary values except for the sequence number which is set to the given value.
+    /// Generates a sync packet framing layer with arbitrary values except for the sequence number which is set to the given value.
     /// This is used for tests targeted at checking sequence number behaviour that don't care about other fields.
     /// The generated Generates a sync packet framing layer has structure:
     /// SynchronizationPacketFramingLayer {
     ///     sequence_number: <given sequence number>,
-    ///     synchronization_address: <given syncronisation address>
+    ///     synchronization_address: <given synchronisation address>
     /// }
     ///
     fn generate_sync_packet_framing_layer_seq_num<'a>(
@@ -2733,14 +2733,14 @@ mod test {
         }
     }
 
-    /// Exactly the same as test_data_packet_sequence_number_exhaustive but using syncronisation packets.
+    /// Exactly the same as test_data_packet_sequence_number_exhaustive but using synchronisation packets.
     ///
     /// This exhaustively checks that only sequence numbers outwith the reject range as specified by ANSI E1.31-2018 Section 6.7.2 are accepted for
-    /// syncronisation packets specifically.
+    /// synchronisation packets specifically.
     ///
-    /// As shown by test_sequence_number_packet_type_independence sequence numbers are treated independently for data and syncronisation packets so
-    /// therefore appropriate to test seperately. Could have been combined with the data packet variant of this test but by keeping them seperate
-    /// it more clearly shows that data and sync packet sequence numbers should be treated independently and it report errors indepedently.
+    /// As shown by test_sequence_number_packet_type_independence sequence numbers are treated independently for data and synchronisation packets so
+    /// therefore appropriate to test separately. Could have been combined with the data packet variant of this test but by keeping them separate
+    /// it more clearly shows that data and sync packet sequence numbers should be treated independently and it report errors independently.
     ///  
     #[test]
     fn test_sync_packet_sequence_number_exhaustive() {
@@ -2910,7 +2910,7 @@ mod test {
     /// This then means the receiver will reject another data packet with sequence number 0.
     /// The receiver is then passed a sync packet with sequence number 0 which shouldn't be rejected as it is a different packet type.
     ///
-    /// Shows sequence numbers are evaluated seperately for each packet type as per ANSI E1.31-2018 Section 6.7.2.
+    /// Shows sequence numbers are evaluated separately for each packet type as per ANSI E1.31-2018 Section 6.7.2.
     ///
     #[test]
     fn test_sequence_number_packet_type_independence() {
@@ -2957,7 +2957,7 @@ mod test {
                 .handle_sync_packet(src_cid, sync_packet)
                 .unwrap()
                 .is_none(),
-            "Receiver incorrectly rejected syncronisation packet"
+            "Receiver incorrectly rejected synchronisation packet"
         );
     }
 
@@ -2965,7 +2965,7 @@ mod test {
     /// This then means the receiver will reject another data packet for that universe with sequence number 0.
     /// The receiver is then passed a data packet with sequence number 0 for a different universe which shouldn't be rejected as it is for a different universe.
     ///
-    /// Shows sequence numbers are evaluated seperately for each universe as per ANSI E1.31-2018 Section 6.7.2.
+    /// Shows sequence numbers are evaluated separately for each universe as per ANSI E1.31-2018 Section 6.7.2.
     ///
     #[test]
     fn test_data_packet_sequence_number_universe_independence() {
@@ -3017,9 +3017,9 @@ mod test {
     /// Creates a receiver and then makes it handle 2 sync packets for the same synchronisation address with sequence numbers 0 and 1.
     /// This then means the receiver will reject another sync packet for that universe with sequence number 0.
     /// The receiver is then passed a sync packet with sequence number 0 for a different synchronisation address which shouldn't be rejected as it is for
-    /// a different syncronisation address.
+    /// a different synchronisation address.
     ///
-    /// Shows sequence numbers are evaluated seperately for each synchronisation address individually as per ANSI E1.31-2018 Section 6.7.2.
+    /// Shows sequence numbers are evaluated separately for each synchronisation address individually as per ANSI E1.31-2018 Section 6.7.2.
     ///
     #[test]
     fn test_sync_packet_sequence_number_universe_independence() {

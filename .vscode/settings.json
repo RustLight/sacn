@@ -1,9 +1,24 @@
 {
     "cSpell.ignoreWords": [
+        "datas",
         "deregister",
         "dgram",
+        "dmx",
+        "ip",
+        "ip's",
+        "libc",
+        "nosync",
+        "rcv",
+        "rtrv",
         "rustfmt",
+        "secs",
         "skip",
-        "universe"
+        "srcs",
+        "udpfl",
+        "uint",
+        "universe",
+        "unsubscribe",
+        "uuid's",
+        "vals"
     ]
 }

@@ -16,14 +16,13 @@ use std::thread::sleep;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::iter;
 use std::convert::TryInto; // Used for converting between u8 and u16 representations. 
 use std::str; // Used for converting between bytes and strings.
-use std::collections::HashMap; // Used for keeping track of sequence numbers in some tests.
 
 use sacn::source::SacnSource;
-use sacn::recieve::{SacnReceiver, DMXData, htp_dmx_merge};
+use sacn::receive::{SacnReceiver, DMXData, htp_dmx_merge};
 use sacn::packet::*;
 use sacn::error::errors::*;
 
@@ -31,10 +30,7 @@ use sacn::error::errors::*;
 use uuid::Uuid;
 
 /// Socket2 used to create sockets for testing.
-use socket2::{Socket, Domain, Type, SockAddr};
-
-// Report: Should start code be seperated out when receiving? Causes input and output to differ and is technically part of another protocol.
-// - Decided it shouldn't be seperated.
+use socket2::{Socket, Domain, Type};
 
 /// For some tests to work multiple instances of the protocol must be on the same network with the same port for example to test multiple simultaneous receivers, this means multiple IP's are needed.
 /// This is achieved by assigning multiple static IP's to the test machine and theses IP's are specified below.
@@ -342,14 +338,14 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     rcv_thread1.join().unwrap();
     rcv_thread2.join().unwrap();
 
-    assert!(!received_result1.is_err(), "Failed: Error when receving data");
+    assert!(!received_result1.is_err(), "Failed: Error when receiving data");
     let received_data1: Vec<DMXData> = received_result1.unwrap();
     assert_eq!(received_data1.len(), 1); // Check only 1 universe received as expected.
     let received_universe1: DMXData = received_data1[0].clone();
     assert_eq!(received_universe1.universe, universe); // Check that the universe received is as expected.
     assert_eq!(received_universe1.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
 
-    assert!(!received_result2.is_err(), "Failed: Error when receving data");
+    assert!(!received_result2.is_err(), "Failed: Error when receiving data");
     let received_data2: Vec<DMXData> = received_result2.unwrap();
     assert_eq!(received_data2.len(), 1); // Check only 1 universe received as expected.
     let received_universe2: DMXData = received_data2[0].clone();
@@ -478,7 +474,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
 
@@ -524,7 +520,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
 
@@ -626,7 +622,7 @@ fn test_send_recv_diff_priority_same_universe_multicast_ipv4(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
 
@@ -678,7 +674,7 @@ fn test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
 
@@ -810,8 +806,8 @@ fn test_send_recv_two_universe_multicast_ipv4(){
     // Receiver can be terminated.
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving 1st universe of data");
-    assert!(!received_result_2.is_err(), "Failed: Error when receving 2nd universe of data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving 1st universe of data");
+    assert!(!received_result_2.is_err(), "Failed: Error when receiving 2nd universe of data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
     let received_data_2: Vec<DMXData> = received_result_2.unwrap();
@@ -859,7 +855,7 @@ fn test_send_recv_single_universe_alternative_startcode_multicast_ipv4(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!received_result.is_err(), "Failed: Error when receving data");
+    assert!(!received_result.is_err(), "Failed: Error when receiving data");
 
     let received_data: Vec<DMXData> = received_result.unwrap();
 
@@ -909,11 +905,11 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!sync_pkt_res.is_err(), "Failed: Error when receving packets");
+    assert!(!sync_pkt_res.is_err(), "Failed: Error when receiving packets");
 
     let mut received_data: Vec<DMXData> = sync_pkt_res.unwrap();
 
-    received_data.sort(); // No guarantee on the ordering of the receieved data so sort it first to allow easier checking.
+    received_data.sort(); // No guarantee on the ordering of the received data so sort it first to allow easier checking.
 
     assert_eq!(received_data.len(), 2); // Check 2 universes received as expected.
 
@@ -967,11 +963,11 @@ fn test_send_recv_across_universe_unicast_ipv4(){
 
     rcv_thread.join().unwrap();
 
-    assert!(!sync_pkt_res.is_err(), "Failed: Error when receving packets");
+    assert!(!sync_pkt_res.is_err(), "Failed: Error when receiving packets");
 
     let mut received_data: Vec<DMXData> = sync_pkt_res.unwrap();
 
-    received_data.sort(); // No guarantee on the ordering of the receieved data so sort it first to allow easier checking.
+    received_data.sort(); // No guarantee on the ordering of the received data so sort it first to allow easier checking.
 
     assert_eq!(received_data.len(), 2); // Check 2 universes received as expected.
 
@@ -1202,7 +1198,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
     
             src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
-            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
     
             src.send(&[universe], &data, Some(priority), None, None).unwrap();
         }));
@@ -1228,7 +1224,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
                 res.push(dmx_recv.recv(None)); // Receiver won't complete this until it receives from the senders which are all held waiting on the controlling thread.
             }
 
-            // Results of each receive are sent back, this allows checking that each reciever was an expected universe, all universes were received and there were no errors.
+            // Results of each receive are sent back, this allows checking that each receive was an expected universe, all universes were received and there were no errors.
             tx.send(res).unwrap(); 
         }));
 
@@ -1248,11 +1244,11 @@ fn test_two_senders_two_recv_multicast_ipv4(){
 
         for r in res {
             let data: Vec<DMXData> = r.unwrap(); // Check that there are no errors when receiving.
-            assert_eq!(data.len(), 1); // Check that each universe was received seperately.
+            assert_eq!(data.len(), 1); // Check that each universe was received separately.
             rcv_dmx_datas.push(data[0].clone());
         }
 
-        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
+        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order received may vary depending on network.
 
         for k in 0 .. SND_THREADS {
             assert_eq!(rcv_dmx_datas[k].universe, ((k as u16) + BASE_UNIVERSE)); // Check that the universe received is as expected.
@@ -1312,7 +1308,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
     
             src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
-            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
     
             src.send(&[universe], &data, Some(priority), None, None).unwrap();
         }));
@@ -1338,7 +1334,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
                 res.push(dmx_recv.recv(None)); // Receiver won't complete this until it receives from the senders which are all held waiting on the controlling thread.
             }
 
-            // Results of each receive are sent back, this allows checking that each reciever was an expected universe, all universes were received and there were no errors.
+            // Results of each receive are sent back, this allows checking that each receiver was an expected universe, all universes were received and there were no errors.
             tx.send(res).unwrap(); 
         }));
 
@@ -1358,11 +1354,11 @@ fn test_three_senders_two_recv_multicast_ipv4(){
 
         for r in res {
             let data: Vec<DMXData> = r.unwrap(); // Check that there are no errors when receiving.
-            assert_eq!(data.len(), 1); // Check that each universe was received seperately.
+            assert_eq!(data.len(), 1); // Check that each universe was received separately.
             rcv_dmx_datas.push(data[0].clone());
         }
 
-        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
+        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order received may vary depending on network.
 
         for k in 0 .. SND_THREADS {
             assert_eq!(rcv_dmx_datas[k].universe, ((k as u16) + BASE_UNIVERSE)); // Check that the universe received is as expected.
@@ -1422,7 +1418,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
     
             src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
-            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
     
             src.send(&[universe], &data, Some(priority), None, None).unwrap();
         }));
@@ -1448,7 +1444,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
                 res.push(dmx_recv.recv(None)); // Receiver won't complete this until it receives from the senders which are all held waiting on the controlling thread.
             }
 
-            // Results of each receive are sent back, this allows checking that each reciever was an expected universe, all universes were received and there were no errors.
+            // Results of each receive are sent back, this allows checking that each receive was an expected universe, all universes were received and there were no errors.
             tx.send(res).unwrap(); 
         }));
 
@@ -1468,11 +1464,11 @@ fn test_two_senders_three_recv_multicast_ipv4(){
 
         for r in res {
             let data: Vec<DMXData> = r.unwrap(); // Check that there are no errors when receiving.
-            assert_eq!(data.len(), 1); // Check that each universe was received seperately.
+            assert_eq!(data.len(), 1); // Check that each universe was received separately.
             rcv_dmx_datas.push(data[0].clone());
         }
 
-        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
+        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order received may vary depending on network.
 
         for k in 0 .. SND_THREADS {
             assert_eq!(rcv_dmx_datas[k].universe, ((k as u16) + BASE_UNIVERSE)); // Check that the universe received is as expected.
@@ -1532,7 +1528,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
     
             src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
-            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
     
             src.send(&[universe], &data, Some(priority), None, None).unwrap();
         }));
@@ -1558,7 +1554,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
                 res.push(dmx_recv.recv(None)); // Receiver won't complete this until it receives from the senders which are all held waiting on the controlling thread.
             }
 
-            // Results of each receive are sent back, this allows checking that each reciever was an expected universe, all universes were received and there were no errors.
+            // Results of each receive are sent back, this allows checking that each receive was an expected universe, all universes were received and there were no errors.
             tx.send(res).unwrap(); 
         }));
 
@@ -1578,11 +1574,11 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 
         for r in res {
             let data: Vec<DMXData> = r.unwrap(); // Check that there are no errors when receiving.
-            assert_eq!(data.len(), 1); // Check that each universe was received seperately.
+            assert_eq!(data.len(), 1); // Check that each universe was received separately.
             rcv_dmx_datas.push(data[0].clone());
         }
 
-        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order recieved may vary depending on network.
+        rcv_dmx_datas.sort_unstable(); // Sorting by universe allows easier checking as order received may vary depending on network.
 
         for k in 0 .. SND_THREADS {
             assert_eq!(rcv_dmx_datas[k].universe, ((k as u16) + BASE_UNIVERSE)); // Check that the universe received is as expected.
@@ -1687,7 +1683,7 @@ fn test_universe_discovery_interval_ipv4(){
     const BASE_UNIVERSE: u16 = 1;
     const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
     const INTERVAL_EXPECTED_MILLIS: u128 = E131_UNIVERSE_DISCOVERY_INTERVAL.as_millis(); // Expected discovery packet interval is every 10 seconds (10000 milliseconds).
-    const INTERVAL_TOLERANCE_MILLIS: u128 = 1000; // Allow upto a second either side of this interval to account for random variations.
+    const INTERVAL_TOLERANCE_MILLIS: u128 = 1000; // Allow up to a second either side of this interval to account for random variations.
 
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
 
@@ -1765,7 +1761,7 @@ fn test_universe_discovery_interval_with_updates_ipv4(){
     const BASE_UNIVERSE: u16 = 1;
     const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
     const INTERVAL_EXPECTED_MILLIS: u128 = E131_UNIVERSE_DISCOVERY_INTERVAL.as_millis(); // Expected discovery packet interval is every 10 seconds (10000 milliseconds).
-    const INTERVAL_TOLERANCE_MILLIS: u128 = 1000; // Allow upto a second either side of this interval to account for random variations.
+    const INTERVAL_TOLERANCE_MILLIS: u128 = 1000; // Allow up to a second either side of this interval to account for random variations.
     const SENDER_REGISTER_DELAY: Duration = Duration::from_secs(1); // The time between registering new universe on the sender.
     const UNIVERSES_TO_REGISTER: usize = 5; // The number of universes to register on the src.
 
@@ -2071,7 +2067,7 @@ fn test_receiver_sources_exceeded_3() {
 
     let mut snd_threads = Vec::new();
 
-    // Seperate message queues used so threads don't take messages to allow them to proceed as a message to allow finishing.
+    // Separate message queues used so threads don't take messages to allow them to proceed as a message to allow finishing.
     // This is less efficient than using different message types within a single queue however as this is a test the priority is simplicity.
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
     let (finish_snd_tx, finish_snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking to tell the source threads to finish.
@@ -2097,7 +2093,7 @@ fn test_receiver_sources_exceeded_3() {
     
             src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
-            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
     
             src.send(&[universe], &data, Some(priority), None, None).unwrap();
 
@@ -2178,7 +2174,7 @@ fn test_receiver_source_limit_2() {
     
             src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
-            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
 
             // Each source sends twice (meaning 4 packets total), this checks that the receiver isn't using the number of packets as the way to check for the number
             // of sources. 
@@ -2236,7 +2232,7 @@ fn test_receiver_source_limit_2_termination_check() {
     
             src.register_universe(universe).unwrap(); // Senders all send on different universes.
             
-            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread recveives which stops sending before the receivers are ready.
+            tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
 
             // Each source sends twice (meaning 4 packets total), this checks that the receiver isn't using the number of packets as the way to check for the number
             // of sources. 
@@ -2320,7 +2316,7 @@ fn test_preview_data_2_receiver_1_sender() {
             let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
 
             if i == 0 {
-                dmx_recv.set_process_preview_data(true); // The first reciever should listen for preview data.
+                dmx_recv.set_process_preview_data(true); // The first receiver should listen for preview data.
             }
 
             // Receivers listen to the same universe
@@ -2396,7 +2392,7 @@ fn test_preview_data_2_receiver_1_sender() {
     // Send data with the preview flag.
     src.send(&[UNIVERSE], &PREVIEW_DATA, None, None, None).unwrap();
 
-    // Finish with the recieve threads.
+    // Finish with the receive threads.
     for r in rcv_threads {
         r.join().unwrap();
     }
@@ -2407,7 +2403,7 @@ fn test_preview_data_2_receiver_1_sender() {
 /// This shows that the timeout mechanism for a source works.
 #[test]
 fn test_source_1_universe_timeout(){
-    // Allow the timeout notification to come upto 2.5 seconds too late compared to the expected 2.5 seconds.
+    // Allow the timeout notification to come up to 2.5 seconds too late compared to the expected 2.5 seconds.
     // (2.5s base as per ANSI E1.31-2018 Appendix A E131_NETWORK_DATA_LOSS_TIMEOUT, tolerance as per documentation for recv() method).
     // Both tolerances allow 50 ms for code execution time.
     let acceptable_lower_bound: Duration = E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(50);
@@ -2489,7 +2485,7 @@ fn test_source_1_universe_timeout(){
 
 /// Creates a receiver and a sender. The sender sends 2 data packets to the receiver on different universes and then waits a short time 
 /// (< E131_NETWORK_DATA_LOSS_TIMEOUT) and sends another data packet for the first universe allowing the second universe to timeout.
-/// The receiver checks all 3 data packets are received correctly and that (with annouce_timeout flag set to true) only the universe on which
+/// The receiver checks all 3 data packets are received correctly and that (with announce_timeout flag set to true) only the universe on which
 /// a single packet was sent times out.
 /// 
 /// This shows that the timeout mechanism is per universe and not for an entire source as a single universe can timeout while other universe
@@ -2497,7 +2493,7 @@ fn test_source_1_universe_timeout(){
 /// 
 #[test]
 fn test_source_2_universe_1_timeout(){
-    // Allow the timeout notification to come upto 2.5 seconds too late compared to the expected 2.5 seconds.
+    // Allow the timeout notification to come up to 2.5 seconds too late compared to the expected 2.5 seconds.
     // (2.5s base as per ANSI E1.31-2018 Appendix A E131_NETWORK_DATA_LOSS_TIMEOUT, tolerance as per documentation for recv() method).
     // Both tolerances allow 50 ms for code execution time.
     let acceptable_lower_bound: Duration = E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(50);
@@ -2601,7 +2597,7 @@ fn test_source_2_universe_1_timeout(){
                         assert!(true, "Universe timed out as expected");
 
                         // Know that the timeout universe timed out as expected so check that the other universe hasn't timed out.
-                        // Makes use of a timeout of 0 which should check the source timeouts and timeout recieving instantly.
+                        // Makes use of a timeout of 0 which should check the source timeouts without actually receiving any data as it times out instantly.
                         match dmx_recv.recv(Some(Duration::from_millis(0))) {
                             Err(e) => {
                                 match e.kind() {
@@ -2706,7 +2702,7 @@ fn test_send_recv_wrong_multicast_universe(){
 /// The sender then sends multiple data packets with different sync addresses and then follows up with the various sync packets.
 /// The receiver checks that the right data packets are received in the right order based on the sync packets sent. 
 /// 
-/// This shows that multiple syncronisation addresses can be used simultaneously.
+/// This shows that multiple synchronisation addresses can be used simultaneously.
 /// 
 #[test]
 fn test_send_recv_multiple_sync_universes(){
@@ -2776,9 +2772,9 @@ fn test_send_recv_multiple_sync_universes(){
 /// the corresponding sync packet. As per ANSI E1.31-2018 Section 11.1.2 this data should be discarded as universe synchronisation should stop if the
 /// sync packet isn't received within the E131_NETWORK_DATA_LOSS_TIMEOUT.
 /// 
-/// This shows that this timeout mechanism to stop universe sychronisation works.
+/// This shows that this timeout mechanism to stop universe synchronisation works.
 /// 
-/// Note that this library does not attempt to implement the force_syncronisation bit behaviour and so therefore always stops universe synchronisation if the
+/// Note that this library does not attempt to implement the force_synchronisation bit behaviour and so therefore always stops universe synchronisation if the
 /// sync packet is not received within the timeout.
 /// 
 #[test]
@@ -2894,7 +2890,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv4() {
             // Sender observes a slight pause to allow for processing delays (ANSI E1.31-2018 Section 11.2.2).
             sleep(PAUSE_PERIOD);
 
-            // Sender sends a syncronisation packet to the sync universe.
+            // Sender sends a synchronisation packet to the sync universe.
             src.send_sync_packet(sync_universe, None).unwrap();
         }
 
@@ -2937,7 +2933,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv4() {
     }
     // "This process continues until Receiver B receives an E1.31 Data Packet with a Synchronization Address of 0."
     // "Receiver B may then unsubscribe from the synchronization multicast address" - This implementation does not automatically unsubscribe
-    //        This is based on the reasoning that a synchronisation universe will be used multiple times and subscribing/unsubscribing is unneeded overhead.
+    //        This is based on the reasoning that a synchronisation universe will be used multiple times and subscribing/un-subscribing is unneeded overhead.
     // Synchronisation is now over so should receive 2 packets individually.
     let rcv_data = dmx_recv.recv(None).unwrap();
     assert_eq!(rcv_data.len(), 1);
@@ -2968,7 +2964,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv4() {
     snd_thread.join().unwrap();
 }
 
-/// Sets up a single source and receiver. Like in a real-world scenario the source sends data continously on 2 universes syncronised 
+/// Sets up a single source and receiver. Like in a real-world scenario the source sends data continuously on 2 universes synchronised 
 /// on a third universe with a small interval between data sends.
 /// The receiver starts with no knowledge of what universe the source is sending on so starts by using Universe Discovery to discover the universes
 /// it then joins these universes and receives the data. The sender eventually stops sending data and terminates by sending stream termination packets.
@@ -3020,7 +3016,7 @@ fn test_discover_recv_sync_runthrough_ipv4() {
             // Sender observes a slight pause to allow for processing delays (ANSI E1.31-2018 Section 11.2.2).
             sleep(PAUSE_PERIOD);
 
-            // Sender sends a syncronisation packet to the sync universe.
+            // Sender sends a synchronisation packet to the sync universe.
             src.send_sync_packet(SYNC_UNIVERSE, None).unwrap();
 
             sleep(INTERVAL);
@@ -3052,7 +3048,7 @@ fn test_discover_recv_sync_runthrough_ipv4() {
                 }
                 _ => {
                     // A real-user would want to look at using more detailed error handling as appropriate to their use case but for this test panic 
-                    // (which will fail the test) is sutiable.
+                    // (which will fail the test) is suitable.
                     panic!("Unexpected error");
                 }
             }
@@ -3287,7 +3283,7 @@ fn test_data_packet_transmit_format() {
     assert_eq!(&packet[..], &recv_buf[0..amt]);
 }
 
-/// Follows a similar process to test_data_packet_transmit_format by creating a SacnSender and then a receving socket. The sender 
+/// Follows a similar process to test_data_packet_transmit_format by creating a SacnSender and then a receiving socket. The sender 
 /// then terminates a stream and the receive socket receives and checks that the sender sent the correct number (3) of termination packets.
 #[test]
 fn test_terminate_packet_transmit_format() {
@@ -3341,7 +3337,7 @@ fn test_sync_packet_transmit_format() {
     // Sync packet length 49 bytes as per ANSI E1.31-2018 Section 4.2 Table 4-2.
     const E131_SYNC_PACKET_LENGTH: usize = 49;
 
-    // Sequence number of initial syncronisation packet is expected to be 0.
+    // Sequence number of initial synchronisation packet is expected to be 0.
     const SEQUENCE_NUM: u8 = 0;
 
     let sync_packet = generate_sync_packet_raw(CID, SYNC_ADDR, SEQUENCE_NUM);
@@ -3507,7 +3503,7 @@ fn test_sync_packet_transmit_seq_numbers() {
     // Sync packet length 49 bytes as per ANSI E1.31-2018 Section 4.2 Table 4-2.
     const E131_SYNC_PACKET_LENGTH: usize = 49;
 
-    // Sequence number of initial syncronisation packet is expected to be 0.
+    // Sequence number of initial synchronisation packet is expected to be 0.
     const SEQUENCE_NUM: u8 = 0;
 
     // Root Layer
@@ -3719,7 +3715,7 @@ fn test_track_sync_packet_seq_numbers() {
 }
 
 /// Creates 5 receiver sockets each listening to a different multicast address for a specific synchronisation address.
-/// Then creates a source which sends syncronisation packets meant for different synchronisation addresses.
+/// Then creates a source which sends synchronisation packets meant for different synchronisation addresses.
 /// The receiver sockets check that they only receive synchronisation packets meant for their synchronisation address / multicast address.
 /// 
 /// This shows that synchronisation packets are only sent to the multicast address which corresponds to the synchronisation address as per

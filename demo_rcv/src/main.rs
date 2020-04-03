@@ -26,7 +26,7 @@ use error::errors::*;
 
 extern crate sacn;
 
-use sacn::recieve::{DMXData, SacnReceiver, DiscoveredSacnSource};
+use sacn::receive::{DMXData, SacnReceiver, DiscoveredSacnSource};
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 
 use std::net::{SocketAddr};
@@ -37,7 +37,7 @@ use std::thread::sleep;
 
 /// The string given by the user to perform each of the various options as described in get_usage_str below.
 const ACTION_RECV:                                  &str = "r";
-const ACTION_RECV_CONTINOUS:                        &str = "c";
+const ACTION_RECV_CONTINUOUS:                       &str = "c";
 const ACTION_PRINT_DISCOVERED_SOURCES:              &str = "s";
 const ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT:   &str = "x";
 const ACTION_QUIT:                                  &str = "q";
@@ -49,7 +49,7 @@ const ACTION_PREVIEW:                               &str = "p";
 const ACTION_ANNOUNCE_DISCOVERED:                   &str = "a";
 const ACTION_IGNORE:                                &str = "#";
 
-/// Describes the various commands / command-line arguments avaliable and what they do.
+/// Describes the various commands / command-line arguments available and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
 /// Not a const as const with format! not supported in rust.
 fn get_usage_str() -> String {
@@ -88,7 +88,7 @@ fn get_usage_str() -> String {
     {} <'true'/'false'>\n
 
     All input is ignored on lines starting with '{} '.
-    ", ACTION_RECV, ACTION_RECV_CONTINOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT, 
+    ", ACTION_RECV, ACTION_RECV_CONTINUOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT, 
     ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP, ACTION_PREVIEW, ACTION_ANNOUNCE_DISCOVERED,
     ACTION_IGNORE)
 }
@@ -169,7 +169,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                     let res = dmx_recv.recv(timeout).map_err(|e| e.into());
                     print_recv(res);
                 }
-                ACTION_RECV_CONTINOUS => { // Receive data continously.
+                ACTION_RECV_CONTINUOUS => { // Receive data continuously.
                     if split_input.len() < 3 {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 3 )"));
