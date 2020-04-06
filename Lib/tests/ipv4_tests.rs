@@ -487,49 +487,61 @@ fn test_send_recv_single_universe_unicast_ipv4(){
     assert_eq!(received_universe.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
 }
 
+/// A test showing a single universe of data being sent from a sender to a receiver over multicast on IPv4.
+/// This test has more comments than usage as it is used as an example.
 #[test]
 fn test_send_recv_single_universe_multicast_ipv4(){
-    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
+    // The universe and priority of the data used in this test.
+    const UNIVERSE: u16 = 1;
+    const PRIORITY: u8 = 100;
 
+    // Allows control of the receiver and sender so that they can be put into the correct state for the test.
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel(); 
     let thread_tx = tx.clone();
 
-    let universe = 1;
-
+    // A simulated receiver, this is independent from the sender (apart from the communication channel for syncing states).
     let rcv_thread = thread::spawn(move || {
+        // The receiver binds to a test IP and the ACN port. This port is the ported used for this protocol so the receiver must bind to it.
         let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
 
-        dmx_recv.listen_universes(&[universe]).unwrap();
+        dmx_recv.listen_universes(&[UNIVERSE]).unwrap();
 
+        // A control message is sent now that the receiver is ready so that the sender can progress.
         thread_tx.send(Ok(Vec::new())).unwrap();
 
-        thread_tx.send(dmx_recv.recv(None)).unwrap();
+        // The receiver then waits until it receives the data.
+        let result = dmx_recv.recv(None);
+
+        // The result of the receiver is then sent back to the original test thread using the control channel.
+        // This allows the checking of the results to be done on the first test thread (having the assertions on the same thread behaves better with debug output).
+        thread_tx.send(result).unwrap();
     });
 
-    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
+    // Blocks until the receiver says it is ready. This stops the sender sending before the receiver is created meaning it would miss the data.
+    rx.recv().unwrap().unwrap(); 
 
-    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+    // The sender is bound to an interface on the same network as the receiver but on a different port. 
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
-    let priority = 100;
+    // The sender registers the universe for sending and then sends some test data.
+    src.register_universe(UNIVERSE).unwrap();
+    src.send(&[UNIVERSE], &TEST_DATA_SINGLE_UNIVERSE, Some(PRIORITY), None, None).unwrap();
 
-    src.register_universe(universe).unwrap();
-
-    src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None).unwrap();
-
+    // The data that the receiver received is sent back using the thread message passing channel.
     let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
-
     rcv_thread.join().unwrap();
 
+    // Check that the receiver received the data without error.
     assert!(!received_result.is_err(), "Failed: Error when receiving data");
 
+    // Check that the data received is as expected.
     let received_data: Vec<DMXData> = received_result.unwrap();
-
     assert_eq!(received_data.len(), 1); // Check only 1 universe received as expected.
 
     let received_universe: DMXData = received_data[0].clone();
-
-    assert_eq!(received_universe.universe, universe); // Check that the universe received is as expected.
-
+    assert_eq!(received_universe.priority, PRIORITY, "Received priority doesn't match expected"); 
+    assert_eq!(received_universe.universe, UNIVERSE, "Received universe doesn't match expected");
     assert_eq!(received_universe.values, TEST_DATA_SINGLE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
 }
 
