@@ -331,7 +331,8 @@ Unlike many languages the underlying rust socket used for this library does not 
 During a Drop there is no provided way to pass an error to the user. This is inherent in Drop being called automatically because there is no clear return path for an error nor can the Drop be stopped either-way as it might be called during a panic! or program wrap up. This leads to an implementation decision for how to handle errors with 4 distinct options: panic, notify, prevent, ignore. Panic means that within the drop if there is an error then panic the program with a description of the error. This notifies the user however it also causes the program to be terminated even if it could potentially continue. It also pollutes the error-output and can lead to the original error/problem to be hidden. This makes it unsuitable for this application as a failure to drop won't lead to memory unsafety or otherwise cause significant problems beyond the program scope. Notifying the user refers to using a functionality such as logging, printing to standard-out or some other mechanism. Printing to stdout is avoided as this might pollute an applications output by displaying errors to the user which a developer using the library might want to avoid. Logging is a possible option which adds further complexity to the library as-well as another requirement for a logging library. Preventing the possibility of the error is the ideal solution however in this case as IO is required this cannot be guaranteed if there is a problem with the underlying socket. The final solution is to ignore the error, usually this would be problematic as it doesn't allow the application developer to decide the programs behaviour or to fix the problem but in this case that isn't possible anyway. Ignoring the error also allows as much to be cleaned up as possible unlike panic which would stop cleaning up at the point the error occurs. The actual implementation decision based on this was therefore to ignore the error with the recommendation that logging could be potentially added later.
 
 \section{Testing}
-As a software engineering project the testing stage is vitally important and took up a large amount of the total time spent on the project. The key aims of testing are as follows, first to show that the code works as intended. This is primary done through the unit and integration tests. The next part is showing that the code works as expected by the protocol. This is referred to as compliance testing and as creating a library that is compliant with parts of the ANSI E1.31-2018 protocol was the main aim of the project this compliance testing is crucial to showing the success of the project. The final aim of the testing is to show that the library is actually suitable for usage, this comes in the form of acceptance testing where the library is actually utilised for its intended purpose by an end user.
+As a software engineering project the testing stage is vitally important and took up a large amount of the total time spent on the project. The key aims of testing are as follows, first to show that the code works as intended. This is primary done through the unit and integration tests. The next part is showing that the code works as expected by the protocol. This is referred to as compliance testing and as creating a library that is compliant with parts of the ANSI E1.31-2018 protocol was the main aim of the project this compliance testing is crucial to showing the success of the project. The final aim of the testing is to show that the library is actually suitable for usage, this comes in the form of acceptance testing where the library is actually utilised for its intended purpose by an end user.\\
+
 These 3 aims show that the project works as intended, that the intended functionality is compliant with the protocol and that the project can actually be used for its functionality by a user. Once the project has successfully passed these 3 categories of tests it is ready to move onto the deployment stage of the software development life cycle.
 
 \subsection{Scope}
@@ -364,15 +365,30 @@ Unit testing shows that individual parts of the code works as expected, integrat
 	\caption{}
 \end{figure}
 
-The threaded integration tests are limited because the protocol is designed to work across multiple machines and the tests only use one machine. This means that to fully test the protocol it also has to be tested in a more representative environment of its actual usage. In-order to allow this 2 small demo programs were created, these programs were also written in rust and represent an example implementation of a sender ('demo\_src') and a receiver ('demo\_rcv') that uses the library. A testing framework was then created as shown in the 'script-testing' folder. This framework works between multiple machines by using SSH to start up the required senders and receivers and then predefined input is provided to both and the output written to a file on a shared file system. Once all the tests are run the output is then compared against the expected output (utilising the diff tool) and if it matches the test is marked as passed (failed otherwise). This allows a way of showing the that the protocol works across a real network setup with multiple machines while still being reproducible without having large amounts of manual input. This test setup can be represented as the abstract and physical layout shown in Figure \ref{integration_test_setup}.
+The threaded integration tests are limited because the protocol is designed to work across multiple machines and the tests only use one machine. This means that to fully test the protocol it also has to be tested in a more representative environment of its actual usage. In-order to allow this 2 small demo programs were created, these programs were also written in rust and represent an example implementation of a sender ('demo\_src') and a receiver ('demo\_rcv') that uses the library. A testing framework was then created as shown in the 'script-testing' folder. This framework works between multiple machines by using SSH to start up the required senders and receivers and then predefined input is provided to both and the output written to a file on a shared file system. Once all the tests are run the output is then compared against the expected output (utilising the diff tool) and if it matches the test is marked as passed (failed otherwise). This allows a way of showing the that the protocol works across a real network setup with multiple machines while still being reproducible without having large amounts of manual input. This test setup can be represented as the abstract and physical layout shown in Figure \ref{INTEGRATION_TEST_SETUP}.
 
 \begin{figure}[H]
-	\label{integration_test_setup}
+	\label{INTEGRATION_TEST_SETUP}
 	\includegraphics[width=\textwidth]{SH-Project-Intergration-Tests-Abstract-View.png}
 	\caption{The abstract setup of the integration tests along with the actual implementation}
 \end{figure}
 
 The test-scripts used as-well as the expected output files and given inputs are included in the integration-testing folder. The test\_run script actually runs the test, it starts the receiver and sender and then provides the receiver the commands in the 'rcv' file and the sender the commands in the 'src' file. The output of both sender and receiver are piped into an output file 'xrcv-out.temp' and 'xsrc-out.temp' where 'x' is the test number. The test\_check script then checks the output against the expected output for each test and reports pass/fail. The reason for separate run/check scripts is that it helps to account for the delay in the file-system syncing the output from the test machines so that the master can check it.
+
+\subsubsection{Fuzz Testing}
+The integration and unit tests are both focused on checking behaviour of the protocol in specific conditions. What this doesn't check however is the behaviour of the protocol when given a wider variety of inputs. Where this is particularly important is with the packets parsed from the network. It is possible that there may be multiple different protocols operating on a network and so therefore it is possible that the implementation may receive packets from these sources. It is also possible that there may be malfunctioning/malicious sources on the network sending random or scrambled data. This means that the protocol should be able to handle this by flagging up malformed packets without crashing. This is particularly important in this case because this library may be used within an implementation of a show-critical device and so therefore should avoid crashing as much as possible. To test how well the library does in this regard a technique called fuzzing is used. This is where a fuzzing program generates data (based on some initial inputs) which it then feeds to the program being tested and it checks if the program crashes. This fuzzing program does this continuously using a huge variety of possible data while recording how the program handles it each time.\\
+
+For this test the american-fuzzy-lop library \cite{RUST_AFL_FUZZ} was used. This was setup as described at \cite{RUST_AFL_FUZZ_DOC} and run on the Fedora 31 operating system. The fuzz target code used is included in the sacn-parse-fuzz-target subfolder of the Fuzzing folder. This code is extremely basic and just passes the provided fuzzing data straight to the parse function and ignores the result. This therefore doesn't check the error returned or if a specific packet is parsed but it doesn't check that the library parsing mechanism runs without encountering a crash (a rust panic!).\\
+
+To guide the fuzzer to produce data based on sACN expected packets the raw data for a data, synchronisation and discovery packet are used as inputs. These packets are found in the 'fuzz\_in' subfolder of the Fuzzing folder. The packets were generated by performing a wireshark capture of the implementation sender sending these packets and this is included as the "fuzz-test-base-captured-packets.pcapng" file. These captured packets were then transformed into raw data files utilising the wireshark export raw data export feature as described in \cite{WIRESHARK_EXPORT_RAW}.\\
+
+The results of the fuzzer run are shown in figure \ref{FUZZ_RESULTS}. These results show...
+
+\begin{figure}[H]
+	\label{FUZZ_RESULTS}
+	\includegraphics[width=\textwidth]{todo}
+	\caption{The abstract setup of the integration tests along with the actual implementation}
+\end{figure}
 
 \subsubsection{Testing External Interoperability}
 The unit and integration tests show that the program works within itself but it is unlikely that within a deployment scenario only a single implementation would be used and so therefore it is also required to show that the library is interoperable with other programs. Since all the programs run the same protocol it is expected that they should all be able to communicate. \\
@@ -380,7 +396,7 @@ The unit and integration tests show that the program works within itself but it 
 These tests can highlight problems with the program which are hidden until this point such as gaps in the specification where the library behaviour is implementation defined and may not be compatible with other systems. It can also highlight parts of the system which perform slightly differently than described in the abstract specification due to the introduction of real-world factors such as real-equipment limitations like processing speeds. An example of this might be if the library absolutely relied on universe discovery packets being sent at exactly the interval as defined by the specification. In-real systems network delays as well as varying workloads on the devices might cause packets to be received at slightly variable intervals. Real-world tests therefore help find some of these problems and allow fixes to be made before the program is sent to users.
 
 \paragraph*{Testing receiver implementation}
-To show that the sACN receiver implementation is interoperable with a real-world sender the demo receiver program was set-up and run in a network as shown in figure \ref{AVO_SETUP} along with an professional industry source of sACN in the form of the Avolites Titan program as described in the tools section. The tests run and what they demonstrate are detailed in figure \ref{AVO_TEST_RESULTS}. The real-world implementation used doesn't support sending universe synchronisation or universe discovery data so these could not be tested in this step. Details of how the test would have be performed had these features been supported are shown in figure \ref{AVO_TEST_UNSUPPORTED}. 
+To show that the sACN receiver implementation is interoperable with a real-world sender the demo receiver program was set-up and run in a network as shown in figure \ref{AVO_SETUP} along with an professional industry source of sACN in the form of the Avolites Titan program as described in the tools section. The tests run and what they demonstrate are detailed in figure \ref{AVO_TEST_RESULTS}. The real-world implementation used doesn't support sending universe synchronisation or universe discovery data so these could not be tested in this step. Details of how the test would have be performed had these features been supported are also shown in figure \ref{AVO_TEST_RESULTS}.
 
 \begin{figure}[H]
 	\label{AVO_SETUP}
@@ -394,16 +410,12 @@ To show that the sACN receiver implementation is interoperable with a real-world
 	\caption{The details of the test runs performed as part of the test to show the interoperability of the implementation receiver with a real-world industry source}
 \end{figure}
 
-\begin{figure}[H]
-	\label{AVO_TEST_UNSUPPORTED}
-	\includegraphics[width=\textwidth]{todo}
-	\caption{The details of how tests to show universe synchronisation and discovery would have been tested had the real-world implementation supported them}
-\end{figure}
-
 \paragraph*{Testing sender implementation}
 Similarly to test the sACN sender implementation an external receiver was used. In this case 2 separate receivers were used, the vision visualiser and sACN viewer, as discussed previously. Separate programs were used because neither program was suitable on its own. The visualiser was created by a large company within industry and is used every day by professionals working in the field. This gives a high confidence that it will be compliant with the protocol and so showing interoperability with this is very valuable. It was found however that the visualiser only supports data packets and doese not support universe synchronisation or discovery meaning it could not test this functionality. sACN viewer was therefore used as it provides support for universe discovery as-well as a good interface to show that data packets are being received and parsed correctly. Unfortunately neither implementation supported universe synchronisation. Given that the same problem was encountered when trying to find a receiver implementation it appears that the industry has not yet fully caught up to the ANSI E1.31-2016 standard when synchronisation was added. It may also be possible that while in-use programs supporting this feature do exist they are proprietary and so could not be accessed/tested against within this project. \\
 
-The test was set-up identically for both receivers as shown in figure \ref{VIS_VIEWER_SETUP}, the actual tests run are detailed in figure \ref{VIS_VIEWER_RESULTS}. Although the synchronisation tests could not be run details of how they would be had an implementation that supported it was available are shown in figure \ref{VIS_VIEWER_UNSUPPORTED}.
+The test was set-up identically for both receivers as shown in figure \ref{VIS_VIEWER_SETUP}, the actual tests run are detailed in figure \ref{VIS_VIEWER_RESULTS} along with results. This figure also describes the tests which would have been run had there been an industry receiver which supported the universe synchronisation feature.\\
+
+To allow the visualiser output to be easier to interpret the 3D scene used uses a large number of simple lighting fixtures. These fixtures are laid out as shown in figure \ref{VIS_LX_PLOT} with each fixture corresponding to a single channel on a universe.\\
 
 \begin{figure}[H]
 	\label{VIS_VIEWER_SETUP}
@@ -418,9 +430,9 @@ The test was set-up identically for both receivers as shown in figure \ref{VIS_V
 \end{figure}
 
 \begin{figure}[H]
-	\label{VIS_VIEWER_UNSUPPORTED}
+	\label{VIS_LX_PLOT}
 	\includegraphics[width=\textwidth]{todo}
-	\caption{The details of how tests to show universe synchronisation interoperability would have been performed if a supporting receiver was available}
+	\caption{The lighting plot of the lights used as part of the Vision Visualiser test scene}
 \end{figure}
 
 \subsubsection{Acceptance Testing}
@@ -432,6 +444,8 @@ The industry professional for this test was the Technical Supervisor for the St 
 
 The test layout is shown in \ref{ACCEPTANCE_TEST_LAYOUT}, the plan for the demonstrations to run are detailed in figure \ref{ACCEPTANCE_TEST_DETAILS} however during the actual test there is the possibility of questions which may lead the demonstration to change to show specific areas of the implementation. Once this test was complete the professional would then agreed to write up a short email describing the test and their evaluation of the demonstration.\\ 
 
+The lighting layout used for visualisation in this test is setup to be similar to the actual setup used in the students union thereby being a representative example of an actual industry use case. The layout of this setup with accompanying explanation is shown in figure \ref{ACCEPTANCE_TEST_LX_PLOT}. 
+
 \begin{figure}[H]
 	\label{ACCEPTANCE_TEST_LAYOUT}
 	\includegraphics[width=\textwidth]{CS4099-Acceptance-Test-Layout.png}
@@ -442,6 +456,12 @@ The test layout is shown in \ref{ACCEPTANCE_TEST_LAYOUT}, the plan for the demon
 	\label{ACCEPTANCE_TEST_DETAILS}
 	\includegraphics[width=\textwidth]{todo}
 	\caption{The plan for the acceptance test demonstration}
+\end{figure}
+
+\begin{figure}[H]
+	\label{ACCEPTANCE_TEST_LX_PLOT}
+	\includegraphics[width=\textwidth]{todo}
+	\caption{The lighting plot showing the locations and addresses of fixtures within the visualiser used as part of the acceptance test. This is based on the actual lighting layout used within the students association. Additional explanation has been added on top of the plan to describe what each part means.}
 \end{figure}
 
 \subsection{What Testing Shows}
@@ -640,7 +660,12 @@ documentation and detailed UML diagrams
 	https://github.com/mozilla/grcov (06/04/2020)
 	\bibitem{CODE_COVERAGE}
 	https://martinfowler.com/bliki/TestCoverage.html
-	
+	\bibitem{RUST_AFL_FUZZ}
+	https://github.com/rust-fuzz/afl.rs (08/04/2020)
+	\bibitem{RUST_AFL_FUZZ_DOC}
+	https://rust-fuzz.github.io/book/afl.html (08/04/2020)
+	\bibitem{WIRESHARK_EXPORT_RAW}
+	https://www.wireshark.org/docs/wsug\_html\_chunked/ChIOExportSection.html (08/04/2020)
 \end{thebibliography}
 
 \end{document}
