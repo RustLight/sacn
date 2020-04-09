@@ -396,7 +396,11 @@ The unit and integration tests show that the program works within itself but it 
 These tests can highlight problems with the program which are hidden until this point such as gaps in the specification where the library behaviour is implementation defined and may not be compatible with other systems. It can also highlight parts of the system which perform slightly differently than described in the abstract specification due to the introduction of real-world factors such as real-equipment limitations like processing speeds. An example of this might be if the library absolutely relied on universe discovery packets being sent at exactly the interval as defined by the specification. In-real systems network delays as well as varying workloads on the devices might cause packets to be received at slightly variable intervals. Real-world tests therefore help find some of these problems and allow fixes to be made before the program is sent to users.
 
 \paragraph*{Testing receiver implementation}
-To show that the sACN receiver implementation is interoperable with a real-world sender the demo receiver program was set-up and run in a network as shown in figure \ref{AVO_SETUP} along with an professional industry source of sACN in the form of the Avolites Titan program as described in the tools section. The tests run and what they demonstrate are detailed in figure \ref{AVO_TEST_RESULTS}. The real-world implementation used doesn't support sending universe synchronisation or universe discovery data so these could not be tested in this step. Details of how the test would have be performed had these features been supported are also shown in figure \ref{AVO_TEST_RESULTS}.
+To show that the sACN receiver implementation is interoperable with a real-world sender the demo receiver program was set-up and run in a network as shown in figure \ref{AVO_SETUP} along with an professional industry source of sACN in the form of the Avolites Titan program as described in the tools section. The tests run and what they demonstrate are detailed in figure \ref{AVO_TEST_RESULTS}. The real-world implementation used doesn't support sending universe synchronisation or universe discovery data so these could not be tested in this step. Details of how the test would have be performed had these features been supported are also shown in figure \ref{AVO_TEST_RESULTS}.\\
+
+For some of the tests it was easier to determine if they passed by visualising the received data. In test 5 the sender sends data on 16 different universes with different value ranges per universe. For this test to pass each universe should only contain the values within the range assigned to it as specified in figure \ref{AVO_TEST_RESULTS}. To show that this was the case the results were output to a csv file "test-5-out.csv" and then processed using a spreadsheet "test-5-data-processed.xlsx" to produce the graph "test-5-processed-first-value-chart.png" which is included in figure \ref{RCV_INTEROP_TEST_5_GRAPH}. This graph shows that each universe stays within the range expected and therefore that the test passes. As a sanity check of the results this test was also repeated using the sACN-viewer as the receiver and the graph produced in real-time recorded and included as the "Test-5-Receiver-Control-sACN-Viewer.mkv" file.\\
+
+Similar to test 5, tests 3 and 4 also included visualisation elements as part of the check and details of these as-well as further specifics/details of all tests are included within the screenshots/videos within the relevant folders test folders (excluded from report for brevity).\\
 
 \begin{figure}[H]
 	\label{AVO_SETUP}
@@ -408,6 +412,12 @@ To show that the sACN receiver implementation is interoperable with a real-world
 	\label{AVO_TEST_RESULTS}
 	\includegraphics[width=\textwidth]{todo}
 	\caption{The details of the test runs performed as part of the test to show the interoperability of the implementation receiver with a real-world industry source}
+\end{figure}
+
+\begin{figure}[H]
+	\label{RCV_INTEROP_TEST_5_GRAPH}
+	\includegraphics[width=\textwidth]{test-5-processed-first-value-chart}
+	\caption{A graph showing the values of each universe per packet received for that universe. This shows the ranges of each universe fit within the expected.}
 \end{figure}
 
 \paragraph*{Testing sender implementation}
