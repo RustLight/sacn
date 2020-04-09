@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+<title>Grcov report &mdash;main.rs</title>
+<link rel="stylesheet" href="../../../grcov.css">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+</head>
+<body>
+<div class="header">
+<div class="view">
+<div class="viewRow"><span class="viewItem">Current view:</span><span class="viewValue"><a href="../../../index.html">top level</a> - <a href="index.html">Multicast_Rust_Simple/mcast_simple/src</a> - main.rs</span></div>
+<div class="viewRow"><span class="viewItem">Date:</span><span class="viewValue">2020-04-06 11:41:56</span></div>
+</div>
+<div class="stats">
+<div class="statsRow"><span></span><span class="statsHit">Hit</span><span class="statsTotal">Total</span><span class="statsCoverage">Coverage</span></div>
+<div class="statsRow"><span class="statsLine">Lines</span><span class="linesHit">0</span><span class="linesTotal">48</span><span class="linesPercentage lineLow">0.0 %</span></div>
+<div class="statsRow"><span class="statsFun">Functions</span><span class="funsHit">0</span><span class="funsTotal">6</span><span class="funsPercentage funLow">0.0 %</span></div>
+</div>
+</div>
+<div class="sourceCode">
+<div class="line"><span id="1" class="lineNum"><a href="#1">1</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[allow(dead_code)] </span></div>
+<div class="line"><span id="2" class="lineNum"><a href="#2">2</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="3" class="lineNum"><a href="#3">3</a></span><span class="counterUnCov"></span><span class="lineUnCov">extern crate socket2;</span></div>
+<div class="line"><span id="4" class="lineNum"><a href="#4">4</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="5" class="lineNum"><a href="#5">5</a></span><span class="counterUnCov"></span><span class="lineUnCov">use std::io;</span></div>
+<div class="line"><span id="6" class="lineNum"><a href="#6">6</a></span><span class="counterUnCov"></span><span class="lineUnCov">use std::time::Duration;</span></div>
+<div class="line"><span id="7" class="lineNum"><a href="#7">7</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="8" class="lineNum"><a href="#8">8</a></span><span class="counterUnCov"></span><span class="lineUnCov">use socket2::{Domain, Protocol, SockAddr, Socket, Type};</span></div>
+<div class="line"><span id="9" class="lineNum"><a href="#9">9</a></span><span class="counterUnCov"></span><span class="lineUnCov">use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};</span></div>
+<div class="line"><span id="10" class="lineNum"><a href="#10">10</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="11" class="lineNum"><a href="#11">11</a></span><span class="counterUnCov"></span><span class="lineUnCov">use std::thread::sleep;</span></div>
+<div class="line"><span id="12" class="lineNum"><a href="#12">12</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="13" class="lineNum"><a href="#13">13</a></span><span class="counterUnCov"></span><span class="lineUnCov">use std::env;</span></div>
+<div class="line"><span id="14" class="lineNum"><a href="#14">14</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="15" class="lineNum"><a href="#15">15</a></span><span class="counterNoCov">0</span><span class="lineNoCov">fn main() {</span></div>
+<div class="line"><span id="16" class="lineNum"><a href="#16">16</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let cmd_args: Vec&lt;String&gt; = env::args().collect();</span></div>
+<div class="line"><span id="17" class="lineNum"><a href="#17">17</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="18" class="lineNum"><a href="#18">18</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    println!(&quot;Started&quot;);</span></div>
+<div class="line"><span id="19" class="lineNum"><a href="#19">19</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="20" class="lineNum"><a href="#20">20</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // let addr = SocketAddr::new(Ipv6Addr::new(0xff18, 0, 0, 0, 0, 0, 0x8300, 1).into(), 5568);</span></div>
+<div class="line"><span id="21" class="lineNum"><a href="#21">21</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let addr = SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568);</span></div>
+<div class="line"><span id="22" class="lineNum"><a href="#22">22</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let addr2 = SocketAddr::new(Ipv4Addr::new(239,255,0,2).into(), 5568);</span></div>
+<div class="line"><span id="23" class="lineNum"><a href="#23">23</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let interface_addr = SocketAddr::new(Ipv4Addr::new(192, 168, 1, 8).into(), 5568);</span></div>
+<div class="line"><span id="24" class="lineNum"><a href="#24">24</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let unix_interface_addr = SocketAddr::new(Ipv4Addr::new(0, 0 , 0, 0).into(), 5568);</span></div>
+<div class="line"><span id="25" class="lineNum"><a href="#25">25</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="26" class="lineNum"><a href="#26">26</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // https://stackoverflow.com/questions/43292357/detect-platform-in-rust</span></div>
+<div class="line"><span id="27" class="lineNum"><a href="#27">27</a></span><span class="counterUnCov"></span><span class="lineUnCov">    let socket;</span></div>
+<div class="line"><span id="28" class="lineNum"><a href="#28">28</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="29" class="lineNum"><a href="#29">29</a></span><span class="counterUnCov"></span><span class="lineUnCov">    if cfg!(windows) {</span></div>
+<div class="line"><span id="30" class="lineNum"><a href="#30">30</a></span><span class="counterUnCov"></span><span class="lineUnCov">        socket = new_win_socket(&amp;interface_addr).unwrap();</span></div>
+<div class="line"><span id="31" class="lineNum"><a href="#31">31</a></span><span class="counterUnCov"></span><span class="lineUnCov">    } else { // if cfg!(unix)</span></div>
+<div class="line"><span id="32" class="lineNum"><a href="#32">32</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        socket = new_unix_socket(&amp;unix_interface_addr, &amp;addr2).unwrap();</span></div>
+<div class="line"><span id="33" class="lineNum"><a href="#33">33</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
+<div class="line"><span id="34" class="lineNum"><a href="#34">34</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="35" class="lineNum"><a href="#35">35</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="36" class="lineNum"><a href="#36">36</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // let socket = new_socket(&amp;addr).unwrap();</span></div>
+<div class="line"><span id="37" class="lineNum"><a href="#37">37</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="38" class="lineNum"><a href="#38">38</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // // socket.join_multicast_v6(&amp;Ipv6Addr::new(0xff18, 0, 0, 0, 0, 0, 0x8300, 1), 0).unwrap();</span></div>
+<div class="line"><span id="39" class="lineNum"><a href="#39">39</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="40" class="lineNum"><a href="#40">40</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    socket.join_multicast_v4(&amp;Ipv4Addr::new(239,255,0,1), &amp;Ipv4Addr::new(0, 0, 0, 0)).unwrap();</span></div>
+<div class="line"><span id="41" class="lineNum"><a href="#41">41</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="42" class="lineNum"><a href="#42">42</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    socket.join_multicast_v4(&amp;Ipv4Addr::new(239,255,0,2), &amp;Ipv4Addr::new(0, 0, 0, 0)).unwrap();</span></div>
+<div class="line"><span id="43" class="lineNum"><a href="#43">43</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="44" class="lineNum"><a href="#44">44</a></span><span class="counterUnCov"></span><span class="lineUnCov">    </span></div>
+<div class="line"><span id="45" class="lineNum"><a href="#45">45</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // socket.bind(&amp;SockAddr::from(SocketAddr::new(Ipv4Addr::new(239,255,0,1).into(), 5568))).unwrap();</span></div>
+<div class="line"><span id="46" class="lineNum"><a href="#46">46</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="47" class="lineNum"><a href="#47">47</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    socket.set_multicast_loop_v4(false).unwrap();</span></div>
+<div class="line"><span id="48" class="lineNum"><a href="#48">48</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="49" class="lineNum"><a href="#49">49</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // https://stackoverflow.com/questions/31289588/converting-a-str-to-a-u8 (05/02/2020)</span></div>
+<div class="line"><span id="50" class="lineNum"><a href="#50">50</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let message = &amp;cmd_args[1];</span></div>
+<div class="line"><span id="51" class="lineNum"><a href="#51">51</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let message2 = &amp;cmd_args[2];</span></div>
+<div class="line"><span id="52" class="lineNum"><a href="#52">52</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="53" class="lineNum"><a href="#53">53</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // Background:</span></div>
+<div class="line"><span id="54" class="lineNum"><a href="#54">54</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // https://stackoverflow.com/questions/2741611/receiving-multiple-multicast-feeds-on-the-same-port-c-linux/2741989#2741989 (05/02/2020)</span></div>
+<div class="line"><span id="55" class="lineNum"><a href="#55">55</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // https://www.reddit.com/r/networking/comments/7nketv/proper_use_of_bind_for_multicast_receive_on_linux/ (05/02/2020)</span></div>
+<div class="line"><span id="56" class="lineNum"><a href="#56">56</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="57" class="lineNum"><a href="#57">57</a></span><span class="counterUnCov"></span><span class="lineUnCov">    </span></div>
+<div class="line"><span id="58" class="lineNum"><a href="#58">58</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    loop {</span></div>
+<div class="line"><span id="59" class="lineNum"><a href="#59">59</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        socket.send_to(message.as_bytes(), &amp;SockAddr::from(addr)).unwrap();</span></div>
+<div class="line"><span id="60" class="lineNum"><a href="#60">60</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        socket.send_to(message2.as_bytes(), &amp;SockAddr::from(addr2)).unwrap();</span></div>
+<div class="line"><span id="61" class="lineNum"><a href="#61">61</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        sleep(Duration::from_secs(1));</span></div>
+<div class="line"><span id="62" class="lineNum"><a href="#62">62</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="63" class="lineNum"><a href="#63">63</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        let mut buf = [0u8; 64];</span></div>
+<div class="line"><span id="64" class="lineNum"><a href="#64">64</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="65" class="lineNum"><a href="#65">65</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        let res = socket.recv(&amp;mut buf);</span></div>
+<div class="line"><span id="66" class="lineNum"><a href="#66">66</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        match res{</span></div>
+<div class="line"><span id="67" class="lineNum"><a href="#67">67</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            Err(e) =&gt; {</span></div>
+<div class="line"><span id="68" class="lineNum"><a href="#68">68</a></span><span class="counterNoCov">0</span><span class="lineNoCov">                println!(&quot;Err: {}&quot;, e);</span></div>
+<div class="line"><span id="69" class="lineNum"><a href="#69">69</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
+<div class="line"><span id="70" class="lineNum"><a href="#70">70</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            Ok(_) =&gt; {</span></div>
+<div class="line"><span id="71" class="lineNum"><a href="#71">71</a></span><span class="counterNoCov">0</span><span class="lineNoCov">                print!(&quot;Res: &quot;);</span></div>
+<div class="line"><span id="72" class="lineNum"><a href="#72">72</a></span><span class="counterNoCov">0</span><span class="lineNoCov">                print!(&quot;{}&quot;, std::str::from_utf8(&amp;buf).unwrap());</span></div>
+<div class="line"><span id="73" class="lineNum"><a href="#73">73</a></span><span class="counterNoCov">0</span><span class="lineNoCov">                println!(&quot;&quot;);</span></div>
+<div class="line"><span id="74" class="lineNum"><a href="#74">74</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
+<div class="line"><span id="75" class="lineNum"><a href="#75">75</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
+<div class="line"><span id="76" class="lineNum"><a href="#76">76</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="77" class="lineNum"><a href="#77">77</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
+<div class="line"><span id="78" class="lineNum"><a href="#78">78</a></span><span class="counterUnCov"></span><span class="lineUnCov">}</span></div>
+<div class="line"><span id="79" class="lineNum"><a href="#79">79</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="80" class="lineNum"><a href="#80">80</a></span><span class="counterUnCov"></span><span class="lineUnCov">// Flat stole bits of this code from https://bluejekyll.github.io/blog/rust/2018/03/18/multicasting-in-rust.html (05/02/2020) just as a test to see if multicast works at-all.</span></div>
+<div class="line"><span id="81" class="lineNum"><a href="#81">81</a></span><span class="counterUnCov"></span><span class="lineUnCov">// THIS CODE SHOULD NOT BE INCLUDED IN SUBMITTED MATERIAL</span></div>
+<div class="line"><span id="82" class="lineNum"><a href="#82">82</a></span><span class="counterUnCov"></span><span class="lineUnCov">// I CLAIM NO OWNERSHIP</span></div>
+<div class="line"><span id="83" class="lineNum"><a href="#83">83</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="84" class="lineNum"><a href="#84">84</a></span><span class="counterUnCov"></span><span class="lineUnCov">// this will be common for all our sockets</span></div>
+<div class="line"><span id="85" class="lineNum"><a href="#85">85</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="86" class="lineNum"><a href="#86">86</a></span><span class="counterUnCov"></span><span class="lineUnCov">/// addr: Bind address.</span></div>
+<div class="line"><span id="87" class="lineNum"><a href="#87">87</a></span><span class="counterNoCov">0</span><span class="lineNoCov">fn new_win_socket(addr: &amp;SocketAddr) -&gt; io::Result&lt;Socket&gt; {</span></div>
+<div class="line"><span id="88" class="lineNum"><a href="#88">88</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let domain = if addr.is_ipv4() {</span></div>
+<div class="line"><span id="89" class="lineNum"><a href="#89">89</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        Domain::ipv4()</span></div>
+<div class="line"><span id="90" class="lineNum"><a href="#90">90</a></span><span class="counterUnCov"></span><span class="lineUnCov">    } else {</span></div>
+<div class="line"><span id="91" class="lineNum"><a href="#91">91</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        Domain::ipv6()</span></div>
+<div class="line"><span id="92" class="lineNum"><a href="#92">92</a></span><span class="counterUnCov"></span><span class="lineUnCov">    };</span></div>
+<div class="line"><span id="93" class="lineNum"><a href="#93">93</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="94" class="lineNum"><a href="#94">94</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;</span></div>
+<div class="line"><span id="95" class="lineNum"><a href="#95">95</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="96" class="lineNum"><a href="#96">96</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let win_addr = match addr {</span></div>
+<div class="line"><span id="97" class="lineNum"><a href="#97">97</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        SocketAddr::V4(addr) =&gt; SocketAddr::new(Ipv4Addr::new(0, 0, 0, 0).into(), addr.port()),</span></div>
+<div class="line"><span id="98" class="lineNum"><a href="#98">98</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        SocketAddr::V6(addr) =&gt; {</span></div>
+<div class="line"><span id="99" class="lineNum"><a href="#99">99</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            SocketAddr::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0).into(), addr.port())</span></div>
+<div class="line"><span id="100" class="lineNum"><a href="#100">100</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
+<div class="line"><span id="101" class="lineNum"><a href="#101">101</a></span><span class="counterUnCov"></span><span class="lineUnCov">    };</span></div>
+<div class="line"><span id="102" class="lineNum"><a href="#102">102</a></span><span class="counterUnCov"></span><span class="lineUnCov">    </span></div>
+<div class="line"><span id="103" class="lineNum"><a href="#103">103</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    socket.bind(&amp;socket2::SockAddr::from(win_addr)).unwrap();</span></div>
+<div class="line"><span id="104" class="lineNum"><a href="#104">104</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="105" class="lineNum"><a href="#105">105</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // we&#39;re going to use read timeouts so that we don&#39;t hang waiting for packets</span></div>
+<div class="line"><span id="106" class="lineNum"><a href="#106">106</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    socket.set_read_timeout(Some(Duration::from_millis(1000)))?;</span></div>
+<div class="line"><span id="107" class="lineNum"><a href="#107">107</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="108" class="lineNum"><a href="#108">108</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    Ok(socket)</span></div>
+<div class="line"><span id="109" class="lineNum"><a href="#109">109</a></span><span class="counterNoCov">0</span><span class="lineNoCov">}</span></div>
+<div class="line"><span id="110" class="lineNum"><a href="#110">110</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="111" class="lineNum"><a href="#111">111</a></span><span class="counterUnCov"></span><span class="lineUnCov">/// addr: The multicast address to bind to.</span></div>
+<div class="line"><span id="112" class="lineNum"><a href="#112">112</a></span><span class="counterNoCov">0</span><span class="lineNoCov">fn new_unix_socket(addr: &amp;SocketAddr, _addr2: &amp;SocketAddr) -&gt; io::Result&lt;Socket&gt; {</span></div>
+<div class="line"><span id="113" class="lineNum"><a href="#113">113</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="114" class="lineNum"><a href="#114">114</a></span><span class="counterUnCov"></span><span class="lineUnCov">// fn new_unix_socket(addr: &amp;SocketAddr) -&gt; io::Result&lt;Socket&gt; {  </span></div>
+<div class="line"><span id="115" class="lineNum"><a href="#115">115</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let domain = if addr.is_ipv4() {</span></div>
+<div class="line"><span id="116" class="lineNum"><a href="#116">116</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        Domain::ipv4()</span></div>
+<div class="line"><span id="117" class="lineNum"><a href="#117">117</a></span><span class="counterUnCov"></span><span class="lineUnCov">    } else {</span></div>
+<div class="line"><span id="118" class="lineNum"><a href="#118">118</a></span><span class="counterNoCov">0</span><span class="lineNoCov">        Domain::ipv6()</span></div>
+<div class="line"><span id="119" class="lineNum"><a href="#119">119</a></span><span class="counterUnCov"></span><span class="lineUnCov">    };</span></div>
+<div class="line"><span id="120" class="lineNum"><a href="#120">120</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="121" class="lineNum"><a href="#121">121</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    let socket = Socket::new(domain, Type::dgram(), Some(Protocol::udp()))?;</span></div>
+<div class="line"><span id="122" class="lineNum"><a href="#122">122</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="123" class="lineNum"><a href="#123">123</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    socket.bind(&amp;SockAddr::from(*addr)).unwrap();</span></div>
+<div class="line"><span id="124" class="lineNum"><a href="#124">124</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // socket.bind(&amp;SockAddr::from(*addr2)).unwrap();</span></div>
+<div class="line"><span id="125" class="lineNum"><a href="#125">125</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="126" class="lineNum"><a href="#126">126</a></span><span class="counterUnCov"></span><span class="lineUnCov">    // we&#39;re going to use read timeouts so that we don&#39;t hang waiting for packets</span></div>
+<div class="line"><span id="127" class="lineNum"><a href="#127">127</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    socket.set_read_timeout(Some(Duration::from_millis(1000)))?;</span></div>
+<div class="line"><span id="128" class="lineNum"><a href="#128">128</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="129" class="lineNum"><a href="#129">129</a></span><span class="counterNoCov">0</span><span class="lineNoCov">    Ok(socket)</span></div>
+<div class="line"><span id="130" class="lineNum"><a href="#130">130</a></span><span class="counterNoCov">0</span><span class="lineNoCov">}</span></div>
+<div class="line"><span id="131" class="lineNum"><a href="#131">131</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="132" class="lineNum"><a href="#132">132</a></span><span class="counterUnCov"></span><span class="lineUnCov">// fn _join_multicast(addr: SocketAddr) -&gt; io::Result&lt;Socket&gt; {</span></div>
+<div class="line"><span id="133" class="lineNum"><a href="#133">133</a></span><span class="counterUnCov"></span><span class="lineUnCov">//     let ip_addr = addr.ip();</span></div>
+<div class="line"><span id="134" class="lineNum"><a href="#134">134</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="135" class="lineNum"><a href="#135">135</a></span><span class="counterUnCov"></span><span class="lineUnCov">//     let socket = new_socket(&amp;addr)?;</span></div>
+<div class="line"><span id="136" class="lineNum"><a href="#136">136</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="137" class="lineNum"><a href="#137">137</a></span><span class="counterUnCov"></span><span class="lineUnCov">//     // depending on the IP protocol we have slightly different work</span></div>
+<div class="line"><span id="138" class="lineNum"><a href="#138">138</a></span><span class="counterUnCov"></span><span class="lineUnCov">//     match ip_addr {</span></div>
+<div class="line"><span id="139" class="lineNum"><a href="#139">139</a></span><span class="counterUnCov"></span><span class="lineUnCov">//         IpAddr::V4(ref mdns_v4) =&gt; {</span></div>
+<div class="line"><span id="140" class="lineNum"><a href="#140">140</a></span><span class="counterUnCov"></span><span class="lineUnCov">//             // join to the multicast address, with all interfaces</span></div>
+<div class="line"><span id="141" class="lineNum"><a href="#141">141</a></span><span class="counterUnCov"></span><span class="lineUnCov">//             socket.join_multicast_v4(mdns_v4, &amp;Ipv4Addr::new(0, 0, 0, 0))?;</span></div>
+<div class="line"><span id="142" class="lineNum"><a href="#142">142</a></span><span class="counterUnCov"></span><span class="lineUnCov">//         }</span></div>
+<div class="line"><span id="143" class="lineNum"><a href="#143">143</a></span><span class="counterUnCov"></span><span class="lineUnCov">//         IpAddr::V6(ref mdns_v6) =&gt; {</span></div>
+<div class="line"><span id="144" class="lineNum"><a href="#144">144</a></span><span class="counterUnCov"></span><span class="lineUnCov">//             // join to the multicast address, with all interfaces (ipv6 uses indexes not addresses)</span></div>
+<div class="line"><span id="145" class="lineNum"><a href="#145">145</a></span><span class="counterUnCov"></span><span class="lineUnCov">//             socket.join_multicast_v6(mdns_v6, 0)?;</span></div>
+<div class="line"><span id="146" class="lineNum"><a href="#146">146</a></span><span class="counterUnCov"></span><span class="lineUnCov">//             socket.set_only_v6(true)?;</span></div>
+<div class="line"><span id="147" class="lineNum"><a href="#147">147</a></span><span class="counterUnCov"></span><span class="lineUnCov">//         }</span></div>
+<div class="line"><span id="148" class="lineNum"><a href="#148">148</a></span><span class="counterUnCov"></span><span class="lineUnCov">//     };</span></div>
+<div class="line"><span id="149" class="lineNum"><a href="#149">149</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
+<div class="line"><span id="150" class="lineNum"><a href="#150">150</a></span><span class="counterUnCov"></span><span class="lineUnCov">//     // bind us to the socket address.</span></div>
+<div class="line"><span id="151" class="lineNum"><a href="#151">151</a></span><span class="counterUnCov"></span><span class="lineUnCov">//     socket.bind(&amp;SockAddr::from(addr))?;</span></div>
+<div class="line"><span id="152" class="lineNum"><a href="#152">152</a></span><span class="counterUnCov"></span><span class="lineUnCov">//     Ok(socket)</span></div>
+<div class="line"><span id="153" class="lineNum"><a href="#153">153</a></span><span class="counterUnCov"></span><span class="lineUnCov">// }</span></div>
+</div>
+</body>
+</html>

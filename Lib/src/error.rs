@@ -14,6 +14,9 @@
 pub mod errors {
     use sacn_parse_pack_error::sacn_parse_pack_error;
 
+    /// UUID library used to handle the UUID's used in the CID fields, used here so that error can include the cid in messages.
+    use uuid::Uuid;
+
     error_chain! {
         foreign_links {
             Io(::std::io::Error);       // Allow IO errors to be used with the error-chain system.
@@ -22,10 +25,19 @@ pub mod errors {
         }
 
         links {
-            SacnParsePackError(sacn_parse_pack_error::Error, sacn_parse_pack_error::ErrorKind);
+            // All parse/pack errors live within the same chain ('family') of errors as described in sacn_parse_packet_error.
+            SacnParsePackError(sacn_parse_pack_error::Error, sacn_parse_pack_error::ErrorKind); 
         }
 
-        errors {   
+        errors {
+            /// Attempted to perform an action using a priority value that is invalid. For example sending with a priority > 200.
+            /// This is distinct from the SacnParsePackError(ParseInvalidPriority) as it is for a local use of an invalid priority
+            /// rather than receiving an invalid priority from another source.
+            InvalidPriority(msg: String) {
+                description("Attempted to perform an action using a priority value that is invalid"),
+                display("Attempted to perform an action using a priority value that is invalid, msg: {}", msg)
+            }
+            
             /// Used to indicate that the limit for the number of supported sources has been reached. 
             /// This is based on unique CID values.
             /// as per ANSI E1.31-2018 Section 6.2.3.3.
@@ -35,9 +47,9 @@ pub mod errors {
             }
 
             /// A source was discovered by a receiver with the announce_discovery_flag set to true.
-            SourceDiscovered(msg: String) {
+            SourceDiscovered(source_name: String) {
                 description("A source was discovered by a receiver with the announce_discovery_flag set to true"),
-                display("A source was discovered by a receiver with the announce_discovery_flag set to true, msg: {}", msg)
+                display("A source was discovered by a receiver with the announce_discovery_flag set to true, source name: {}", source_name)
             }
 
             /// Attempted to exceed the capacity of a single universe (packet::UNIVERSE_CHANNEL_CAPACITY).
@@ -92,9 +104,16 @@ pub mod errors {
             }
 
             /// A source terminated a universe and this was detected when trying to receive data.
-            UniverseTerminated(msg: String) {
+            /// This is only returned if the announce_stream_termination flag is set to true (default false).
+            UniverseTerminated(src_cid: Uuid, uni: u16) {
                 description("A source terminated a universe and this was detected when trying to receive data"),
-                display("A source terminated a universe and this was detected when trying to receive data, msg: {}", msg)
+                display("Source cid: {:?} terminated universe: {}", src_cid, uni)
+            }
+
+            /// A source universe timed out as no data was received on that universe within E131_NETWORK_DATA_LOSS_TIMEOUT as per ANSI E1.31-2018 Section 6.7.1.
+            UniverseTimeout(src_cid: Uuid, uni: u16) {
+                description("A source universe timed out as no data was received within E131_NETWORK_DATA_LOSS_TIMEOUT as per ANSI E1.31-2018 Section 6.7.1"),
+                display("(Source,Universe) timed out: ({},{})", src_cid, uni)
             }
 
             /// When looking for a specific universe it wasn't found. This might happen for example if trying to mute a universe on a receiver that
@@ -104,11 +123,27 @@ pub mod errors {
                 display("When looking for a specific universe it wasn't found, msg: {}", msg)
             }
 
+            /// Attempted to find a source and failed. This might happen on a receiver for example if trying to remove a source which was never 
+            /// registered or discovered.
+            SourceNotFound(msg: String) {
+                description("When looking for a specific source it wasn't found"),
+                display("Source not found, msg: {}", msg)
+            }
+
             /// Thrown to indicate that the operation attempted is unsupported on the current OS
             /// For example this is used to indicate that multicast-IPv6 isn't supported current on Windows.
             OsOperationUnsupported(msg: String) {
                 description("Thrown to indicate that the operation attempted is unsupported on the current OS"),
                 display("Operation attempted is unsupported on the current OS, msg: {}", msg)
+            }
+
+            /// Thrown to indicate that the source has corrupted for the reason specified by the error chain.
+            /// This is currently only thrown if the source mutex is poisoned by a thread with access panic-ing.
+            /// This prevents the panic propagating to the user of this library and allows them to handle it appropriately
+            /// such as by creating a new source.
+            SourceCorrupt(msg: String) {
+                description("The sACN source has corrupted due to an internal panic! and should no longer be used"),
+                display("The sACN source has corrupted due to an internal panic! and should no longer be used, {}", msg)
             }
         }
     }
