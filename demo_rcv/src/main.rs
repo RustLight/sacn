@@ -13,6 +13,7 @@
 //! An example demo sACN receiver which utilises the sACN library.
 //! 
 //! Primarily used for testing the library including real-world conformance, compliance, integration and acceptance tests.
+//! As a test program the error handling is limited for simplicity.
 //! 
 //! Usage instructions are described below.
 //! 
@@ -26,7 +27,7 @@ use error::errors::*;
 
 extern crate sacn;
 
-use sacn::recieve::{DMXData, SacnReceiver, DiscoveredSacnSource};
+use sacn::receive::{DMXData, SacnReceiver, DiscoveredSacnSource};
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 
 use std::net::{SocketAddr};
@@ -34,10 +35,12 @@ use std::time::Duration;
 use std::io;
 use std::env;
 use std::thread::sleep;
+use std::fs::File;
+use std::io::prelude::*;
 
 /// The string given by the user to perform each of the various options as described in get_usage_str below.
 const ACTION_RECV:                                  &str = "r";
-const ACTION_RECV_CONTINOUS:                        &str = "c";
+const ACTION_RECV_CONTINUOUS:                       &str = "c";
 const ACTION_PRINT_DISCOVERED_SOURCES:              &str = "s";
 const ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT:   &str = "x";
 const ACTION_QUIT:                                  &str = "q";
@@ -48,8 +51,12 @@ const ACTION_SLEEP:                                 &str = "w";
 const ACTION_PREVIEW:                               &str = "p";
 const ACTION_ANNOUNCE_DISCOVERED:                   &str = "a";
 const ACTION_IGNORE:                                &str = "#";
+const ACTION_FILE_OUT:                              &str = "f";
 
-/// Describes the various commands / command-line arguments avaliable and what they do.
+/// The headers used for the top of the file when the FILE_OUT action is used.
+const WRITE_TO_FILE_HEADERS: &str = "Data_ID, Universe, Sync_Addr, Priority, Preview_data?, Payload";
+
+/// Describes the various commands / command-line arguments available and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
 /// Not a const as const with format! not supported in rust.
 fn get_usage_str() -> String {
@@ -87,10 +94,13 @@ fn get_usage_str() -> String {
     Enter announce discovery mode, true means that universe discovery packets will be announced as soon as received, false means they are handled silently, default is false\n
     {} <'true'/'false'>\n
 
+    Output received data to a file
+    {} <file-path> <recv-count> <timeout in sec>\n
+
     All input is ignored on lines starting with '{} '.
-    ", ACTION_RECV, ACTION_RECV_CONTINOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT, 
+    ", ACTION_RECV, ACTION_RECV_CONTINUOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT, 
     ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP, ACTION_PREVIEW, ACTION_ANNOUNCE_DISCOVERED,
-    ACTION_IGNORE)
+    ACTION_FILE_OUT, ACTION_IGNORE)
 }
 
 fn main() {
@@ -169,7 +179,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                     let res = dmx_recv.recv(timeout).map_err(|e| e.into());
                     print_recv(res);
                 }
-                ACTION_RECV_CONTINOUS => { // Receive data continously.
+                ACTION_RECV_CONTINUOUS => { // Receive data continuously.
                     if split_input.len() < 3 {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 3 )"));
@@ -249,7 +259,35 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                         }
                     }
                 }
+                ACTION_FILE_OUT => {
+                    if split_input.len() < 4 {
+                        display_help();
+                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 3 )"));
+                    }
 
+                    let file_path = split_input[1];
+
+                    let count: u64 = split_input[2].parse().unwrap();
+
+                    let timeout_secs: u64 = split_input[3].parse().unwrap();
+
+                    let timeout = if timeout_secs == 0 { // A timeout value of 0 means no timeout.
+                        None
+                    } else {
+                        Some(Duration::from_secs(timeout_secs))
+                    };
+
+                    let out_file = File::create(file_path)?;
+
+                    let mut boxed_file = Box::new(out_file);
+
+                    write!(boxed_file, "{}\n", WRITE_TO_FILE_HEADERS)?;
+
+                    for i in 0 .. count {
+                        let res: Vec<DMXData> = dmx_recv.recv(timeout).unwrap();
+                        write_to_file(&mut boxed_file, res, i)?;
+                    }
+                }
                 x => {
                     bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
                 }
@@ -260,6 +298,39 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
             bail!(e);
         }
     }
+}
+
+/// Writes the given data to the given file (uses the given data_id as first column).
+/// Uses comma separated values.
+fn write_to_file(file: &mut Box<File>, data: Vec<DMXData>, data_id: u64) -> Result<()> {
+    for d in data {
+        let values_str = create_values_str(d.values)?;
+
+        // Note that the formatting string literal must be here and cannot be subsituted using const.
+        write!(*file, "{},{},{},{},{},{}\n", data_id, d.universe, d.sync_uni, d.priority, d.preview, values_str)?;
+    }
+
+    Ok(())
+}
+
+/// Converts the given array of u8 values into a comma separated string.
+/// https://users.rust-lang.org/t/what-is-right-ways-to-concat-strings/3780/4 (09/04/2020)
+fn create_values_str(values: Vec<u8>) -> Result<String> {
+    let mut res: String = "".to_string();
+
+    if values.len() < 1 {
+        return Ok(res);
+    }
+
+    let mut iter = values.iter();
+
+    res.push_str(&format!("{}", iter.next().unwrap()));
+    
+    for v in iter {
+        res.push_str(&format!(",{}", v));
+    }
+
+    Ok(res)
 }
 
 fn print_recv(res: Result<Vec<DMXData>>) {
