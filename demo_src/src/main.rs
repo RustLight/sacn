@@ -175,7 +175,9 @@ fn handle_all_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Resul
 
     let value: u8 = split_input[2].parse().unwrap();
 
-    let data: [u8; 513] = [value; 513];
+    let mut data: [u8; 513] = [value; 513];
+
+    data[0] = 0; // Zero startcode used.
 
     src.send(&[universe], &data, None, None, None)?;
 
