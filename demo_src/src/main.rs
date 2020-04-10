@@ -55,6 +55,7 @@ const ACTION_SYNC_OPTION:           &str = "s";
 const ACTION_UNICAST_SYNC_OPTION:   &str = "us"; 
 const ACTION_DATA_OVER_TIME_OPTION: &str = "t";
 const ACTION_IGNORE:                &str = "#";
+const ACTION_ALL_DATA_OPTION:        &str = "a";
 
 /// Describes the various commands / command-line arguments avaliable and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
@@ -94,9 +95,14 @@ fn get_usage_str() -> String{
     Set the preview data option flag to the given value, this is reflected in packets sent using the other actions\n
     {} <'true'/'false'>\n
 
+    Sends a full universe of data to the given universe with all values (except the startcode which is set to 0) set to the
+    given value. This uses the default priority and no synchronisation.\n
+    {} <universe> <value>\n
+
     All input is ignored on lines starting with '{} '. 
     ", ACTION_DATA_OPTION, ACTION_FULL_DATA_OPTION, ACTION_UNICAST_OPTION, ACTION_REGISTER_OPTION, ACTION_TERMINATE_OPTION, 
-    ACTION_SLEEP_OPTION, ACTION_SYNC_OPTION, ACTION_UNICAST_SYNC_OPTION, ACTION_DATA_OVER_TIME_OPTION, ACTION_PREVIEW_OPTION, ACTION_IGNORE)
+    ACTION_SLEEP_OPTION, ACTION_SYNC_OPTION, ACTION_UNICAST_SYNC_OPTION, ACTION_DATA_OVER_TIME_OPTION, ACTION_PREVIEW_OPTION, 
+    ACTION_ALL_DATA_OPTION, ACTION_IGNORE)
 }
 
 fn main(){
@@ -135,11 +141,11 @@ fn display_help(){
 }
 
 fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
-    let universe: u16 = split_input[1].parse().unwrap();
-
     if split_input.len() < 4 {
-        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
     }
+
+    let universe: u16 = split_input[1].parse().unwrap();
 
     let sync_uni: u16 = split_input[2].parse().unwrap();
 
@@ -156,6 +162,22 @@ fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Resu
     } else {
         src.send(&[universe], &data, Some(priority), None, Some(sync_uni))?;
     }
+
+    Ok(true)
+}
+
+fn handle_all_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
+    if split_input.len() < 3 {
+        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+    }
+    
+    let universe: u16 = split_input[1].parse().unwrap();
+
+    let value: u8 = split_input[2].parse().unwrap();
+
+    let data: [u8; 513] = [value; 513];
+
+    src.send(&[universe], &data, None, None, None)?;
 
     Ok(true)
 }
@@ -327,6 +349,9 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     let millis: u64 = split_input[1].parse().unwrap();
                     sleep(Duration::from_millis(millis));
                     Ok(true)
+                }
+                ACTION_ALL_DATA_OPTION => {
+                    handle_all_data_option(src, split_input)
                 }
                 x => {
                     bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
