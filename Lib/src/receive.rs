@@ -34,7 +34,7 @@ use std::borrow::Cow;
 use std::cmp::{max, Ordering};
 use std::collections::HashMap;
 use std::fmt;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
 /// Constants required to detect if an IP is IPv4 or IPv6.
