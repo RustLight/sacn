@@ -397,7 +397,7 @@ fn run_test_high_data_rate(src: &mut SacnSource, start_universe: u16, universe_c
         }
         
 
-        counter = counter + 1.0;
+        counter = counter + 0.05;
         sleep(TEST_PRESET_UPDATE_PERIOD);
     }
 
