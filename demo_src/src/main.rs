@@ -62,9 +62,11 @@ const ACTION_IGNORE:                &str = "#";
 const ACTION_ALL_DATA_OPTION:       &str = "a";
 
 /// The test preset numbers which correspond to the various preset tests described in the sender-interoperability testing document.
-const TEST_PRESET_MOVING_CHANNELS:  usize = 7;
-const TEST_PRESET_RAPID_CHANGES:    usize = 8;
-const TEST_PRESET_HIGH_DATA_RATE:  usize = 9;
+const TEST_PRESET_TWO_UNIVERSE:         usize = 3;
+const TEST_PRESET_TWO_UNIVERSE_UNICAST: usize = 4;
+const TEST_PRESET_MOVING_CHANNELS:      usize = 7;
+const TEST_PRESET_RAPID_CHANGES:        usize = 8;
+const TEST_PRESET_HIGH_DATA_RATE:       usize = 9;
 
 /// The duration of one of the preset tests. 
 /// Each preset test run for 20 seconds.
@@ -136,11 +138,13 @@ fn get_usage_str() -> String{
     {} <universe> <value>\n
 
     Generates output based on the scenario described in the corresponding sender interoperability test.\n
+    Preset 3: Two Universes Distinct Values, Arguments: <Universe 1> <Universe 2>\n
+    Preset 4: Two Universes Distinct Values Unicast, Arguments: <Universe 1> <Universe 2> <dst_ip>\n
     Preset 7: Independent moving channels (sine wave through universe)\n
     Preset 8: Rapid Changes (Quick moves to 255 to 0 to 255 on repeat)\n
     Preset 9: High data rate (Uses given universe as start universe + the next 15 universes (16 universes total)). Raw value, r, for each universe x, r = [(x - 1) * 10, x * 10). \n
             E.g. for universe 2 the range is [20, 30). \n
-    {} <preset> <universe>\n
+    {} <preset> <universe> <... optionally more arguments>\n
 
     All input is ignored on lines starting with '{} '. 
     ", ACTION_DATA_OPTION, ACTION_FULL_DATA_OPTION, ACTION_UNICAST_OPTION, ACTION_REGISTER_OPTION, ACTION_TERMINATE_OPTION, 
@@ -327,12 +331,51 @@ fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Re
         TEST_PRESET_HIGH_DATA_RATE => {
             run_test_high_data_rate(src, universe, TEST_PRESET_HIGH_DATA_RATE_UNI_COUNT)?;
         },
+        TEST_PRESET_TWO_UNIVERSE => {
+            if split_input.len() < 4 {
+                bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for test preset 2 universes option ( < 4 )"));
+            }
+
+            let universe_2: u16 = split_input[3].parse().unwrap();
+
+            run_test_2_universes_distinct_values(src, universe, universe_2, std::u8::MAX / 2, std::u8::MAX, None)?;
+        },
+        TEST_PRESET_TWO_UNIVERSE_UNICAST => {
+            if split_input.len() < 5 {
+                bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for test preset 2 universes option ( < 4 )"));
+            }
+
+            let universe_2: u16 = split_input[3].parse().unwrap();
+            let addr = SocketAddr::new(split_input[4].parse().unwrap(), ACN_SDT_MULTICAST_PORT);
+
+            run_test_2_universes_distinct_values(src, universe, universe_2, std::u8::MAX / 2, std::u8::MAX, Some(addr))?;
+        }
         _ => {
             bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unrecognised test preset option"));
         }
     }
 
     Ok(true)
+}
+
+/// Runs a test where the 2 given universes are constantly sent data packets with the given values.
+/// Takes a dst_ip argument which can be None to use multicast or Some(addr) to use unicast.
+fn run_test_2_universes_distinct_values(src: &mut SacnSource, uni_1: u16, uni_2: u16, uni1_val: u8, uni2_val: u8, dst_ip: Option<SocketAddr>) -> Result<()> {
+    let start_time = Instant::now();
+
+    let mut data_1: [u8; UNIVERSE_CHANNEL_CAPACITY] = [uni1_val; UNIVERSE_CHANNEL_CAPACITY];
+    let mut data_2: [u8; UNIVERSE_CHANNEL_CAPACITY] = [uni2_val; UNIVERSE_CHANNEL_CAPACITY];
+    data_1[0] = 0; // Uses 0 zero-start code for both universes.
+    data_2[0] = 0; 
+    
+    while start_time.elapsed() < TEST_PRESET_DURATION {
+        src.send(&[uni_1], &data_1, None, dst_ip, None)?;
+        src.send(&[uni_2], &data_2, None, dst_ip, None)?;
+
+        sleep(TEST_PRESET_UPDATE_PERIOD);
+    }
+
+    Ok(())
 }
 
 fn run_test_moving_channel_preset(src: &mut SacnSource, universe: u16) -> Result<()> {
