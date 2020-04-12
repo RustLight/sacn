@@ -114,11 +114,12 @@ const ACCEPT_TEST_BACKLIGHT_ADDR_6: usize = 250;
 const ACCEPT_TEST_BACKLIGHT_ADDR_7: usize = 300;
 const ACCEPT_TEST_BACKLIGHT_ADDR_8: usize = 350;
 
-/// The start addresses for each of the fixtures in the acceptance test (universe 2).
+/// The start addresses for each of the fixtures in the acceptance test.
+/// Offset by the universe channel capacity as they are universe 2. 
 /// These are the frontlights which are near the camera.
-const ACCEPT_TEST_FRONTLIGHT_ADDR_1: usize = 1;
-const ACCEPT_TEST_FRONTLIGHT_ADDR_2: usize = 2;
-const ACCEPT_TEST_FRONTLIGHT_ADDR_3: usize = 3;
+const ACCEPT_TEST_FRONTLIGHT_ADDR_1: usize = UNIVERSE_CHANNEL_CAPACITY + 1;
+const ACCEPT_TEST_FRONTLIGHT_ADDR_2: usize = UNIVERSE_CHANNEL_CAPACITY + 2;
+const ACCEPT_TEST_FRONTLIGHT_ADDR_3: usize = UNIVERSE_CHANNEL_CAPACITY + 3;
 
 /// The number of addresses taken up by the backlights in the acceptance test.
 const ACCEPT_TEST_BACKLIGHT_CH_COUNT: usize = 16;
