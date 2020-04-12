@@ -68,6 +68,9 @@ const TEST_PRESET_MOVING_CHANNELS:      usize = 7;
 const TEST_PRESET_RAPID_CHANGES:        usize = 8;
 const TEST_PRESET_HIGH_DATA_RATE:       usize = 9;
 
+/// Test preset number for acceptance test 100. 
+const TEST_PRESET_ACCEPTANCE_TEST:      usize = 100;
+
 /// The duration of one of the preset tests. 
 /// Each preset test run for 20 seconds.
 const TEST_PRESET_DURATION:         Duration = Duration::from_secs(20);
@@ -94,6 +97,34 @@ const TEST_PRESET_RAPID_CHANGE_PERIOD: usize = 10;
 
 /// The range of values for each universe within the high data rate test preset.
 const TEST_PRESET_HIGH_DATA_RATE_VARIATION_RANGE: f64 = 10.0;
+
+/// The 2 universes used for the acceptance test.
+/// UNI_1 contains the backlight fixtures and UNI_2 the frontlight fixtures.
+const ACCEPT_TEST_UNI_1: u16 = 1;
+const ACCEPT_TEST_UNI_2: u16 = 2;
+
+/// The start addresses for each of the fixtures in the acceptance test (universe 1).
+/// These are the backlights which are the colour changing lights far from the camera.
+const ACCEPT_TEST_BACKLIGHT_ADDR_1: usize = 1;
+const ACCEPT_TEST_BACKLIGHT_ADDR_2: usize = 50;
+const ACCEPT_TEST_BACKLIGHT_ADDR_3: usize = 100;
+const ACCEPT_TEST_BACKLIGHT_ADDR_4: usize = 150;
+const ACCEPT_TEST_BACKLIGHT_ADDR_5: usize = 200;
+const ACCEPT_TEST_BACKLIGHT_ADDR_6: usize = 250;
+const ACCEPT_TEST_BACKLIGHT_ADDR_7: usize = 300;
+const ACCEPT_TEST_BACKLIGHT_ADDR_8: usize = 350;
+
+/// The start addresses for each of the fixtures in the acceptance test (universe 2).
+/// These are the frontlights which are near the camera.
+const ACCEPT_TEST_FRONTLIGHT_ADDR_1: usize = 1;
+const ACCEPT_TEST_FRONTLIGHT_ADDR_2: usize = 2;
+const ACCEPT_TEST_FRONTLIGHT_ADDR_3: usize = 3;
+
+/// The number of addresses taken up by the backlights in the acceptance test.
+const ACCEPT_TEST_BACKLIGHT_CH_COUNT: usize = 16;
+
+/// The number of addresses taken up by the frontlights in the acceptance test.
+const ACCEPT_TEST_FRONTLIGHT_CH_COUNT: usize = 1;
 
 /// Describes the various commands / command-line arguments avaliable and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
@@ -144,6 +175,9 @@ fn get_usage_str() -> String{
     Preset 8: Rapid Changes (Quick moves to 255 to 0 to 255 on repeat)\n
     Preset 9: High data rate (Uses given universe as start universe + the next 15 universes (16 universes total)). Raw value, r, for each universe x, r = [(x - 1) * 10, x * 10). \n
             E.g. for universe 2 the range is [20, 30). \n
+    Preset 100: Acceptance Test, Union Demo Sequence, Parameters are ignored as making this work in the general case with any lights patched anywhere would involve writing
+                an entire lighting board patch system which is significantly beyond the scope of a single developers year work. \n
+                \n
     {} <preset> <universe> <... optionally more arguments>\n
 
     All input is ignored on lines starting with '{} '. 
@@ -349,6 +383,9 @@ fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Re
             let addr = SocketAddr::new(split_input[4].parse().unwrap(), ACN_SDT_MULTICAST_PORT);
 
             run_test_2_universes_distinct_values(src, universe, universe_2, std::u8::MAX / 2, std::u8::MAX, Some(addr))?;
+        },
+        TEST_PRESET_ACCEPTANCE_TEST => {
+            run_acceptance_test_demo(src)?;
         }
         _ => {
             bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unrecognised test preset option"));
@@ -424,7 +461,6 @@ fn run_test_rapid_changes_preset(src: &mut SacnSource, universe: u16) -> Result<
     Ok(())
 }
 
-
 fn run_test_high_data_rate(src: &mut SacnSource, start_universe: u16, universe_count: u16) -> Result<()> {
     let start_time = Instant::now();
 
@@ -445,6 +481,220 @@ fn run_test_high_data_rate(src: &mut SacnSource, start_universe: u16, universe_c
     }
 
     Ok(())
+}
+
+/// Runs the acceptance test sender to vision visualiser demo.
+/// 
+/// Made to work with the corresponding vision visualiser "Student-Union-Model.v3s" file with patch as follows:
+/// Format:
+/// <fixture_name> <channel_count>ch: <sACN_universe>-<address>, ....
+/// 
+/// Patch:
+/// Robe Robin LedBeam 150 16ch: 1-1, 1-50, 1-100, 1-150, 1-200, 1-250, 1-300, 1-350.
+/// Fresnel-Front-Light 1ch: 2-1, 2-2, 2-3
+/// 
+/// Step 1, 150 + Front On at full.
+/// Step 2, Red
+/// Step 3, Blue
+/// Step 4, All off
+/// 
+fn run_acceptance_test_demo(src: &mut SacnSource) -> Result<()> {
+    // The number of steps and the length (in packets) of each step.
+    const STEP_COUNT: usize = 4;
+    const STEP_LENGTH: usize = 100;
+
+    let start_time = Instant::now();
+
+    let mut step_counter: usize = 0; // Used as an animation / key-frame timeline to allow different actions to happen in sequence.
+
+    // 
+    let mut step1_data: [u8; UNIVERSE_CHANNEL_CAPACITY * 2] = [0; UNIVERSE_CHANNEL_CAPACITY * 2];
+    let mut step2_data: [u8; UNIVERSE_CHANNEL_CAPACITY * 2] = [0; UNIVERSE_CHANNEL_CAPACITY * 2];
+    let mut step3_data: [u8; UNIVERSE_CHANNEL_CAPACITY * 2] = [0; UNIVERSE_CHANNEL_CAPACITY * 2];
+    let mut step4_data: [u8; UNIVERSE_CHANNEL_CAPACITY * 2] = [0; UNIVERSE_CHANNEL_CAPACITY * 2];
+
+    gen_acceptance_test_step_1(&mut step1_data);
+    gen_acceptance_test_step_2(&mut step2_data);
+    gen_acceptance_test_step_3(&mut step3_data);
+    gen_acceptance_test_step_4(&mut step4_data);
+
+    // Put each step into a data structure to cycle through.
+    let data = [step1_data, step2_data, step3_data, step4_data];
+
+    while start_time.elapsed() < TEST_PRESET_DURATION {
+        // Cycle through each step.
+        let pos: usize = step_counter / STEP_LENGTH;
+
+        src.send(&[ACCEPT_TEST_UNI_1, ACCEPT_TEST_UNI_2], &data[pos], None, None, None)?;
+
+        step_counter = (step_counter + 1) % (STEP_LENGTH * STEP_COUNT); // Loop back around at the end.
+        sleep(TEST_PRESET_UPDATE_PERIOD);
+    }
+
+    Ok(())
+}
+
+/// Step 1, Backlight + Front On at full.
+fn gen_acceptance_test_step_1(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
+    // Backlights.
+    gen_acceptance_test_step_1_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_1 .. ACCEPT_TEST_BACKLIGHT_ADDR_1 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_1_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_2 .. ACCEPT_TEST_BACKLIGHT_ADDR_2 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_1_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_3 .. ACCEPT_TEST_BACKLIGHT_ADDR_3 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_1_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_4 .. ACCEPT_TEST_BACKLIGHT_ADDR_4 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_1_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_5 .. ACCEPT_TEST_BACKLIGHT_ADDR_5 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_1_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_6 .. ACCEPT_TEST_BACKLIGHT_ADDR_6 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_1_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_7 .. ACCEPT_TEST_BACKLIGHT_ADDR_7 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_1_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_8 .. ACCEPT_TEST_BACKLIGHT_ADDR_8 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+
+    // Frontlights.
+    gen_acceptance_test_step_1_frontlight_state(&mut buf[ACCEPT_TEST_FRONTLIGHT_ADDR_1 .. ACCEPT_TEST_FRONTLIGHT_ADDR_1 + ACCEPT_TEST_FRONTLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_1_frontlight_state(&mut buf[ACCEPT_TEST_FRONTLIGHT_ADDR_2 .. ACCEPT_TEST_FRONTLIGHT_ADDR_2 + ACCEPT_TEST_FRONTLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_1_frontlight_state(&mut buf[ACCEPT_TEST_FRONTLIGHT_ADDR_3 .. ACCEPT_TEST_FRONTLIGHT_ADDR_3 + ACCEPT_TEST_FRONTLIGHT_CH_COUNT]);
+}
+
+/// The backlights use 16 dmx channels each. The usage of each channel is as described by the DMX chart found at the manufacture website:
+/// https://www.robe.cz/ledbeam-150/download/#dmx-charts (12/04/2020).
+/// The backlights are in 16 channel mode (mode 2).
+/// Channel : Usage (explaination)
+/// 1: Pan (positioning)
+/// 2: Pan Fine (positioning)
+/// 3: Tilt (positioning)
+/// 4: Tilt Fine (positioning)
+/// 5: Pan/Tilt Speed (positioning)
+/// 6: Power/Special Functions (Control channel)
+/// 7: Virtual Colour Wheel (colour)
+/// 8: Red
+/// 9: Green
+/// 10:Blue
+/// 11:White
+/// 12: CTC (colour temperature)
+/// 13: Colour-Mix-Control 
+/// 14: Zoom (beam wideness)
+/// 15: Shutter/Strobe (should the fixture rapidly flash)
+/// 16: Dimmer Intensity (brightness)
+/// 
+/// This is why this demo is locked to this specific lighting fixture and mode. There is no standard to these channel orderings and so any different
+/// fixture or mode wouldn't behave as expected.
+/// 
+fn gen_acceptance_test_step_1_backlight_state(buf: &mut [u8]) {
+    // Position the fixtures pointing at the stage.
+    buf[0] = 128;  // Pan
+    buf[1] = 0;    // Pan Fine
+    buf[2] = 148;  // Tilt
+    buf[3] = 114;  // Tilt Fine
+    buf[4] = 0;    // Pan/Tilt Speed
+
+    // Leave the fixtures in their default options state.
+    buf[5] = 0;    // Power/Special Functions (Control channel)
+
+    // Set the fixture to white.
+    buf[6] = 0;    // Using Red-Green-Blue-White mixing so don't use the virtual colour wheel.
+    buf[7] = 0;    // Red at 0.
+    buf[8] = 0;    // Green at 0.
+    buf[9] = 0;    // Blue at 0.
+    buf[10] = 255; // White at full.
+    buf[11] = 0;   // Colour temperature at 0 (meaning default colour temperature of around 6500k).
+    buf[12] = 45;  // Use additive colour mixing. 45 is the default value.
+
+    // Set the fixture so it covers the stage.
+    buf[13] = 91;  // Zoom the fixture so it is wide enough to get reasonable coverage.
+
+    // Set the fixture to full.
+    buf[14] = 255; // The shutter is set to 255 to indicate it is fully open meaning all light can pass.
+    buf[15] = 255; // The brightness is set to 255 to indicate it should be at full.
+}
+
+/// The front-lights only use a single channel which is brightness.
+///  For step 1 this is set to full (255).
+fn gen_acceptance_test_step_1_frontlight_state(buf: &mut [u8]) {
+    buf[0] = 255;
+}
+
+/// Step 2, Red
+fn gen_acceptance_test_step_2(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
+    // Many of the channels will stay the same, therefore can just layer the changes on top.
+    // This is refered to as 'tracking' within the lighting industry and internally is key to how modern lighting control systems deal with having so
+    // many parameters in real-time (by only changing the ones necessary).
+    gen_acceptance_test_step_1(buf);
+
+    // The backlight fixtures change colour so therefore the colour channels within them need changing.
+    gen_acceptance_test_step_2_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_1 .. ACCEPT_TEST_BACKLIGHT_ADDR_1 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_2_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_2 .. ACCEPT_TEST_BACKLIGHT_ADDR_2 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_2_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_3 .. ACCEPT_TEST_BACKLIGHT_ADDR_3 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_2_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_4 .. ACCEPT_TEST_BACKLIGHT_ADDR_4 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_2_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_5 .. ACCEPT_TEST_BACKLIGHT_ADDR_5 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_2_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_6 .. ACCEPT_TEST_BACKLIGHT_ADDR_6 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_2_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_7 .. ACCEPT_TEST_BACKLIGHT_ADDR_7 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_2_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_8 .. ACCEPT_TEST_BACKLIGHT_ADDR_8 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+
+    // Note that because the front light is not changing in this step it doesn't have to be modified.
+}
+
+/// Apply the changes to the backlight fixtures for step 2 (set to red). Note that only the color changes so only colour channels are affected.
+/// This relies on the buffer containing the values from step 1 already.
+fn gen_acceptance_test_step_2_backlight_state(buf: &mut [u8]) {
+    // Set the fixture to red.
+    buf[7] = 255;  // Red at full.
+    buf[10] = 0;   // White at 0.
+}
+
+/// Step 3, Blue
+fn gen_acceptance_test_step_3(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
+    gen_acceptance_test_step_2(buf);
+
+    // The backlight fixtures change colour so therefore the colour channels within them need changing.
+    gen_acceptance_test_step_3_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_1 .. ACCEPT_TEST_BACKLIGHT_ADDR_1 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_3_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_2 .. ACCEPT_TEST_BACKLIGHT_ADDR_2 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_3_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_3 .. ACCEPT_TEST_BACKLIGHT_ADDR_3 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_3_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_4 .. ACCEPT_TEST_BACKLIGHT_ADDR_4 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_3_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_5 .. ACCEPT_TEST_BACKLIGHT_ADDR_5 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_3_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_6 .. ACCEPT_TEST_BACKLIGHT_ADDR_6 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_3_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_7 .. ACCEPT_TEST_BACKLIGHT_ADDR_7 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_3_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_8 .. ACCEPT_TEST_BACKLIGHT_ADDR_8 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+}
+
+/// Apply the changes to the backlight fixtures for step 3 (set to blue). Note that only the color changes so only colour channels are affected.
+/// This relies on the buffer containing the values from step 2 already.
+fn gen_acceptance_test_step_3_backlight_state(buf: &mut [u8]) {
+    // Set the fixture to blue.
+    buf[7] = 0;     // Red at 0.
+    buf[9] = 255;   // Blue at full.
+}
+
+/// Step 4, All Off
+fn gen_acceptance_test_step_4(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
+    gen_acceptance_test_step_3(buf);
+
+    // All fixtures need to change in this state to off so need to update them all.
+
+    // Backlights.
+    gen_acceptance_test_step_4_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_1 .. ACCEPT_TEST_BACKLIGHT_ADDR_1 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_4_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_2 .. ACCEPT_TEST_BACKLIGHT_ADDR_2 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_4_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_3 .. ACCEPT_TEST_BACKLIGHT_ADDR_3 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_4_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_4 .. ACCEPT_TEST_BACKLIGHT_ADDR_4 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_4_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_5 .. ACCEPT_TEST_BACKLIGHT_ADDR_5 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_4_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_6 .. ACCEPT_TEST_BACKLIGHT_ADDR_6 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_4_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_7 .. ACCEPT_TEST_BACKLIGHT_ADDR_7 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_4_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_8 .. ACCEPT_TEST_BACKLIGHT_ADDR_8 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
+
+    // Frontlights.
+    gen_acceptance_test_step_4_frontlight_state(&mut buf[ACCEPT_TEST_FRONTLIGHT_ADDR_1 .. ACCEPT_TEST_FRONTLIGHT_ADDR_1 + ACCEPT_TEST_FRONTLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_4_frontlight_state(&mut buf[ACCEPT_TEST_FRONTLIGHT_ADDR_2 .. ACCEPT_TEST_FRONTLIGHT_ADDR_2 + ACCEPT_TEST_FRONTLIGHT_CH_COUNT]);
+    gen_acceptance_test_step_4_frontlight_state(&mut buf[ACCEPT_TEST_FRONTLIGHT_ADDR_3 .. ACCEPT_TEST_FRONTLIGHT_ADDR_3 + ACCEPT_TEST_FRONTLIGHT_CH_COUNT]);
+}
+
+/// Apply the changes to the backlight fixtures for step 4 (turn off). Note that only the brightness changes so only the brightness channel is changed.
+/// This relies on the buffer containing the values from step 3 already.
+fn gen_acceptance_test_step_4_backlight_state(buf: &mut [u8]) {
+    // Set the fixture brightness to 0.
+    buf[15] = 0;
+}
+
+/// Apply the changes to the frontlight fixtures for step 4 (turn off). Note that only the brightness changes so only the brightness channel is changed.
+/// This relies on the buffer containing the values from step 3 already.
+fn gen_acceptance_test_step_4_frontlight_state(buf: &mut [u8]) {
+    // Set the fixture brightness to 0.
+    buf[0] = 0;
 }
 
 /// Returns Ok(true) to continue or Ok(false) if no more input.
