@@ -127,6 +127,9 @@ const ACCEPT_TEST_BACKLIGHT_CH_COUNT: usize = 16;
 /// The number of addresses taken up by the frontlights in the acceptance test.
 const ACCEPT_TEST_FRONTLIGHT_CH_COUNT: usize = 1;
 
+/// The time the acceptance test sequence should keep cycling for.
+const ACCEPT_TEST_DURATION: Duration = Duration::from_secs(30);
+
 /// Describes the various commands / command-line arguments avaliable and what they do.
 /// Displayed to the user if they ask for help or enter an unrecognised input.
 /// Not a const as const with format! not supported in rust.
@@ -522,7 +525,7 @@ fn run_acceptance_test_demo(src: &mut SacnSource) -> Result<()> {
     // Put each step into a data structure to cycle through.
     let data = [step1_data, step2_data, step3_data, step4_data];
 
-    while start_time.elapsed() < TEST_PRESET_DURATION {
+    while start_time.elapsed() < ACCEPT_TEST_DURATION {
         // Cycle through each step.
         let pos: usize = step_counter / STEP_LENGTH;
 
