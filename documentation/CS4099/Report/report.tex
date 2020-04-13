@@ -387,7 +387,7 @@ The results of the fuzzer run are shown in figure \ref{FUZZ_RESULTS}. These resu
 \begin{figure}[H]
 	\label{FUZZ_RESULTS}
 	\includegraphics[width=\textwidth]{todo}
-	\caption{The abstract setup of the integration tests along with the actual implementation}
+	\caption{The results of the fuzz testing on the parsing part of the library.}
 \end{figure}
 
 \subsubsection{Testing External Interoperability}
@@ -395,10 +395,43 @@ The unit and integration tests show that the program works within itself but it 
 
 These tests can highlight problems with the program which are hidden until this point such as gaps in the specification where the library behaviour is implementation defined and may not be compatible with other systems. It can also highlight parts of the system which perform slightly differently than described in the abstract specification due to the introduction of real-world factors such as real-equipment limitations like processing speeds. An example of this might be if the library absolutely relied on universe discovery packets being sent at exactly the interval as defined by the specification. In-real systems network delays as well as varying workloads on the devices might cause packets to be received at slightly variable intervals. Real-world tests therefore help find some of these problems and allow fixes to be made before the program is sent to users.
 
-\paragraph*{Testing receiver implementation}
-To show that the sACN receiver implementation is interoperable with a real-world sender the demo receiver program was set-up and run in a network as shown in figure \ref{AVO_SETUP} along with an professional industry source of sACN in the form of the Avolites Titan program as described in the tools section. The tests run and what they demonstrate are detailed in figure \ref{AVO_TEST_RESULTS}. The real-world implementation used doesn't support sending universe synchronisation or universe discovery data so these could not be tested in this step. Details of how the test would have be performed had these features been supported are also shown in figure \ref{AVO_TEST_RESULTS}.\\
+\paragraph*{Industry Sender - Avolites Titan Setup}
+To allow repeatability the show files used for the interoperability tests are included in the Avolites Titan Show Files sub folder in the Interoperability Testing folder. These show files were made for version 11.4 and run on an Avolites Titan Mobile. Within the show file each universe was assigned to an sACN universe with a 1 to 1 mapping and no other network protocols were used as shown in figure \ref{AVO_DMX_LINES}.  In addition to this within the show-file itself 1 channel lighting fixtures called 'dimmers' were used to allow a 1:1 mapping between a fixture in the show-file and a DMX-address. This mapping is shown in figure \ref{AVO_RECV_INTEROP_SETUP} which shows some of the dimmers used (the groups part of the window shows that 8190 dimmers were added to represent each channel in universes 1 - 16). All settings used are included within the save files but in general were left to their defaults.
 
-For some of the tests it was easier to determine if they passed by visualising the received data. In test 5 the sender sends data on 16 different universes with different value ranges per universe. For this test to pass each universe should only contain the values within the range assigned to it as specified in figure \ref{AVO_TEST_RESULTS}. To show that this was the case the results were output to a csv file "test-5-out.csv" and then processed using a spreadsheet "test-5-data-processed.xlsx" to produce the graph "test-5-processed-first-value-chart.png" which is included in figure \ref{RCV_INTEROP_TEST_5_GRAPH}. This graph shows that each universe stays within the range expected and therefore that the test passes. As a sanity check of the results this test was also repeated using the sACN-viewer as the receiver and the graph produced in real-time recorded and included as the "Test-5-Receiver-Control-sACN-Viewer.mkv" file.\\
+\begin{figure}[H]
+	\label{AVO_DMX_LINES}
+	\includegraphics*[width=\textwidth]{avo-dmx-lines.png}
+	\caption{The setup of the avolites show file network protocols used for the interoperability testing}
+\end{figure}
+
+\begin{figure}[H]
+	\label{AVO_RECV_INTEROP_SETUP}
+	\includegraphics*[width=\textwidth]{avo-file-dims.png}
+	\caption{The setup of the avolites show file used for interoperability testing showing some of the fixtures patched}
+\end{figure}
+
+\paragraph*{Industry Receiver - Vectorworks Vision Setup}
+The vectorworks vision visualiser uses the vision files "CS4099-TEST.v3s" and "Student-Union-Model.v3s" included within the Test Resources folders of the Sender Interoperability Testing and Acceptance Test folders. Vision was setup using medium graphical quality settings although this should have had no effect on the results. The patch used within each file is included within the file itself as is the positions of each individual fixture. The 'DMX Provider' setting was set to sACN for all tests. The tests were performed on Vectorworks Vision Plus 2019 with a professional license and version 24.0.6.521266.
+
+\paragraph*{Industry Receiver - sACNView Setup}
+sACNView was setup using the default settings with the ethernet interface assigned to 192.168.0.6 set as the network interface as shown in figure \ref{SACN_VIEW_INTEROP_SETUP}. Universes 1 - 16 inclusive were listened to for every test even if less than that were used for a specific test. Unicast and multicast were enabled for every universe as shown in figure \ref{SACN_VIEW_UNICAST_MULTICAST_ENABLED}.
+
+\begin{figure}[H]
+	\label{SACN_VIEW_INTEROP_SETUP}
+	\includegraphics*[width=\textwidth]{sacnViewSettings.png}
+	\caption{The setup of sacnView used for the interoperability tests}
+\end{figure}
+
+\begin{figure}[H]
+	\label{SACN_VIEW_UNICAST_MULTICAST_ENABLED}
+	\includegraphics*[width=\textwidth]{sacnViewIPmodes.png}
+	\caption{The IP modes enabled in sacnView used for the interoperability tests}
+\end{figure}
+
+\paragraph*{Testing receiver implementation}
+To show that the sACN receiver implementation is interoperable with a real-world sender the demo receiver program was set-up and run in a network as shown in figure \ref{AVO_SETUP} along with an professional industry source of sACN in the form of the Avolites Titan program as described in the tools section. The tests run and what they demonstrate are detailed in the included "CS4099 - Interoperability Testing.pdf" document. The real-world implementation used doesn't support sending universe synchronisation or universe discovery data so these could not be tested in this step however details of how theses would have been tested are also included in the document.
+
+For some of the tests it was easier to determine if they passed by visualising the received data. In test 5 the sender sends data on 16 different universes with different value ranges per universe. For this test to pass each universe should only contain the values within the range assigned to it as specified in the testing document. To show that this was the case the results were output to a csv file "test-5-out.csv" and then processed using a spreadsheet "test-5-data-processed.xlsx" to produce the graph "test-5-processed-first-value-chart.png" which is included in figure \ref{RCV_INTEROP_TEST_5_GRAPH}. This graph shows that each universe stays within the range expected and therefore that the test passes. As a sanity check of the results this test was also repeated using the sACN-viewer as the receiver and the graph produced in real-time recorded and included as the "Test-5-Receiver-Control-sACN-Viewer.mkv" file.\\
 
 Similar to test 5, tests 3 and 4 also included visualisation elements as part of the check and details of these as-well as further specifics/details of all tests are included within the screenshots/videos within the relevant folders test folders (excluded from report for brevity).\\
 
@@ -409,21 +442,15 @@ Similar to test 5, tests 3 and 4 also included visualisation elements as part of
 \end{figure}
 
 \begin{figure}[H]
-	\label{AVO_TEST_RESULTS}
-	\includegraphics[width=\textwidth]{todo}
-	\caption{The details of the test runs performed as part of the test to show the interoperability of the implementation receiver with a real-world industry source}
-\end{figure}
-
-\begin{figure}[H]
 	\label{RCV_INTEROP_TEST_5_GRAPH}
 	\includegraphics[width=\textwidth]{test-5-processed-first-value-chart}
 	\caption{A graph showing the values of each universe per packet received for that universe. This shows the ranges of each universe fit within the expected.}
 \end{figure}
 
 \paragraph*{Testing sender implementation}
-Similarly to test the sACN sender implementation an external receiver was used. In this case 2 separate receivers were used, the vision visualiser and sACN viewer, as discussed previously. Separate programs were used because neither program was suitable on its own. The visualiser was created by a large company within industry and is used every day by professionals working in the field. This gives a high confidence that it will be compliant with the protocol and so showing interoperability with this is very valuable. It was found however that the visualiser only supports data packets and doese not support universe synchronisation or discovery meaning it could not test this functionality. sACN viewer was therefore used as it provides support for universe discovery as-well as a good interface to show that data packets are being received and parsed correctly. Unfortunately neither implementation supported universe synchronisation. Given that the same problem was encountered when trying to find a receiver implementation it appears that the industry has not yet fully caught up to the ANSI E1.31-2016 standard when synchronisation was added. It may also be possible that while in-use programs supporting this feature do exist they are proprietary and so could not be accessed/tested against within this project. \\
+Similarly to test the sACN sender implementation an external receiver was used. In this case 2 separate receivers were used, the vision visualiser and sACN viewer, as discussed previously. Separate programs were used because neither program was suitable on its own. The visualiser was created by a large company within industry and is used every day by professionals working in the field. This gives a high confidence that it will be compliant with the protocol and so showing interoperability with this is very valuable. It was found however that the visualiser only supports data packets and does not support universe synchronisation or discovery (at least in a way that could be observed) meaning it could not test this functionality. sACN viewer was therefore used as it provides support for universe discovery as-well as a good interface to show that data packets are being received and parsed correctly. Unfortunately neither implementation supported universe synchronisation. Given that the same problem was encountered when trying to find a receiver implementation it appears that the industry has not yet fully caught up to the ANSI E1.31-2016 standard when synchronisation was added. It may also be possible that while in-use programs supporting this feature do exist they are proprietary and so could not be accessed/tested against within this project. \\
 
-The test was set-up identically for both receivers as shown in figure \ref{VIS_VIEWER_SETUP}, the actual tests run are detailed in figure \ref{VIS_VIEWER_RESULTS} along with results. This figure also describes the tests which would have been run had there been an industry receiver which supported the universe synchronisation feature.\\
+The test was set-up identically for both receivers as shown in figure \ref{VIS_VIEWER_SETUP}, the actual tests run are detailed in the "CS4099 - Interoperability Testing.pdf" document along with results. This figure also describes the tests which would have been run had there been an industry receiver which supported the universe synchronisation feature.\\
 
 To allow the visualiser output to be easier to interpret the 3D scene used uses a large number of simple lighting fixtures. These fixtures are laid out as shown in figure \ref{VIS_LX_PLOT} with each fixture corresponding to a single channel on a universe.\\
 
@@ -434,14 +461,8 @@ To allow the visualiser output to be easier to interpret the 3D scene used uses 
 \end{figure}
 
 \begin{figure}[H]
-	\label{VIS_VIEWER_RESULTS}
-	\includegraphics[width=\textwidth]{todo}
-	\caption{The details of the test runs performed to show interoperability between the implementation of the sender and an industry sACN receiver}
-\end{figure}
-
-\begin{figure}[H]
 	\label{VIS_LX_PLOT}
-	\includegraphics[width=\textwidth]{todo}
+	\includegraphics[width=\textwidth]{Vision-File-LX-Plot.png}
 	\caption{The lighting plot of the lights used as part of the Vision Visualiser test scene}
 \end{figure}
 
@@ -452,7 +473,7 @@ Two separate demonstrations are performed, first showing the functionality of th
 
 The industry professional for this test was the Technical Supervisor for the St Andrews Students Association. As a technician they work with lighting, sound and other entertainment systems daily and so they are ideally placed to demonstrate the implementation of this widely used lighting protocol to. The visualisation test provides significant value to the project as a professional working in the field will know how this fits into the real-world work flow of someone working in lighting and therefore that this is an actual representative usage of the protocol. The receiver output from the lighting board is also extremely valuable as the technician is able to observe that this is a real-world sACN source which is being used with the protocol and they can see that the data is being correctly sent by the board and received as expected.  \\
 
-The test layout is shown in \ref{ACCEPTANCE_TEST_LAYOUT}, the plan for the demonstrations to run are detailed in figure \ref{ACCEPTANCE_TEST_DETAILS} however during the actual test there is the possibility of questions which may lead the demonstration to change to show specific areas of the implementation. Once this test was complete the professional would then agreed to write up a short email describing the test and their evaluation of the demonstration.\\ 
+The test layout is shown in \ref{ACCEPTANCE_TEST_LAYOUT}, the plan for the demonstrations to run are detailed in the "CS4099 - Interoperability Testing" however during the actual test there is the possibility of questions which may lead the demonstration to change to show specific areas of the implementation. Once this test was complete the professional then agreed to write up a short email describing the test and their evaluation of the demonstration.\\ 
 
 The lighting layout used for visualisation in this test is setup to be similar to the actual setup used in the students union thereby being a representative example of an actual industry use case. The layout of this setup with accompanying explanation is shown in figure \ref{ACCEPTANCE_TEST_LX_PLOT}. 
 
@@ -463,14 +484,8 @@ The lighting layout used for visualisation in this test is setup to be similar t
 \end{figure}
 
 \begin{figure}[H]
-	\label{ACCEPTANCE_TEST_DETAILS}
-	\includegraphics[width=\textwidth]{todo}
-	\caption{The plan for the acceptance test demonstration}
-\end{figure}
-
-\begin{figure}[H]
 	\label{ACCEPTANCE_TEST_LX_PLOT}
-	\includegraphics[width=\textwidth]{todo}
+	\includegraphics[width=\textwidth]{Union-Setup-Vision-File-LX-Plot.png}
 	\caption{The lighting plot showing the locations and addresses of fixtures within the visualiser used as part of the acceptance test. This is based on the actual lighting layout used within the students association. Additional explanation has been added on top of the plan to describe what each part means.}
 \end{figure}
 
