@@ -3895,3 +3895,36 @@ fn test_terminate_universe_no_register() {
         }
     }
 }
+
+#[test]
+#[ignore]
+fn test_send_empty() {
+    const UNIVERSE: u16 = 1;
+
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    src.register_universe(UNIVERSE).unwrap();
+
+    match src.send(&[UNIVERSE], &[], None, None, None) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::Io(x) => {
+                    match x.kind() {
+                        std::io::ErrorKind::InvalidInput => {
+                            assert!(true, "Unexpected error returned");
+                        },
+                        _ => {
+                            assert!(false, "Unexpected error returned");
+                        }
+                    }
+                },
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        _ => {
+            assert!(false, "Empty data accepted to send incorrectly");
+        }
+    }
+}
