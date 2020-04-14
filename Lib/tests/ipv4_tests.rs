@@ -3779,6 +3779,9 @@ fn test_track_sync_packet_seq_numbers() {
 #[test]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[ignore]
+/// Linux only because of the mechanism used for creating the recv sockets so that they only receive from a single multicast address.
+/// This is unrelated to the actual library and is just the way the test is written.
+#[cfg(target_os = "linux")]
 fn test_sync_packet_multicast_address() {
     // Source CID and name, set to arbitrary values as not the focus of the test.
     const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
