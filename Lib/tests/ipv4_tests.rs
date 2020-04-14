@@ -3852,3 +3852,43 @@ fn test_sync_packet_multicast_address() {
         }
     }
 }
+
+#[test]
+#[ignore]
+fn test_register_terminate_universe() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let universe = 1;
+
+    src.register_universe(universe).unwrap();
+
+    assert_eq!(src.universes().unwrap(), vec!(1), "Universe not registered correctly");
+
+    src.terminate_stream(universe, 0).unwrap();
+
+    assert_eq!(src.universes().unwrap(), Vec::new(), "Universe not registered correctly");
+}
+
+#[test]
+#[ignore]
+fn test_terminate_universe_no_register() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let universe = 1;
+
+    match src.terminate_stream(universe, 0) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::UniverseNotRegistered(_) => {
+                    assert!(true, "Expected error returned");
+                },
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        _ => {
+            assert!(false, "Src terminated stream that wasn't registered!");
+        }
+    }
+}

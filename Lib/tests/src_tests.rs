@@ -242,6 +242,22 @@ fn test_set_get_ttl() {
 }
 
 #[test]
+fn test_get_multicast_loop() {
+    let src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    assert!(src.multicast_loop().unwrap(), "Multicast loop set to false initially when expected true");
+}
+
+#[test]
+fn test_set_get_multicast_loop() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    src.set_multicast_loop_v4(false).unwrap();
+
+    assert!(!src.multicast_loop().unwrap(), "Multicast loop not set to false correctly");
+}
+
+#[test]
 fn test_send_without_registering(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
     
