@@ -522,6 +522,16 @@ impl SacnSource {
     pub fn multicast_loop(&self) -> Result<bool> {
         unlock_internal(&self.internal)?.multicast_loop()
     }
+
+    /// Returns the universes currently registered on this source.
+    /// 
+    /// # Errors
+    /// SourceCorrupt: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
+    /// a panic while accessing causing the source to be left in a potentially inconsistent state. 
+    /// 
+    pub fn universes(&self) -> Result<Vec<u16>> {
+        Ok(unlock_internal(&self.internal)?.universes())
+    }
 }
 
 /// By implementing the Drop trait for SacnSource it means that the user doesn't have to explicitly clean up the source
@@ -665,18 +675,13 @@ impl SacnSourceInternal {
     fn deregister_universe(&mut self, universe: u16) -> Result<()> {
         is_universe_in_range(universe)?;
 
-        if self.universes.len() == 0 {
-            self.universes.push(universe);
-            Ok(())
-        } else {
-            match self.universes.binary_search(&universe) {
-                Err(_i) => { // Value not found
-                    bail!(ErrorKind::UniverseNotFound("Attempted to de-register a universe that was never registered".to_string()))
-                }
-                Ok(i) => { // Value found, i is index.
-                    self.universes.remove(i);
-                    Ok(())
-                }
+        match self.universes.binary_search(&universe) {
+            Err(_i) => { // Value not found
+                bail!(ErrorKind::UniverseNotFound("Attempted to de-register a universe that was never registered".to_string()))
+            }
+            Ok(i) => { // Value found, i is index.
+                self.universes.remove(i);
+                Ok(())
             }
         }
     }
@@ -1198,6 +1203,11 @@ impl SacnSourceInternal {
     /// Returns true if multicast loop is enabled, false if not.
     fn multicast_loop(&self) -> Result<bool> {
         Ok(self.socket.multicast_loop_v4()?)
+    }
+
+    /// Returns the universes currently registered on this source.
+    pub fn universes(&self) -> Vec<u16> {
+        self.universes.clone()
     }
 }
 
