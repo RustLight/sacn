@@ -13,7 +13,7 @@
 \input{title-page.tex}
 
 \section{Abstract}
-The project aims to create a library that is available in rust allowing usage of the ANSI E1.31-2018 sACN \cite{ANSI_E1.31} protocol including data transfer, universe synchronisation, universe discovery and that supports Ipv4, Ipv6, Unix and Windows. This library utilises an existing implementation \cite{ORIGINAL_IMPL} as a base but does not attempt to provide backwards compatibility with that implementation.
+The project aims to create a library for the ANSI E1.31-2018 sACN protocol \cite{ANSI_E1.31} that is available in native rust.
 
 \section{Declaration}
 I declare that the material submitted for
@@ -43,6 +43,8 @@ copyright in this work.
 	importance and try to outline key aspects of your
 	project for the reader to look for in the rest of your
 	report.
+The project aims to create a library that is available in rust allowing usage of the ANSI E1.31-2018 sACN \cite{ANSI_E1.31} protocol including data transfer, universe synchronisation, universe discovery and that supports Ipv4, Ipv6, Unix and Windows. This library utilises an existing implementation \cite{ORIGINAL_IMPL} as a base but does not attempt to provide backwards compatibility with that implementation.
+	
 At the time of starting this project there did not exist a native, open-source ANSI E1.31-2018 sACN library for rust which allowed data sending, receiving, universe synchronisation and universe discovery.  The library that did exist was incomplete and only supported sending data and parsing packets.\\
 
 This project therefore aims to create a library for rust users which supports ANSI E1.31-2018 sACN sending, receiving, universe synchronisation and discovery. This project is based on the existing library to give a starting point. As sACN is commonly used in heterogeneous device environments with a mix of embedded systems and operating systems such as Windows and Unix to provide support for as many devices as possible a few additional non-functional requirements were made; The library must have support for both Ipv4 and Ipv6 as well as unicast, multicast and broadcast in both windows and unix environments. Backwards compatibility with the existing library was abandoned due to the incomplete nature of the library and to re-use it would require significantly forcing the implementation of the new library into confusing patterns to allow usage of the new Synchronisation and Discovery features.\\
@@ -538,17 +540,10 @@ The PoisonError problem, rust is still developing and there isn't a standard err
 
 Couldn't show that the receiver worked with universe synchronisation or discovery. This is because the real-world sACN sender used (Avolites Titan) does not support it. Ideally another source would have been used however an initial inspection found none that did support it that could be used. If there had been time a test program could have been written using a library in another programming language and this used however there was insufficient time to learn, write and test an entirely new library in another language so that it could be used for this test.
  
-\subsection{Extraneous Circumstances}
-Unfortunately the acceptance test which was planned for sometime between the 14th and 29th of March based on when the technician was free was unable to take place. This is due to the outbreak of the COVID-19 virus which forced the students association to close and non-essential contact to be stopped before the demonstration could be conducted. It is predicted that based on the very similar integration tests passing as-well as the other testing that had the demonstration gone ahead the program would have worked as expected and the evaluation been positive. It is a shame that the test could not be conducted as comments could have led to recommended improvements for the project which would have ultimately resulted in a higher quality submission.\\
+\subsection{Extraneous Circumstances - COVID-19}
+Unfortunately the acceptance test which was planned for sometime between the 14th and 29th of March based on when the technician was free was unable to take place. This is due to the outbreak of the COVID-19 virus which forced the students association to close and non-essential contact to be stopped before the demonstration could be conducted. It is predicted that based on the very similar integration tests passing as-well as the other testing that had the demonstration gone ahead the program would have worked as expected and the evaluation been positive. It is a shame that the test could not be conducted as comments could have led to recommended improvements for the project which would have ultimately resulted in a higher quality submission. An annotated video is included showing what one of the acceptance tests may have looked like although this video is performed on my own hardware rather than the students union equipment.\\
 
--- Look at Kasim email and format this section like that
-
-
--- COVID-19
--- No direct access to labs (SSH used)
--- No acceptance test
--- No use of some of the actual hardware (some was still available)
--- Still did software tests
+The COVID-19 also meant that I was unable to remain in St Andrews and continue to have access to the computing labs. This had a number of impacts. The first was the time lost due to the move and having to create a new setup for working at home. This environment was less than ideal and meant that some features which may have been possible had things continued as normal were not. The move also meant that I no longer had direct access to more than 1-2 machines. This means that tests like the ssh integration tests were much more difficult to create because they had to be done completely remotely from home SSH'd into labs. This lead to far fewer of these tests being created than would have been hoped. \\
 
 \section{Conclusions}
 Conclusions
@@ -567,34 +562,15 @@ This should describe the steps taken to debug, test,
 verify or otherwise confirm the correctness of the
 various modules and their combination.
 
-\section{Testing}
-
-
-
 \section{User Manual}
 User manual Instructions on installing, executing and using the
-system where appropriate.
+system where appropriate.\\
 
-Running:
-cargo run --bin demo\_src
-cargo run --bin demo\_rcv
+The core part of this project was the sACN library created. This library is packaged as a rust cargo crate and therefore can be imported using a local import as demonstrated in the 'demo\_src' and 'demo\_rcv' programs. After this project is complete the project will hopefully be uploaded to the public rust cargo repository which would allow much easier installation through the 'cargo install' command.\\
 
-cargo test --no-fail-fast -- --test-threads=1
+Usage of the library is described in the generated rust-doc documentation. Once the project is complete this would also be bundled with the library in the public cargo repo to allow easier access however as that cannot be done until after this project is marked the documentation is included in the sacn subfolder of the doc folder. Within this folder the documentation can be opened as a web-page by opening the index.html file. This documentation contains details of the functionality of public and private functions as-well as the possible returned errors, examples of the code in usage and also includes the 'demo\_src' and 'demo\_rcv' crates.\\
 
-cargo build
-
-cargo check
-
-Building documentation from source:
-cargo doc --document-private-items --no-deps --open
-
-In order to run the test coverage tool the rust nightly compiler is required.
-rustup toolchain install nightly
-rustup run nightly cargo build
-rustup run nightly cargo test -- --test-threads=1
-
-
-To run the SSH tests
+The details of how to use the program are described in the usage.pdf file.
 
 \section{Other Appendices}
 Other

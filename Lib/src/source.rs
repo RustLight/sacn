@@ -58,7 +58,7 @@ const DEFAULT_POLL_PERIOD: Duration = Duration::from_secs(1);
 
 /// A DMX over sACN sender.
 ///
-/// SacnSourceInternal is used for sending sACN packets over ethernet.
+/// SacnSource is used for sending sACN packets over an IP network.
 ///
 /// # Examples
 ///
