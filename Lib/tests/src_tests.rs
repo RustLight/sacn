@@ -182,6 +182,66 @@ fn test_set_name_get_name() {
 }
 
 #[test]
+fn test_get_cid() {
+    let cid = Uuid::new_v4();
+
+    let src = SacnSource::with_cid_ip("Test name", cid, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    assert_eq!(src.cid().unwrap(), cid, "CID does not match CID set"); 
+}
+
+#[test]
+fn test_set_get_cid() {
+    let cid = Uuid::new_v4();
+
+    let mut src = SacnSource::with_cid_ip("Test name", cid, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let new_cid = Uuid::new_v4();
+
+    src.set_cid(new_cid).unwrap();
+
+    assert_eq!(src.cid().unwrap(), new_cid, "CID does not match CID set"); 
+}
+
+#[test]
+fn test_get_preview() {
+    let src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    assert!(!src.preview_mode().unwrap(), "Preview mode not set to false initially");
+}
+
+#[test]
+fn test_set_get_preview() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    src.set_preview_mode(true).unwrap();
+
+    assert!(src.preview_mode().unwrap(), "Preview mode not set correctly");
+}
+
+#[test]
+fn test_set_get_multicast_ttl() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let ttl = 3;
+
+    src.set_multicast_ttl(ttl).unwrap();
+
+    assert_eq!(src.multicast_ttl().unwrap(), ttl, "TTL not set correctly");
+}
+
+#[test]
+fn test_set_get_ttl() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let ttl = 3;
+
+    src.set_ttl(ttl).unwrap();
+
+    assert_eq!(src.ttl().unwrap(), ttl, "TTL not set correctly");
+}
+
+#[test]
 fn test_send_without_registering(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
     

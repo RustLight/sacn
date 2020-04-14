@@ -471,6 +471,18 @@ impl SacnSource {
         unlock_internal_mut(&mut self.internal)?.set_multicast_ttl(multicast_ttl)
     }
 
+    /// Returns the current Time To Live for unicast packets send by this source.
+    /// 
+    /// # Errors
+    /// Io: Returned if the TTL cannot be retrieved from the underlying socket.
+    /// 
+    /// SourceCorrupt: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
+    /// a panic while accessing causing the source to be left in a potentially inconsistent state. 
+    /// 
+    pub fn ttl(&self) -> Result<u32> {
+        unlock_internal(&self.internal)?.ttl()
+    }
+
     /// Sets the Time To Live for packets sent by this source.
     /// 
     /// # Arguments
@@ -1142,6 +1154,15 @@ impl SacnSourceInternal {
     /// 
     fn set_multicast_ttl(&self, multicast_ttl: u32) -> Result<()> {
         Ok(self.socket.set_multicast_ttl_v4(multicast_ttl)?)
+    }
+
+    /// Returns the current Time To Live for unicast packets send by this source.
+    /// 
+    /// # Errors
+    /// Io: Returned if the TTL cannot be retrieved from the underlying socket.
+    /// 
+    fn ttl(&self) -> Result<u32> {
+        Ok(self.socket.ttl()?)
     }
 
     /// Sets the Time To Live for unicast packets sent by this source.
