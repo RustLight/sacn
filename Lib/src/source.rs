@@ -407,9 +407,10 @@ impl SacnSource {
     /// SourceCorrupt: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
     /// a panic while accessing causing the source to be left in a potentially inconsistent state. 
     /// 
+    /// MalformedSourceName: Returned to indicate that the given source name is longer than the maximum allowed as per E131_SOURCE_NAME_FIELD_LENGTH.
+    /// 
     pub fn set_name(&mut self, name: &str) -> Result<()> {
-        unlock_internal_mut(&mut self.internal)?.set_name(name);
-        Ok(())
+        unlock_internal_mut(&mut self.internal)?.set_name(name)
     }
 
     /// Returns true if SacnSourceInternal is in preview mode, false if not.
@@ -1104,8 +1105,16 @@ impl SacnSourceInternal {
     /// # Argument
     /// name: The new name for the source, it is left to the user to ensure this is unique within the sACN network.
     /// 
-    fn set_name(&mut self, name: &str) {
+    /// # Errors
+    /// MalformedSourceName: Returned to indicate that the given source name is longer than the maximum allowed as per E131_SOURCE_NAME_FIELD_LENGTH.
+    /// 
+    fn set_name(&mut self, name: &str) -> Result<()> {
+        if name.len() > E131_SOURCE_NAME_FIELD_LENGTH {
+            bail!(ErrorKind::MalformedSourceName("Source name provided is longer than maximum allowed".to_string()));
+        }
         self.name = name.to_string();
+
+        Ok(())
     }
 
     /// Returns if SacnSourceInternal is in preview mode.

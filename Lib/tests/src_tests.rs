@@ -142,6 +142,46 @@ fn test_new_with_ip_too_long_source_name() {
 }
 
 #[test]
+fn test_set_name_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    let mut src = SacnSource::new_v4("Initial name").unwrap();
+
+    match src.set_name(SRC_NAME) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_get_name() {
+    let name = "Test_Name";
+    let src = SacnSource::new_v4(name).unwrap();
+
+    assert_eq!(name, src.name().unwrap(), "Name retrieved does not match name set");
+}
+
+#[test]
+fn test_set_name_get_name() {
+    let name = "Test_Name";
+    let mut src = SacnSource::new_v4("Initial Name").unwrap();
+
+    src.set_name(name).unwrap();
+
+    assert_eq!(name, src.name().unwrap(), "Name retrieved does not match name set");
+}
+
+#[test]
 fn test_send_without_registering(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
     
