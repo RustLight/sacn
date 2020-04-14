@@ -198,7 +198,13 @@ impl SacnSource {
     /// 
     /// UnsupportedIpVersion: Returned if the SocketAddr is not IPv4 or IPv6.
     /// 
+    /// MalformedSourceName: Returned if the given source name is longer than the maximum allowed size of E131_SOURCE_NAME_FIELD_LENGTH.
+    /// 
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
+        if name.len() > E131_SOURCE_NAME_FIELD_LENGTH {
+            bail!(ErrorKind::MalformedSourceName("Source name provided is longer than maximum allowed".to_string()));
+        }
+
         let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
 
         let internal_src = Arc::new(Mutex::new(SacnSourceInternal::with_cid_ip(name, cid, ip)?));

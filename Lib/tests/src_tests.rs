@@ -8,11 +8,138 @@
 // This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
 extern crate sacn;
+extern crate uuid;
 
 use sacn::error::errors::*;
 
 use sacn::source::SacnSource;
 use sacn::packet::*;
+
+use std::net::{SocketAddr, Ipv4Addr, IpAddr};
+
+/// UUID library used to handle the UUID's used in the CID fields.
+use uuid::Uuid;
+
+/// Attempts to create an ipv4 source with the source name longer than expected.
+#[test]
+fn test_new_ipv4_one_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::new_v4(SRC_NAME) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_new_ipv6_one_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::new_v6(SRC_NAME) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_new_with_cid_ip_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::with_cid_ip(SRC_NAME, Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_new_with_cid_ip_v4_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::with_cid_v4(SRC_NAME, Uuid::new_v4()) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_new_with_cid_ip_v6_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::with_cid_v6(SRC_NAME, Uuid::new_v4()) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_new_with_ip_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::with_ip(SRC_NAME, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
 
 #[test]
 fn test_send_without_registering(){

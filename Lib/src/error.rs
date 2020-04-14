@@ -30,6 +30,12 @@ pub mod errors {
         }
 
         errors {
+            /// Returned to indicate that an invalid or malformed source name was used.
+            MalformedSourceName(msg: String) {
+                description("The given source name was malformed and couldn't be used"),
+                display("The given source name was malformed and couldn't be used, msg: {}", msg)
+            }
+
             /// Attempted to perform an action using a priority value that is invalid. For example sending with a priority > 200.
             /// This is distinct from the SacnParsePackError(ParseInvalidPriority) as it is for a local use of an invalid priority
             /// rather than receiving an invalid priority from another source.
