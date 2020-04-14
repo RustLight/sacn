@@ -2,14 +2,14 @@
 \contentsline {section}{\numberline {0.2}Declaration}{1}%
 \contentsline {section}{\numberline {0.3}Introduction}{4}%
 \contentsline {section}{\numberline {0.4}Context Survey}{4}%
-\contentsline {subsection}{\numberline {0.4.1}DMX, SACN and ACN}{4}%
-\contentsline {subsubsection}{DMX512}{4}%
+\contentsline {subsection}{\numberline {0.4.1}DMX, SACN and ACN}{5}%
+\contentsline {subsubsection}{DMX512}{5}%
 \contentsline {subsubsection}{sACN}{5}%
 \contentsline {subsubsection}{sACN - Universe Synchronisation}{6}%
 \contentsline {subsubsection}{sACN - Universe Discovery}{6}%
 \contentsline {subsection}{\numberline {0.4.2}Critical Analysis of the sACN protocol}{7}%
 \contentsline {subsection}{\numberline {0.4.3}Related Work}{8}%
-\contentsline {section}{\numberline {0.5}Requirement specification}{9}%
+\contentsline {section}{\numberline {0.5}Requirement specification}{10}%
 \contentsline {section}{\numberline {0.6}Software Engineering Process}{10}%
 \contentsline {subsection}{\numberline {0.6.1}Implementation, Testing and Deployment Phases}{12}%
 \contentsline {subsection}{\numberline {0.6.2}Reflection on Methodology Used}{13}%
@@ -50,9 +50,8 @@
 \contentsline {subsubsection}{Acceptance Testing}{48}%
 \contentsline {subsection}{\numberline {0.11.3}What Testing Shows}{50}%
 \contentsline {section}{\numberline {0.12}Evaluation and Critical Appraisal}{51}%
-\contentsline {subsection}{\numberline {0.12.1}Extraneous Circumstances}{53}%
+\contentsline {subsection}{\numberline {0.12.1}Extraneous Circumstances - COVID-19}{53}%
 \contentsline {section}{\numberline {0.13}Conclusions}{54}%
 \contentsline {section}{\numberline {0.14}Appendices}{54}%
-\contentsline {section}{\numberline {0.15}Testing}{54}%
-\contentsline {section}{\numberline {0.16}User Manual}{54}%
-\contentsline {section}{\numberline {0.17}Other Appendices}{55}%
+\contentsline {section}{\numberline {0.15}User Manual}{54}%
+\contentsline {section}{\numberline {0.16}Other Appendices}{55}%
