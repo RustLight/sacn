@@ -1929,9 +1929,10 @@ fn check_seq_number(
             // The rust typing system forces this possibility to be acknowledged when in some languages this possibility would still exist but it would be hidden
             // within the code. 
             // While a panic!() call here isn't ideal it shows the strength in the explictness of the rust system and points to an area of 
-            // potential later improvement within the code by not hiding the problem.
+            // potential later improvement within the code by not hiding the problem. As normal if the panic must be caught then rust allows this later on.
             // Another possibility here could be to retry the method but this could end with an infinite loop.
-            // Returning an error could also be done but that could confuse error handling as this should not occur.
+            // Returning an error could also be done but that could confuse error handling as this should not occur and the receiver would be in an inconsistent
+            // state.
             panic!();
         }
     };

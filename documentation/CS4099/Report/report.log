@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.3.5)  14 APR 2020 14:22
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.3.5)  15 APR 2020 12:02
 entering extended mode
 **./report.tex
 (report.tex
@@ -215,10 +215,16 @@ Package grfext Info: Graphics extension search list:
 (grfext)             [.pdf,.png,.jpg,.mps,.jpeg,.jbig2,.jb2,.PDF,.PNG,.JPG,.JPE
 G,.JBIG2,.JB2,.eps]
 (grfext)             \AppendGraphicsExtensions on input line 460.
-) (title-page.tex [1
+) (title-page.tex
+<st_a.png, id=1, 496.85625pt x 602.25pt>
+File: st_a.png Graphic file (type png)
+<use st_a.png>
+Package pdftex.def Info: st_a.png  used on input line 7.
+(pdftex.def)             Requested size: 200.0pt x 242.42119pt.
+ [1
 
-{C:/Users/paul/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}]) [1] (report
-.toc
+{C:/Users/paul/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map} <./st_a.png>]
+) [1] (report.toc
 LaTeX Font Info:    Trying to load font information for U+msa on input line 5.
 
 ("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex/latex/amsfonts\umsa.fd"
@@ -284,7 +290,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 93--94
 
 LaTeX Warning: Reference `C++_IMPL' on page 9 undefined on input line 95.
 
-<E131-Repo-Search.png, id=33, 545.78906pt x 441.52454pt>
+<E131-Repo-Search.png, id=38, 545.78906pt x 441.52454pt>
 File: E131-Repo-Search.png Graphic file (type png)
 <use E131-Repo-Search.png>
 Package pdftex.def Info: E131-Repo-Search.png  used on input line 99.
@@ -295,7 +301,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 122--123
  []
 
 [10]
-<sdlc_waterfall_model.jpg, id=42, 451.6875pt x 301.8778pt>
+<sdlc_waterfall_model.jpg, id=46, 451.6875pt x 301.8778pt>
 File: sdlc_waterfall_model.jpg Graphic file (type jpg)
 <use sdlc_waterfall_model.jpg>
 Package pdftex.def Info: sdlc_waterfall_model.jpg  used on input line 131.
@@ -330,7 +336,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 153--154
 
  []
 
-<CS4099-dev-timeline.png, id=53, 830.10126pt x 672.5125pt>
+<CS4099-dev-timeline.png, id=57, 830.10126pt x 672.5125pt>
 File: CS4099-dev-timeline.png Graphic file (type png)
 <use CS4099-dev-timeline.png>
 Package pdftex.def Info: CS4099-dev-timeline.png  used on input line 157.
@@ -365,7 +371,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 203--204
  []
 
 [18] [19]
-<CS4099-Expected-Usage.png, id=74, 788.9475pt x 613.29124pt>
+<CS4099-Expected-Usage.png, id=78, 788.9475pt x 613.29124pt>
 File: CS4099-Expected-Usage.png Graphic file (type png)
 <use CS4099-Expected-Usage.png>
 Package pdftex.def Info: CS4099-Expected-Usage.png  used on input line 222.
@@ -376,25 +382,25 @@ Underfull \hbox (badness 10000) in paragraph at lines 226--227
  []
 
 [20] [21 <./CS4099-Expected-Usage.png>]
-<Acn_header.png, id=82, 930.47626pt x 352.31625pt>
+<Acn_header.png, id=86, 930.47626pt x 352.31625pt>
 File: Acn_header.png Graphic file (type png)
 <use Acn_header.png>
 Package pdftex.def Info: Acn_header.png  used on input line 233.
 (pdftex.def)             Requested size: 360.0pt x 136.30609pt.
-<acn_data_structure.png, id=83, 716.6775pt x 720.6925pt>
+<acn_data_structure.png, id=87, 716.6775pt x 720.6925pt>
 File: acn_data_structure.png Graphic file (type png)
 <use acn_data_structure.png>
 Package pdftex.def Info: acn_data_structure.png  used on input line 239.
 (pdftex.def)             Requested size: 360.0pt x 362.01689pt.
  [22 <./Acn_header.png>]
-<Acn_extended_framing_structure_sync_discovery.png, id=88, 819.06pt x 160.6pt>
+<Acn_extended_framing_structure_sync_discovery.png, id=92, 819.06pt x 160.6pt>
 File: Acn_extended_framing_structure_sync_discovery.png Graphic file (type png)
 
 <use Acn_extended_framing_structure_sync_discovery.png>
 Package pdftex.def Info: Acn_extended_framing_structure_sync_discovery.png  use
 d on input line 245.
 (pdftex.def)             Requested size: 360.0pt x 70.58824pt.
-<acn_sync_packet_specific_structure.png, id=89, 502.87875pt x 77.28876pt>
+<acn_sync_packet_specific_structure.png, id=93, 502.87875pt x 77.28876pt>
 File: acn_sync_packet_specific_structure.png Graphic file (type png)
 <use acn_sync_packet_specific_structure.png>
 Package pdftex.def Info: acn_sync_packet_specific_structure.png  used on input 
@@ -402,7 +408,7 @@ line 251.
 (pdftex.def)             Requested size: 360.0pt x 55.32944pt.
  [23 <./acn_data_structure.png> <./Acn_extended_framing_structure_sync_discover
 y.png>]
-<acn_discovery_packet_specific_structure.png, id=95, 814.04124pt x 448.67625pt>
+<acn_discovery_packet_specific_structure.png, id=99, 814.04124pt x 448.67625pt>
 
 File: acn_discovery_packet_specific_structure.png Graphic file (type png)
 <use acn_discovery_packet_specific_structure.png>
@@ -416,7 +422,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 270--271
 
 [24 <./acn_sync_packet_specific_structure.png> <./acn_discovery_packet_specific
 _structure.png>]
-<net_stack.jpg, id=102, 1305.37688pt x 825.0825pt>
+<net_stack.jpg, id=106, 1305.37688pt x 825.0825pt>
 File: net_stack.jpg Graphic file (type jpg)
 <use net_stack.jpg>
 Package pdftex.def Info: net_stack.jpg  used on input line 274.
@@ -431,13 +437,13 @@ Underfull \hbox (badness 10000) in paragraph at lines 282--283
 
  []
 
-<Ipv4MulticastMapping.png, id=106, 385.44pt x 89.33376pt>
+<Ipv4MulticastMapping.png, id=110, 385.44pt x 89.33376pt>
 File: Ipv4MulticastMapping.png Graphic file (type png)
 <use Ipv4MulticastMapping.png>
 Package pdftex.def Info: Ipv4MulticastMapping.png  used on input line 289.
 (pdftex.def)             Requested size: 360.0pt x 83.43666pt.
 [26]
-<Ipv6MulticastMapping.png, id=110, 383.4325pt x 233.87375pt>
+<Ipv6MulticastMapping.png, id=114, 383.4325pt x 233.87375pt>
 File: Ipv6MulticastMapping.png Graphic file (type png)
 <use Ipv6MulticastMapping.png>
 Package pdftex.def Info: Ipv6MulticastMapping.png  used on input line 297.
@@ -497,19 +503,19 @@ Underfull \hbox (badness 10000) in paragraph at lines 349--350
 
  []
 
-<todo.jpg, id=135, 399.4925pt x 303.1325pt>
+<todo.jpg, id=139, 399.4925pt x 303.1325pt>
 File: todo.jpg Graphic file (type jpg)
 <use todo.jpg>
 Package pdftex.def Info: todo.jpg  used on input line 355.
 (pdftex.def)             Requested size: 360.0pt x 273.1775pt.
 [34] [35 <./todo.jpg>]
-<integration-test-example.png, id=142, 1407.2575pt x 846.16125pt>
+<integration-test-example.png, id=146, 1407.2575pt x 846.16125pt>
 File: integration-test-example.png Graphic file (type png)
 <use integration-test-example.png>
 Package pdftex.def Info: integration-test-example.png  used on input line 364.
 (pdftex.def)             Requested size: 360.0pt x 216.45901pt.
  [36 <./integration-test-example.png>]
-<SH-Project-Intergration-Tests-Abstract-View.png, id=148, 683.55376pt x 985.682
+<SH-Project-Intergration-Tests-Abstract-View.png, id=152, 683.55376pt x 985.682
 5pt>
 File: SH-Project-Intergration-Tests-Abstract-View.png Graphic file (type png)
 <use SH-Project-Intergration-Tests-Abstract-View.png>
@@ -542,24 +548,24 @@ Underfull \hbox (badness 10000) in paragraph at lines 394--395
  []
 
 [40]
-<avo-dmx-lines.png, id=162, 2256.93187pt x 1223.32031pt>
+<avo-dmx-lines.png, id=166, 2256.93187pt x 1223.32031pt>
 File: avo-dmx-lines.png Graphic file (type png)
 <use avo-dmx-lines.png>
 Package pdftex.def Info: avo-dmx-lines.png  used on input line 403.
 (pdftex.def)             Requested size: 360.0pt x 195.11926pt.
-<avo-file-dims.png, id=164, 2254.67343pt x 1248.91594pt>
+<avo-file-dims.png, id=168, 2254.67343pt x 1248.91594pt>
 File: avo-file-dims.png Graphic file (type png)
 <use avo-file-dims.png>
 Package pdftex.def Info: avo-file-dims.png  used on input line 409.
 (pdftex.def)             Requested size: 360.0pt x 199.41138pt.
  [41 <./avo-dmx-lines.png>]
-<sacnViewSettings.png, id=171, 563.10374pt x 420.06938pt>
+<sacnViewSettings.png, id=175, 563.10374pt x 420.06938pt>
 File: sacnViewSettings.png Graphic file (type png)
 <use sacnViewSettings.png>
 Package pdftex.def Info: sacnViewSettings.png  used on input line 421.
 (pdftex.def)             Requested size: 360.0pt x 268.55505pt.
  [42 <./avo-file-dims.png>]
-<sacnViewIPmodes.png, id=179, 487.8225pt x 366.61969pt>
+<sacnViewIPmodes.png, id=183, 487.8225pt x 366.61969pt>
 File: sacnViewIPmodes.png Graphic file (type png)
 <use sacnViewIPmodes.png>
 Package pdftex.def Info: sacnViewIPmodes.png  used on input line 427.
@@ -574,12 +580,12 @@ Underfull \hbox (badness 10000) in paragraph at lines 436--437
 
  []
 
-<CS4099-Avo-setup.png, id=191, 412.54124pt x 296.10625pt>
+<CS4099-Avo-setup.png, id=195, 412.54124pt x 296.10625pt>
 File: CS4099-Avo-setup.png Graphic file (type png)
 <use CS4099-Avo-setup.png>
 Package pdftex.def Info: CS4099-Avo-setup.png  used on input line 440.
 (pdftex.def)             Requested size: 360.0pt x 258.39651pt.
-<test-5-processed-first-value-chart.png, id=192, 979.40906pt x 418.56375pt>
+<test-5-processed-first-value-chart.png, id=196, 979.40906pt x 418.56375pt>
 File: test-5-processed-first-value-chart.png Graphic file (type png)
 <use test-5-processed-first-value-chart.png>
 Package pdftex.def Info: test-5-processed-first-value-chart.png  used on input 
@@ -601,12 +607,12 @@ Underfull \hbox (badness 10000) in paragraph at lines 455--456
  []
 
 [46 <./test-5-processed-first-value-chart.png>]
-<CS4099-Visualiser-setup.png, id=201, 412.54124pt x 343.2825pt>
+<CS4099-Visualiser-setup.png, id=205, 412.54124pt x 343.2825pt>
 File: CS4099-Visualiser-setup.png Graphic file (type png)
 <use CS4099-Visualiser-setup.png>
 Package pdftex.def Info: CS4099-Visualiser-setup.png  used on input line 459.
 (pdftex.def)             Requested size: 360.0pt x 299.56477pt.
-<Vision-File-LX-Plot.png, id=202, 1655.4347pt x 1075.76906pt>
+<Vision-File-LX-Plot.png, id=206, 1655.4347pt x 1075.76906pt>
 File: Vision-File-LX-Plot.png Graphic file (type png)
 <use Vision-File-LX-Plot.png>
 Package pdftex.def Info: Vision-File-LX-Plot.png  used on input line 465.
@@ -631,13 +637,13 @@ Underfull \hbox (badness 10000) in paragraph at lines 476--477
 
  []
 
-<CS4099-Acceptance-Test-Layout.png, id=212, 748.7975pt x 322.20375pt>
+<CS4099-Acceptance-Test-Layout.png, id=216, 748.7975pt x 322.20375pt>
 File: CS4099-Acceptance-Test-Layout.png Graphic file (type png)
 <use CS4099-Acceptance-Test-Layout.png>
 Package pdftex.def Info: CS4099-Acceptance-Test-Layout.png  used on input line 
 482.
 (pdftex.def)             Requested size: 360.0pt x 154.90677pt.
-<Union-Setup-Vision-File-LX-Plot.png, id=213, 1040.38687pt x 864.98157pt>
+<Union-Setup-Vision-File-LX-Plot.png, id=217, 1040.38687pt x 864.98157pt>
 File: Union-Setup-Vision-File-LX-Plot.png Graphic file (type png)
 <use Union-Setup-Vision-File-LX-Plot.png>
 Package pdftex.def Info: Union-Setup-Vision-File-LX-Plot.png  used on input lin
@@ -770,10 +776,10 @@ LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 2969 strings out of 492484
- 42624 string characters out of 3122055
+ 2976 strings out of 492484
+ 42699 string characters out of 3122055
  106128 words of memory out of 3000000
- 7258 multiletter control sequences out of 15000+200000
+ 7265 multiletter control sequences out of 15000+200000
  10853 words of font info for 40 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
  55i,5n,32p,3145b,226s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -786,9 +792,9 @@ rograms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/paul/App
 Data/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Us
 ers/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/
 msbm10.pfb>
-Output written on report.pdf (58 pages, 2708263 bytes).
+Output written on report.pdf (58 pages, 2775578 bytes).
 PDF statistics:
- 273 PDF objects out of 1000 (max. 8388607)
+ 277 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 150 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 161 words of extra memory for PDF output out of 10000 (max. 10000000)
 
