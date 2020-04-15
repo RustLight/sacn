@@ -1925,7 +1925,13 @@ fn check_seq_number(
         None => {
             // Previously checked that cid is present (and added if not), if None is returned now it indicates that between that check and this
             // function the cid key value has been removed. This can only happen if there is a memory corruption/thread-interleaving or similar external
-            // event which the receiver cannot be expected to handle. 
+            // event which the receiver cannot be expected to handle / doesn't support. 
+            // The rust typing system forces this possibility to be acknowledged when in some languages this possibility would still exist but it would be hidden
+            // within the code. 
+            // While a panic!() call here isn't ideal it shows the strength in the explictness of the rust system and points to an area of 
+            // potential later improvement within the code by not hiding the problem.
+            // Another possibility here could be to retry the method but this could end with an infinite loop.
+            // Returning an error could also be done but that could confuse error handling as this should not occur.
             panic!();
         }
     };
@@ -1953,9 +1959,7 @@ fn check_seq_number(
             );
         }
         None => {
-            // Previously checked that cid is present (and added if not), if None is returned now it indicates that between that check and this
-            // function the cid key value has been removed. This can only happen if there is a memory corruption/thread-interleaving or similar external
-            // event which the receiver cannot be expected to handle. 
+            // See previous node regarding panic previously in this method.
             panic!();
         }
     };
