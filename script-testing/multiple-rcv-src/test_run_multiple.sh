@@ -19,7 +19,7 @@ RCV_COUNT=$9 # The number of receivers
 SRC_COUNT=${10} # The number of senders
 
 # The addresses of the machines used for the test. The addresses given here are host-names which are resolved by the the lab DNS.
-REMOTE_PC=(pc3-017-l pc3-018-l pc3-019-l pc3-020-l pc3-021-l pc3-022-l)
+REMOTE_PC=(pc3-017-l pc3-018-l pc3-019-l)
 
 # The default ACN port.
 PORT=5568
@@ -31,7 +31,7 @@ CURRENT_DIR=$(pwd)
 for i in $(seq "$RCV_COUNT")
 do
     echo "Running rcv at ${REMOTE_PC[$((i - 1))]}"
-    OUTPATH=${RCV_OUTPUT_PATH}'_'${i}
+    OUTPATH=${RCV_OUTPUT_PATH}'_'${i}'.temp'
     INPATH=${RCV_TEST_INPUT}'_'${i}
     ssh -n -f ${REMOTE_PC[$((i - 1))]} "sh -c 'cd ${CURRENT_DIR}; nohup ./rcv.sh > ${OUTPATH} < ${INPATH} 2>/dev/null'"
 done
@@ -58,5 +58,5 @@ for pc in ${REMOTE_PC[@]}; do
     ssh ${pc} fuser -k -n udp ${PORT}
 done
 
-# Give time for both processes to be killed properly.
+# Give time for all processes to be killed properly.
 sleep 2
