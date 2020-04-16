@@ -33,7 +33,8 @@ do
     echo "Running rcv at ${REMOTE_PC[$((i - 1))]}"
     OUTPATH=${RCV_OUTPUT_PATH}'_'${i}'.temp'
     INPATH=${RCV_TEST_INPUT}'_'${i}
-    ssh -n -f ${REMOTE_PC[$((i - 1))]} "sh -c 'cd ${CURRENT_DIR}; nohup ./rcv.sh > ${OUTPATH} < ${INPATH} 2>/dev/null'"
+    ssh -n -f ${REMOTE_PC[$((i - 1))]} "sh -c 'cd ${CURRENT_DIR}; nohup ./rcv.sh > ${OUTPATH} < ${INPATH}'"
+    # ssh -n -f ${REMOTE_PC[$((i - 1))]} "sh -c 'cd ${CURRENT_DIR}; nohup ./rcv.sh > ${OUTPATH} < ${INPATH} 2>/dev/null'"
 done
 
 # Give the receivers a chance to startup.
@@ -46,7 +47,8 @@ do
     OUTPATH=${SRC_OUTPUT_PATH}'_'${i}'.temp'
     INPATH=${SRC_TEST_INPUT}'_'${i}
     INDEX=$(($i + $RCV_COUNT))
-    ssh -n -f ${REMOTE_PC[$((i - 1 + RCV_COUNT))]} "sh -c 'cd ${CURRENT_DIR}; nohup ./src.sh > ${OUTPATH} < ${INPATH} 2>/dev/null'"
+    ssh -n -f ${REMOTE_PC[$((i - 1 + RCV_COUNT))]} "sh -c 'cd ${CURRENT_DIR}; nohup ./src.sh > ${OUTPATH} < ${INPATH}'"
+    # ssh -n -f ${REMOTE_PC[$((i - 1 + RCV_COUNT))]} "sh -c 'cd ${CURRENT_DIR}; nohup ./src.sh > ${OUTPATH} < ${INPATH} 2>/dev/null'"
 done
 
 # Wait to allow all processes the chance to run, this has no specific guarantee that they will 
