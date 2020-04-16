@@ -1,5 +1,5 @@
 Started
-Error Encountered: Error(Sacn(Error(SourceDiscovered("controller"), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })
+Error Encountered: SourceDiscovered("controller")
 Name: controller, Universes: [1]
-Error Encountered: Error(Sacn(Error(UniverseTerminated(Uuid { bytes: [76, 156, 247, 242, 192, 192, 75, 207, 175, 17, 201, 234, 3, 45, 52, 79] }, 1), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })
+Universe 1 Terminated
 Name: controller, Universes: []
