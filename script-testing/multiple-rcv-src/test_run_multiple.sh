@@ -47,7 +47,7 @@ do
     OUTPATH=${SRC_OUTPUT_PATH}'_'${i}'.temp'
     INPATH=${SRC_TEST_INPUT}'_'${i}
     INDEX=$(($i + $RCV_COUNT))
-    ssh -n -f ${REMOTE_PC[$((i - 1 + RCV_COUNT))]} "sh -c 'cd ${CURRENT_DIR}; nohup ./src.sh > ${OUTPATH} < ${INPATH}'"
+    ssh -n -f ${REMOTE_PC[$((i - 1 + RCV_COUNT))]} "sh -c 'cd ${CURRENT_DIR}; nohup ./src.sh ${i} > ${OUTPATH} < ${INPATH}'"
     # ssh -n -f ${REMOTE_PC[$((i - 1 + RCV_COUNT))]} "sh -c 'cd ${CURRENT_DIR}; nohup ./src.sh > ${OUTPATH} < ${INPATH} 2>/dev/null'"
 done
 

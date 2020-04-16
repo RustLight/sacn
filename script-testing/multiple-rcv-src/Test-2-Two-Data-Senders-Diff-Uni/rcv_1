@@ -1,4 +1,5 @@
 l 1
+l 2
 r 0
 r 0
 # Wait for a period to allow universe discovery packets to be received and print resultant discovered source list.
