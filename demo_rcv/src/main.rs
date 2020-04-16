@@ -86,8 +86,8 @@ fn get_usage_str() -> String {
     Stop Listening Universe \n
     {} <universe> \n
 
-    Sleep for x seconds \n
-    {} <secs>\n
+    Sleep for x milliseconds \n
+    {} <milliseconds>\n
 
     Enter preview mode, true means preview data will be received, false means preview data is ignored, default is false\n
     {} <'true'/'false'>\n
@@ -219,8 +219,8 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                         display_help();
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
-                    let secs: u64 = split_input[1].parse().unwrap();
-                    sleep(Duration::from_secs(secs));
+                    let millisecs: u64 = split_input[1].parse().unwrap();
+                    sleep(Duration::from_millis(millisecs));
                 }
                 ACTION_LISTEN_UNIVERSE => {
                     if split_input.len() < 2 {
