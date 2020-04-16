@@ -353,11 +353,18 @@ fn print_recv(res: Result<Vec<DMXData>>) {
     match res {
         Err(e) => {
             match e.kind() {
-                ErrorKind::UniverseTerminated(src_cid, uni) => {
-                    println!("Universe {} Terminated", uni);
+                ErrorKind::Sacn(x) => {
+                    match x.kind() {
+                        sacn::error::errors::ErrorKind::UniverseTerminated(_src_cid, uni) => {
+                            println!("Universe {} Terminated", uni);
+                        }
+                        z => {
+                            println!("Error Encountered: {:?}", z);
+                        }
+                    }
                 },
-                _ => {
-                    println!("Error Encountered: {:?}", e);
+                x => {
+                    println!("Error Encountered: {:?}", x);
                 }
             }
         },
