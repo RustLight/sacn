@@ -1,3 +1,0 @@
-Started
-Error Encountered: Error(Sacn(Error(SourceDiscovered("Receiver discovered a source"), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })
-Name: controller, Universes: [1]

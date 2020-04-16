@@ -37,6 +37,10 @@ use std::fmt;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
+/// Extra net imports required for the IPv6 handling on the linux side.
+#[cfg(target_os = "linux")]
+use std::net::{IpAddr, Ipv6Addr};
+
 /// Constants required to detect if an IP is IPv4 or IPv6.
 #[cfg(target_os = "linux")]
 use libc::{AF_INET, AF_INET6};
