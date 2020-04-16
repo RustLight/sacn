@@ -52,6 +52,7 @@ const ACTION_PREVIEW:                               &str = "p";
 const ACTION_ANNOUNCE_DISCOVERED:                   &str = "a";
 const ACTION_IGNORE:                                &str = "#";
 const ACTION_FILE_OUT:                              &str = "f";
+const ACTION_ANNOUNCE_TERMINATION:                  &str = "e"; // e for end.
 
 /// The headers used for the top of the file when the FILE_OUT action is used.
 const WRITE_TO_FILE_HEADERS: &str = "Data_ID, Universe, Sync_Addr, Priority, Preview_data?, Payload";
@@ -94,13 +95,16 @@ fn get_usage_str() -> String {
     Enter announce discovery mode, true means that universe discovery packets will be announced as soon as received, false means they are handled silently, default is false\n
     {} <'true'/'false'>\n
 
+    Enter announce termination mode, true means that termination packets will be announced during a recv() attempt. False means they are handled silently, default is false\n
+    {} <'true'/'false'>\n
+
     Output received data to a file
     {} <file-path> <recv-count> <timeout in sec>\n
 
     All input is ignored on lines starting with '{} '.
     ", ACTION_RECV, ACTION_RECV_CONTINUOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT, 
     ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP, ACTION_PREVIEW, ACTION_ANNOUNCE_DISCOVERED,
-    ACTION_FILE_OUT, ACTION_IGNORE)
+    ACTION_ANNOUNCE_TERMINATION, ACTION_FILE_OUT, ACTION_IGNORE)
 }
 
 fn main() {
@@ -259,6 +263,18 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                         }
                     }
                 }
+                ACTION_ANNOUNCE_TERMINATION => {
+                    let val = split_input[1].parse();
+                    match val {
+                        Ok(v) => {
+                            dmx_recv.set_announce_stream_termination(v);
+                        },
+                        Err(_e) => {
+                            bail!(std::io::Error::new(
+                                std::io::ErrorKind::InvalidInput, "Announce stream termination option not 'true'/'false' or otherwise parsable as boolean"));
+                        }
+                    }
+                }
                 ACTION_FILE_OUT => {
                     if split_input.len() < 4 {
                         display_help();
@@ -336,7 +352,14 @@ fn create_values_str(values: Vec<u8>) -> Result<String> {
 fn print_recv(res: Result<Vec<DMXData>>) {
     match res {
         Err(e) => {
-            println!("Error Encountered: {:?}", e);
+            match e.kind() {
+                ErrorKind::UniverseTerminated(src_cid, uni) => {
+                    println!("Universe {} Terminated", uni);
+                },
+                _ => {
+                    println!("Error Encountered: {:?}", e);
+                }
+            }
         },
         Ok(d) => {
             print_data(d);
