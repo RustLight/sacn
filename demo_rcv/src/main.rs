@@ -374,8 +374,11 @@ fn print_recv(res: Result<Vec<DMXData>>) {
     }
 }
 
-fn print_data(data: Vec<DMXData>) {
+fn print_data(mut data: Vec<DMXData>) {
     print!("[");
+    // Sort the data, this means that even though the data returned from the waiting data can be in any order this means that the ordering will be known
+    // which makes checking the output using a test script easier.
+    data.sort(); 
     for d in data {
         print!("{{ Universe(s): {}, Sync_Universe: {}, Values: {:?} }}, ", d.universe, d.sync_uni, d.values);
     }
