@@ -81,3 +81,6 @@ https://rust-lang-nursery.github.io/rust-cookbook/errors/handle.html (16/03/2020
 
 For creating the test universe discovery packets.
 https://stackoverflow.com/questions/53314005/how-can-i-convert-the-lower-upper-8-bits-of-a-u16-to-a-u8-in-rust (17/03/2020)
+
+// How to read a line of input from the user.
+    // https://doc.rust-lang.org/std/io/struct.Stdin.html#method.read_line (03/02/2020)
