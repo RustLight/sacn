@@ -52,25 +52,55 @@ const TERMINATE_START_CODE: u8 = 0;
 /// Default value is approximately 30 updates per second choosen fairly arbitarily to be less than the DMX refresh rate (44 fps).
 const SHAPE_DATA_SEND_PERIOD: Duration = Duration::from_millis(33);
 
+/// User string for the preview command to set if preview data should be received.
 const ACTION_PREVIEW_OPTION:        &str = "p";
+
+/// User string for the data command to send a packet of data.
 const ACTION_DATA_OPTION:           &str = "d";
+
+/// User string for the full data command to send a full universe of data.
 const ACTION_FULL_DATA_OPTION:      &str = "f";
+
+/// User string for the unicast data command to send a packet of data using unicast.
 const ACTION_UNICAST_OPTION:        &str = "u"; 
+
+/// User string for the register command to register a universe for sending.
 const ACTION_REGISTER_OPTION:       &str = "r"; 
+
+/// User string for the terminate/quit command to terminate sending on a universe or terminate the sender entirely.
 const ACTION_TERMINATE_OPTION:      &str = "q";
+
+/// User string for the sleep command to make the sender wait for a certain period of time.
 const ACTION_SLEEP_OPTION:          &str = "w"; 
+
+/// User string for the sync command to send a synchronisation packet.
 const ACTION_SYNC_OPTION:           &str = "s";
+
+/// User string for the unicast syncronisation command to send a synchronisation packet over unicast.
 const ACTION_UNICAST_SYNC_OPTION:   &str = "us"; 
+
+/// User string for the send data over time command which sends data to a specific universe that varies over time.
 const ACTION_DATA_OVER_TIME_OPTION: &str = "x";
+
+/// User string for the test preset command which runs on of the interoperability test presets.
 const ACTION_TEST_PRESENT_OPTION:   &str = "t";
+
+/// User string to indicate that the input line should be ignored. This is mainly used for comments within the automated test input files.
 const ACTION_IGNORE:                &str = "#";
+
+/// User string for the all data option which sends an entire universe of data to a given address with all values set to the given value.
 const ACTION_ALL_DATA_OPTION:       &str = "a";
 
 /// The test preset numbers which correspond to the various preset tests described in the sender-interoperability testing document.
+/// The test number for the two universes sender interoperability test (3).
 const TEST_PRESET_TWO_UNIVERSE:         usize = 3;
+/// The test number for the two universes unicast sender interoperability test (4).
 const TEST_PRESET_TWO_UNIVERSE_UNICAST: usize = 4;
+/// The test number for the moving channels sender interoperability test (7).
 const TEST_PRESET_MOVING_CHANNELS:      usize = 7;
+/// The test number for the preset rapid changes sender interoperability test (8).
 const TEST_PRESET_RAPID_CHANGES:        usize = 8;
+/// The test number for the high data rate sender interoperability test (9).
 const TEST_PRESET_HIGH_DATA_RATE:       usize = 9;
 
 /// Test preset number for acceptance test 100. 
@@ -104,7 +134,7 @@ const TEST_PRESET_RAPID_CHANGE_PERIOD: usize = 10;
 const TEST_PRESET_HIGH_DATA_RATE_VARIATION_RANGE: f64 = 10.0;
 
 /// The 2 universes used for the acceptance test.
-/// UNI_1 contains the backlight fixtures and UNI_2 the frontlight fixtures.
+/// ACCEPT_TEST_UNI_1 contains the backlight fixtures and ACCEPT_TEST_UNI_2 the frontlight fixtures.
 const ACCEPT_TEST_UNI_1: u16 = 1;
 const ACCEPT_TEST_UNI_2: u16 = 2;
 
