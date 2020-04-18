@@ -1,4 +1,3 @@
-// #![warn(missing_docs)]      // Used during development to warn about a lack of documentation.
 #![recursion_limit="1024"]  // Recursion limit for error-chain, value used as recommended by the crates documentation.
 
 // Copyright 2020 sacn Developers
@@ -15,13 +14,20 @@
 //! Primarily used for testing the library including real-world conformance, compliance, integration and acceptance tests.
 //! As a test program the error handling is limited for simplicity.
 //! 
-//! Usage instructions are described below.
+//! Usage instructions are described by either running the receiver and using the help command or by the get_usage_str function
+//! below.
+//! 
+//! The ACTION_... constants describe the various user input strings possible once the program has started, with more details described in get_usage_str within
+//! the code. The details aren't repeated outside of that to minimise the amount of references that have to be kept upto date and which could diverge over time.
+//! 
+//! Note the lack of top level constant strings used in the place of output format strings is due to a limitation in rust where the format string cannot be a 
+//! const.
 //! 
 
 #[macro_use]
 extern crate error_chain;
 
-/// Import the error-chain handling into the module.
+/// The demo itself utilises a small error-chain which wraps the errors from the sACN create.
 pub mod error;
 use error::errors::*;
 
@@ -38,21 +44,49 @@ use std::thread::sleep;
 use std::fs::File;
 use std::io::prelude::*;
 
-/// The string given by the user to perform each of the various options as described in get_usage_str below.
+/// The string given by the user to receive data.
 const ACTION_RECV:                                  &str = "r";
+
+/// The string given by the user to receive data continously.
 const ACTION_RECV_CONTINUOUS:                       &str = "c";
+
+/// The string given by the user to cause the receiver to display the sources which have currently been discovered.
 const ACTION_PRINT_DISCOVERED_SOURCES:              &str = "s";
+
+/// The string given by the user to cause the receiver to display the sources which have been discovered but without checking for timeouts first. This is usually
+/// used as part of debugging / tests.
 const ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT:   &str = "x";
+
+/// The string given by the user to quit the receiver. 
 const ACTION_QUIT:                                  &str = "q";
+
+/// The string given by the user to display the help.
 const ACTION_HELP:                                  &str = "h";
+
+/// The string given by the user to start listening to a specific universe of data.
 const ACTION_LISTEN_UNIVERSE:                       &str = "l";
+
+/// The string given by the user to terminate listening to a specific universe of data.
 const ACTION_STOP_LISTEN_UNIVERSE:                  &str = "t";
+
+/// The string given by the user to cause the receiver to sleep/block for a given time. This is used as part of tests as a way to encourage a specific
+/// ordering of concurrent events by having one side way for a period. This is discussed in more detail within the specific tests. 
 const ACTION_SLEEP:                                 &str = "w";
+
+/// The string given by the user to enable receiving preview data.
 const ACTION_PREVIEW:                               &str = "p";
+
+/// The string given by the user to enable universe discovery packets to be announced when received.
 const ACTION_ANNOUNCE_DISCOVERED:                   &str = "a";
+
+/// Lines of input starting with this string are ignored. This is commonly used within the automated tests to allow comments within the input files.
 const ACTION_IGNORE:                                &str = "#";
+
+/// The string given by the user to cause the receiver to output data to a file.
 const ACTION_FILE_OUT:                              &str = "f";
-const ACTION_ANNOUNCE_TERMINATION:                  &str = "e"; // e for end.
+
+/// The string given by the user to cause termination packets to be announced. "e" for end.
+const ACTION_ANNOUNCE_TERMINATION:                  &str = "e"; 
 
 /// The headers used for the top of the file when the FILE_OUT action is used.
 const WRITE_TO_FILE_HEADERS: &str = "Data_ID, Universe, Sync_Addr, Priority, Preview_data?, Payload";
@@ -107,6 +141,7 @@ fn get_usage_str() -> String {
     ACTION_ANNOUNCE_TERMINATION, ACTION_FILE_OUT, ACTION_IGNORE)
 }
 
+/// The entry point of the demo_rcv. Usage is described in get_usage_str.
 fn main() {
     let cmd_args: Vec<String> = env::args().collect();
 
@@ -123,7 +158,6 @@ fn main() {
     println!("Started");
 
     loop {
-        // https://doc.rust-lang.org/std/io/struct.Stdin.html#method.read_line (03/02/2020)
         match handle_input(&mut dmx_recv) {
             Ok(should_continue) => {
                 if !should_continue {
@@ -141,7 +175,7 @@ fn main() {
 /// Returns true if there is more input expected and false if not.
 fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
     let mut input = String::new();
-    
+
     match io::stdin().read_line(&mut input) {
         Ok(n) => {
             if n == 0 {
@@ -149,7 +183,6 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                 return Ok(false);
             }
 
-            // https://www.tutorialspoint.com/rust/rust_string.htm (03/02/2020)
             let split_input: Vec<&str> = input.split_whitespace().collect();
 
             if split_input.len() < 1 {
@@ -159,7 +192,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
 
             match split_input[0] {
                 ACTION_IGNORE => {
-                    // Ignore the input
+                    // Ignore the input, this is usually used for lines that contain comments within test input files.
                 }
                 ACTION_HELP => { // Display help
                     display_help();
@@ -170,6 +203,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
 
+                    // To learn about how to parse strings to ints.
                     // https://stackoverflow.com/questions/27043268/convert-a-string-to-int-in-rust (03/02/2020)
                     let timeout_secs: u64 = split_input[1].parse().unwrap();
 
@@ -189,7 +223,6 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
                         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 3 )"));
                     }
 
-                     // https://stackoverflow.com/questions/27043268/convert-a-string-to-int-in-rust (03/02/2020)
                      let timeout_secs: u64 = split_input[1].parse().unwrap();
 
                      let count: u64 = split_input[2].parse().unwrap();
@@ -318,6 +351,14 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
 
 /// Writes the given data to the given file (uses the given data_id as first column).
 /// Uses comma separated values.
+/// 
+/// # Arguments
+/// file: A mutable box reference containing the file to write to.
+/// 
+/// data: The data to write to the file.
+/// 
+/// data_id: The id used as the first column within the file for the data.
+/// 
 fn write_to_file(file: &mut Box<File>, data: Vec<DMXData>, data_id: u64) -> Result<()> {
     for d in data {
         let values_str = create_values_str(d.values)?;
@@ -330,7 +371,10 @@ fn write_to_file(file: &mut Box<File>, data: Vec<DMXData>, data_id: u64) -> Resu
 }
 
 /// Converts the given array of u8 values into a comma separated string.
-/// https://users.rust-lang.org/t/what-is-right-ways-to-concat-strings/3780/4 (09/04/2020)
+/// 
+/// # Arguments
+/// values: The unsigned 8 bit number values to turn into a string.
+/// 
 fn create_values_str(values: Vec<u8>) -> Result<String> {
     let mut res: String = "".to_string();
 
@@ -340,6 +384,8 @@ fn create_values_str(values: Vec<u8>) -> Result<String> {
 
     let mut iter = values.iter();
 
+    // Adapted from.
+    // https://users.rust-lang.org/t/what-is-right-ways-to-concat-strings/3780/4 (09/04/2020)
     res.push_str(&format!("{}", iter.next().unwrap()));
     
     for v in iter {
@@ -349,6 +395,14 @@ fn create_values_str(values: Vec<u8>) -> Result<String> {
     Ok(res)
 }
 
+
+/// Prints the given output from recv to stdout.
+/// Errors are printed using their debug output except for universe terminated which is printed as "Universe x Terminated" where x is the universe. This 
+/// is to avoid the CID being printed which changes for every test as it is randomly generated in most tests.
+/// 
+/// # Arguments
+/// res: The data to display.
+/// 
 fn print_recv(res: Result<Vec<DMXData>>) {
     match res {
         Err(e) => {
@@ -374,6 +428,12 @@ fn print_recv(res: Result<Vec<DMXData>>) {
     }
 }
 
+/// Prints the given data to stdout in the format [{{ Universe(s): x, Sync_Universe: y, Values: z }}, ...] where x is the universe, y is the synchronisation address
+/// and z is the values. The ... indicates that there may be multiple bits of data to print at once which follows the same format.
+/// 
+/// # Arguments
+/// data: The data to be printed to stdout.
+/// 
 fn print_data(mut data: Vec<DMXData>) {
     print!("[");
     // Sort the data with lower universes first, this means that even though the data returned from the waiting data can be in any order this means 
@@ -385,12 +445,20 @@ fn print_data(mut data: Vec<DMXData>) {
     println!("]");
 }
 
+/// Prints the given array of discovered sources to std out. Uses the format "Name: x, Universes: y" where x is the source name and y is the universes registered to the 
+/// source. 
+/// 
+/// # Arguments
+/// src: The sources to print to standard out.
+/// 
 fn print_discovered_sources(srcs: &Vec<DiscoveredSacnSource>) {
     for s in srcs {
         println!("Name: {}, Universes: {:?}", s.name, s.get_all_universes());
     }
 }
 
+/// Displays the usage/help string to stdout.
+/// 
 fn display_help(){
     println!("{}", get_usage_str());
 }
