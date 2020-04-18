@@ -7,7 +7,7 @@
 //
 // This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
-/// The errors used within the SacnLibrary.
+/// The errors used within the SacnLibrary. The ErrorKind subsection of this within the documentation contains details of all the errors.
 /// 
 /// Uses the error-chain crate to allow errors to allow more informative backtraces through error chaining.
 /// https://docs.rs/error-chain/0.12.2/error_chain/
