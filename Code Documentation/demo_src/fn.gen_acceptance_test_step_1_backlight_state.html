@@ -1,0 +1,23 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `gen_acceptance_test_step_1_backlight_state` fn in crate `demo_src`."><meta name="keywords" content="rust, rustlang, rust-lang, gen_acceptance_test_step_1_backlight_state"><title>demo_src::gen_acceptance_test_step_1_backlight_state - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../dark.css"><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script src="../storage.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="shortcut icon" href="../favicon.ico"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc fn"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../demo_src/index.html'><div class='logo-container'><img src='../rust-logo.png' alt='logo'></div></a><div class="sidebar-elems"><p class='location'><a href='index.html'>demo_src</a></p><script>window.sidebarCurrent = {name: 'gen_acceptance_test_step_1_backlight_state', ty: 'fn', relpath: ''};</script><script defer src="sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form js-only"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../src/demo_src/main.rs.html#583-609' title='goto source code'>[src]</a></span><span class='in-band'>Function <a href='index.html'>demo_src</a>::<wbr><a class="fn" href=''>gen_acceptance_test_step_1_backlight_state</a></span></h1><pre class='rust fn'>fn gen_acceptance_test_step_1_backlight_state(buf: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;mut [</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>)</pre><div class='docblock'><p>The backlights use 16 dmx channels each. The usage of each channel is as described by the DMX chart found at the manufacture website:
+https://www.robe.cz/ledbeam-150/download/#dmx-charts (12/04/2020).
+The backlights are in 16 channel mode (mode 2).
+Channel : Usage (explaination)
+1: Pan (positioning)
+2: Pan Fine (positioning)
+3: Tilt (positioning)
+4: Tilt Fine (positioning)
+5: Pan/Tilt Speed (positioning)
+6: Power/Special Functions (Control channel)
+7: Virtual Colour Wheel (colour)
+8: Red
+9: Green
+10:Blue
+11:White
+12: CTC (colour temperature)
+13: Colour-Mix-Control 
+14: Zoom (beam wideness)
+15: Shutter/Strobe (should the fixture rapidly flash)
+16: Dimmer Intensity (brightness)</p>
+<p>This is why this demo is locked to this specific lighting fixture and mode. There is no standard to these channel orderings and so any different
+fixture or mode wouldn't behave as expected.</p>
+</div></section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../";window.currentCrate = "demo_src";</script><script src="../aliases.js"></script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>
