@@ -19,7 +19,8 @@ RCV_COUNT=$9 # The number of receivers
 SRC_COUNT=${10} # The number of senders
 
 # The addresses of the machines used for the test. The addresses given here are host-names which are resolved by the the lab DNS.
-REMOTE_PC=(pc3-017-l pc3-018-l pc3-019-l)
+# Currently at most 5 machines are used.
+REMOTE_PC=(pc3-017-l pc3-018-l pc3-019-l pc3-020-l pc3-021-l)
 
 # The default ACN port.
 PORT=5568
