@@ -27,7 +27,7 @@
 #[macro_use]
 extern crate error_chain;
 
-/// The demo itself utilises a small error-chain which wraps the errors from the sACN create.
+/// The demo itself utilises a small error-chain which wraps the errors from the sACN crate and a few standard crates.
 pub mod error;
 use error::errors::*;
 
@@ -141,7 +141,10 @@ fn get_usage_str() -> String {
     ACTION_ANNOUNCE_TERMINATION, ACTION_FILE_OUT, ACTION_IGNORE)
 }
 
-/// The entry point of the demo_rcv. Usage is described in get_usage_str.
+/// The entry point of the demo_rcv. Usage is described in get_usage_str or by running the program and typing "h" or "help".
+/// 
+/// # Arguments
+/// Usage: ./main <interface_ip>
 fn main() {
     let cmd_args: Vec<String> = env::args().collect();
 
