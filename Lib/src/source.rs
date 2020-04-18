@@ -14,18 +14,6 @@
 // of each public item without relying on referring to private items.
 //
 
-
-// TODO
-// The internal corruption error handling?
-// Keep pulling documentation up
-// Spell check for 'receiver' and 'synchronisation'
-// Generate documentation, check links
-// Fix SSH tests
-// Conduct compliance tests
-// Generate wireshark packets to use for inspection
-// Do wireshark inspection / test
-// Pack code.
-
 use error::errors::{*};
 use packet::*;
 

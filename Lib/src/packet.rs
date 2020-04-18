@@ -509,8 +509,11 @@ macro_rules! impl_acn_root_layer_protocol {
 
 impl_acn_root_layer_protocol!(<'a>);
 
+/// Represents the data contained with the PduInfo section that appears at the start of a layer in an sACN packet.
 struct PduInfo {
+    /// The length in bytes of this layer inclusive of the PduInfo.
     length: usize,
+    /// The vector which indicates what the layer is, context dependent.
     vector: u32,
 }
 

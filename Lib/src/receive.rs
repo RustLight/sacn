@@ -124,6 +124,37 @@ pub struct DMXData {
 }
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
+/// 
+/// # Examples
+///
+/// ```
+/// // Example showing creation of a receiver and receiving some data, as there is no sender this receiver then handles the timeout.
+/// use sacn::receive::SacnReceiver;
+/// use sacn::packet::ACN_SDT_MULTICAST_PORT;
+/// 
+/// use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+/// use std::time::Duration;
+/// 
+/// const UNIVERSE1: u16 = 1;
+/// const TIMEOUT: Option<Duration> = Some(Duration::from_secs(1)); // A timeout of None means blocking behaviour, some indicates the actual timeout.
+/// 
+/// let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+///
+/// let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+///
+/// dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
+/// 
+/// match dmx_rcv.recv(TIMEOUT) {
+///     Err(e) => {
+///         // Print out the error.
+///         println!("{:?}", e);
+///     }
+///     Ok(p) => {
+///         // Print out the packet.
+///         println!("{:?}", p);
+///     }
+/// }
+/// ```
 pub struct SacnReceiver {
     /// The SacnNetworkReceiver used for handling communication with UDP / Network / Transport layer.
     receiver: SacnNetworkReceiver,
