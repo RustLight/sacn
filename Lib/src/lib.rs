@@ -93,7 +93,7 @@
 //! 
 //! Creating a sACN sender and sending some unsychronised data. An sACNSender automatically sends universe discovery packets.
 //! 
-//! '''
+//! ```
 //! use sacn::source::SacnSource;
 //! use sacn::packet::ACN_SDT_MULTICAST_PORT;
 //! use std::net::{IpAddr, SocketAddr};
@@ -113,7 +113,7 @@
 //!
 //! src.send(&[universe], &data, Some(priority), dst_ip, sync_uni).unwrap(); // Actually send the data
 //! 
-//! '''
+//! ```
 //! 
 //! Creating a sACN sender and sending some synchronised data. 
 //! 
