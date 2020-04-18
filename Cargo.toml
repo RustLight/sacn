@@ -1,2 +1,2 @@
 [workspace]
-members = ["Lib", "demo_rcv", "demo_src", "Multicast_Rust_Simple/mcast_simple"]
+members = ["Lib", "demo_rcv", "demo_src", "Multicast_Rust_Simple/mcast_simple", "sacn-parse-fuzz-target"]
