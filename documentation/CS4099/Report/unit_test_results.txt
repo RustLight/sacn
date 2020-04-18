@@ -1,0 +1,318 @@
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+
+running 38 tests
+test packet::test::check_ansi_e131_2018_parameter_values ... ok
+test packet::test::test_universe_to_ip_ipv4_both_bytes_normal ... ok
+test packet::test::test_universe_to_ip_ipv4_limit_high ... ok
+test packet::test::test_universe_to_ip_ipv4_limit_low ... ok
+test packet::test::test_universe_to_ip_ipv4_out_range_low ... ok
+test packet::test::test_universe_to_ip_ipv4_out_range_high ... ok
+test packet::test::test_universe_to_ip_ipv6_both_bytes_normal ... ok
+test packet::test::test_universe_to_ip_ipv6_limit_high ... ok
+test packet::test::test_universe_to_ip_ipv6_limit_low ... ok
+test packet::test::test_universe_to_ip_ipv6_out_range_high ... ok
+test packet::test::test_universe_to_ip_ipv6_out_range_low ... ok
+test packet::test::test_universe_to_ipv4_lowest_byte_normal ... ok
+test packet::test::test_universe_to_ipv6_lowest_byte_normal ... ok
+test receive::test::test_data_packet_sequence_number_reset ... ok
+test receive::test::test_data_packet_sequence_number_below_expected ... ok
+test receive::test::test_clear_waiting_data ... ok
+test receive::test::test_get_announce_stream_termination ... ok
+test receive::test::test_data_packet_sequence_number_universe_independence ... ok
+test receive::test::test_get_announce_source_discovery ... ok
+test receive::test::test_get_announce_timeout ... ok
+test receive::test::test_handle_single_page_discovery_packet ... ok
+test receive::test::test_handle_multi_page_discovery_packet ... ok
+test receive::test::test_dmx_data_eq ... ok
+test receive::test::test_is_multicast_enabled ... ok
+test receive::test::test_set_is_multicast_enabled ... ok
+test receive::test::test_sequence_number_packet_type_independence ... ok
+test receive::test::test_source_limit_0 ... ok
+test receive::test::test_store_2_retrieve_1_waiting_data ... ok
+test receive::test::test_handle_sync_packet_not_listening_to_sync_addr ... ok
+test receive::test::test_store_2_retrieve_2_waiting_data ... ok
+test receive::test::test_store_2_same_universe_diff_priority_waiting_data ... ok
+test receive::test::test_store_2_same_universe_same_priority_waiting_data ... ok
+test receive::test::test_store_retrieve_waiting_data ... ok
+test receive::test::test_sync_packet_sequence_number_below_expected ... ok
+test receive::test::test_sync_packet_sequence_number_reset ... ok
+test receive::test::test_sync_packet_sequence_number_universe_independence ... ok
+test receive::test::test_sync_packet_sequence_number_exhaustive ... ok
+test receive::test::test_data_packet_sequence_number_exhaustive ... ok
+
+test result: ok. 38 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+
+running 48 tests
+test data_parse_tests::test_data_packet_full_length_expected ... ok
+test data_parse_tests::test_data_packet_lowest_priority_parse ... ok
+test data_parse_tests::test_data_packet_empty_capacity_parse_pack ... ok
+test data_parse_tests::test_data_packet_options_bit_0_set_parse ... ok
+test data_parse_tests::test_data_packet_no_sync_parse ... ok
+test data_parse_tests::test_data_packet_max_source_name_length_parse ... ok
+test data_parse_tests::test_data_packet_options_bit_2_set_parse ... ok
+test data_parse_tests::test_data_packet_options_bit_1_set_parse ... ok
+test data_parse_tests::test_data_packet_options_bit_4_set_parse ... ok
+test data_parse_tests::test_data_packet_options_bit_3_set_parse ... ok
+test data_parse_tests::test_data_packet_options_bit_5_set_parse ... ok
+test data_parse_tests::test_data_packet_options_bit_7_set_parse ... ok
+test data_parse_tests::test_data_packet_options_bit_6_set_parse ... ok
+test data_parse_tests::test_data_packet_parse_pack ... ok
+test data_parse_tests::test_data_packet_partial_capacity_parse_pack ... ok
+test data_parse_tests::test_malformed_data_packet_dmp_layer_too_high_length_parse ... ok
+test data_parse_tests::test_malformed_data_packet_dmp_layer_too_high_property_count_parse ... ok
+test data_parse_tests::test_malformed_data_packet_dmp_layer_too_low_length_parse ... ok
+test data_parse_tests::test_malformed_data_packet_dmp_layer_too_low_property_count_parse ... ok
+test data_parse_tests::test_malformed_data_packet_dmp_layer_wrong_address_data_parse ... ok
+test data_parse_tests::test_malformed_data_packet_dmp_layer_wrong_address_increment_parse ... ok
+test data_parse_tests::test_malformed_data_packet_dmp_layer_wrong_first_property_address_parse ... ok
+test data_parse_tests::test_malformed_data_packet_dmp_layer_wrong_flags_parse ... ok
+test data_parse_tests::test_malformed_data_packet_dmp_layer_wrong_vector_parse ... ok
+test data_parse_tests::test_malformed_data_packet_extended_acn_vector_parse ... ok
+test data_parse_tests::test_malformed_data_packet_framing_layer_high_length_parse ... ok
+test data_parse_tests::test_malformed_data_packet_framing_layer_low_length_parse ... ok
+test data_parse_tests::test_malformed_data_packet_framing_layer_wrong_flags_parse ... ok
+test data_parse_tests::test_malformed_data_packet_framing_layer_wrong_vector_parse ... ok
+test data_parse_tests::test_malformed_data_packet_root_layer_too_high_length ... ok
+test data_parse_tests::test_malformed_data_packet_root_layer_too_low_length ... ok
+test data_parse_tests::test_malformed_data_packet_root_layer_wrong_flags ... ok
+test data_parse_tests::test_malformed_data_packet_source_name_not_null_terminated_parse ... ok
+test data_parse_tests::test_malformed_data_packet_too_high_priority_parse ... ok
+test data_parse_tests::test_malformed_data_packet_too_high_sync_addr_parse ... ok
+test data_parse_tests::test_malformed_data_packet_too_high_universe_parse ... ok
+test data_parse_tests::test_malformed_data_packet_too_long_cid_parse ... ok
+test data_parse_tests::test_malformed_data_packet_too_low_universe_parse ... ok
+test data_parse_tests::test_malformed_data_packet_too_short_cid_parse ... ok
+test data_parse_tests::test_malformed_data_packet_unknown_acn_vector_parse ... ok
+test data_parse_tests::test_malformed_data_packet_wrong_acn_identifier_parse ... ok
+test data_parse_tests::test_malformed_data_packet_wrong_postample_lower_byte_parse ... ok
+test data_parse_tests::test_malformed_data_packet_wrong_postample_upper_byte_parse ... ok
+test data_parse_tests::test_malformed_data_packet_wrong_preample_lower_byte_parse ... ok
+test data_parse_tests::test_malformed_data_packet_wrong_preample_upper_byte_parse ... ok
+test data_parse_tests::test_termination_packet_empty_property_values_parse ... ok
+test data_parse_tests::test_termination_packet_full_property_values_parse ... ok
+test data_parse_tests::test_termination_packet_partial_property_values_parse ... ok
+
+test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+
+running 22 tests
+test discovery_parse_tests::test_discovery_packet_arbitrary_reserved_parse ... ok
+test discovery_parse_tests::test_discovery_packet_decending_order_parse ... ok
+test discovery_parse_tests::test_discovery_packet_discovery_layer_length_too_short_parse ... ok
+test discovery_parse_tests::test_discovery_packet_discovery_layer_length_too_long_parse ... ok
+test discovery_parse_tests::test_discovery_packet_discovery_layer_vector_unknown_parse ... ok
+test discovery_parse_tests::test_discovery_packet_framing_layer_length_too_long_parse ... ok
+test discovery_parse_tests::test_discovery_packet_discovery_layer_wrong_flags_parse ... ok
+test discovery_parse_tests::test_discovery_packet_above_max_universe_capacity ... ok
+test discovery_parse_tests::test_discovery_packet_framing_layer_wrong_flags_parse ... ok
+test discovery_parse_tests::test_discovery_packet_framing_layer_length_too_short_parse ... ok
+test discovery_parse_tests::test_discovery_packet_no_universes ... ok
+test discovery_parse_tests::test_discovery_packet_page_higher_than_last_page_parse ... ok
+test discovery_parse_tests::test_discovery_packet_random_order_parse ... ok
+test discovery_parse_tests::test_discovery_packet_root_layer_data_vector_parse ... ok
+test discovery_parse_tests::test_discovery_packet_parse_pack ... ok
+test discovery_parse_tests::test_discovery_packet_max_universe_capacity ... ok
+test discovery_parse_tests::test_discovery_packet_root_layer_unknown_vector_parse ... ok
+test discovery_parse_tests::test_discovery_packet_sync_framing_vector_parse ... ok
+test discovery_parse_tests::test_discovery_packet_too_long_cid_parse ... ok
+test discovery_parse_tests::test_discovery_packet_too_short_cid_parse ... ok
+test discovery_parse_tests::test_discovery_packet_unknown_framing_vector_parse ... ok
+test discovery_parse_tests::test_discovery_packet_wrong_flags_parse ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+
+running 47 tests
+test test_ansi_e131_appendix_b_runthrough_ipv4 ... ignored
+test test_data_packet_transmit_format ... ignored
+test test_discover_recv_sync_runthrough_ipv4 ... ignored
+test test_discovery_packet_transmit_format ... ignored
+test test_preview_data_2_receiver_1_sender ... ignored
+test test_receiver_source_limit_2 ... ignored
+test test_receiver_source_limit_2_termination_check ... ignored
+test test_receiver_sources_exceeded_3 ... ignored
+test test_register_terminate_universe ... ignored
+test test_send_across_universe_multiple_receivers_sync_multicast_ipv4 ... ignored
+test test_send_empty ... ignored
+test test_send_recv_across_universe_multicast_ipv4 ... ignored
+test test_send_recv_across_universe_unicast_ipv4 ... ignored
+test test_send_recv_diff_priority_same_universe_multicast_ipv4 ... ignored
+test test_send_recv_multiple_sync_universes ... ignored
+test test_send_recv_single_universe_alternative_startcode_multicast_ipv4 ... ignored
+test test_send_recv_single_universe_multicast_ipv4 ... ignored
+test test_send_recv_single_universe_overflow_sequence_number_multicast_ipv4 ... ignored
+test test_send_recv_single_universe_unicast_ipv4 ... ignored
+test test_send_recv_sync_then_nosync_packet_same_universe_multicast_ipv4 ... ignored
+test test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4 ... ignored
+test test_send_recv_two_universe_multicast_ipv4 ... ignored
+test test_send_recv_wrong_multicast_universe ... ignored
+test test_send_single_universe_multiple_receivers_multicast_ipv4 ... ignored
+test test_send_sync_timeout ... ignored
+test test_source_1_universe_timeout ... ignored
+test test_source_2_universe_1_timeout ... ignored
+test test_sync_packet_multicast_address ... ignored
+test test_sync_packet_transmit_format ... ignored
+test test_sync_packet_transmit_seq_numbers ... ignored
+test test_terminate_packet_transmit_format ... ignored
+test test_terminate_universe_no_register ... ignored
+test test_three_senders_three_recv_multicast_ipv4 ... ignored
+test test_three_senders_two_recv_multicast_ipv4 ... ignored
+test test_track_data_packet_seq_numbers ... ignored
+test test_track_sync_packet_seq_numbers ... ignored
+test test_two_senders_one_recv_different_universes_multicast_ipv4 ... ignored
+test test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4 ... ignored
+test test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4 ... ignored
+test test_two_senders_three_recv_multicast_ipv4 ... ignored
+test test_two_senders_two_recv_multicast_ipv4 ... ignored
+test test_universe_discovery_interval_ipv4 ... ignored
+test test_universe_discovery_interval_with_updates_ipv4 ... ignored
+test test_universe_discovery_multiple_pages_one_source_ipv4 ... ignored
+test test_universe_discovery_multiple_universe_one_source_ipv4 ... ignored
+test test_universe_discovery_no_universes_ipv4 ... ignored
+test test_universe_discovery_one_universe_one_source_ipv4 ... ignored
+
+test result: ok. 0 passed; 0 failed; 47 ignored; 0 measured; 0 filtered out
+
+
+running 65 tests
+test ipv4_tests::test_ansi_e131_appendix_b_runthrough_ipv4 ... ignored
+test ipv4_tests::test_data_packet_transmit_format ... ignored
+test ipv4_tests::test_discover_recv_sync_runthrough_ipv4 ... ignored
+test ipv4_tests::test_discovery_packet_transmit_format ... ignored
+test ipv4_tests::test_preview_data_2_receiver_1_sender ... ignored
+test ipv4_tests::test_receiver_source_limit_2 ... ignored
+test ipv4_tests::test_receiver_source_limit_2_termination_check ... ignored
+test ipv4_tests::test_receiver_sources_exceeded_3 ... ignored
+test ipv4_tests::test_register_terminate_universe ... ignored
+test ipv4_tests::test_send_across_universe_multiple_receivers_sync_multicast_ipv4 ... ignored
+test ipv4_tests::test_send_empty ... ignored
+test ipv4_tests::test_send_recv_across_universe_multicast_ipv4 ... ignored
+test ipv4_tests::test_send_recv_across_universe_unicast_ipv4 ... ignored
+test ipv4_tests::test_send_recv_diff_priority_same_universe_multicast_ipv4 ... ignored
+test ipv4_tests::test_send_recv_multiple_sync_universes ... ignored
+test ipv4_tests::test_send_recv_single_universe_alternative_startcode_multicast_ipv4 ... ignored
+test ipv4_tests::test_send_recv_single_universe_multicast_ipv4 ... ignored
+test ipv4_tests::test_send_recv_single_universe_overflow_sequence_number_multicast_ipv4 ... ignored
+test ipv4_tests::test_send_recv_single_universe_unicast_ipv4 ... ignored
+test ipv4_tests::test_send_recv_sync_then_nosync_packet_same_universe_multicast_ipv4 ... ignored
+test ipv4_tests::test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4 ... ignored
+test ipv4_tests::test_send_recv_two_universe_multicast_ipv4 ... ignored
+test ipv4_tests::test_send_recv_wrong_multicast_universe ... ignored
+test ipv4_tests::test_send_single_universe_multiple_receivers_multicast_ipv4 ... ignored
+test ipv4_tests::test_send_sync_timeout ... ignored
+test ipv4_tests::test_source_1_universe_timeout ... ignored
+test ipv4_tests::test_source_2_universe_1_timeout ... ignored
+test ipv4_tests::test_sync_packet_multicast_address ... ignored
+test ipv4_tests::test_sync_packet_transmit_format ... ignored
+test ipv4_tests::test_sync_packet_transmit_seq_numbers ... ignored
+test ipv4_tests::test_terminate_packet_transmit_format ... ignored
+test ipv4_tests::test_terminate_universe_no_register ... ignored
+test ipv4_tests::test_three_senders_three_recv_multicast_ipv4 ... ignored
+test ipv4_tests::test_three_senders_two_recv_multicast_ipv4 ... ignored
+test ipv4_tests::test_track_data_packet_seq_numbers ... ignored
+test ipv4_tests::test_track_sync_packet_seq_numbers ... ignored
+test ipv4_tests::test_two_senders_one_recv_different_universes_multicast_ipv4 ... ignored
+test ipv4_tests::test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4 ... ignored
+test ipv4_tests::test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4 ... ignored
+test ipv4_tests::test_two_senders_three_recv_multicast_ipv4 ... ignored
+test ipv4_tests::test_two_senders_two_recv_multicast_ipv4 ... ignored
+test ipv4_tests::test_universe_discovery_interval_ipv4 ... ignored
+test ipv4_tests::test_universe_discovery_interval_with_updates_ipv4 ... ignored
+test ipv4_tests::test_universe_discovery_multiple_pages_one_source_ipv4 ... ignored
+test ipv4_tests::test_universe_discovery_multiple_universe_one_source_ipv4 ... ignored
+test ipv4_tests::test_universe_discovery_no_universes_ipv4 ... ignored
+test ipv4_tests::test_universe_discovery_one_universe_one_source_ipv4 ... ignored
+test sacn_ipv6_multicast_test::test_across_alternative_startcode_universe_multicast_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_ansi_e131_appendix_b_runthrough_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_discover_recv_sync_runthrough_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_ip_equivalence ... ignored
+test sacn_ipv6_multicast_test::test_send_across_universe_multiple_receivers_sync_multicast_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_send_recv_across_universe_multicast_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_send_recv_full_capacity_across_universe_multicast_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_send_recv_partial_capacity_universe_multicast_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_send_recv_single_universe_alternative_startcode_multicast_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_send_recv_single_universe_multicast_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_send_recv_two_universe_multicast_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_three_senders_three_recv_multicast_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_two_senders_one_recv_same_universe_no_sync_multicast_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_universe_discovery_multiple_pages_one_source_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_universe_discovery_multiple_universe_one_source_ipv6 ... ignored
+test sacn_ipv6_multicast_test::test_universe_discovery_one_universe_one_source_ipv6 ... ignored
+test sacn_ipv6_unicast_test::test_send_recv_across_universe_unicast_ipv6 ... ignored
+test sacn_ipv6_unicast_test::test_send_recv_single_universe_unicast_ipv6 ... ignored
+
+test result: ok. 0 passed; 0 failed; 65 ignored; 0 measured; 0 filtered out
+
+
+running 27 tests
+test test_new_ipv4_one_too_long_source_name ... ok
+test test_new_with_cid_ip_too_long_source_name ... ok
+test test_new_ipv6_one_too_long_source_name ... ok
+test test_new_with_cid_ip_v4_too_long_source_name ... ok
+test test_get_multicast_loop ... ok
+test test_get_preview ... ok
+test test_new_with_ip_too_long_source_name ... ok
+test test_get_cid ... ok
+test test_register_below_min_universe ... ok
+test test_register_above_max_universe ... ok
+test test_register_max_universe ... ok
+test test_set_get_cid ... ok
+test test_send_above_priority ... ok
+test test_register_min_universe ... ok
+test test_set_get_multicast_ttl ... ok
+test test_send_without_registering ... ok
+test test_set_get_multicast_loop ... ok
+test test_register_discovery_universe ... ok
+test test_send_single_universe ... ok
+test test_new_with_cid_ip_v6_too_long_source_name ... ok
+test test_sync_addr_0 ... ok
+test test_set_name_too_long_source_name ... ok
+test test_set_get_preview ... ok
+test test_set_name_get_name ... ok
+test test_set_get_ttl ... ok
+test test_send_across_universe ... ok
+test test_get_name ... ok
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+
+running 14 tests
+test sync_parse_tests::test_sync_packet_arbitary_reserved ... ok
+test sync_parse_tests::test_sync_packet_framing_layer_discovery_vector ... ok
+test sync_parse_tests::test_sync_packet_framing_layer_length_too_long_parse ... ok
+test sync_parse_tests::test_sync_packet_framing_layer_length_too_short_parse ... ok
+test sync_parse_tests::test_sync_packet_framing_layer_unknown_vector ... ok
+test sync_parse_tests::test_sync_packet_framing_layer_wrong_flags_parse ... ok
+test sync_parse_tests::test_sync_packet_length ... ok
+test sync_parse_tests::test_sync_packet_root_layer_data_vector_parse ... ok
+test sync_parse_tests::test_sync_packet_root_layer_unknown_vector_parse ... ok
+test sync_parse_tests::test_sync_packet_too_high_sync_addr ... ok
+test sync_parse_tests::test_sync_packet_too_long_cid_parse ... ok
+test sync_parse_tests::test_sync_packet_too_low_sync_addr ... ok
+test sync_parse_tests::test_sync_packet_too_short_cid_parse ... ok
+test sync_parse_tests::test_synchronization_packet_parse_pack ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+
+running 2 tests
+test src/source.rs - source::SacnSource (line 65) ... ok
+test src/lib.rs - packet (line 52) ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
