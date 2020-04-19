@@ -31,8 +31,8 @@
 \contentsline {subsection}{\numberline {7.7}Real-world Usage Tool: Visualisers: Vision}{25}%
 \contentsline {subsection}{\numberline {7.8}Real-world Usage Tool: Lighting Control: Avolites Titan}{27}%
 \contentsline {section}{\numberline {8}Ethics}{27}%
-\contentsline {section}{\numberline {9}Design}{27}%
-\contentsline {subsection}{\numberline {9.1}Expected System Usage/Layout}{27}%
+\contentsline {section}{\numberline {9}Design}{28}%
+\contentsline {subsection}{\numberline {9.1}Expected System Usage/Layout}{28}%
 \contentsline {subsection}{\numberline {9.2}Packet structure}{29}%
 \contentsline {subsubsection}{\numberline {9.2.1}Universe Discovery}{31}%
 \contentsline {subsubsection}{\numberline {9.2.2}Universe Synchronisation}{31}%
