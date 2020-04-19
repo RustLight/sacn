@@ -9,6 +9,11 @@
 
 /// Use the error-chain system to allow handling IO and sACN errors chained together.
 /// error_chain! macro automatically creates the Error / ErrorKind / Result required to use the Errors/external errors below with error-chain.
+/// 
+/// Sacn create errors are wrapped in Sacn(::sacn::error::errors::Error).
+/// 
+/// Std io errors are wrapped in Io(::std::io::Error).
+/// 
 pub mod errors {
     error_chain! {
         foreign_links {

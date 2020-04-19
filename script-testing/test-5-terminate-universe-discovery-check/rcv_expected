@@ -1,5 +1,0 @@
-Started
-Error Encountered: Error(Sacn(Error(SourceDiscovered("Receiver discovered a source"), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })
-Name: controller, Universes: [1]
-Error Encountered: Error(Sacn(Error(Msg("Failed to handle data packet"), State { next_error: Some(Error(UniverseTerminated("A source terminated a universe and this was detected when trying to receive data"), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })), backtrace: InternalBacktrace { backtrace: None } })), State { next_error: None, backtrace: InternalBacktrace { backtrace: None } })
-Name: controller, Universes: []

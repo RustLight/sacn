@@ -8,11 +8,254 @@
 // This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
 extern crate sacn;
+extern crate uuid;
 
 use sacn::error::errors::*;
 
 use sacn::source::SacnSource;
 use sacn::packet::*;
+
+use std::net::{SocketAddr, Ipv4Addr, IpAddr};
+
+/// UUID library used to handle the UUID's used in the CID fields.
+use uuid::Uuid;
+
+/// Attempts to create an ipv4 source with the source name longer than expected.
+#[test]
+fn test_new_ipv4_one_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::new_v4(SRC_NAME) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_new_ipv6_one_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::new_v6(SRC_NAME) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_new_with_cid_ip_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::with_cid_ip(SRC_NAME, Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_new_with_cid_ip_v4_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::with_cid_v4(SRC_NAME, Uuid::new_v4()) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_new_with_cid_ip_v6_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::with_cid_v6(SRC_NAME, Uuid::new_v4()) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_new_with_ip_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    match SacnSource::with_ip(SRC_NAME, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_set_name_too_long_source_name() {
+    const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
+    let mut src = SacnSource::new_v4("Initial name").unwrap();
+
+    match src.set_name(SRC_NAME) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::MalformedSourceName(_) => {
+                    assert!(true, "Expected error returned");
+                }
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        Ok(_) => {
+            assert!(false, "SacnSource created with a source name length greater than the allowed maximum");
+        }
+    }
+}
+
+#[test]
+fn test_get_name() {
+    let name = "Test_Name";
+    let src = SacnSource::new_v4(name).unwrap();
+
+    assert_eq!(name, src.name().unwrap(), "Name retrieved does not match name set");
+}
+
+#[test]
+fn test_set_name_get_name() {
+    let name = "Test_Name";
+    let mut src = SacnSource::new_v4("Initial Name").unwrap();
+
+    src.set_name(name).unwrap();
+
+    assert_eq!(name, src.name().unwrap(), "Name retrieved does not match name set");
+}
+
+#[test]
+fn test_get_cid() {
+    let cid = Uuid::new_v4();
+
+    let src = SacnSource::with_cid_ip("Test name", cid, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    assert_eq!(src.cid().unwrap(), cid, "CID does not match CID set"); 
+}
+
+#[test]
+fn test_set_get_cid() {
+    let cid = Uuid::new_v4();
+
+    let mut src = SacnSource::with_cid_ip("Test name", cid, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let new_cid = Uuid::new_v4();
+
+    src.set_cid(new_cid).unwrap();
+
+    assert_eq!(src.cid().unwrap(), new_cid, "CID does not match CID set"); 
+}
+
+#[test]
+fn test_get_preview() {
+    let src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    assert!(!src.preview_mode().unwrap(), "Preview mode not set to false initially");
+}
+
+#[test]
+fn test_set_get_preview() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    src.set_preview_mode(true).unwrap();
+
+    assert!(src.preview_mode().unwrap(), "Preview mode not set correctly");
+}
+
+#[test]
+fn test_set_get_multicast_ttl() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let ttl = 3;
+
+    src.set_multicast_ttl(ttl).unwrap();
+
+    assert_eq!(src.multicast_ttl().unwrap(), ttl, "TTL not set correctly");
+}
+
+#[test]
+fn test_set_get_ttl() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let ttl = 3;
+
+    src.set_ttl(ttl).unwrap();
+
+    assert_eq!(src.ttl().unwrap(), ttl, "TTL not set correctly");
+}
+
+#[test]
+fn test_get_multicast_loop() {
+    let src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    assert!(src.multicast_loop().unwrap(), "Multicast loop set to false initially when expected true");
+}
+
+#[test]
+fn test_set_get_multicast_loop() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    src.set_multicast_loop_v4(false).unwrap();
+
+    assert!(!src.multicast_loop().unwrap(), "Multicast loop not set to false correctly");
+}
 
 #[test]
 fn test_send_without_registering(){

@@ -1,0 +1,12 @@
+# Listen to universes 1 and 2.
+l 102
+l 103
+# Receive the 3 expected sets of data (the unsynchronised data to universe 100 and 101 aswell as the synchronised data packet to universe 102).
+r 0
+r 0
+r 0
+# Wait for a period to allow universe discovery packets to be received and print resultant discovered source list.
+r 15
+x
+# Quit
+q

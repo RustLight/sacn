@@ -37,6 +37,10 @@ use std::fmt;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
+/// Extra net imports required for the IPv6 handling on the linux side.
+#[cfg(target_os = "linux")]
+use std::net::{IpAddr, Ipv6Addr};
+
 /// Constants required to detect if an IP is IPv4 or IPv6.
 #[cfg(target_os = "linux")]
 use libc::{AF_INET, AF_INET6};
@@ -120,6 +124,37 @@ pub struct DMXData {
 }
 
 /// Allows receiving dmx or other (different startcode) data using sacn.
+/// 
+/// # Examples
+///
+/// ```
+/// // Example showing creation of a receiver and receiving some data, as there is no sender this receiver then handles the timeout.
+/// use sacn::receive::SacnReceiver;
+/// use sacn::packet::ACN_SDT_MULTICAST_PORT;
+/// 
+/// use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+/// use std::time::Duration;
+/// 
+/// const UNIVERSE1: u16 = 1;
+/// const TIMEOUT: Option<Duration> = Some(Duration::from_secs(1)); // A timeout of None means blocking behaviour, some indicates the actual timeout.
+/// 
+/// let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+///
+/// let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+///
+/// dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
+/// 
+/// match dmx_rcv.recv(TIMEOUT) {
+///     Err(e) => {
+///         // Print out the error.
+///         println!("{:?}", e);
+///     }
+///     Ok(p) => {
+///         // Print out the packet.
+///         println!("{:?}", p);
+///     }
+/// }
+/// ```
 pub struct SacnReceiver {
     /// The SacnNetworkReceiver used for handling communication with UDP / Network / Transport layer.
     receiver: SacnNetworkReceiver,
@@ -311,7 +346,7 @@ impl SacnReceiver {
     /// Wipes the record of discovered and sequence number tracked sources.
     /// This is one way to handle a sources exceeded condition.
     ///
-    /// If only want to wipe data awaiting synchronisation then see (clear_all_waiting_data)[clear_all_waiting_data].
+    /// If you want to wipe data awaiting synchronisation then see (clear_all_waiting_data)[clear_all_waiting_data].
     ///
     pub fn reset_sources(&mut self) {
         self.sequences.clear();
@@ -1925,7 +1960,14 @@ fn check_seq_number(
         None => {
             // Previously checked that cid is present (and added if not), if None is returned now it indicates that between that check and this
             // function the cid key value has been removed. This can only happen if there is a memory corruption/thread-interleaving or similar external
-            // event which the receiver cannot handle.
+            // event which the receiver cannot be expected to handle / doesn't support. 
+            // The rust typing system forces this possibility to be acknowledged when in some languages this possibility would still exist but it would be hidden
+            // within the code. 
+            // While a panic!() call here isn't ideal it shows the strength in the explictness of the rust system and points to an area of 
+            // potential later improvement within the code by not hiding the problem. As normal if the panic must be caught then rust allows this later on.
+            // Another possibility here could be to retry the method but this could end with an infinite loop.
+            // Returning an error could also be done but that could confuse error handling as this should not occur and the receiver would be in an inconsistent
+            // state.
             panic!();
         }
     };
@@ -1953,6 +1995,7 @@ fn check_seq_number(
             );
         }
         None => {
+            // See previous node regarding panic previously in this method.
             panic!();
         }
     };
@@ -2906,6 +2949,112 @@ mod test {
         }
     }
 
+    /// Creates a receiver and then makes it handle 2 sync packets with sequence numbers 0 and 1 respectively.
+    /// The receiver then resets the sequence number counters and then handles a sync packet with sequence number 0. This would normally be rejected
+    /// as per test_sync_packet_sequence_number_below_expected but because of the reset it shouldn't be.
+    /// 
+    /// This checks that the sync packet sequence numbers are reset correctly.
+    /// 
+    #[test]
+    fn test_sync_packet_sequence_number_reset() {
+        const UNIVERSE1: u16 = 1;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
+
+        let src_cid: Uuid = Uuid::from_bytes(&[
+            0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
+            0x14, 0x3e,
+        ])
+        .unwrap();
+
+        let sync_packet = generate_sync_packet_framing_layer_seq_num(UNIVERSE1, 0);
+        let sync_packet2 = generate_sync_packet_framing_layer_seq_num(UNIVERSE1, 1);
+        let sync_packet3 = generate_sync_packet_framing_layer_seq_num(UNIVERSE1, 0); // This sync packet has a sequence number lower than the expected value of 2 so should be rejected.
+
+        // Not interested in specific return values from this test, just assert the packets are processed successfully.
+        assert!(
+            dmx_rcv
+                .handle_sync_packet(src_cid, sync_packet)
+                .unwrap()
+                .is_none(),
+            "Receiver incorrectly rejected first sync packet"
+        );
+        assert!(
+            dmx_rcv
+                .handle_sync_packet(src_cid, sync_packet2)
+                .unwrap()
+                .is_none(),
+            "Receiver incorrectly rejected second sync packet"
+        );
+
+        dmx_rcv.reset_sources();
+
+        // Packet shouldn't be rejected.
+        assert!(
+            dmx_rcv
+                .handle_sync_packet(src_cid, sync_packet3)
+                .unwrap()
+                .is_none(),
+            "Receiver incorrectly rejected third sync packet"
+        );
+    }
+
+    /// Creates a receiver and then makes it handle 2 data packets with sequence numbers 0 and 1 respectively.
+    /// The receiver then resets the sequence number counters and then handles a data packet with sequence number 0. This would normally be rejected
+    /// as per test_data_packet_sequence_number_below_expected but because of the reset it shouldn't be.
+    /// 
+    /// This checks that the data packet sequence numbers are reset correctly.
+    /// 
+    #[test]
+    fn test_data_packet_sequence_number_reset() {
+        const UNIVERSE1: u16 = 1;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
+
+        let src_cid: Uuid = Uuid::from_bytes(&[
+            0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
+            0x14, 0x3e,
+        ])
+        .unwrap();
+
+        let data_packet = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 0);
+        let data_packet2 = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 1);
+        let data_packet3 = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 0); // This data packet has a sequence number lower than the expected value of 2 so should be rejected.
+
+        // Not interested in specific return values from this test, just assert the data is processed successfully.
+        assert!(
+            dmx_rcv
+                .handle_data_packet(src_cid, data_packet)
+                .unwrap()
+                .is_some(),
+            "Receiver incorrectly rejected first data packet"
+        );
+        assert!(
+            dmx_rcv
+                .handle_data_packet(src_cid, data_packet2)
+                .unwrap()
+                .is_some(),
+            "Receiver incorrectly rejected second data packet"
+        );
+
+        dmx_rcv.reset_sources();
+
+        // Packet shouldn't be rejected.
+        assert!(
+            dmx_rcv
+                .handle_data_packet(src_cid, data_packet3)
+                .unwrap()
+                .is_some(),
+            "Receiver incorrectly rejected third data packet"
+        );
+    }
+
     /// Creates a receiver and then makes it handle 2 data packets with sequence numbers 0 and 1.
     /// This then means the receiver will reject another data packet with sequence number 0.
     /// The receiver is then passed a sync packet with sequence number 0 which shouldn't be rejected as it is a different packet type.
@@ -3068,5 +3217,150 @@ mod test {
                 .is_none(),
             "Receiver incorrectly rejected third sync packet"
         );
+    }
+
+    #[test]
+    fn test_source_limit_0() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let source_limit: Option<usize> = Some(0);
+
+        match SacnReceiver::with_ip(addr, source_limit) {
+            Err(e) => {
+                match e.kind() {
+                    ErrorKind::Io(x) => {
+                        match x.kind() {
+                            std::io::ErrorKind::InvalidInput => {
+                                assert!(true, "Correct error returned");
+                            }
+                            _ => {
+                                assert!(false, "Expected error returned");
+                            }
+                        }
+                    }
+                    _ => {
+                        assert!(false, "Unexpected error type returned");
+                    }
+                }
+            }
+            _ => {
+                assert!(false, "SacnReceiver accepted 0 source limit when it shouldn't");
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_multicast_enabled() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        assert!(dmx_rcv.is_multicast_enabled(), "Multicast not enabled by default");
+    }
+
+    #[test]
+    fn test_set_is_multicast_enabled() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        dmx_rcv.set_is_multicast_enabled(false).unwrap();
+
+        assert!(!dmx_rcv.is_multicast_enabled(), "Multicast not disabled correctly");
+    }
+
+    #[test]
+    fn test_clear_waiting_data() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        const SYNC_ADDR: u16 = 1;
+
+        let data: DMXData = DMXData {
+            universe: 0,
+            values: vec![1,2,3],
+            sync_uni: SYNC_ADDR,
+            priority: 100,
+            src_cid: Some(Uuid::new_v4()),
+            preview: false,
+            recv_timestamp: Instant::now(),
+        };
+
+        dmx_rcv.store_waiting_data(data).unwrap();
+
+        dmx_rcv.clear_all_waiting_data();
+
+        assert_eq!(dmx_rcv.rtrv_waiting_data(SYNC_ADDR), Vec::new(), "Data was not reset as expected");
+    }
+
+    #[test]
+    fn test_get_announce_source_discovery() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        assert!(!dmx_rcv.get_announce_source_discovery(), "Announce source discovery is true by default when should be false");
+    }
+
+    #[test]
+    fn test_get_announce_timeout() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        assert!(!dmx_rcv.get_announce_timeout(), "Announce timeout flag is true by default when should be false");
+    }
+
+    #[test]
+    fn test_get_announce_stream_termination() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        assert!(!dmx_rcv.get_announce_stream_termination(), "Announce termination flag is true by default when should be false");
+    }
+
+    /// Tests handling a sync packet for a synchronisation address which isn't currently being listened to.
+    #[test]
+    fn test_handle_sync_packet_not_listening_to_sync_addr() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        let res = dmx_rcv.handle_sync_packet(Uuid::new_v4(), SynchronizationPacketFramingLayer{
+            sequence_number: 0,
+            synchronization_address: 1
+        }).unwrap(); // Checks that no error is produced.
+
+        assert_eq!(res, None, "Sync packet produced output when should have been ignored as for an address that isn't being listened to");
+    }
+
+    /// Tests the equivalence of 2 DMXDatas which are only similar in the aspects used for checking equivalence.
+    #[test]
+    fn test_dmx_data_eq() {
+        const UNIVERSE: u16 = 1;
+        let values: Vec<u8> = vec!(1,2,3);
+        const SYNC_ADDR: u16 = 1;
+        const PRIORITY: u8 = 100;
+        const PREVIEW: bool = false;
+
+        let data1 = DMXData {
+            universe: UNIVERSE,
+            values: values.clone(),
+            sync_uni: SYNC_ADDR,
+
+            // The below values can be different for 2 DMXData to be taken as equivalent.
+            priority: PRIORITY,
+            src_cid: Some(Uuid::new_v4()),
+            preview: PREVIEW,
+            recv_timestamp: Instant::now(),
+        };
+        
+        let data2 = DMXData {
+            universe: UNIVERSE,
+            values: values,
+            sync_uni: SYNC_ADDR,
+
+            // The below values can be different for 2 DMXData to be taken as equivalent.
+            priority: PRIORITY + 50,
+            src_cid: None,
+            preview: !PREVIEW,
+            recv_timestamp: Instant::now(),
+        };
+
+        assert_eq!(data1, data2, "DMX data not seen as equivalent when should be");
     }
 }

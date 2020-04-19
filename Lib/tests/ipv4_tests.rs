@@ -291,6 +291,7 @@ pub const TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE: [u8; 1026] = [0,
 // 2 different IP's to the network. Theses IPs are manually specified in the TEST_NETWORK_INTERFACE_IPV4 constant and so to run it must be changed
 // depending on the environment.
 #[test]
+#[ignore]
 fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -354,6 +355,7 @@ fn test_send_single_universe_multiple_receivers_multicast_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -440,6 +442,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_send_recv_single_universe_unicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -490,6 +493,7 @@ fn test_send_recv_single_universe_unicast_ipv4(){
 /// A test showing a single universe of data being sent from a sender to a receiver over multicast on IPv4.
 /// This test has more comments than usage as it is used as an example.
 #[test]
+#[ignore]
 fn test_send_recv_single_universe_multicast_ipv4(){
     // The universe and priority of the data used in this test.
     const UNIVERSE: u16 = 1;
@@ -550,6 +554,7 @@ fn test_send_recv_single_universe_multicast_ipv4(){
 /// test checks that the implementations handle this as expected by continuing as normal.
 /// 
 #[test]
+#[ignore]
 fn test_send_recv_single_universe_overflow_sequence_number_multicast_ipv4(){
     const DATA_PACKETS_TO_SEND: usize = 260;
 
@@ -599,6 +604,7 @@ fn test_send_recv_single_universe_overflow_sequence_number_multicast_ipv4(){
 /// A sync packet is then sent and the receiver output checked that the right packet was kept.
 /// Tests that lower priority packets are correctly discarded.
 #[test]
+#[ignore]
 fn test_send_recv_diff_priority_same_universe_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -652,6 +658,7 @@ fn test_send_recv_diff_priority_same_universe_multicast_ipv4(){
 /// A sync packet is then sent and the receiver output checked that the right packet was kept.
 /// Tests that older packet is correctly discarded.
 #[test]
+#[ignore]
 fn test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -707,6 +714,7 @@ fn test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4(){
 /// the source sends a sync_packet and the receiver receives again, since the waiting data was discarded it is expected that the
 /// sync packet should have no effect and the receiver will timeout.
 #[test]
+#[ignore]
 fn test_send_recv_sync_then_nosync_packet_same_universe_multicast_ipv4() {
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -783,6 +791,7 @@ fn test_send_recv_sync_then_nosync_packet_same_universe_multicast_ipv4() {
 }
 
 #[test]
+#[ignore]
 fn test_send_recv_two_universe_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -835,6 +844,7 @@ fn test_send_recv_two_universe_multicast_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_send_recv_single_universe_alternative_startcode_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -883,6 +893,7 @@ fn test_send_recv_single_universe_alternative_startcode_multicast_ipv4(){
 /// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 #[test]
+#[ignore]
 fn test_send_recv_across_universe_multicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -941,6 +952,7 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 /// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 #[test]
+#[ignore]
 fn test_send_recv_across_universe_unicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -997,6 +1009,7 @@ fn test_send_recv_across_universe_unicast_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_two_senders_one_recv_different_universes_multicast_ipv4(){
     let universe_1 = 1;
     let universe_2 = 2;
@@ -1049,6 +1062,7 @@ fn test_two_senders_one_recv_different_universes_multicast_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
     let universe = 1;
 
@@ -1101,6 +1115,7 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4(){
     let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking
 
@@ -1169,6 +1184,7 @@ fn test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4()
 }
 
 #[test]
+#[ignore]
 fn test_two_senders_two_recv_multicast_ipv4(){
     const SND_THREADS: usize = 2;
     const RCV_THREADS: usize = 2;
@@ -1279,6 +1295,7 @@ fn test_two_senders_two_recv_multicast_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_three_senders_two_recv_multicast_ipv4(){
     const SND_THREADS: usize = 3;
     const RCV_THREADS: usize = 2;
@@ -1389,6 +1406,7 @@ fn test_three_senders_two_recv_multicast_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_two_senders_three_recv_multicast_ipv4(){
     const SND_THREADS: usize = 2;
     const RCV_THREADS: usize = 3;
@@ -1499,6 +1517,7 @@ fn test_two_senders_three_recv_multicast_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_three_senders_three_recv_multicast_ipv4(){
     const SND_THREADS: usize = 3;
     const RCV_THREADS: usize = 3;
@@ -1609,6 +1628,7 @@ fn test_three_senders_three_recv_multicast_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_universe_discovery_one_universe_one_source_ipv4(){
     const SND_THREADS: usize = 1;
     const BASE_UNIVERSE: u16 = 2;
@@ -1690,6 +1710,7 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
 
 /// Measures the time taken in milliseconds between 2 discovery packets to check that the interval fits with expected.
 #[test]
+#[ignore]
 fn test_universe_discovery_interval_ipv4(){
     const SND_THREADS: usize = 1;
     const BASE_UNIVERSE: u16 = 1;
@@ -1768,6 +1789,7 @@ fn test_universe_discovery_interval_ipv4(){
 /// with ANSI E1.31-2018 Section 4.3
 /// 
 #[test]
+#[ignore]
 fn test_universe_discovery_interval_with_updates_ipv4(){
     const SND_THREADS: usize = 1;
     const BASE_UNIVERSE: u16 = 1;
@@ -1847,6 +1869,7 @@ fn test_universe_discovery_interval_with_updates_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_universe_discovery_multiple_universe_one_source_ipv4(){
     const SND_THREADS: usize = 1;
     const BASE_UNIVERSE: u16 = 2;
@@ -1928,6 +1951,7 @@ fn test_universe_discovery_multiple_universe_one_source_ipv4(){
 }
 
 #[test]
+#[ignore]
 fn test_universe_discovery_multiple_pages_one_source_ipv4(){
     const SND_THREADS: usize = 1;
     const BASE_UNIVERSE: u16 = 2;
@@ -2016,6 +2040,7 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
 /// Receiver waits for a discovery packet from the sender and uses it to show that the sender is transmitting
 /// an empty list of universes as expected.
 #[test]
+#[ignore]
 fn test_universe_discovery_no_universes_ipv4(){
     const SND_THREADS: usize = 1;
     const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
@@ -2071,6 +2096,7 @@ fn test_universe_discovery_no_universes_ipv4(){
 
 /// Creates a receiver with a source limit of 2 and then creates 3 sources to trigger a sources exceeded condition.
 #[test]
+#[ignore]
 fn test_receiver_sources_exceeded_3() {
     const SND_THREADS: usize = 3;
     const RCV_THREADS: usize = 1;
@@ -2158,6 +2184,7 @@ fn test_receiver_sources_exceeded_3() {
 /// Creates a receiver with a source limit of 2 and then creates 2 sources which send to the receiver. 
 /// This shouldn't trigger a SourcesExceededCondition
 #[test]
+#[ignore]
 fn test_receiver_source_limit_2() {
     const SND_THREADS: usize = 2;
     const RCV_THREADS: usize = 1;
@@ -2218,6 +2245,7 @@ fn test_receiver_source_limit_2() {
 /// At all points the total source count was less than or equal to the limit of 2 sources as specified by the receiver
 /// so this should not cause a SourcesExceededCondition.
 #[test]
+#[ignore]
 fn test_receiver_source_limit_2_termination_check() {
     const SND_THREADS: usize = 2;
     const SRC_LIMIT: Option<usize> = Some(2);
@@ -2306,6 +2334,7 @@ fn test_receiver_source_limit_2_termination_check() {
 /// Create 2 receivers with a single sender, one receiver listens to preview_data and the other doesn't. 
 /// The sender then sends data with the preview flag set and not and the receivers check they receive the data correctly.
 #[test]
+#[ignore]
 fn test_preview_data_2_receiver_1_sender() {
     const RCV_THREADS: usize = 2;
     const UNIVERSE: u16 = 1;
@@ -2414,6 +2443,7 @@ fn test_preview_data_2_receiver_1_sender() {
 /// The receiver (with announce_timeout flag set to true) then waits for the timeout notification to happen.
 /// This shows that the timeout mechanism for a source works.
 #[test]
+#[ignore]
 fn test_source_1_universe_timeout(){
     // Allow the timeout notification to come up to 2.5 seconds too late compared to the expected 2.5 seconds.
     // (2.5s base as per ANSI E1.31-2018 Appendix A E131_NETWORK_DATA_LOSS_TIMEOUT, tolerance as per documentation for recv() method).
@@ -2504,6 +2534,7 @@ fn test_source_1_universe_timeout(){
 /// continue as normal as per ANSI E1.31-2018 Section 6.7.1.
 /// 
 #[test]
+#[ignore]
 fn test_source_2_universe_1_timeout(){
     // Allow the timeout notification to come up to 2.5 seconds too late compared to the expected 2.5 seconds.
     // (2.5s base as per ANSI E1.31-2018 Appendix A E131_NETWORK_DATA_LOSS_TIMEOUT, tolerance as per documentation for recv() method).
@@ -2666,6 +2697,7 @@ fn test_source_2_universe_1_timeout(){
 // The receiver should process the packet for the second universe as normal because the multicast address used shouldn't be used to decide
 // the universe of the packet.
 #[test]
+#[ignore]
 fn test_send_recv_wrong_multicast_universe(){
     const TIMEOUT: Option<Duration> = Some(Duration::from_secs(3));
 
@@ -2717,6 +2749,7 @@ fn test_send_recv_wrong_multicast_universe(){
 /// This shows that multiple synchronisation addresses can be used simultaneously.
 /// 
 #[test]
+#[ignore]
 fn test_send_recv_multiple_sync_universes(){
     const TIMEOUT: Option<Duration> = Some(Duration::from_secs(3));
 
@@ -2790,6 +2823,7 @@ fn test_send_recv_multiple_sync_universes(){
 /// sync packet is not received within the timeout.
 /// 
 #[test]
+#[ignore]
 fn test_send_sync_timeout(){
     const TIMEOUT: Option<Duration> = Some(Duration::from_secs(5));
 
@@ -2862,6 +2896,7 @@ fn test_send_sync_timeout(){
 /// This shows that the implementation handles universe synchronisation in the way specified by the protocol document. 
 /// As the force synchronisation option is not implemented as part of this library that section is ignored.
 #[test]
+#[ignore]
 fn test_ansi_e131_appendix_b_runthrough_ipv4() {
     // The number of set of (data packets + sync packet) to send.
     const SYNC_PACKET_COUNT: usize = 5;
@@ -2984,6 +3019,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv4() {
 /// This shows that the implementation works in a simulated scenario that makes use of multiple features / parts.
 /// It also shows the receiver 'jumping into' a stream of data that has already started (meaning sequence numbers are already > 0).
 #[test]
+#[ignore]
 fn test_discover_recv_sync_runthrough_ipv4() {
     // The number of set of (data packets + sync packet) to send.
     const SYNC_PACKET_COUNT: usize = 250;
@@ -3248,6 +3284,7 @@ fn generate_sync_packet_raw(cid: [u8; 16], sync_addr: u16, seq_num: u8) -> Vec<u
 /// 
 #[test]
 #[cfg_attr(rustfmt, rustfmt_skip)]
+#[ignore]
 fn test_data_packet_transmit_format() {
     const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     const OPTIONS: u8 = 0; // Checks that the options field is transmitted as 0's.
@@ -3298,6 +3335,7 @@ fn test_data_packet_transmit_format() {
 /// Follows a similar process to test_data_packet_transmit_format by creating a SacnSender and then a receiving socket. The sender 
 /// then terminates a stream and the receive socket receives and checks that the sender sent the correct number (3) of termination packets.
 #[test]
+#[ignore]
 fn test_terminate_packet_transmit_format() {
     let cid = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
@@ -3341,6 +3379,7 @@ fn test_terminate_packet_transmit_format() {
 /// The use of a UDP socket also shows that the protocol uses UDP at the transport layer.
 /// 
 #[test]
+#[ignore]
 fn test_sync_packet_transmit_format() {
     const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
@@ -3388,6 +3427,7 @@ fn test_sync_packet_transmit_format() {
 /// The use of a UDP socket also shows that the protocol uses UDP at the transport layer.
 /// 
 #[test]
+#[ignore]
 fn test_discovery_packet_transmit_format() {
     const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
@@ -3507,6 +3547,7 @@ fn test_discovery_packet_transmit_format() {
 /// The use of a UDP socket also shows that the protocol uses UDP at the transport layer.
 /// 
 #[test]
+#[ignore]
 fn test_sync_packet_transmit_seq_numbers() {
     const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
@@ -3594,6 +3635,7 @@ fn test_sync_packet_transmit_seq_numbers() {
 /// 
 #[test]
 #[cfg_attr(rustfmt, rustfmt_skip)]
+#[ignore]
 fn test_track_data_packet_seq_numbers() {
     /* Packet parameters */
     const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -3665,6 +3707,7 @@ fn test_track_data_packet_seq_numbers() {
 /// 
 #[test]
 #[cfg_attr(rustfmt, rustfmt_skip)]
+#[ignore]
 fn test_track_sync_packet_seq_numbers() {
     // Source CID and name, set to arbitrary values as not the focus of the test.
     const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -3735,6 +3778,10 @@ fn test_track_sync_packet_seq_numbers() {
 /// 
 #[test]
 #[cfg_attr(rustfmt, rustfmt_skip)]
+#[ignore]
+/// Linux only because of the mechanism used for creating the recv sockets so that they only receive from a single multicast address.
+/// This is unrelated to the actual library and is just the way the test is written.
+#[cfg(target_os = "linux")]
 fn test_sync_packet_multicast_address() {
     // Source CID and name, set to arbitrary values as not the focus of the test.
     const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -3805,6 +3852,79 @@ fn test_sync_packet_multicast_address() {
             assert_eq!(&recv_buf[0..amt], &expected_packet[..]);
 
             i = i + 1;
+        }
+    }
+}
+
+#[test]
+#[ignore]
+fn test_register_terminate_universe() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let universe = 1;
+
+    src.register_universe(universe).unwrap();
+
+    assert_eq!(src.universes().unwrap(), vec!(1), "Universe not registered correctly");
+
+    src.terminate_stream(universe, 0).unwrap();
+
+    assert_eq!(src.universes().unwrap(), Vec::new(), "Universe not registered correctly");
+}
+
+#[test]
+#[ignore]
+fn test_terminate_universe_no_register() {
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    let universe = 1;
+
+    match src.terminate_stream(universe, 0) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::UniverseNotRegistered(_) => {
+                    assert!(true, "Expected error returned");
+                },
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        _ => {
+            assert!(false, "Src terminated stream that wasn't registered!");
+        }
+    }
+}
+
+#[test]
+#[ignore]
+fn test_send_empty() {
+    const UNIVERSE: u16 = 1;
+
+    let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT)).unwrap();
+
+    src.register_universe(UNIVERSE).unwrap();
+
+    match src.send(&[UNIVERSE], &[], None, None, None) {
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::Io(x) => {
+                    match x.kind() {
+                        std::io::ErrorKind::InvalidInput => {
+                            assert!(true, "Unexpected error returned");
+                        },
+                        _ => {
+                            assert!(false, "Unexpected error returned");
+                        }
+                    }
+                },
+                _ => {
+                    assert!(false, "Unexpected error returned");
+                }
+            }
+        }
+        _ => {
+            assert!(false, "Empty data accepted to send incorrectly");
         }
     }
 }

@@ -9,12 +9,12 @@
 <div class="header">
 <div class="view">
 <div class="viewRow"><span class="viewItem">Current view:</span><span class="viewValue"><a href="../../index.html">top level</a> - <a href="index.html">Lib/tests</a> - sync_parse_tests.rs</span></div>
-<div class="viewRow"><span class="viewItem">Date:</span><span class="viewValue">2020-04-06 11:41:56</span></div>
+<div class="viewRow"><span class="viewItem">Date:</span><span class="viewValue">2020-04-18 00:08:03</span></div>
 </div>
 <div class="stats">
 <div class="statsRow"><span></span><span class="statsHit">Hit</span><span class="statsTotal">Total</span><span class="statsCoverage">Coverage</span></div>
 <div class="statsRow"><span class="statsLine">Lines</span><span class="linesHit">100</span><span class="linesTotal">124</span><span class="linesPercentage lineMed">80.6 %</span></div>
-<div class="statsRow"><span class="statsFun">Functions</span><span class="funsHit">28</span><span class="funsTotal">28</span><span class="funsPercentage funHi">100.0 %</span></div>
+<div class="statsRow"><span class="statsFun">Functions</span><span class="funsHit">56</span><span class="funsTotal">56</span><span class="funsPercentage funHi">100.0 %</span></div>
 </div>
 </div>
 <div class="sourceCode">
@@ -402,40 +402,40 @@
 <div class="line"><span id="382" class="lineNum"><a href="#382">382</a></span><span class="counterUnCov"></span><span class="lineUnCov">];</span></div>
 <div class="line"><span id="383" class="lineNum"><a href="#383">383</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="384" class="lineNum"><a href="#384">384</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="385" class="lineNum"><a href="#385">385</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_length() {</span></div>
+<div class="line"><span id="385" class="lineNum"><a href="#385">385</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_length() {</span></div>
 <div class="line"><span id="386" class="lineNum"><a href="#386">386</a></span><span class="counterUnCov"></span><span class="lineUnCov">    const EXPECTED_SYNC_PACKET_LEN: usize = 49; // As per ANSI E1.31-2018 Section 5.4.</span></div>
-<div class="line"><span id="387" class="lineNum"><a href="#387">387</a></span><span class="counterCov">1</span><span class="lineCov">    assert_eq!(TEST_SYNCHRONIZATION_PACKET.len(), EXPECTED_SYNC_PACKET_LEN);</span></div>
-<div class="line"><span id="388" class="lineNum"><a href="#388">388</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="387" class="lineNum"><a href="#387">387</a></span><span class="counterCov">2</span><span class="lineCov">    assert_eq!(TEST_SYNCHRONIZATION_PACKET.len(), EXPECTED_SYNC_PACKET_LEN);</span></div>
+<div class="line"><span id="388" class="lineNum"><a href="#388">388</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="389" class="lineNum"><a href="#389">389</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="390" class="lineNum"><a href="#390">390</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="391" class="lineNum"><a href="#391">391</a></span><span class="counterCov">2</span><span class="lineCov">fn test_synchronization_packet_parse_pack() {</span></div>
-<div class="line"><span id="392" class="lineNum"><a href="#392">392</a></span><span class="counterCov">1</span><span class="lineCov">    let packet = AcnRootLayerProtocol {</span></div>
-<div class="line"><span id="393" class="lineNum"><a href="#393">393</a></span><span class="counterCov">1</span><span class="lineCov">        pdu: E131RootLayer {</span></div>
-<div class="line"><span id="394" class="lineNum"><a href="#394">394</a></span><span class="counterCov">1</span><span class="lineCov">            cid: Uuid::from_bytes(&amp;TEST_SYNCHRONIZATION_PACKET[22..38]).unwrap(),</span></div>
-<div class="line"><span id="395" class="lineNum"><a href="#395">395</a></span><span class="counterCov">1</span><span class="lineCov">            data: E131RootLayerData::SynchronizationPacket(SynchronizationPacketFramingLayer {</span></div>
+<div class="line"><span id="391" class="lineNum"><a href="#391">391</a></span><span class="counterCov">4</span><span class="lineCov">fn test_synchronization_packet_parse_pack() {</span></div>
+<div class="line"><span id="392" class="lineNum"><a href="#392">392</a></span><span class="counterCov">2</span><span class="lineCov">    let packet = AcnRootLayerProtocol {</span></div>
+<div class="line"><span id="393" class="lineNum"><a href="#393">393</a></span><span class="counterCov">2</span><span class="lineCov">        pdu: E131RootLayer {</span></div>
+<div class="line"><span id="394" class="lineNum"><a href="#394">394</a></span><span class="counterCov">2</span><span class="lineCov">            cid: Uuid::from_bytes(&amp;TEST_SYNCHRONIZATION_PACKET[22..38]).unwrap(),</span></div>
+<div class="line"><span id="395" class="lineNum"><a href="#395">395</a></span><span class="counterCov">2</span><span class="lineCov">            data: E131RootLayerData::SynchronizationPacket(SynchronizationPacketFramingLayer {</span></div>
 <div class="line"><span id="396" class="lineNum"><a href="#396">396</a></span><span class="counterUnCov"></span><span class="lineUnCov">                sequence_number: 0x70,</span></div>
 <div class="line"><span id="397" class="lineNum"><a href="#397">397</a></span><span class="counterUnCov"></span><span class="lineUnCov">                synchronization_address: 7962,</span></div>
 <div class="line"><span id="398" class="lineNum"><a href="#398">398</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }),</span></div>
 <div class="line"><span id="399" class="lineNum"><a href="#399">399</a></span><span class="counterUnCov"></span><span class="lineUnCov">        },</span></div>
 <div class="line"><span id="400" class="lineNum"><a href="#400">400</a></span><span class="counterUnCov"></span><span class="lineUnCov">    };</span></div>
 <div class="line"><span id="401" class="lineNum"><a href="#401">401</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
-<div class="line"><span id="402" class="lineNum"><a href="#402">402</a></span><span class="counterCov">1</span><span class="lineCov">    assert_eq!(</span></div>
-<div class="line"><span id="403" class="lineNum"><a href="#403">403</a></span><span class="counterCov">1</span><span class="lineCov">        AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET).unwrap(),</span></div>
+<div class="line"><span id="402" class="lineNum"><a href="#402">402</a></span><span class="counterCov">2</span><span class="lineCov">    assert_eq!(</span></div>
+<div class="line"><span id="403" class="lineNum"><a href="#403">403</a></span><span class="counterCov">2</span><span class="lineCov">        AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET).unwrap(),</span></div>
 <div class="line"><span id="404" class="lineNum"><a href="#404">404</a></span><span class="counterUnCov"></span><span class="lineUnCov">        packet</span></div>
 <div class="line"><span id="405" class="lineNum"><a href="#405">405</a></span><span class="counterUnCov"></span><span class="lineUnCov">    );</span></div>
 <div class="line"><span id="406" class="lineNum"><a href="#406">406</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
-<div class="line"><span id="407" class="lineNum"><a href="#407">407</a></span><span class="counterCov">1</span><span class="lineCov">    let mut buf = [0; 49];</span></div>
-<div class="line"><span id="408" class="lineNum"><a href="#408">408</a></span><span class="counterCov">1</span><span class="lineCov">    packet.pack(&amp;mut buf).unwrap();</span></div>
+<div class="line"><span id="407" class="lineNum"><a href="#407">407</a></span><span class="counterCov">2</span><span class="lineCov">    let mut buf = [0; 49];</span></div>
+<div class="line"><span id="408" class="lineNum"><a href="#408">408</a></span><span class="counterCov">2</span><span class="lineCov">    packet.pack(&amp;mut buf).unwrap();</span></div>
 <div class="line"><span id="409" class="lineNum"><a href="#409">409</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
-<div class="line"><span id="410" class="lineNum"><a href="#410">410</a></span><span class="counterCov">1</span><span class="lineCov">    assert_eq!(&amp;buf[..packet.len()], TEST_SYNCHRONIZATION_PACKET);</span></div>
-<div class="line"><span id="411" class="lineNum"><a href="#411">411</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="410" class="lineNum"><a href="#410">410</a></span><span class="counterCov">2</span><span class="lineCov">    assert_eq!(&amp;buf[..packet.len()], TEST_SYNCHRONIZATION_PACKET);</span></div>
+<div class="line"><span id="411" class="lineNum"><a href="#411">411</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="412" class="lineNum"><a href="#412">412</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="413" class="lineNum"><a href="#413">413</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="414" class="lineNum"><a href="#414">414</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_root_layer_data_vector_parse() {</span></div>
-<div class="line"><span id="415" class="lineNum"><a href="#415">415</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_ROOT_LAYER_DATA_VECTOR) {</span></div>
-<div class="line"><span id="416" class="lineNum"><a href="#416">416</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="417" class="lineNum"><a href="#417">417</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="418" class="lineNum"><a href="#418">418</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(_) =&gt; {</span></div>
+<div class="line"><span id="414" class="lineNum"><a href="#414">414</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_root_layer_data_vector_parse() {</span></div>
+<div class="line"><span id="415" class="lineNum"><a href="#415">415</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_ROOT_LAYER_DATA_VECTOR) {</span></div>
+<div class="line"><span id="416" class="lineNum"><a href="#416">416</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="417" class="lineNum"><a href="#417">417</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="418" class="lineNum"><a href="#418">418</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(_) =&gt; {</span></div>
 <div class="line"><span id="419" class="lineNum"><a href="#419">419</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    // As the packet will be treated as a data packet it is unclear where the parse will fail so only assert that it must fail</span></div>
 <div class="line"><span id="420" class="lineNum"><a href="#420">420</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    // with a parse type error rather than a specific error.</span></div>
 <div class="line"><span id="421" class="lineNum"><a href="#421">421</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    assert!(true, &quot;Expected error family returned&quot;);</span></div>
@@ -446,21 +446,21 @@
 <div class="line"><span id="426" class="lineNum"><a href="#426">426</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="427" class="lineNum"><a href="#427">427</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="428" class="lineNum"><a href="#428">428</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="429" class="lineNum"><a href="#429">429</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="429" class="lineNum"><a href="#429">429</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="430" class="lineNum"><a href="#430">430</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="431" class="lineNum"><a href="#431">431</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="432" class="lineNum"><a href="#432">432</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="433" class="lineNum"><a href="#433">433</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="434" class="lineNum"><a href="#434">434</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="435" class="lineNum"><a href="#435">435</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="436" class="lineNum"><a href="#436">436</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="436" class="lineNum"><a href="#436">436</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="437" class="lineNum"><a href="#437">437</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="438" class="lineNum"><a href="#438">438</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="439" class="lineNum"><a href="#439">439</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_root_layer_unknown_vector_parse() {</span></div>
-<div class="line"><span id="440" class="lineNum"><a href="#440">440</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_ROOT_LAYER_UNKNOWN_VECTOR) {</span></div>
-<div class="line"><span id="441" class="lineNum"><a href="#441">441</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="442" class="lineNum"><a href="#442">442</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="443" class="lineNum"><a href="#443">443</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) =&gt; {</span></div>
+<div class="line"><span id="439" class="lineNum"><a href="#439">439</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_root_layer_unknown_vector_parse() {</span></div>
+<div class="line"><span id="440" class="lineNum"><a href="#440">440</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_ROOT_LAYER_UNKNOWN_VECTOR) {</span></div>
+<div class="line"><span id="441" class="lineNum"><a href="#441">441</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="442" class="lineNum"><a href="#442">442</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="443" class="lineNum"><a href="#443">443</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) =&gt; {</span></div>
 <div class="line"><span id="444" class="lineNum"><a href="#444">444</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    assert!(true, &quot;Expected error returned&quot;);</span></div>
 <div class="line"><span id="445" class="lineNum"><a href="#445">445</a></span><span class="counterUnCov"></span><span class="lineUnCov">                }</span></div>
 <div class="line"><span id="446" class="lineNum"><a href="#446">446</a></span><span class="counterUnCov"></span><span class="lineUnCov">                _ =&gt; {</span></div>
@@ -469,21 +469,21 @@
 <div class="line"><span id="449" class="lineNum"><a href="#449">449</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="450" class="lineNum"><a href="#450">450</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="451" class="lineNum"><a href="#451">451</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="452" class="lineNum"><a href="#452">452</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="452" class="lineNum"><a href="#452">452</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="453" class="lineNum"><a href="#453">453</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="454" class="lineNum"><a href="#454">454</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="455" class="lineNum"><a href="#455">455</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="456" class="lineNum"><a href="#456">456</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="457" class="lineNum"><a href="#457">457</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="458" class="lineNum"><a href="#458">458</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="459" class="lineNum"><a href="#459">459</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="459" class="lineNum"><a href="#459">459</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="460" class="lineNum"><a href="#460">460</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="461" class="lineNum"><a href="#461">461</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="462" class="lineNum"><a href="#462">462</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_too_short_cid_parse() {</span></div>
-<div class="line"><span id="463" class="lineNum"><a href="#463">463</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_TOO_SHORT_CID) {</span></div>
-<div class="line"><span id="464" class="lineNum"><a href="#464">464</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="465" class="lineNum"><a href="#465">465</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="466" class="lineNum"><a href="#466">466</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(_) =&gt; {</span></div>
+<div class="line"><span id="462" class="lineNum"><a href="#462">462</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_too_short_cid_parse() {</span></div>
+<div class="line"><span id="463" class="lineNum"><a href="#463">463</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_TOO_SHORT_CID) {</span></div>
+<div class="line"><span id="464" class="lineNum"><a href="#464">464</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="465" class="lineNum"><a href="#465">465</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="466" class="lineNum"><a href="#466">466</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(_) =&gt; {</span></div>
 <div class="line"><span id="467" class="lineNum"><a href="#467">467</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    // As packet is too short it is unclear exactly what error will occur, just need to assert</span></div>
 <div class="line"><span id="468" class="lineNum"><a href="#468">468</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    // that the packet is successfully rejected as malformed.</span></div>
 <div class="line"><span id="469" class="lineNum"><a href="#469">469</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    assert!(true, &quot;Expected error family returned&quot;);</span></div>
@@ -494,21 +494,21 @@
 <div class="line"><span id="474" class="lineNum"><a href="#474">474</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="475" class="lineNum"><a href="#475">475</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="476" class="lineNum"><a href="#476">476</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="477" class="lineNum"><a href="#477">477</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="477" class="lineNum"><a href="#477">477</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="478" class="lineNum"><a href="#478">478</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="479" class="lineNum"><a href="#479">479</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="480" class="lineNum"><a href="#480">480</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="481" class="lineNum"><a href="#481">481</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="482" class="lineNum"><a href="#482">482</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="483" class="lineNum"><a href="#483">483</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="484" class="lineNum"><a href="#484">484</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="484" class="lineNum"><a href="#484">484</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="485" class="lineNum"><a href="#485">485</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="486" class="lineNum"><a href="#486">486</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="487" class="lineNum"><a href="#487">487</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_too_long_cid_parse() {</span></div>
-<div class="line"><span id="488" class="lineNum"><a href="#488">488</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_TOO_LONG_CID) {</span></div>
-<div class="line"><span id="489" class="lineNum"><a href="#489">489</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="490" class="lineNum"><a href="#490">490</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="491" class="lineNum"><a href="#491">491</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(_) =&gt; {</span></div>
+<div class="line"><span id="487" class="lineNum"><a href="#487">487</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_too_long_cid_parse() {</span></div>
+<div class="line"><span id="488" class="lineNum"><a href="#488">488</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_TOO_LONG_CID) {</span></div>
+<div class="line"><span id="489" class="lineNum"><a href="#489">489</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="490" class="lineNum"><a href="#490">490</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="491" class="lineNum"><a href="#491">491</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(_) =&gt; {</span></div>
 <div class="line"><span id="492" class="lineNum"><a href="#492">492</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    // As packet is too long it is unclear exactly what error will occur, just need to assert</span></div>
 <div class="line"><span id="493" class="lineNum"><a href="#493">493</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    // that the packet is successfully rejected as malformed.</span></div>
 <div class="line"><span id="494" class="lineNum"><a href="#494">494</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    assert!(true, &quot;Expected error family returned&quot;);</span></div>
@@ -519,21 +519,21 @@
 <div class="line"><span id="499" class="lineNum"><a href="#499">499</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="500" class="lineNum"><a href="#500">500</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="501" class="lineNum"><a href="#501">501</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="502" class="lineNum"><a href="#502">502</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="502" class="lineNum"><a href="#502">502</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="503" class="lineNum"><a href="#503">503</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="504" class="lineNum"><a href="#504">504</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="505" class="lineNum"><a href="#505">505</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="506" class="lineNum"><a href="#506">506</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="507" class="lineNum"><a href="#507">507</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="508" class="lineNum"><a href="#508">508</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="509" class="lineNum"><a href="#509">509</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="509" class="lineNum"><a href="#509">509</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="510" class="lineNum"><a href="#510">510</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="511" class="lineNum"><a href="#511">511</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="512" class="lineNum"><a href="#512">512</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_framing_layer_wrong_flags_parse() {</span></div>
-<div class="line"><span id="513" class="lineNum"><a href="#513">513</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_WRONG_FLAGS) {</span></div>
-<div class="line"><span id="514" class="lineNum"><a href="#514">514</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="515" class="lineNum"><a href="#515">515</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="516" class="lineNum"><a href="#516">516</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParsePduInvalidFlags(_)) =&gt; {</span></div>
+<div class="line"><span id="512" class="lineNum"><a href="#512">512</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_framing_layer_wrong_flags_parse() {</span></div>
+<div class="line"><span id="513" class="lineNum"><a href="#513">513</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_WRONG_FLAGS) {</span></div>
+<div class="line"><span id="514" class="lineNum"><a href="#514">514</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="515" class="lineNum"><a href="#515">515</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="516" class="lineNum"><a href="#516">516</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParsePduInvalidFlags(_)) =&gt; {</span></div>
 <div class="line"><span id="517" class="lineNum"><a href="#517">517</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    assert!(true, &quot;Expected error returned&quot;);</span></div>
 <div class="line"><span id="518" class="lineNum"><a href="#518">518</a></span><span class="counterUnCov"></span><span class="lineUnCov">                }</span></div>
 <div class="line"><span id="519" class="lineNum"><a href="#519">519</a></span><span class="counterUnCov"></span><span class="lineUnCov">                _ =&gt; {</span></div>
@@ -542,21 +542,21 @@
 <div class="line"><span id="522" class="lineNum"><a href="#522">522</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="523" class="lineNum"><a href="#523">523</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="524" class="lineNum"><a href="#524">524</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="525" class="lineNum"><a href="#525">525</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="525" class="lineNum"><a href="#525">525</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="526" class="lineNum"><a href="#526">526</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="527" class="lineNum"><a href="#527">527</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="528" class="lineNum"><a href="#528">528</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="529" class="lineNum"><a href="#529">529</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="530" class="lineNum"><a href="#530">530</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="531" class="lineNum"><a href="#531">531</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="532" class="lineNum"><a href="#532">532</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="532" class="lineNum"><a href="#532">532</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="533" class="lineNum"><a href="#533">533</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="534" class="lineNum"><a href="#534">534</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="535" class="lineNum"><a href="#535">535</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_framing_layer_length_too_long_parse() {</span></div>
-<div class="line"><span id="536" class="lineNum"><a href="#536">536</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_LENGTH_TOO_LONG) {</span></div>
-<div class="line"><span id="537" class="lineNum"><a href="#537">537</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="538" class="lineNum"><a href="#538">538</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="539" class="lineNum"><a href="#539">539</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) =&gt; {</span></div>
+<div class="line"><span id="535" class="lineNum"><a href="#535">535</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_framing_layer_length_too_long_parse() {</span></div>
+<div class="line"><span id="536" class="lineNum"><a href="#536">536</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_LENGTH_TOO_LONG) {</span></div>
+<div class="line"><span id="537" class="lineNum"><a href="#537">537</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="538" class="lineNum"><a href="#538">538</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="539" class="lineNum"><a href="#539">539</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) =&gt; {</span></div>
 <div class="line"><span id="540" class="lineNum"><a href="#540">540</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    assert!(true, &quot;Expected error returned&quot;);</span></div>
 <div class="line"><span id="541" class="lineNum"><a href="#541">541</a></span><span class="counterUnCov"></span><span class="lineUnCov">                }</span></div>
 <div class="line"><span id="542" class="lineNum"><a href="#542">542</a></span><span class="counterUnCov"></span><span class="lineUnCov">                _ =&gt; {</span></div>
@@ -565,21 +565,21 @@
 <div class="line"><span id="545" class="lineNum"><a href="#545">545</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="546" class="lineNum"><a href="#546">546</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="547" class="lineNum"><a href="#547">547</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="548" class="lineNum"><a href="#548">548</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="548" class="lineNum"><a href="#548">548</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="549" class="lineNum"><a href="#549">549</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="550" class="lineNum"><a href="#550">550</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="551" class="lineNum"><a href="#551">551</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="552" class="lineNum"><a href="#552">552</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="553" class="lineNum"><a href="#553">553</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="554" class="lineNum"><a href="#554">554</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="555" class="lineNum"><a href="#555">555</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="555" class="lineNum"><a href="#555">555</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="556" class="lineNum"><a href="#556">556</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="557" class="lineNum"><a href="#557">557</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="558" class="lineNum"><a href="#558">558</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_framing_layer_length_too_short_parse() {</span></div>
-<div class="line"><span id="559" class="lineNum"><a href="#559">559</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_LENGTH_TOO_SHORT) {</span></div>
-<div class="line"><span id="560" class="lineNum"><a href="#560">560</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="561" class="lineNum"><a href="#561">561</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="562" class="lineNum"><a href="#562">562</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidLength(_)) =&gt; {</span></div>
+<div class="line"><span id="558" class="lineNum"><a href="#558">558</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_framing_layer_length_too_short_parse() {</span></div>
+<div class="line"><span id="559" class="lineNum"><a href="#559">559</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_LENGTH_TOO_SHORT) {</span></div>
+<div class="line"><span id="560" class="lineNum"><a href="#560">560</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="561" class="lineNum"><a href="#561">561</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="562" class="lineNum"><a href="#562">562</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidLength(_)) =&gt; {</span></div>
 <div class="line"><span id="563" class="lineNum"><a href="#563">563</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    assert!(true, &quot;Expected error returned&quot;);</span></div>
 <div class="line"><span id="564" class="lineNum"><a href="#564">564</a></span><span class="counterUnCov"></span><span class="lineUnCov">                }</span></div>
 <div class="line"><span id="565" class="lineNum"><a href="#565">565</a></span><span class="counterUnCov"></span><span class="lineUnCov">                _ =&gt; {</span></div>
@@ -588,21 +588,21 @@
 <div class="line"><span id="568" class="lineNum"><a href="#568">568</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="569" class="lineNum"><a href="#569">569</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="570" class="lineNum"><a href="#570">570</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="571" class="lineNum"><a href="#571">571</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="571" class="lineNum"><a href="#571">571</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="572" class="lineNum"><a href="#572">572</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="573" class="lineNum"><a href="#573">573</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="574" class="lineNum"><a href="#574">574</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="575" class="lineNum"><a href="#575">575</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="576" class="lineNum"><a href="#576">576</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="577" class="lineNum"><a href="#577">577</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="578" class="lineNum"><a href="#578">578</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="578" class="lineNum"><a href="#578">578</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="579" class="lineNum"><a href="#579">579</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="580" class="lineNum"><a href="#580">580</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="581" class="lineNum"><a href="#581">581</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_framing_layer_discovery_vector() {</span></div>
-<div class="line"><span id="582" class="lineNum"><a href="#582">582</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_DISCOVERY_VECTOR) {</span></div>
-<div class="line"><span id="583" class="lineNum"><a href="#583">583</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="584" class="lineNum"><a href="#584">584</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="585" class="lineNum"><a href="#585">585</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(_) =&gt; {</span></div>
+<div class="line"><span id="581" class="lineNum"><a href="#581">581</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_framing_layer_discovery_vector() {</span></div>
+<div class="line"><span id="582" class="lineNum"><a href="#582">582</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_DISCOVERY_VECTOR) {</span></div>
+<div class="line"><span id="583" class="lineNum"><a href="#583">583</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="584" class="lineNum"><a href="#584">584</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="585" class="lineNum"><a href="#585">585</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(_) =&gt; {</span></div>
 <div class="line"><span id="586" class="lineNum"><a href="#586">586</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    // The packet will be parsed as if it was a discovery packet which means that the parsing might fail</span></div>
 <div class="line"><span id="587" class="lineNum"><a href="#587">587</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    // for a number of reasons with it being hard to assert which one ahead of time.</span></div>
 <div class="line"><span id="588" class="lineNum"><a href="#588">588</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    // Therefore just assert that the parsing fails / the packet is rejected.</span></div>
@@ -614,21 +614,21 @@
 <div class="line"><span id="594" class="lineNum"><a href="#594">594</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="595" class="lineNum"><a href="#595">595</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="596" class="lineNum"><a href="#596">596</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="597" class="lineNum"><a href="#597">597</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="597" class="lineNum"><a href="#597">597</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="598" class="lineNum"><a href="#598">598</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="599" class="lineNum"><a href="#599">599</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="600" class="lineNum"><a href="#600">600</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="601" class="lineNum"><a href="#601">601</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="602" class="lineNum"><a href="#602">602</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="603" class="lineNum"><a href="#603">603</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="604" class="lineNum"><a href="#604">604</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="604" class="lineNum"><a href="#604">604</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="605" class="lineNum"><a href="#605">605</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="606" class="lineNum"><a href="#606">606</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="607" class="lineNum"><a href="#607">607</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_framing_layer_unknown_vector() {</span></div>
-<div class="line"><span id="608" class="lineNum"><a href="#608">608</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_UNKNOWN_VECTOR) {</span></div>
-<div class="line"><span id="609" class="lineNum"><a href="#609">609</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="610" class="lineNum"><a href="#610">610</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="611" class="lineNum"><a href="#611">611</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) =&gt; {</span></div>
+<div class="line"><span id="607" class="lineNum"><a href="#607">607</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_framing_layer_unknown_vector() {</span></div>
+<div class="line"><span id="608" class="lineNum"><a href="#608">608</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_UNKNOWN_VECTOR) {</span></div>
+<div class="line"><span id="609" class="lineNum"><a href="#609">609</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="610" class="lineNum"><a href="#610">610</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="611" class="lineNum"><a href="#611">611</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) =&gt; {</span></div>
 <div class="line"><span id="612" class="lineNum"><a href="#612">612</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    assert!(true, &quot;Expected error family returned&quot;);</span></div>
 <div class="line"><span id="613" class="lineNum"><a href="#613">613</a></span><span class="counterUnCov"></span><span class="lineUnCov">                }</span></div>
 <div class="line"><span id="614" class="lineNum"><a href="#614">614</a></span><span class="counterUnCov"></span><span class="lineUnCov">                _ =&gt; {</span></div>
@@ -637,21 +637,21 @@
 <div class="line"><span id="617" class="lineNum"><a href="#617">617</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="618" class="lineNum"><a href="#618">618</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="619" class="lineNum"><a href="#619">619</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="620" class="lineNum"><a href="#620">620</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="620" class="lineNum"><a href="#620">620</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="621" class="lineNum"><a href="#621">621</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="622" class="lineNum"><a href="#622">622</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="623" class="lineNum"><a href="#623">623</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="624" class="lineNum"><a href="#624">624</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="625" class="lineNum"><a href="#625">625</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="626" class="lineNum"><a href="#626">626</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="627" class="lineNum"><a href="#627">627</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="627" class="lineNum"><a href="#627">627</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="628" class="lineNum"><a href="#628">628</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="629" class="lineNum"><a href="#629">629</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="630" class="lineNum"><a href="#630">630</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_too_high_sync_addr() {</span></div>
-<div class="line"><span id="631" class="lineNum"><a href="#631">631</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_TOO_HIGH_SYNC_ADDRESS) {</span></div>
-<div class="line"><span id="632" class="lineNum"><a href="#632">632</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="633" class="lineNum"><a href="#633">633</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="634" class="lineNum"><a href="#634">634</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidUniverse(_)) =&gt; {</span></div>
+<div class="line"><span id="630" class="lineNum"><a href="#630">630</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_too_high_sync_addr() {</span></div>
+<div class="line"><span id="631" class="lineNum"><a href="#631">631</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_TOO_HIGH_SYNC_ADDRESS) {</span></div>
+<div class="line"><span id="632" class="lineNum"><a href="#632">632</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="633" class="lineNum"><a href="#633">633</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="634" class="lineNum"><a href="#634">634</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidUniverse(_)) =&gt; {</span></div>
 <div class="line"><span id="635" class="lineNum"><a href="#635">635</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    assert!(true, &quot;Expected error family returned&quot;);</span></div>
 <div class="line"><span id="636" class="lineNum"><a href="#636">636</a></span><span class="counterUnCov"></span><span class="lineUnCov">                }</span></div>
 <div class="line"><span id="637" class="lineNum"><a href="#637">637</a></span><span class="counterUnCov"></span><span class="lineUnCov">                _ =&gt; {</span></div>
@@ -660,21 +660,21 @@
 <div class="line"><span id="640" class="lineNum"><a href="#640">640</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="641" class="lineNum"><a href="#641">641</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="642" class="lineNum"><a href="#642">642</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="643" class="lineNum"><a href="#643">643</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="643" class="lineNum"><a href="#643">643</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="644" class="lineNum"><a href="#644">644</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="645" class="lineNum"><a href="#645">645</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="646" class="lineNum"><a href="#646">646</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="647" class="lineNum"><a href="#647">647</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="648" class="lineNum"><a href="#648">648</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="649" class="lineNum"><a href="#649">649</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="650" class="lineNum"><a href="#650">650</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="650" class="lineNum"><a href="#650">650</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="651" class="lineNum"><a href="#651">651</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="652" class="lineNum"><a href="#652">652</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="653" class="lineNum"><a href="#653">653</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_too_low_sync_addr() {</span></div>
-<div class="line"><span id="654" class="lineNum"><a href="#654">654</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_TOO_LOW_SYNC_ADDRESS) {</span></div>
-<div class="line"><span id="655" class="lineNum"><a href="#655">655</a></span><span class="counterCov">1</span><span class="lineCov">        Err(e) =&gt; {</span></div>
-<div class="line"><span id="656" class="lineNum"><a href="#656">656</a></span><span class="counterCov">1</span><span class="lineCov">            match *e.kind() {</span></div>
-<div class="line"><span id="657" class="lineNum"><a href="#657">657</a></span><span class="counterCov">1</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidUniverse(_)) =&gt; {</span></div>
+<div class="line"><span id="653" class="lineNum"><a href="#653">653</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_too_low_sync_addr() {</span></div>
+<div class="line"><span id="654" class="lineNum"><a href="#654">654</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_TOO_LOW_SYNC_ADDRESS) {</span></div>
+<div class="line"><span id="655" class="lineNum"><a href="#655">655</a></span><span class="counterCov">2</span><span class="lineCov">        Err(e) =&gt; {</span></div>
+<div class="line"><span id="656" class="lineNum"><a href="#656">656</a></span><span class="counterCov">2</span><span class="lineCov">            match *e.kind() {</span></div>
+<div class="line"><span id="657" class="lineNum"><a href="#657">657</a></span><span class="counterCov">2</span><span class="lineCov">                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidUniverse(_)) =&gt; {</span></div>
 <div class="line"><span id="658" class="lineNum"><a href="#658">658</a></span><span class="counterUnCov"></span><span class="lineUnCov">                    assert!(true, &quot;Expected error family returned&quot;);</span></div>
 <div class="line"><span id="659" class="lineNum"><a href="#659">659</a></span><span class="counterUnCov"></span><span class="lineUnCov">                }</span></div>
 <div class="line"><span id="660" class="lineNum"><a href="#660">660</a></span><span class="counterUnCov"></span><span class="lineUnCov">                _ =&gt; {</span></div>
@@ -683,35 +683,35 @@
 <div class="line"><span id="663" class="lineNum"><a href="#663">663</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="664" class="lineNum"><a href="#664">664</a></span><span class="counterUnCov"></span><span class="lineUnCov">            </span></div>
 <div class="line"><span id="665" class="lineNum"><a href="#665">665</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="666" class="lineNum"><a href="#666">666</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
+<div class="line"><span id="666" class="lineNum"><a href="#666">666</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(_) =&gt; {</span></div>
 <div class="line"><span id="667" class="lineNum"><a href="#667">667</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(</span></div>
 <div class="line"><span id="668" class="lineNum"><a href="#668">668</a></span><span class="counterUnCov"></span><span class="lineUnCov">                false,</span></div>
 <div class="line"><span id="669" class="lineNum"><a href="#669">669</a></span><span class="counterUnCov"></span><span class="lineUnCov">                &quot;Malformed packet was parsed when should have been rejected&quot;</span></div>
 <div class="line"><span id="670" class="lineNum"><a href="#670">670</a></span><span class="counterUnCov"></span><span class="lineUnCov">            );</span></div>
 <div class="line"><span id="671" class="lineNum"><a href="#671">671</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
 <div class="line"><span id="672" class="lineNum"><a href="#672">672</a></span><span class="counterUnCov"></span><span class="lineUnCov">    }</span></div>
-<div class="line"><span id="673" class="lineNum"><a href="#673">673</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="673" class="lineNum"><a href="#673">673</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="674" class="lineNum"><a href="#674">674</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="675" class="lineNum"><a href="#675">675</a></span><span class="counterUnCov"></span><span class="lineUnCov"></span></div>
 <div class="line"><span id="676" class="lineNum"><a href="#676">676</a></span><span class="counterUnCov"></span><span class="lineUnCov">#[test]</span></div>
-<div class="line"><span id="677" class="lineNum"><a href="#677">677</a></span><span class="counterCov">2</span><span class="lineCov">fn test_sync_packet_arbitary_reserved() {</span></div>
-<div class="line"><span id="678" class="lineNum"><a href="#678">678</a></span><span class="counterCov">1</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_ARBITARY_RESERVED) {</span></div>
-<div class="line"><span id="679" class="lineNum"><a href="#679">679</a></span><span class="counterCov">1</span><span class="lineCov">        Err(_) =&gt; {</span></div>
+<div class="line"><span id="677" class="lineNum"><a href="#677">677</a></span><span class="counterCov">4</span><span class="lineCov">fn test_sync_packet_arbitary_reserved() {</span></div>
+<div class="line"><span id="678" class="lineNum"><a href="#678">678</a></span><span class="counterCov">2</span><span class="lineCov">    match AcnRootLayerProtocol::parse(&amp;TEST_SYNCHRONIZATION_PACKET_ARBITARY_RESERVED) {</span></div>
+<div class="line"><span id="679" class="lineNum"><a href="#679">679</a></span><span class="counterCov">2</span><span class="lineCov">        Err(_) =&gt; {</span></div>
 <div class="line"><span id="680" class="lineNum"><a href="#680">680</a></span><span class="counterNoCov">0</span><span class="lineNoCov">            assert!(false, &quot;Unexpected error returned&quot;);</span></div>
 <div class="line"><span id="681" class="lineNum"><a href="#681">681</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="682" class="lineNum"><a href="#682">682</a></span><span class="counterCov">1</span><span class="lineCov">        Ok(p) =&gt; {</span></div>
+<div class="line"><span id="682" class="lineNum"><a href="#682">682</a></span><span class="counterCov">2</span><span class="lineCov">        Ok(p) =&gt; {</span></div>
 <div class="line"><span id="683" class="lineNum"><a href="#683">683</a></span><span class="counterUnCov"></span><span class="lineUnCov">            match p.pdu.data {</span></div>
-<div class="line"><span id="684" class="lineNum"><a href="#684">684</a></span><span class="counterCov">1</span><span class="lineCov">                E131RootLayerData::SynchronizationPacket(spfl) =&gt; {</span></div>
-<div class="line"><span id="685" class="lineNum"><a href="#685">685</a></span><span class="counterCov">1</span><span class="lineCov">                    assert_eq!(spfl.sequence_number, 0x70);</span></div>
-<div class="line"><span id="686" class="lineNum"><a href="#686">686</a></span><span class="counterCov">1</span><span class="lineCov">                    assert_eq!(spfl.synchronization_address, 7962);</span></div>
+<div class="line"><span id="684" class="lineNum"><a href="#684">684</a></span><span class="counterCov">2</span><span class="lineCov">                E131RootLayerData::SynchronizationPacket(spfl) =&gt; {</span></div>
+<div class="line"><span id="685" class="lineNum"><a href="#685">685</a></span><span class="counterCov">2</span><span class="lineCov">                    assert_eq!(spfl.sequence_number, 0x70);</span></div>
+<div class="line"><span id="686" class="lineNum"><a href="#686">686</a></span><span class="counterCov">2</span><span class="lineCov">                    assert_eq!(spfl.synchronization_address, 7962);</span></div>
 <div class="line"><span id="687" class="lineNum"><a href="#687">687</a></span><span class="counterUnCov"></span><span class="lineUnCov">                }</span></div>
 <div class="line"><span id="688" class="lineNum"><a href="#688">688</a></span><span class="counterUnCov"></span><span class="lineUnCov">                _ =&gt; {</span></div>
 <div class="line"><span id="689" class="lineNum"><a href="#689">689</a></span><span class="counterNoCov">0</span><span class="lineNoCov">                    assert!(false, &quot;Packet not parsed as sync-packet as expected&quot;);</span></div>
 <div class="line"><span id="690" class="lineNum"><a href="#690">690</a></span><span class="counterUnCov"></span><span class="lineUnCov">                }</span></div>
 <div class="line"><span id="691" class="lineNum"><a href="#691">691</a></span><span class="counterUnCov"></span><span class="lineUnCov">            }</span></div>
 <div class="line"><span id="692" class="lineNum"><a href="#692">692</a></span><span class="counterUnCov"></span><span class="lineUnCov">        }</span></div>
-<div class="line"><span id="693" class="lineNum"><a href="#693">693</a></span><span class="counterCov">1</span><span class="lineCov">    }</span></div>
-<div class="line"><span id="694" class="lineNum"><a href="#694">694</a></span><span class="counterCov">2</span><span class="lineCov">}</span></div>
+<div class="line"><span id="693" class="lineNum"><a href="#693">693</a></span><span class="counterCov">2</span><span class="lineCov">    }</span></div>
+<div class="line"><span id="694" class="lineNum"><a href="#694">694</a></span><span class="counterCov">4</span><span class="lineCov">}</span></div>
 <div class="line"><span id="695" class="lineNum"><a href="#695">695</a></span><span class="counterUnCov"></span><span class="lineUnCov">}</span></div>
 </div>
 </body>
