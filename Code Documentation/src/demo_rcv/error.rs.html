@@ -20,6 +20,11 @@
 <span id="20">20</span>
 <span id="21">21</span>
 <span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">// Copyright 2020 sacn Developers</span>
 <span class="comment">//</span>
@@ -32,6 +37,11 @@
 
 <span class="doccomment">/// Use the error-chain system to allow handling IO and sACN errors chained together.</span>
 <span class="doccomment">/// error_chain! macro automatically creates the Error / ErrorKind / Result required to use the Errors/external errors below with error-chain.</span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// Sacn create errors are wrapped in Sacn(::sacn::error::errors::Error).</span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// Std io errors are wrapped in Io(::std::io::Error).</span>
+<span class="doccomment">/// </span>
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">errors</span> {
     <span class="macro">error_chain</span><span class="macro">!</span> {
         <span class="ident">foreign_links</span> {

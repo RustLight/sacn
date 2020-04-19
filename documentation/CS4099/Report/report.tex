@@ -623,11 +623,19 @@ various modules and their combination.
 User manual Instructions on installing, executing and using the
 system where appropriate.\\
 
-The core part of this project was the sACN library created. This library is packaged as a rust cargo crate and therefore can be imported using a local import as demonstrated in the 'demo\_src' and 'demo\_rcv' programs. After this project is complete the project will hopefully be uploaded to the public rust cargo repository which would allow much easier installation through the 'cargo install' command.\\
+The details of how to run the various tests, demo-programs and examples are described in the "usage.pdf" file. Installation instructions are detailed within the README file.\\
 
-Usage of the library is described in the generated rust-doc documentation. Once the project is complete this would also be bundled with the library in the public cargo repo to allow easier access however as that cannot be done until after this project is marked the documentation is included in the sacn subfolder of the doc folder. Within this folder the documentation can be opened as a web-page by opening the index.html file. This documentation contains details of the functionality of public and private functions as-well as the possible returned errors, examples of the code in usage and also includes the 'demo\_src' and 'demo\_rcv' crates.\\
+The core part of this project was the sACN library created. This library is packaged as a rust cargo crate and therefore can be imported using a local import as demonstrated in the 'demo\_src' and 'demo\_rcv' programs. After this project is complete the project will hopefully be uploaded to the public rust cargo repository which would allow much easier installation through the cargo tool-chain and fetch mechanism.\\
 
-The details of how to use the program are described in the usage.pdf file.
+Usage of the library is described in the generated rust-doc documentation. Once the project is complete this would also be bundled with the library in the public cargo repo to allow easier access however as that cannot be done until after this project is marked the documentation is included in the sacn subfolder of the Code Documentation folder. Within this folder the documentation can be opened as a web-page by opening the index.html file. This documentation contains details of the functionality of public and private functions as-well as the possible returned errors, examples of the code in usage and also includes the 'demo\_src' and 'demo\_rcv' crates. As this documentation includes private code it the web-pages are bigger than they would normally be but it was decided that for the purposes of submission the full documentation was more suitable. In actual usage an external user of the library would normally just compile the documentation using the same command (as detailed within usage.pdf) but without the "--document-private-items" argument so that only the public documentation is generated. The private documentation is then for those who are developing the library itself.\\
+
+To check that the documentation contains the right information it was compared to the documentation for another sACN library \cite{C_IMPL} and this is summarised in the table in figure \ref{DOC_COMPARISON}.
+
+\begin{figure}[H]
+	\label{DOC_COMPARISON}
+	\includegraphics[width=\textwidth]{documentation-comparison-table}
+	\caption{A table showing a comparison between the documentation of another sACN library \cite{C_IMPL} and this project, green indicates that the area is covered}
+\end{figure}
 
 \section{Other Appendices}
 Other
@@ -655,16 +663,14 @@ documentation and detailed UML diagrams
 	https://www.element14.com/community/groups/open-source-hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-protocol-detail-for-lighting-applications (17/09/2019)
 	\bibitem{C_IMPL}
 	https://github.com/hhromic/libe131 (17/09/2019)
+	\bibitem{C++_IMPL}
+	https://github.com/hhromic/libe131
 	\bibitem{RUST_LANG}
 	https://www.rust-lang.org/ (17/09/2019)
 	\bibitem{ARTNET}
 	http://artisticlicence.com/WebSiteMaster/User\%20Guides/art-net.pdf (17/09/2019)
 	\bibitem{ORIGINAL_IMPL_RUST_DOC}
-	https://docs.rs/sacn/0.4.4/sacn/index.html
-	(26/01/2020)
-	\bibitem{C++_IMPL}
-	https://github.com/hhromic/libe131
-	(26/01/2020)
+	https://docs.rs/sacn/0.4.4/sacn/index.html (26/01/2020)
 	\bibitem{ANSI_E1.31_2009}
 	https://tsp.esta.org/tsp/documents/docs/E1-31\_2009.pdf
 	(26/01/2020)

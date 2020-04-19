@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.3.5)  17 APR 2020 18:30
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.3.5)  19 APR 2020 02:41
 entering extended mode
 **./report.tex
 (report.tex
@@ -741,82 +741,93 @@ Underfull \hbox (badness 10000) in paragraph at lines 628--629
  []
 
 
-Underfull \hbox (badness 1406) in paragraph at lines 652--654
+Underfull \hbox (badness 10000) in paragraph at lines 630--631
+
+ []
+
+<documentation-comparison-table.png, id=268, 1082.54437pt x 512.66531pt>
+File: documentation-comparison-table.png Graphic file (type png)
+<use documentation-comparison-table.png>
+Package pdftex.def Info: documentation-comparison-table.png  used on input line
+ 636.
+(pdftex.def)             Requested size: 360.0pt x 170.48645pt.
+[61]
+Underfull \hbox (badness 1406) in paragraph at lines 660--662
 []\OT1/cmr/m/n/10.95 ANSI E1.11 - 2008 (R2018) En-ter-tain-ment Tech-nol-ogy - 
 USITT
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 655--656
+Underfull \hbox (badness 10000) in paragraph at lines 663--664
 []\OT1/cmr/m/n/10.95 https://www.element14.com/community/groups/open-source-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 655--656
+Underfull \hbox (badness 10000) in paragraph at lines 663--664
 \OT1/cmr/m/n/10.95 hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-
  []
 
-[61]
-Underfull \hbox (badness 10000) in paragraph at lines 661--662
+[62 <./documentation-comparison-table.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 671--672
 []\OT1/cmr/m/n/10.95 http://artisticlicence.com/WebSiteMaster/User%20Guides/art
 -net.pdf
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 669--671
+Underfull \hbox (badness 10000) in paragraph at lines 675--677
 []\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31[]2009.pdf
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 672--674
+Underfull \hbox (badness 10000) in paragraph at lines 678--680
 []\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31-2016.pdf
  []
 
 
-Overfull \hbox (144.9842pt too wide) in paragraph at lines 675--676
+Overfull \hbox (144.9842pt too wide) in paragraph at lines 681--682
 []\OT1/cmr/m/n/10.95 http://www.rdmprotocol.org/files/What[]Comes[]After[]Strea
 ming[]DMX[]over[]ACN[]%20%284%29.pdf
  []
 
 
-Overfull \hbox (66.0468pt too wide) in paragraph at lines 685--686
+Overfull \hbox (66.0468pt too wide) in paragraph at lines 691--692
 []\OT1/cmr/m/n/10.95 https://benchmarksgame-team.pages.debian.net/benchmarksgam
 e/fastest/rust.html
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 687--688
+Underfull \hbox (badness 10000) in paragraph at lines 693--694
 []\OT1/cmr/m/n/10.95 https://www.techrepublic.com/article/rust-programming-lang
 uage-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 689--690
+Underfull \hbox (badness 10000) in paragraph at lines 695--696
 []\OT1/cmr/m/n/10.95 https://www.tutorialspoint.com/sdlc/sdlc[]waterfall[]model
 .htm
  []
 
-[62]
-Underfull \hbox (badness 10000) in paragraph at lines 711--712
+[63]
+Underfull \hbox (badness 10000) in paragraph at lines 717--718
 []\OT1/cmr/m/n/10.95 https://www.dcs.bbk.ac.uk/ ptw/teaching/IWT/transport-
  []
 
 
-Overfull \hbox (42.60158pt too wide) in paragraph at lines 729--730
+Overfull \hbox (42.60158pt too wide) in paragraph at lines 735--736
 []\OT1/cmr/m/n/10.95 https://www.wireshark.org/docs/wsug[]html[]chunked/ChIOExp
 ortSection.html
  []
 
-[63] (report.aux)
+[64] (report.aux)
 
 LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 3000 strings out of 492484
- 43342 string characters out of 3122055
- 106170 words of memory out of 3000000
- 7288 multiletter control sequences out of 15000+200000
+ 3008 strings out of 492484
+ 43615 string characters out of 3122055
+ 106180 words of memory out of 3000000
+ 7296 multiletter control sequences out of 15000+200000
  10853 words of font info for 40 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
  55i,5n,32p,3145b,226s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -829,9 +840,9 @@ rograms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/paul/App
 Data/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Us
 ers/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/
 msbm10.pfb>
-Output written on report.pdf (64 pages, 2934175 bytes).
+Output written on report.pdf (65 pages, 3139940 bytes).
 PDF statistics:
- 302 PDF objects out of 1000 (max. 8388607)
+ 307 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 176 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 181 words of extra memory for PDF output out of 10000 (max. 10000000)
 
