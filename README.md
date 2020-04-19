@@ -24,3 +24,6 @@ If the documentation cannot be generated then it is also included as a webpage w
 The requirements should automatically be handled by cargo once the library is imported. This library was developed on rustc 1.41.1 (f3e1a954d 2020-02-24) and does not guarantee support for earlier versions.
 
 Note that previous rust version will not work, errors talking about 'rust dbghelp.rs:110' are due to using an old version of rust, see https://github.com/rust-lang/backtrace-rs/issues/276 .
+
+**RUNNING DEMOS**
+A demo sender and receiver are included which demonstrate usage of the code and are used for many of the integration/interoperability tests. These programs can be run from within the sACN library folder. Details of how to run these programs are included in the usage.pdf document.
