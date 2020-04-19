@@ -47,6 +47,7 @@ use ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE,
 use TEST_NETWORK_INTERFACE_IPV6;
 
 #[test]
+#[ignore]
 fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -96,6 +97,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
 }
 
 #[test]
+#[ignore]
 fn test_send_recv_single_universe_alternative_startcode_multicast_ipv6(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -145,6 +147,7 @@ fn test_send_recv_single_universe_alternative_startcode_multicast_ipv6(){
 }
 
 #[test]
+#[ignore]
 fn test_across_alternative_startcode_universe_multicast_ipv6(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -202,6 +205,7 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
 }
 
 #[test]
+#[ignore]
 /// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
@@ -260,6 +264,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
 }
 
 #[test]
+#[ignore]
 fn test_send_recv_single_universe_multicast_ipv6(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -309,6 +314,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
 }
 
 #[test]
+#[ignore]
 /// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 fn test_send_recv_across_universe_multicast_ipv6(){
@@ -367,6 +373,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
 }
 
 #[test]
+#[ignore]
 fn test_send_across_universe_multiple_receivers_sync_multicast_ipv6(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -456,6 +463,7 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv6(){
 }
 
 #[test]
+#[ignore]
 fn test_three_senders_three_recv_multicast_ipv6(){
     const SND_THREADS: usize = 3;
     const RCV_THREADS: usize = 3;
@@ -568,6 +576,7 @@ fn test_three_senders_three_recv_multicast_ipv6(){
 }
 
 #[test]
+#[ignore]
 fn test_universe_discovery_one_universe_one_source_ipv6(){
     const SND_THREADS: usize = 1;
     const BASE_UNIVERSE: u16 = 2;
@@ -648,6 +657,7 @@ fn test_universe_discovery_one_universe_one_source_ipv6(){
 }
 
 #[test]
+#[ignore]
 fn test_universe_discovery_multiple_universe_one_source_ipv6(){
     const SND_THREADS: usize = 1;
     const BASE_UNIVERSE: u16 = 2;
@@ -729,6 +739,7 @@ fn test_universe_discovery_multiple_universe_one_source_ipv6(){
 }
 
 #[test]
+#[ignore]
 fn test_universe_discovery_multiple_pages_one_source_ipv6(){
     const SND_THREADS: usize = 1;
     const BASE_UNIVERSE: u16 = 2;
@@ -814,6 +825,7 @@ fn test_universe_discovery_multiple_pages_one_source_ipv6(){
 }
 
 #[test]
+#[ignore]
 fn test_send_recv_two_universe_multicast_ipv6(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -866,6 +878,7 @@ fn test_send_recv_two_universe_multicast_ipv6(){
 }
 
 #[test]
+#[ignore]
 fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv6(){
     let universe = 1;
 
@@ -925,6 +938,7 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv6(){
 /// This is exactly the same as the IPv4 variant test of the same name but done over IPv6 to show equivalence.
 /// 
 #[test]
+#[ignore]
 fn test_ansi_e131_appendix_b_runthrough_ipv6() {
     // The number of set of (data packets + sync packet) to send.
     const SYNC_PACKET_COUNT: usize = 5;
@@ -1050,6 +1064,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
 /// This is exactly the same as the IPv4 variant test of the same name but done over IPv6 to show equivalence.
 /// 
 #[test]
+#[ignore]
 fn test_discover_recv_sync_runthrough_ipv6() {
     // The number of set of (data packets + sync packet) to send.
     const SYNC_PACKET_COUNT: usize = 250;
@@ -1181,6 +1196,7 @@ fn test_discover_recv_sync_runthrough_ipv6() {
 /// that all packets received are identical regardless of IP version used as per ANSI E1.31-2018 Section 9.1
 /// 
 #[test]
+#[ignore]
 fn test_ip_equivalence() {
     /* Packet parameters, not directly the focus of the test */
     const CID: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -1321,6 +1337,7 @@ use ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE, TEST_DATA_MULTIPLE_UNIVERSE};
 use TEST_NETWORK_INTERFACE_IPV6;
 
 #[test]
+#[ignore]
 fn test_send_recv_single_universe_unicast_ipv6(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
@@ -1369,6 +1386,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
 }
 
 #[test]
+#[ignore]
 /// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 fn test_send_recv_across_universe_unicast_ipv6(){

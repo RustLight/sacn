@@ -1,4 +1,3 @@
-// #![warn(missing_docs)]
 #![recursion_limit="1024"] // Recursion limit for error-chain.
 
 // Copyright 2020 sacn Developers
@@ -17,13 +16,20 @@
 //! As this program is used for testing the library and isn't part of the actual library it doesn't follow the same standards of error handling and as not user
 //! facing it was more helpful to have errors flagged up immediately and explicitly at the source to help development rather than trying to handle the errors.
 //! 
-//! Usage instructions are described below.
+//! Usage instructions are described by either running the receiver and using the help command or by the get_usage_str function
+//! below.
+//! 
+//! The ACTION_... constants describe the various user input strings possible once the program has started, with more details described in get_usage_str within
+//! the code. The details aren't repeated outside of that to minimise the amount of references that have to be kept upto date and which could diverge over time.
+//! 
+//! Note the lack of top level constant strings used in the place of output format strings is due to a limitation in rust where the format string cannot be a 
+//! const.
 //! 
 
 #[macro_use]
 extern crate error_chain;
 
-/// Import the error-chain handling into the module.
+/// The demo itself utilises a small error-chain which wraps the errors from the sACN crate and a few standard crates.
 pub mod error;
 use error::errors::*;
 
@@ -46,26 +52,55 @@ const TERMINATE_START_CODE: u8 = 0;
 /// Default value is approximately 30 updates per second choosen fairly arbitarily to be less than the DMX refresh rate (44 fps).
 const SHAPE_DATA_SEND_PERIOD: Duration = Duration::from_millis(33);
 
-/// The string given by the user to perform each of the various options as described in get_usage_str below.
+/// User string for the preview command to set if preview data should be received.
 const ACTION_PREVIEW_OPTION:        &str = "p";
+
+/// User string for the data command to send a packet of data.
 const ACTION_DATA_OPTION:           &str = "d";
+
+/// User string for the full data command to send a full universe of data.
 const ACTION_FULL_DATA_OPTION:      &str = "f";
+
+/// User string for the unicast data command to send a packet of data using unicast.
 const ACTION_UNICAST_OPTION:        &str = "u"; 
+
+/// User string for the register command to register a universe for sending.
 const ACTION_REGISTER_OPTION:       &str = "r"; 
+
+/// User string for the terminate/quit command to terminate sending on a universe or terminate the sender entirely.
 const ACTION_TERMINATE_OPTION:      &str = "q";
+
+/// User string for the sleep command to make the sender wait for a certain period of time.
 const ACTION_SLEEP_OPTION:          &str = "w"; 
+
+/// User string for the sync command to send a synchronisation packet.
 const ACTION_SYNC_OPTION:           &str = "s";
+
+/// User string for the unicast syncronisation command to send a synchronisation packet over unicast.
 const ACTION_UNICAST_SYNC_OPTION:   &str = "us"; 
+
+/// User string for the send data over time command which sends data to a specific universe that varies over time.
 const ACTION_DATA_OVER_TIME_OPTION: &str = "x";
+
+/// User string for the test preset command which runs on of the interoperability test presets.
 const ACTION_TEST_PRESENT_OPTION:   &str = "t";
+
+/// User string to indicate that the input line should be ignored. This is mainly used for comments within the automated test input files.
 const ACTION_IGNORE:                &str = "#";
+
+/// User string for the all data option which sends an entire universe of data to a given address with all values set to the given value.
 const ACTION_ALL_DATA_OPTION:       &str = "a";
 
 /// The test preset numbers which correspond to the various preset tests described in the sender-interoperability testing document.
+/// The test number for the two universes sender interoperability test (3).
 const TEST_PRESET_TWO_UNIVERSE:         usize = 3;
+/// The test number for the two universes unicast sender interoperability test (4).
 const TEST_PRESET_TWO_UNIVERSE_UNICAST: usize = 4;
+/// The test number for the moving channels sender interoperability test (7).
 const TEST_PRESET_MOVING_CHANNELS:      usize = 7;
+/// The test number for the preset rapid changes sender interoperability test (8).
 const TEST_PRESET_RAPID_CHANGES:        usize = 8;
+/// The test number for the high data rate sender interoperability test (9).
 const TEST_PRESET_HIGH_DATA_RATE:       usize = 9;
 
 /// Test preset number for acceptance test 100. 
@@ -99,7 +134,7 @@ const TEST_PRESET_RAPID_CHANGE_PERIOD: usize = 10;
 const TEST_PRESET_HIGH_DATA_RATE_VARIATION_RANGE: f64 = 10.0;
 
 /// The 2 universes used for the acceptance test.
-/// UNI_1 contains the backlight fixtures and UNI_2 the frontlight fixtures.
+/// ACCEPT_TEST_UNI_1 contains the backlight fixtures and ACCEPT_TEST_UNI_2 the frontlight fixtures.
 const ACCEPT_TEST_UNI_1: u16 = 1;
 const ACCEPT_TEST_UNI_2: u16 = 2;
 
@@ -190,6 +225,10 @@ fn get_usage_str() -> String{
     ACTION_ALL_DATA_OPTION, ACTION_TEST_PRESENT_OPTION, ACTION_IGNORE)
 }
 
+/// Entry point to the demo source. Details of usage can be found in the get_usage_str function or by running the program and typing "h" or "help".
+/// 
+/// # Arguments:
+/// Usage ./main <interface_ip> <source_name>
 fn main(){
     let cmd_args: Vec<String> = env::args().collect();
 
@@ -221,10 +260,27 @@ fn main(){
     } 
 }
 
+/// Displays the usage/help string to stdout.
+/// 
 fn display_help(){
     println!("{}", get_usage_str());
 }
 
+/// Handles the user command to send a full universe of data which starts with the data given and then is padded with 0's upto the full length.
+/// 
+/// # Arguments
+/// src: A mutable reference to the SacnSource to use to send the data with.
+/// 
+/// split_input: The parts of the user command which have been split up by white space.
+/// 
+/// split_input[1] is expected to be the universe.
+/// 
+/// split_input[2] is expected to be the syncronisation universe.
+/// 
+/// split_input[3] is expected to be the priority.
+/// 
+/// split_input[4] is expected to be the start of the data to send.
+/// 
 fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 4 {
         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
@@ -251,6 +307,17 @@ fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Resu
     Ok(true)
 }
 
+/// Handles the user command to send a full universe of data with all the payload being the same value (with a zero startcode).
+/// 
+/// # Arguments
+/// src: A mutable reference to the SacnSource to use for sending data.
+/// 
+/// split_input: The input from the user as part of the command split by white space.
+/// 
+/// split_input[1] is expected to be the universe.
+/// 
+/// split_input[2] is expected to be the value to set all the payload values to.
+/// 
 fn handle_all_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 3 {
         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
@@ -269,6 +336,21 @@ fn handle_all_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Resul
     Ok(true)
 }
 
+/// Sends data from the given SacnSource to the multicast address for the given data universe.
+///
+/// # Arguments
+/// src: A mutable reference to the SacnSource to use as the sender to send the unicast data from.
+/// 
+/// split_input: The input from the user as part of the command split by white space.
+/// 
+/// split_input[1] is expected to be the universe to send the data to.
+/// 
+/// split_input[2] is expected to be the synchronisation address to use for the data, 0 means none.
+/// 
+/// split_input[3] is expected to be the priority to send the data with.
+/// 
+/// The rest of the input is expected to be the data to send.
+/// 
 fn handle_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     let universe: u16 = split_input[1].parse().unwrap();
 
@@ -295,6 +377,24 @@ fn handle_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bo
     Ok(true)
 }
 
+/// Sends data from the given SacnSource to the receiver at the given destination using unicast 
+/// (or broadcast if a broadcast IP is provided).
+///
+/// # Arguments
+/// src: A mutable reference to the SacnSource to use as the sender to send the unicast data from.
+/// 
+/// split_input: The input from the user as part of the command split by white space.
+/// 
+/// split_input[1] is expected to be the universe to send the data to.
+/// 
+/// split_input[2] is expected to be the synchronisation address to use for the data, 0 means none.
+/// 
+/// split_input[3] is expected to be the priority to send the data with.
+/// 
+/// split_input[4] is expected to be the ip to send the data to.
+/// 
+/// The rest of the input is expected to be the data to send.
+/// 
 fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     let universe: u16 = split_input[1].parse().unwrap();
 
@@ -323,6 +423,20 @@ fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result
     Ok(true)
 }
 
+/// Handles the user command to send data over time. This sends arbitary data that changes over time. 
+/// The specific data isn't important as this is more to show the receiver and sender are connected properly.
+/// 
+/// # Arguments
+/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// 
+/// split_input: The input from the user as part of the command split by white space.
+/// 
+/// split_input[1] is expected to be the universe to send the data to.
+/// 
+/// split_input[2] is expected to be the time to keep sending data for in milliseconds.
+/// 
+/// split_input[3] is expected to be the priority to send the data with.
+/// 
 fn handle_data_over_time_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 4 {
         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
@@ -351,6 +465,20 @@ fn handle_data_over_time_option(src: &mut SacnSource, split_input: Vec<&str>) ->
     Ok(true)
 }
 
+/// Handles the user command to run one of the test presets. These test presets are used as part of the interoperability testing as described in the
+/// Interoperability Testing document.
+/// 
+/// # Arguments
+/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// 
+/// split_input: The input from the user as part of the command split by white space.
+/// 
+/// split_input[1] is expected to be the preset to run.
+/// 
+/// split_input[2] is expected to be the universe to use.
+/// 
+/// More input is dependent on the test preset being run as described in the usage / get_usage_str().
+/// 
 fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 3 {
         bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for test preset option ( < 3 )"));
@@ -399,8 +527,22 @@ fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Re
     Ok(true)
 }
 
-/// Runs a test where the 2 given universes are constantly sent data packets with the given values.
-/// Takes a dst_ip argument which can be None to use multicast or Some(addr) to use unicast.
+/// Constantly sends data packets to 2 universes with the given values. Used as part of the interoperability testing as described in the
+/// the Interoperability Testing document.
+/// 
+/// # Arguments:
+/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// 
+/// uni_1: The first universe to send data on.
+/// 
+/// uni_2: The second universe to send data on.
+/// 
+/// uni1_val: The value to send on the first universe.
+/// 
+/// uni2_val: The value to send on the second universe.
+/// 
+/// dst_ip: None to use multicast or Some(addr) to use unicast to a specific address.
+/// 
 fn run_test_2_universes_distinct_values(src: &mut SacnSource, uni_1: u16, uni_2: u16, uni1_val: u8, uni2_val: u8, dst_ip: Option<SocketAddr>) -> Result<()> {
     let start_time = Instant::now();
 
@@ -419,6 +561,13 @@ fn run_test_2_universes_distinct_values(src: &mut SacnSource, uni_1: u16, uni_2:
     Ok(())
 }
 
+/// Runs the moving channel test preset as part of the interoperability testing. As described in more detail within the Interoperability Testing document.
+/// 
+/// # Arguments:
+/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// 
+/// universe: The universe to send data on in the test.
+/// 
 fn run_test_moving_channel_preset(src: &mut SacnSource, universe: u16) -> Result<()> {
     let start_time = Instant::now();
 
@@ -441,6 +590,13 @@ fn run_test_moving_channel_preset(src: &mut SacnSource, universe: u16) -> Result
     Ok(())
 }
 
+/// Runs the rapid changes test preset as part of the interoperability testing. As described in more detail within the Interoperability Testing document.
+/// 
+/// # Arguments:
+/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// 
+/// universe: The universe to send data on in the test.
+/// 
 fn run_test_rapid_changes_preset(src: &mut SacnSource, universe: u16) -> Result<()> {
     let start_time = Instant::now();
 
@@ -465,6 +621,15 @@ fn run_test_rapid_changes_preset(src: &mut SacnSource, universe: u16) -> Result<
     Ok(())
 }
 
+/// Runs the high data rate interoperability test preset. As described in more detail within the Interoperability Testing document.
+/// 
+/// # Arguments:
+/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// 
+/// start_universe: The universe to use as the first universe in the test.
+/// 
+/// universe_count: The number of universes starting at the start_universe (inclusive) to send data on.
+/// 
 fn run_test_high_data_rate(src: &mut SacnSource, start_universe: u16, universe_count: u16) -> Result<()> {
     let start_time = Instant::now();
 
@@ -502,6 +667,9 @@ fn run_test_high_data_rate(src: &mut SacnSource, start_universe: u16, universe_c
 /// Step 3, Blue
 /// Step 4, All off
 /// 
+/// # Arguments
+/// src: A mutable reference to the SacnSource to use as the sender in the acceptance test.
+/// 
 fn run_acceptance_test_demo(src: &mut SacnSource) -> Result<()> {
     // The number of steps and the length (in packets) of each step.
     const STEP_COUNT: usize = 4;
@@ -538,7 +706,12 @@ fn run_acceptance_test_demo(src: &mut SacnSource) -> Result<()> {
     Ok(())
 }
 
+/// Acceptance Test.
 /// Step 1, Backlight + Front On at full.
+/// 
+/// # Arguments
+/// buf: The buffer to put the payload data into.
+/// 
 fn gen_acceptance_test_step_1(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
     // Backlights.
     gen_acceptance_test_step_1_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_1 .. ACCEPT_TEST_BACKLIGHT_ADDR_1 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
@@ -556,6 +729,8 @@ fn gen_acceptance_test_step_1(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
     gen_acceptance_test_step_1_frontlight_state(&mut buf[ACCEPT_TEST_FRONTLIGHT_ADDR_3 .. ACCEPT_TEST_FRONTLIGHT_ADDR_3 + ACCEPT_TEST_FRONTLIGHT_CH_COUNT]);
 }
 
+/// Acceptance Test.
+/// 
 /// The backlights use 16 dmx channels each. The usage of each channel is as described by the DMX chart found at the manufacture website:
 /// https://www.robe.cz/ledbeam-150/download/#dmx-charts (12/04/2020).
 /// The backlights are in 16 channel mode (mode 2).
@@ -579,6 +754,9 @@ fn gen_acceptance_test_step_1(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
 /// 
 /// This is why this demo is locked to this specific lighting fixture and mode. There is no standard to these channel orderings and so any different
 /// fixture or mode wouldn't behave as expected.
+/// 
+/// # Arguments
+/// buf: The buffer to put the payload data into.
 /// 
 fn gen_acceptance_test_step_1_backlight_state(buf: &mut [u8]) {
     // Position the fixtures pointing at the stage.
@@ -608,13 +786,23 @@ fn gen_acceptance_test_step_1_backlight_state(buf: &mut [u8]) {
     buf[15] = 255; // The brightness is set to 255 to indicate it should be at full.
 }
 
+/// Acceptance Test.
 /// The front-lights only use a single channel which is brightness.
-///  For step 1 this is set to full (255).
+/// For step 1 this is set to full (255).
+/// 
+/// # Arguments
+/// buf: The buffer to put the payload data into.
+/// 
 fn gen_acceptance_test_step_1_frontlight_state(buf: &mut [u8]) {
     buf[0] = 255;
 }
 
+/// Acceptance Test.
 /// Step 2, Red
+/// 
+/// # Arguments
+/// buf: The buffer to put the payload data into.
+/// 
 fn gen_acceptance_test_step_2(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
     // Many of the channels will stay the same, therefore can just layer the changes on top.
     // This is refered to as 'tracking' within the lighting industry and internally is key to how modern lighting control systems deal with having so
@@ -634,15 +822,25 @@ fn gen_acceptance_test_step_2(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
     // Note that because the front light is not changing in this step it doesn't have to be modified.
 }
 
+/// Acceptance Test.
 /// Apply the changes to the backlight fixtures for step 2 (set to red). Note that only the color changes so only colour channels are affected.
 /// This relies on the buffer containing the values from step 1 already.
+/// 
+/// # Arguments
+/// buf: The buffer to put the payload data into.
+/// 
 fn gen_acceptance_test_step_2_backlight_state(buf: &mut [u8]) {
     // Set the fixture to red.
     buf[7] = 255;  // Red at full.
     buf[10] = 0;   // White at 0.
 }
 
+/// Acceptance Test.
 /// Step 3, Blue
+/// 
+/// # Arguments
+/// buf: The buffer to put the payload data into.
+/// 
 fn gen_acceptance_test_step_3(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
     gen_acceptance_test_step_2(buf);
 
@@ -657,15 +855,25 @@ fn gen_acceptance_test_step_3(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
     gen_acceptance_test_step_3_backlight_state(&mut buf[ACCEPT_TEST_BACKLIGHT_ADDR_8 .. ACCEPT_TEST_BACKLIGHT_ADDR_8 + ACCEPT_TEST_BACKLIGHT_CH_COUNT]);
 }
 
+/// Acceptance Test.
 /// Apply the changes to the backlight fixtures for step 3 (set to blue). Note that only the color changes so only colour channels are affected.
 /// This relies on the buffer containing the values from step 2 already.
+/// 
+/// # Arguments
+/// buf: The buffer to put the payload data into.
+/// 
 fn gen_acceptance_test_step_3_backlight_state(buf: &mut [u8]) {
     // Set the fixture to blue.
     buf[7] = 0;     // Red at 0.
     buf[9] = 255;   // Blue at full.
 }
 
-/// Step 4, All Off
+/// Acceptance test.
+/// Step 4, All Off.
+/// 
+/// # Arguments
+/// buf: The buffer to put the payload data into.
+/// 
 fn gen_acceptance_test_step_4(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
     gen_acceptance_test_step_3(buf);
 
@@ -687,21 +895,37 @@ fn gen_acceptance_test_step_4(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
     gen_acceptance_test_step_4_frontlight_state(&mut buf[ACCEPT_TEST_FRONTLIGHT_ADDR_3 .. ACCEPT_TEST_FRONTLIGHT_ADDR_3 + ACCEPT_TEST_FRONTLIGHT_CH_COUNT]);
 }
 
+/// Acceptance Test.
 /// Apply the changes to the backlight fixtures for step 4 (turn off). Note that only the brightness changes so only the brightness channel is changed.
 /// This relies on the buffer containing the values from step 3 already.
+/// 
+/// # Arguments
+/// buf: The buffer to put the payload data into.
+/// 
 fn gen_acceptance_test_step_4_backlight_state(buf: &mut [u8]) {
     // Set the fixture brightness to 0.
     buf[15] = 0;
 }
 
+/// Acceptance Test.
 /// Apply the changes to the frontlight fixtures for step 4 (turn off). Note that only the brightness changes so only the brightness channel is changed.
 /// This relies on the buffer containing the values from step 3 already.
+/// 
+/// # Arguments
+/// buf: The buffer to put the payload data into.
+/// 
 fn gen_acceptance_test_step_4_frontlight_state(buf: &mut [u8]) {
     // Set the fixture brightness to 0.
     buf[0] = 0;
 }
 
+/// Handles input from the user.
+/// 
 /// Returns Ok(true) to continue or Ok(false) if no more input.
+/// 
+/// # Arguments
+/// src: A mutable reference to the SacnSource to perform the user instructions on.
+/// 
 fn handle_input(src: &mut SacnSource) -> Result <bool>{
     let mut input = String::new();
     

@@ -1,0 +1,28 @@
+# Register on 4 different universes and then sent data, the packets to universe 1 and 2 are unsyncronised and then universe 3 and 4 are synced.
+r 101
+r 102
+# Data packets to universe 1 and 2.
+d 101 101 100 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65
+d 102 101 100 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85
+w 10
+# Send sync packet to universe 101 to trigger the data packet sent to universe 101 and 102 (after a small wait). This is repeated multiple times because receiver 3 must
+# join and listen to syncronisation address 101 when it receives the data packets above with 101 as the syncronisation address. This means it is liable to miss the first
+# few sync packets so this is repeated to ensure it is received.
+s 101
+w 10
+s 101
+w 10
+s 101
+w 10
+s 101
+w 10
+s 101
+w 10
+s 101
+w 10
+s 101
+w 10
+s 101
+w 10
+# Wait to allow universe discovery packet to be sent.
+w 25000

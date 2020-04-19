@@ -14,18 +14,6 @@
 // of each public item without relying on referring to private items.
 //
 
-
-// TODO
-// The internal corruption error handling?
-// Keep pulling documentation up
-// Spell check for 'receiver' and 'synchronisation'
-// Generate documentation, check links
-// Fix SSH tests
-// Conduct compliance tests
-// Generate wireshark packets to use for inspection
-// Do wireshark inspection / test
-// Pack code.
-
 use error::errors::{*};
 use packet::*;
 
@@ -58,7 +46,7 @@ const DEFAULT_POLL_PERIOD: Duration = Duration::from_secs(1);
 
 /// A DMX over sACN sender.
 ///
-/// SacnSourceInternal is used for sending sACN packets over ethernet.
+/// SacnSource is used for sending sACN packets over an IP network.
 ///
 /// # Examples
 ///
@@ -198,7 +186,13 @@ impl SacnSource {
     /// 
     /// UnsupportedIpVersion: Returned if the SocketAddr is not IPv4 or IPv6.
     /// 
+    /// MalformedSourceName: Returned if the given source name is longer than the maximum allowed size of E131_SOURCE_NAME_FIELD_LENGTH.
+    /// 
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
+        if name.len() > E131_SOURCE_NAME_FIELD_LENGTH {
+            bail!(ErrorKind::MalformedSourceName("Source name provided is longer than maximum allowed".to_string()));
+        }
+
         let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
 
         let internal_src = Arc::new(Mutex::new(SacnSourceInternal::with_cid_ip(name, cid, ip)?));
@@ -401,9 +395,10 @@ impl SacnSource {
     /// SourceCorrupt: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
     /// a panic while accessing causing the source to be left in a potentially inconsistent state. 
     /// 
+    /// MalformedSourceName: Returned to indicate that the given source name is longer than the maximum allowed as per E131_SOURCE_NAME_FIELD_LENGTH.
+    /// 
     pub fn set_name(&mut self, name: &str) -> Result<()> {
-        unlock_internal_mut(&mut self.internal)?.set_name(name);
-        Ok(())
+        unlock_internal_mut(&mut self.internal)?.set_name(name)
     }
 
     /// Returns true if SacnSourceInternal is in preview mode, false if not.
@@ -464,6 +459,18 @@ impl SacnSource {
         unlock_internal_mut(&mut self.internal)?.set_multicast_ttl(multicast_ttl)
     }
 
+    /// Returns the current Time To Live for unicast packets send by this source.
+    /// 
+    /// # Errors
+    /// Io: Returned if the TTL cannot be retrieved from the underlying socket.
+    /// 
+    /// SourceCorrupt: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
+    /// a panic while accessing causing the source to be left in a potentially inconsistent state. 
+    /// 
+    pub fn ttl(&self) -> Result<u32> {
+        unlock_internal(&self.internal)?.ttl()
+    }
+
     /// Sets the Time To Live for packets sent by this source.
     /// 
     /// # Arguments
@@ -502,6 +509,16 @@ impl SacnSource {
     /// 
     pub fn multicast_loop(&self) -> Result<bool> {
         unlock_internal(&self.internal)?.multicast_loop()
+    }
+
+    /// Returns the universes currently registered on this source.
+    /// 
+    /// # Errors
+    /// SourceCorrupt: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
+    /// a panic while accessing causing the source to be left in a potentially inconsistent state. 
+    /// 
+    pub fn universes(&self) -> Result<Vec<u16>> {
+        Ok(unlock_internal(&self.internal)?.universes())
     }
 }
 
@@ -646,18 +663,13 @@ impl SacnSourceInternal {
     fn deregister_universe(&mut self, universe: u16) -> Result<()> {
         is_universe_in_range(universe)?;
 
-        if self.universes.len() == 0 {
-            self.universes.push(universe);
-            Ok(())
-        } else {
-            match self.universes.binary_search(&universe) {
-                Err(_i) => { // Value not found
-                    bail!(ErrorKind::UniverseNotFound("Attempted to de-register a universe that was never registered".to_string()))
-                }
-                Ok(i) => { // Value found, i is index.
-                    self.universes.remove(i);
-                    Ok(())
-                }
+        match self.universes.binary_search(&universe) {
+            Err(_i) => { // Value not found
+                bail!(ErrorKind::UniverseNotFound("Attempted to de-register a universe that was never registered".to_string()))
+            }
+            Ok(i) => { // Value found, i is index.
+                self.universes.remove(i);
+                Ok(())
             }
         }
     }
@@ -1098,8 +1110,16 @@ impl SacnSourceInternal {
     /// # Argument
     /// name: The new name for the source, it is left to the user to ensure this is unique within the sACN network.
     /// 
-    fn set_name(&mut self, name: &str) {
+    /// # Errors
+    /// MalformedSourceName: Returned to indicate that the given source name is longer than the maximum allowed as per E131_SOURCE_NAME_FIELD_LENGTH.
+    /// 
+    fn set_name(&mut self, name: &str) -> Result<()> {
+        if name.len() > E131_SOURCE_NAME_FIELD_LENGTH {
+            bail!(ErrorKind::MalformedSourceName("Source name provided is longer than maximum allowed".to_string()));
+        }
         self.name = name.to_string();
+
+        Ok(())
     }
 
     /// Returns if SacnSourceInternal is in preview mode.
@@ -1127,6 +1147,15 @@ impl SacnSourceInternal {
     /// 
     fn set_multicast_ttl(&self, multicast_ttl: u32) -> Result<()> {
         Ok(self.socket.set_multicast_ttl_v4(multicast_ttl)?)
+    }
+
+    /// Returns the current Time To Live for unicast packets send by this source.
+    /// 
+    /// # Errors
+    /// Io: Returned if the TTL cannot be retrieved from the underlying socket.
+    /// 
+    fn ttl(&self) -> Result<u32> {
+        Ok(self.socket.ttl()?)
     }
 
     /// Sets the Time To Live for unicast packets sent by this source.
@@ -1162,6 +1191,11 @@ impl SacnSourceInternal {
     /// Returns true if multicast loop is enabled, false if not.
     fn multicast_loop(&self) -> Result<bool> {
         Ok(self.socket.multicast_loop_v4()?)
+    }
+
+    /// Returns the universes currently registered on this source.
+    pub fn universes(&self) -> Vec<u16> {
+        self.universes.clone()
     }
 }
 
