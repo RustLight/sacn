@@ -7,12 +7,15 @@
 //
 // This file was modified as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
-//! Implementation of sACN network protocol.
+//! Implementation of the sACN network protocol.
 //!
-//! This crate implements the Streaming ACN (sACN) network protocol
-//! as specified in ANSI E1.31-2018.
-//! Streaming ACN is built on top of and is compatible with the ACN
-//! protocol suite (ANSI E1.17-2015).
+//! This crate implements the Streaming ACN (sACN) network protocol as specified in ANSI E1.31-2018. Streaming ACN is built on top of and is 
+//! compatible with the ACN protocol suite (ANSI E1.17-2015). This library supports sending and receiving data, universe synchronisation and
+//! universe discovery. This library supports linux (fully) and windows (no receiving multicast) and IP unicast, multicast and broadcast.
+//! 
+//! Installation instructions are detailed within the README file.
+//! 
+//! 
 //! 
 //! This file was modified as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 //! 
@@ -148,6 +151,37 @@
 //! src.send_sync_packet(sync_uni.unwrap(), dst_ip).unwrap();
 //! ```
 //! 
+//! Creating a sACN sender and sending data using unicast.
+//! 
+//! ```
+//! use sacn::source::SacnSource;
+//! use sacn::packet::ACN_SDT_MULTICAST_PORT;
+//! 
+//! use std::net::{IpAddr, SocketAddr};
+//! use std::thread::sleep;
+//! use std::time::Duration;
+//!
+//! let local_addr: SocketAddr = SocketAddr::new(IpAddr::V4("0.0.0.0".parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
+//!
+//! let mut src = SacnSource::with_ip("Source", local_addr).unwrap();
+//!
+//! let universe: u16 = 1;                        // Universe the data is to be sent on.
+//! let sync_uni: Option<u16> = None;             // Data packets are unsynchronised in this example but unicast transmission supports synchronised and unsynchronised sending.
+//! let priority: Option<u8> = Some(100);                       // The priority for the sending data, must be 1-200 inclusive,  None means use default.
+//! 
+//! // To send using unicast the dst_ip argument is set to a Some() value with the address to send the data to. By default the port should be the
+//! // ACN_SDT_MULTICAST_PORT but this can be configured differently if required in a specific situation. Change this address to the correct address for your
+//! // application, 192.168.0.1 is just a stand-in.
+//! let destination_address: SocketAddr = SocketAddr::new(IpAddr::V4("192.168.0.1".parse().unwrap()), ACN_SDT_MULTICAST_PORT);
+//! let dst_ip: Option<SocketAddr> = Some(destination_address);
+//!
+//! src.register_universe(universe).unwrap(); // Register with the source that will be sending on the given universe.
+//!
+//! let mut data: Vec<u8> = vec![0, 0, 0, 0, 255, 255, 128, 128]; // Some arbitrary data, must have length <= 513 (including start-code).
+//!
+//! // Actually send the data, since the sync_uni is not 0 the data will be synchronised at the receiver (if the receiver supports synchronisation).
+//! src.send(&[universe], &data, priority, dst_ip, sync_uni).unwrap();
+//! ```
 
 #![doc(html_root_url = "https://docs.rs/sacn/")]
 // #![warn(missing_docs)]

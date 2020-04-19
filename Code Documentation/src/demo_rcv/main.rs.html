@@ -394,8 +394,78 @@
 <span id="394">394</span>
 <span id="395">395</span>
 <span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="comment">// #![warn(missing_docs)]      // Used during development to warn about a lack of documentation.</span>
 <span class="attribute">#![<span class="ident">recursion_limit</span><span class="op">=</span><span class="string">&quot;1024&quot;</span>]</span>  <span class="comment">// Recursion limit for error-chain, value used as recommended by the crates documentation.</span>
 
 <span class="comment">// Copyright 2020 sacn Developers</span>
@@ -412,13 +482,20 @@
 <span class="doccomment">//! Primarily used for testing the library including real-world conformance, compliance, integration and acceptance tests.</span>
 <span class="doccomment">//! As a test program the error handling is limited for simplicity.</span>
 <span class="doccomment">//! </span>
-<span class="doccomment">//! Usage instructions are described below.</span>
+<span class="doccomment">//! Usage instructions are described by either running the receiver and using the help command or by the get_usage_str function</span>
+<span class="doccomment">//! below.</span>
+<span class="doccomment">//! </span>
+<span class="doccomment">//! The ACTION_... constants describe the various user input strings possible once the program has started, with more details described in get_usage_str within</span>
+<span class="doccomment">//! the code. The details aren&#39;t repeated outside of that to minimise the amount of references that have to be kept upto date and which could diverge over time.</span>
+<span class="doccomment">//! </span>
+<span class="doccomment">//! Note the lack of top level constant strings used in the place of output format strings is due to a limitation in rust where the format string cannot be a </span>
+<span class="doccomment">//! const.</span>
 <span class="doccomment">//! </span>
 
 <span class="attribute">#[<span class="ident">macro_use</span>]</span>
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">error_chain</span>;
 
-<span class="doccomment">/// Import the error-chain handling into the module.</span>
+<span class="doccomment">/// The demo itself utilises a small error-chain which wraps the errors from the sACN crate and a few standard crates.</span>
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">error</span>;
 <span class="kw">use</span> <span class="ident">error</span>::<span class="ident">errors</span>::<span class="kw-2">*</span>;
 
@@ -435,21 +512,49 @@
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fs</span>::<span class="ident">File</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">io</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// The string given by the user to perform each of the various options as described in get_usage_str below.</span>
+<span class="doccomment">/// The string given by the user to receive data.</span>
 <span class="kw">const</span> <span class="ident">ACTION_RECV</span>:                                  <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;r&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to receive data continously.</span>
 <span class="kw">const</span> <span class="ident">ACTION_RECV_CONTINUOUS</span>:                       <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;c&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to cause the receiver to display the sources which have currently been discovered.</span>
 <span class="kw">const</span> <span class="ident">ACTION_PRINT_DISCOVERED_SOURCES</span>:              <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;s&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to cause the receiver to display the sources which have been discovered but without checking for timeouts first. This is usually</span>
+<span class="doccomment">/// used as part of debugging / tests.</span>
 <span class="kw">const</span> <span class="ident">ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT</span>:   <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;x&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to quit the receiver. </span>
 <span class="kw">const</span> <span class="ident">ACTION_QUIT</span>:                                  <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;q&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to display the help.</span>
 <span class="kw">const</span> <span class="ident">ACTION_HELP</span>:                                  <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;h&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to start listening to a specific universe of data.</span>
 <span class="kw">const</span> <span class="ident">ACTION_LISTEN_UNIVERSE</span>:                       <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;l&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to terminate listening to a specific universe of data.</span>
 <span class="kw">const</span> <span class="ident">ACTION_STOP_LISTEN_UNIVERSE</span>:                  <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;t&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to cause the receiver to sleep/block for a given time. This is used as part of tests as a way to encourage a specific</span>
+<span class="doccomment">/// ordering of concurrent events by having one side way for a period. This is discussed in more detail within the specific tests. </span>
 <span class="kw">const</span> <span class="ident">ACTION_SLEEP</span>:                                 <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;w&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to enable receiving preview data.</span>
 <span class="kw">const</span> <span class="ident">ACTION_PREVIEW</span>:                               <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;p&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to enable universe discovery packets to be announced when received.</span>
 <span class="kw">const</span> <span class="ident">ACTION_ANNOUNCE_DISCOVERED</span>:                   <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;a&quot;</span>;
+
+<span class="doccomment">/// Lines of input starting with this string are ignored. This is commonly used within the automated tests to allow comments within the input files.</span>
 <span class="kw">const</span> <span class="ident">ACTION_IGNORE</span>:                                <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;#&quot;</span>;
+
+<span class="doccomment">/// The string given by the user to cause the receiver to output data to a file.</span>
 <span class="kw">const</span> <span class="ident">ACTION_FILE_OUT</span>:                              <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;f&quot;</span>;
-<span class="kw">const</span> <span class="ident">ACTION_ANNOUNCE_TERMINATION</span>:                  <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;e&quot;</span>; <span class="comment">// e for end.</span>
+
+<span class="doccomment">/// The string given by the user to cause termination packets to be announced. &quot;e&quot; for end.</span>
+<span class="kw">const</span> <span class="ident">ACTION_ANNOUNCE_TERMINATION</span>:                  <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;e&quot;</span>; 
 
 <span class="doccomment">/// The headers used for the top of the file when the FILE_OUT action is used.</span>
 <span class="kw">const</span> <span class="ident">WRITE_TO_FILE_HEADERS</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;Data_ID, Universe, Sync_Addr, Priority, Preview_data?, Payload&quot;</span>;
@@ -504,6 +609,10 @@
     <span class="ident">ACTION_ANNOUNCE_TERMINATION</span>, <span class="ident">ACTION_FILE_OUT</span>, <span class="ident">ACTION_IGNORE</span>)
 }
 
+<span class="doccomment">/// The entry point of the demo_rcv. Usage is described in get_usage_str or by running the program and typing &quot;h&quot; or &quot;help&quot;.</span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// # Arguments</span>
+<span class="doccomment">/// Usage: ./main &lt;interface_ip&gt;</span>
 <span class="kw">fn</span> <span class="ident">main</span>() {
     <span class="kw">let</span> <span class="ident">cmd_args</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">env</span>::<span class="ident">args</span>().<span class="ident">collect</span>();
 
@@ -520,7 +629,6 @@
     <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Started&quot;</span>);
 
     <span class="kw">loop</span> {
-        <span class="comment">// https://doc.rust-lang.org/std/io/struct.Stdin.html#method.read_line (03/02/2020)</span>
         <span class="kw">match</span> <span class="ident">handle_input</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">dmx_recv</span>) {
             <span class="prelude-val">Ok</span>(<span class="ident">should_continue</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">if</span> <span class="op">!</span><span class="ident">should_continue</span> {
@@ -538,7 +646,7 @@
 <span class="doccomment">/// Returns true if there is more input expected and false if not.</span>
 <span class="kw">fn</span> <span class="ident">handle_input</span>(<span class="ident">dmx_recv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">SacnReceiver</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">String</span>::<span class="ident">new</span>();
-    
+
     <span class="kw">match</span> <span class="ident">io</span>::<span class="ident">stdin</span>().<span class="ident">read_line</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">input</span>) {
         <span class="prelude-val">Ok</span>(<span class="ident">n</span>) <span class="op">=</span><span class="op">&gt;</span> {
             <span class="kw">if</span> <span class="ident">n</span> <span class="op">=</span><span class="op">=</span> <span class="number">0</span> {
@@ -546,7 +654,6 @@
                 <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
             }
 
-            <span class="comment">// https://www.tutorialspoint.com/rust/rust_string.htm (03/02/2020)</span>
             <span class="kw">let</span> <span class="ident">split_input</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">input</span>.<span class="ident">split_whitespace</span>().<span class="ident">collect</span>();
 
             <span class="kw">if</span> <span class="ident">split_input</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="number">1</span> {
@@ -556,7 +663,7 @@
 
             <span class="kw">match</span> <span class="ident">split_input</span>[<span class="number">0</span>] {
                 <span class="ident">ACTION_IGNORE</span> <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="comment">// Ignore the input</span>
+                    <span class="comment">// Ignore the input, this is usually used for lines that contain comments within test input files.</span>
                 }
                 <span class="ident">ACTION_HELP</span> <span class="op">=</span><span class="op">&gt;</span> { <span class="comment">// Display help</span>
                     <span class="ident">display_help</span>();
@@ -567,6 +674,7 @@
                         <span class="macro">bail</span><span class="macro">!</span>(<span class="ident">std</span>::<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">std</span>::<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidInput</span>, <span class="string">&quot;Insufficient parts ( &lt; 2 )&quot;</span>));
                     }
 
+                    <span class="comment">// To learn about how to parse strings to ints.</span>
                     <span class="comment">// https://stackoverflow.com/questions/27043268/convert-a-string-to-int-in-rust (03/02/2020)</span>
                     <span class="kw">let</span> <span class="ident">timeout_secs</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="ident">split_input</span>[<span class="number">1</span>].<span class="ident">parse</span>().<span class="ident">unwrap</span>();
 
@@ -586,7 +694,6 @@
                         <span class="macro">bail</span><span class="macro">!</span>(<span class="ident">std</span>::<span class="ident">io</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">std</span>::<span class="ident">io</span>::<span class="ident">ErrorKind</span>::<span class="ident">InvalidInput</span>, <span class="string">&quot;Insufficient parts ( &lt; 3 )&quot;</span>));
                     }
 
-                     <span class="comment">// https://stackoverflow.com/questions/27043268/convert-a-string-to-int-in-rust (03/02/2020)</span>
                      <span class="kw">let</span> <span class="ident">timeout_secs</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="ident">split_input</span>[<span class="number">1</span>].<span class="ident">parse</span>().<span class="ident">unwrap</span>();
 
                      <span class="kw">let</span> <span class="ident">count</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="ident">split_input</span>[<span class="number">2</span>].<span class="ident">parse</span>().<span class="ident">unwrap</span>();
@@ -715,6 +822,14 @@
 
 <span class="doccomment">/// Writes the given data to the given file (uses the given data_id as first column).</span>
 <span class="doccomment">/// Uses comma separated values.</span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// # Arguments</span>
+<span class="doccomment">/// file: A mutable box reference containing the file to write to.</span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// data: The data to write to the file.</span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// data_id: The id used as the first column within the file for the data.</span>
+<span class="doccomment">/// </span>
 <span class="kw">fn</span> <span class="ident">write_to_file</span>(<span class="ident">file</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">File</span><span class="op">&gt;</span>, <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DMXData</span><span class="op">&gt;</span>, <span class="ident">data_id</span>: <span class="ident">u64</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="kw">for</span> <span class="ident">d</span> <span class="kw">in</span> <span class="ident">data</span> {
         <span class="kw">let</span> <span class="ident">values_str</span> <span class="op">=</span> <span class="ident">create_values_str</span>(<span class="ident">d</span>.<span class="ident">values</span>)<span class="question-mark">?</span>;
@@ -727,7 +842,10 @@
 }
 
 <span class="doccomment">/// Converts the given array of u8 values into a comma separated string.</span>
-<span class="doccomment">/// https://users.rust-lang.org/t/what-is-right-ways-to-concat-strings/3780/4 (09/04/2020)</span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// # Arguments</span>
+<span class="doccomment">/// values: The unsigned 8 bit number values to turn into a string.</span>
+<span class="doccomment">/// </span>
 <span class="kw">fn</span> <span class="ident">create_values_str</span>(<span class="ident">values</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">res</span>: <span class="ident">String</span> <span class="op">=</span> <span class="string">&quot;&quot;</span>.<span class="ident">to_string</span>();
 
@@ -737,6 +855,8 @@
 
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">iter</span> <span class="op">=</span> <span class="ident">values</span>.<span class="ident">iter</span>();
 
+    <span class="comment">// Adapted from.</span>
+    <span class="comment">// https://users.rust-lang.org/t/what-is-right-ways-to-concat-strings/3780/4 (09/04/2020)</span>
     <span class="ident">res</span>.<span class="ident">push_str</span>(<span class="kw-2">&amp;</span><span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">iter</span>.<span class="ident">next</span>().<span class="ident">unwrap</span>()));
     
     <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="ident">iter</span> {
@@ -746,6 +866,14 @@
     <span class="prelude-val">Ok</span>(<span class="ident">res</span>)
 }
 
+
+<span class="doccomment">/// Prints the given output from recv to stdout.</span>
+<span class="doccomment">/// Errors are printed using their debug output except for universe terminated which is printed as &quot;Universe x Terminated&quot; where x is the universe. This </span>
+<span class="doccomment">/// is to avoid the CID being printed which changes for every test as it is randomly generated in most tests.</span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// # Arguments</span>
+<span class="doccomment">/// res: The data to display.</span>
+<span class="doccomment">/// </span>
 <span class="kw">fn</span> <span class="ident">print_recv</span>(<span class="ident">res</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DMXData</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
     <span class="kw">match</span> <span class="ident">res</span> {
         <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> {
@@ -771,6 +899,12 @@
     }
 }
 
+<span class="doccomment">/// Prints the given data to stdout in the format [{{ Universe(s): x, Sync_Universe: y, Values: z }}, ...] where x is the universe, y is the synchronisation address</span>
+<span class="doccomment">/// and z is the values. The ... indicates that there may be multiple bits of data to print at once which follows the same format.</span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// # Arguments</span>
+<span class="doccomment">/// data: The data to be printed to stdout.</span>
+<span class="doccomment">/// </span>
 <span class="kw">fn</span> <span class="ident">print_data</span>(<span class="kw-2">mut</span> <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DMXData</span><span class="op">&gt;</span>) {
     <span class="macro">print</span><span class="macro">!</span>(<span class="string">&quot;[&quot;</span>);
     <span class="comment">// Sort the data with lower universes first, this means that even though the data returned from the waiting data can be in any order this means </span>
@@ -782,12 +916,20 @@
     <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;]&quot;</span>);
 }
 
+<span class="doccomment">/// Prints the given array of discovered sources to std out. Uses the format &quot;Name: x, Universes: y&quot; where x is the source name and y is the universes registered to the </span>
+<span class="doccomment">/// source. </span>
+<span class="doccomment">/// </span>
+<span class="doccomment">/// # Arguments</span>
+<span class="doccomment">/// src: The sources to print to standard out.</span>
+<span class="doccomment">/// </span>
 <span class="kw">fn</span> <span class="ident">print_discovered_sources</span>(<span class="ident">srcs</span>: <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">DiscoveredSacnSource</span><span class="op">&gt;</span>) {
     <span class="kw">for</span> <span class="ident">s</span> <span class="kw">in</span> <span class="ident">srcs</span> {
         <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Name: {}, Universes: {:?}&quot;</span>, <span class="ident">s</span>.<span class="ident">name</span>, <span class="ident">s</span>.<span class="ident">get_all_universes</span>());
     }
 }
 
+<span class="doccomment">/// Displays the usage/help string to stdout.</span>
+<span class="doccomment">/// </span>
 <span class="kw">fn</span> <span class="ident">display_help</span>(){
     <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">get_usage_str</span>());
 }
