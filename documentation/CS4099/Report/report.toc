@@ -19,45 +19,44 @@
 \contentsline {subsection}{\numberline {6.2}Reflection on Methodology Used}{19}%
 \contentsline {section}{\numberline {7}Tools \& Technologies}{21}%
 \contentsline {subsection}{\numberline {7.1}Language: Rust}{21}%
-\contentsline {subsubsection}{\numberline {7.1.1}Error handling: Error-chain}{21}%
-\contentsline {subsubsection}{\numberline {7.1.2}Networking: Net2 / Socket2}{22}%
+\contentsline {subsubsection}{\numberline {7.1.1}Error handling: Error-chain}{22}%
 \contentsline {subsection}{\numberline {7.2}Dependency Management: Cargo}{22}%
-\contentsline {subsubsection}{\numberline {7.2.1}Run}{22}%
+\contentsline {subsubsection}{\numberline {7.2.1}Run}{23}%
 \contentsline {subsubsection}{\numberline {7.2.2}Docs}{23}%
 \contentsline {subsubsection}{\numberline {7.2.3}Test}{23}%
-\contentsline {subsection}{\numberline {7.3}Debug Tools: Wireshark}{23}%
+\contentsline {subsection}{\numberline {7.3}Debug Tools: Wireshark}{24}%
 \contentsline {subsection}{\numberline {7.4}Version Control: Git, Gitlab, Github}{24}%
-\contentsline {subsection}{\numberline {7.5}Test Coverage Tool}{24}%
-\contentsline {subsection}{\numberline {7.6}Compliance Testing Tools: sACN View}{24}%
+\contentsline {subsection}{\numberline {7.5}Test Coverage Tool}{25}%
+\contentsline {subsection}{\numberline {7.6}Compliance Testing Tools: sACNView}{25}%
 \contentsline {subsection}{\numberline {7.7}Real-world Usage Tool: Visualisers: Vision}{25}%
-\contentsline {subsection}{\numberline {7.8}Real-world Usage Tool: Lighting Control: Avolites Titan}{25}%
-\contentsline {section}{\numberline {8}Ethics}{26}%
-\contentsline {section}{\numberline {9}Design}{26}%
-\contentsline {subsection}{\numberline {9.1}Expected System Usage/Layout}{26}%
-\contentsline {subsection}{\numberline {9.2}Packet structure}{26}%
-\contentsline {subsubsection}{\numberline {9.2.1}Universe Discovery}{30}%
-\contentsline {subsubsection}{\numberline {9.2.2}Universe Synchronisation}{30}%
-\contentsline {subsection}{\numberline {9.3}Network Layers / Transport Modes}{30}%
-\contentsline {subsubsection}{\numberline {9.3.1}Multicast Address Assignment}{32}%
-\contentsline {section}{\numberline {10}Implementation}{34}%
-\contentsline {subsection}{\numberline {10.1}SacnReceiver}{34}%
-\contentsline {subsection}{\numberline {10.2}SacnSource}{35}%
-\contentsline {subsection}{\numberline {10.3}Std vs Non-Std}{36}%
-\contentsline {subsection}{\numberline {10.4}Drop / Closing}{37}%
-\contentsline {section}{\numberline {11}Testing}{38}%
-\contentsline {subsection}{\numberline {11.1}Scope}{38}%
-\contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{39}%
-\contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{40}%
-\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{41}%
-\contentsline {paragraph}{Across Machines}{42}%
-\contentsline {paragraph}{More than 2 machines}{45}%
-\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{45}%
-\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{47}%
-\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{55}%
-\contentsline {subsection}{\numberline {11.3}What Testing Shows}{57}%
-\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{58}%
-\contentsline {subsection}{\numberline {12.1}Extraneous Circumstances - COVID-19}{60}%
-\contentsline {section}{\numberline {13}Conclusions}{61}%
-\contentsline {section}{\numberline {14}Appendices}{61}%
-\contentsline {section}{\numberline {15}User Manual}{61}%
-\contentsline {section}{\numberline {16}Other Appendices}{63}%
+\contentsline {subsection}{\numberline {7.8}Real-world Usage Tool: Lighting Control: Avolites Titan}{27}%
+\contentsline {section}{\numberline {8}Ethics}{27}%
+\contentsline {section}{\numberline {9}Design}{27}%
+\contentsline {subsection}{\numberline {9.1}Expected System Usage/Layout}{27}%
+\contentsline {subsection}{\numberline {9.2}Packet structure}{29}%
+\contentsline {subsubsection}{\numberline {9.2.1}Universe Discovery}{31}%
+\contentsline {subsubsection}{\numberline {9.2.2}Universe Synchronisation}{31}%
+\contentsline {subsection}{\numberline {9.3}Network Layers / Transport Modes}{31}%
+\contentsline {subsubsection}{\numberline {9.3.1}Multicast Address Assignment}{33}%
+\contentsline {section}{\numberline {10}Implementation}{35}%
+\contentsline {subsection}{\numberline {10.1}SacnReceiver}{35}%
+\contentsline {subsection}{\numberline {10.2}SacnSource}{36}%
+\contentsline {subsection}{\numberline {10.3}Std vs Non-Std}{37}%
+\contentsline {subsection}{\numberline {10.4}Drop / Closing}{38}%
+\contentsline {section}{\numberline {11}Testing}{39}%
+\contentsline {subsection}{\numberline {11.1}Scope}{39}%
+\contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{40}%
+\contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{41}%
+\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{42}%
+\contentsline {paragraph}{Across Machines}{43}%
+\contentsline {paragraph}{More than 2 machines}{46}%
+\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{46}%
+\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{48}%
+\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{56}%
+\contentsline {subsection}{\numberline {11.3}What Testing Shows}{58}%
+\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{59}%
+\contentsline {subsection}{\numberline {12.1}Extraneous Circumstances - COVID-19}{61}%
+\contentsline {section}{\numberline {13}Conclusions}{62}%
+\contentsline {section}{\numberline {14}Appendices}{62}%
+\contentsline {section}{\numberline {15}User Manual}{62}%
+\contentsline {section}{\numberline {16}Other Appendices}{64}%
