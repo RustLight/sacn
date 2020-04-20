@@ -129,7 +129,7 @@ sACN falls within the application layer of the 5-layer network stack as shown in
 	\label{NET_STACK}
 \end{figure}
 
-The usage of UDP additionally means that packets can be delivered in any order, this can cause random jumps in data on the protocol which is noted within the specification to be problematic if this is used with a moving head lighting fixture as it effects the predictive algorithms used (ANSI E1.31-2018 Section 6.7.2). To reduce this happening the protocol uses sequence numbers to allow out of order packets to be discarded. It is important to note that because a packet might have been lost the protocol doesn't attempt to wait for packets which haven't been received yet and instead always acts on the most recent data (with regards to sequence number), discarding any old data received. This keeps the latency of the system low and prevents slightly out of order packets causing unexpected jumps back and forth in the data. As the sequence number field is only 1 byte in length it is expected to wrap around frequently, therefore the sequence numbering mechanism accounts for this by looking at the difference between the last and current sequence numbers as oppose to the numbers themselves directly. This difference is then checked if it is within the range of (-20, 0] (greater than -20 exclusive, less than or equal to 0 inclusive). If it is within this range then the packet is rejected otherwise it is accepted. This allows the sequence number to wrap around without packets being incorrectly discarded. It also means that if a packet with an unexpected sequence number is received it allows the system to quickly (within 20 sequentially numbered packets) start accepting packets again which minimises latency.\\
+The usage of UDP additionally means that packets can be delivered in any order, this can cause random jumps in data on the protocol which is noted within the specification to be problematic if this is used with a moving head lighting fixture as it effects the predictive algorithms used (ANSI E1.31-2018 Section 6.7.2). To reduce this happening the protocol uses sequence numbers to allow out of order packets to be discarded. It is important to note that because a packet might have been lost the protocol doesn't attempt to wait for packets which haven't been received yet and instead always acts on the most recent data (with regards to sequence number), discarding any old data received. This keeps the latency of the system low and prevents slightly out of order packets causing unexpected jumps back and forth in the data. As the sequence number field is only 1 byte in length it is expected to wrap around frequently, therefore the sequence numbering mechanism accounts for this by looking at the difference between the last and current sequence numbers as oppose to the numbers themselves directly. This difference is then checked if it is within the range of (-20, 0] (greater than -20 exclusive, less than or equal to 0 inclusive). If it is within this range then the packet is rejected otherwise it is accepted. This allows the sequence number to wrap around without packets being incorrectly discarded. It also means that if a packet with an unexpected sequence number is received it allows the system to quickly (within 20 sequentially numbered packets) start accepting packets again which minimises latency. Sequence numbers are evaluated/incremented separately for each packet type and within packet types separately for each data-universe in data packets and synchronisation-address in synchronisation packets. This means if a packet with an incorrect sequence number is received it will only effect that type of packet and universe allowing other universes/packet-types to continue as normal.\\
 
 In its current 2018 state the protocol specifies operation over IPv4 and IPv6 using 3 different IP communication modes. The first mode is unicast, this is where a source sends data directly to the receivers IP and this means that any data sent by a source must individually be sent to all receivers for them to see it. The next mode is broadcast, this is where the destination IP is set to a special broadcast IP which causes all receivers to see the data. This mode means that a sender doesn't have to individually send to each receiver but does mean that there is the potential to flood the network with these broadcast packets with all receivers getting packets even if they didn't want them.\\
 
@@ -147,6 +147,42 @@ To allow usage of multicast within an sACN network there are standard multicast 
 As specified in the internet engineering task force (IETF) RFC 5771 \cite{IETF_RFC_5771} all of the IPv4 multicast address fall within the 'Administratively Scoped Block' as specified in IETF RFC 2365 \cite{IETF_RFC_2365}. This then clarifies that the sACN multicast address fall within the IPv4 Local Scope range (6.1). These multicast addresses are reserved for usage dependent on the specific local network within which they are deployed. This limits the sACN usage to a local dedicated network and not for use on a wide area network (WAN) for as the public internet. As discussed previously this fits with the other design decisions made which based the protocol around usage on a private, isolated dedicated network.\\
 
 The IPv6 multicast address assignment starts with 0xFF in the first byte, this indicates that the address is a multicast address. This is then followed by 0x18 which can be broken down as per section 2.7 of \cite{IETF_RFC_4291} into a flag value of 1 and a scop value of 8. This flag value mean that this is a transient address which indicates that it isn't statically assigned by the IETF and may change in future. The scope value of 8 indicates organisation-local scope which has a similar reasoning as the local-scope used for IPv4 meaning that this address is only valid within a specific environment / group of networks. Therefore the sACN protocol is not aimed at usage on a WAN regardless of IPv4 or IPv6. 
+
+\subsection{sACN Packet Structure}
+As sACN is a subset of the wider ACN family of protocols it utilises a common standard ACN header. By using the general ACN header it allows other ACN protocols to be used on the network alongside sACN without conflicts, for example it is later discussed in the relate works that ANSI E1.33-2019 (remote device management) and ANSI E1.31-2018 can be used together to increase the available functionality in the system. The packets are split into layers with each layer handling a different part of the packet. As there may be multiple possible layers the packet contains multiple 'vector' fields. These fields contain predefined values which tell the receiver about what the data will be. The structure of the packets is described directly within the protocol as a table which has been condensed into the diagram in figure \ref{PACKET_STRUCTURE}.
+
+
+To designate the rest of the packet as an sACN packet the vector field is set either to VECTOR\_ROOT\_E131\_DATA to indicate that the packet is a E1.31 data packet or VECTOR\_ROOT\_E131\_EXTENDED (note these are defined constant numbers not strings) to indicate that the packet is either a synchronisation or discovery packet. The rest of the data packet is then structures as specified in Figure \ref{ACN_DATA_STRUCTURE}. For the universe synchronisation and discovery packets the next part of the structure starts the same as shown in Figure \ref{ACN_EXTENDED_START} with the vector field deciding if the rest of the packet follows a synchronisation or discovery packet structure. The synchronisation structure after this is fairly short as shown in Figure \ref{ACN_REST_SYNC_PACKET}. The discovery structure is longer as it may include a list of upto 512 universes and is show in Figure \ref{ACN_REST_DISCOVERY_PACKET}.
+	
+	\begin{figure}[H]
+		\includegraphics[width=\textwidth]{Acn_header}
+		\caption{The layout of the standard ACN header used for all sACN packets}
+		\label{ACN_HEADER}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\includegraphics[width=\textwidth]{acn_data_structure}
+		\caption{The structure of the rest of the sACN data packet}
+		\label{ACN_DATA_STRUCTURE}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\includegraphics[width=\textwidth]{Acn_extended_framing_structure_sync_discovery}
+		\caption{The structure of the next part of the sACN universe synchronisation and discovery packet}
+		\label{ACN_EXTENDED_START}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\includegraphics[width=\textwidth]{acn_sync_packet_specific_structure}
+		\caption{The structure of the rest of the sACN universe synchronisation packet}
+		\label{ACN_REST_SYNC_PACKET}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\includegraphics[width=\textwidth]{acn_discovery_packet_specific_structure}
+		\caption{The structure of the rest of the sACN universe discovery packet}
+		\label{ACN_REST_DISCOVERY_PACKET}
+\end{figure}}
 
 \subsection{Critical Analysis of the sACN protocol}
 ANSI E1.31-2018 sACN over a purely DMX network provides a solution to a number of problems as discussed above but also has its own problems.\\
@@ -306,39 +342,6 @@ This project has no ethical considerations that require notification in this sec
 
 \section{Design}
 
-
-\subsection{Packet structure}
-All sACN packets are based on the standard ACN header as shown in Figure \ref{ACN_HEADER}. By using the general ACN header it allows other ACN protocols to be used on the network alongside sACN without conflicts. To designate the rest of the packet as an sACN packet the vector field is set either to VECTOR\_ROOT\_E131\_DATA to indicate that the packet is a E1.31 data packet or VECTOR\_ROOT\_E131\_EXTENDED (note these are defined constant numbers not strings) to indicate that the packet is either a synchronisation or discovery packet. The rest of the data packet is then structures as specified in Figure \ref{ACN_DATA_STRUCTURE}. For the universe synchronisation and discovery packets the next part of the structure starts the same as shown in Figure \ref{ACN_EXTENDED_START} with the vector field deciding if the rest of the packet follows a synchronisation or discovery packet structure. The synchronisation structure after this is fairly short as shown in Figure \ref{ACN_REST_SYNC_PACKET}. The discovery structure is longer as it may include a list of upto 512 universes and is show in Figure \ref{ACN_REST_DISCOVERY_PACKET}.
-
-\begin{figure}[H]
-	\includegraphics[width=\textwidth]{Acn_header}
-	\caption{The layout of the standard ACN header used for all sACN packets}
-	\label{ACN_HEADER}
-\end{figure}
-
-\begin{figure}[H]
-	\includegraphics[width=\textwidth]{acn_data_structure}
-	\caption{The structure of the rest of the sACN data packet}
-	\label{ACN_DATA_STRUCTURE}
-\end{figure}
-
-\begin{figure}[H]
-	\includegraphics[width=\textwidth]{Acn_extended_framing_structure_sync_discovery}
-	\caption{The structure of the next part of the sACN universe synchronisation and discovery packet}
-	\label{ACN_EXTENDED_START}
-\end{figure}
-
-\begin{figure}[H]
-	\includegraphics[width=\textwidth]{acn_sync_packet_specific_structure}
-	\caption{The structure of the rest of the sACN universe synchronisation packet}
-	\label{ACN_REST_SYNC_PACKET}
-\end{figure}
-
-\begin{figure}[H]
-	\includegraphics[width=\textwidth]{acn_discovery_packet_specific_structure}
-	\caption{The structure of the rest of the sACN universe discovery packet}
-	\label{ACN_REST_DISCOVERY_PACKET}
-\end{figure}
 
 \subsubsection{Universe Discovery}
 The universe discovery mechanism sends discovery adverts on the 
