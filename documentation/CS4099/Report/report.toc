@@ -35,27 +35,29 @@
 \contentsline {subsection}{\numberline {7.8}Real-world Usage Tool: Lighting Control: Avolites Titan}{31}%
 \contentsline {section}{\numberline {8}Ethics}{32}%
 \contentsline {section}{\numberline {9}Design}{32}%
-\contentsline {subsubsection}{\numberline {9.0.1}Universe Discovery}{32}%
-\contentsline {subsubsection}{\numberline {9.0.2}Universe Synchronisation}{33}%
-\contentsline {section}{\numberline {10}Implementation}{33}%
-\contentsline {subsection}{\numberline {10.1}SacnReceiver}{33}%
-\contentsline {subsection}{\numberline {10.2}SacnSource}{34}%
-\contentsline {subsection}{\numberline {10.3}Std vs Non-Std}{35}%
-\contentsline {subsection}{\numberline {10.4}Drop / Closing}{36}%
-\contentsline {section}{\numberline {11}Testing}{37}%
-\contentsline {subsection}{\numberline {11.1}Scope}{37}%
-\contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{38}%
-\contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{39}%
-\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{40}%
-\contentsline {paragraph}{Across Machines}{41}%
-\contentsline {paragraph}{More than 2 machines}{44}%
-\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{44}%
-\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{46}%
-\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{54}%
-\contentsline {subsection}{\numberline {11.3}What Testing Shows}{56}%
-\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{57}%
-\contentsline {subsection}{\numberline {12.1}Extraneous Circumstances - COVID-19}{59}%
-\contentsline {section}{\numberline {13}Conclusions}{60}%
-\contentsline {section}{\numberline {14}Appendices}{60}%
-\contentsline {section}{\numberline {15}User Manual}{60}%
-\contentsline {section}{\numberline {16}Other Appendices}{62}%
+\contentsline {subsection}{\numberline {9.1}Sender}{34}%
+\contentsline {subsection}{\numberline {9.2}Receiver}{35}%
+\contentsline {subsubsection}{\numberline {9.2.1}Data and Universe Synchronisation}{35}%
+\contentsline {subsubsection}{\numberline {9.2.2}Universe Discovery}{36}%
+\contentsline {section}{\numberline {10}Implementation}{36}%
+\contentsline {subsection}{\numberline {10.1}SacnReceiver}{36}%
+\contentsline {subsection}{\numberline {10.2}SacnSource}{37}%
+\contentsline {subsection}{\numberline {10.3}Std vs Non-Std}{38}%
+\contentsline {subsection}{\numberline {10.4}Drop / Closing}{39}%
+\contentsline {section}{\numberline {11}Testing}{40}%
+\contentsline {subsection}{\numberline {11.1}Scope}{40}%
+\contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{41}%
+\contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{42}%
+\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{43}%
+\contentsline {paragraph}{Across Machines}{44}%
+\contentsline {paragraph}{More than 2 machines}{47}%
+\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{47}%
+\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{49}%
+\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{57}%
+\contentsline {subsection}{\numberline {11.3}What Testing Shows}{59}%
+\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{60}%
+\contentsline {subsection}{\numberline {12.1}Extraneous Circumstances - COVID-19}{62}%
+\contentsline {section}{\numberline {13}Conclusions}{63}%
+\contentsline {section}{\numberline {14}Appendices}{63}%
+\contentsline {section}{\numberline {15}User Manual}{63}%
+\contentsline {section}{\numberline {16}Other Appendices}{65}%
