@@ -52,19 +52,23 @@ Currently within rust there does not exist a library which fully supports all as
 \end{enumerate}
 
 \begin{figure}[H]
-	\label{DMX_TYPICAL_SETUP}
 	\includegraphics[width=\textwidth]{TypicalDmxSetup.png}
 	\caption{A diagram showing a typical DMX setup which doesn't utilise any IP networking}
+	\label{DMX_TYPICAL_SETUP}
 \end{figure}
 
 \subsubsection{sACN}
 \begin{figure}[H]
-	\label{Expected_usage}
 	\includegraphics[width=\textwidth]{CS4099-Expected-Usage.png}
 	\caption{A diagram showing a usage scenario for a system which utilises sACN}
+	\label{Expected_usage}
 \end{figure}
 
-One solution to solve some of the problems with DMX is to send it using UDP over a standard IP based network and one of the protocols created to do this is sACN. This allows many DMX packets (and so many universes) to be simultaneously sent using a single network cable from the console and then to be received by the devices. Often for backwards compatibility reasons the sACN is converted back into DMX packets before being sent to the device as most devices older than a few years do not support direct sACN communication but this is rapidly increasing - particularly with higher end professional fixtures. Figure \ref{Expected_usage} shows an example in which sACN is used for part of the setup with an "E1.31 -> DMX converter" used to convert it back to DMX for use with some legacy lighting fixtures. The points below show how a protocol like sACN addresses many of the problems listed above with DMX512.
+One solution to solve some of the problems with DMX is to send it using UDP over a standard IP based network and one of the protocols created to do this is sACN. This allows many DMX packets (and so many universes) to be simultaneously sent using a single network cable from the console and then to be received by the devices. Often for backwards compatibility reasons the sACN is converted back into DMX packets before being sent to the device as most devices older than a few years do not support direct sACN communication but this is rapidly increasing - particularly with higher end professional fixtures. Figure \ref{Expected_usage} shows an example in which sACN is used for part of the setup with an "E1.31 -> DMX converter" used to convert it back to DMX for use with some legacy lighting fixtures. 
+
+Figure \ref{Expected_usage} shows that within a network there are expected to be many sources of sACN in the form of lighting controllers and many receivers in the form of lighting fixtures and other devices. Within this many to many network it is also expected that many different universes will be utilised with some devices utilising the same universes and others utilising a different potentially overlapping set of universes. Within these universes individual devices all have their own 'addresses' which refer to which section of the universe they are listening to as-well as 'modes' which refer to how many 'channels' (Bytes) are used and what each channel controls on the fixture. This within universe addressing is carried over from DMX and allows interoperability with the older protocol. Actually setting these addresses is done the same regardless of sACN or DMX is used and this is usually done manually (although there do exist mechanisms to do this automatically which are discussed later such as Remote Device Management - RDM). Note that these addresses are independent of the IP addressing. Each device connected to the IP network still has a unique IP address however they might have the same DMX address. In this case both devices would behave identically on receiving an sACN data packet however depending on the IP network setup they might not receive both packets. For example the controller might chose to utilise unicast on the network. This would mean that only the specific receiver being sent to would receive the sACN packets, this can be utilised to allow part of the network to be kept dormant but connected and only used in a backup scenario. \\
+
+The points below show how a protocol like sACN addresses many of the problems listed above with DMX512.
 
 \begin{enumerate}{}
 	\item A single network cable (E.g. CAT6) can be used to transport many universes minimising how cables have to be run to the back of the venue.
@@ -79,9 +83,9 @@ One solution to solve some of the problems with DMX is to send it using UDP over
 A potential problem with multiplexing multiple universes down a single network line is that two universes of data cannot be sent simultaneously, this is often not a problem for simple devices but for receiving devices that span multiple universes receiving one packet before the another may put the device into an inconsistent state. A similar problem arises if two different devices on different universes want to be controlled simultaneously. ANSI E1.31-2018 provides a solution to this problem in the form of the universe synchronisation feature. This works by data packets containing a synchronisation universe field which can be set to a specific universe. On receipt of a sACN packet with a non-zero universe synchronisation field a compliant receiver won't act on the packet immediately and instead will hold the data for that universe. This data will then be acted upon on receipt of a universe synchronisation packet with the corresponding universe. As data packets for multiple different universes can specify a single synchronisation universe this allows data for multiple universes to be acted upon simultaneously on receipt of a universe synchronisation packet. A diagram demonstrating this is shown in figure \ref{UNI_SYNC_DESC} with description below.
 
 \begin{figure}[H]
-	\label{UNI_SYNC_DESC}
 	\includegraphics[width=\textwidth]{sacn-uni-sync-example}
 	\caption{A diagram demonstrating how sACN universe synchronisation allows simultaneous control of multiple DMX universes and its use cases}
+	\label{UNI_SYNC_DESC}
 \end{figure}
 
 \paragraph{Usage Example:}
@@ -106,15 +110,43 @@ The lighting controller wants to update the entire lighting fixture (2) to blue 
 \end{list}
 
 \subsubsection{sACN - Universe Discovery}
-sACN allows sending on upto 63998 universes with each universe having a unique multicast address. Any of the universes can be used by any source and so in initial versions of the protocol such as ANSI E1.31-2009 \cite{ANSI_E1.31_2009} the only way to learn which universes were in use were either to have prior knowledge or to scan every single possible address and listen for packets. This is very inefficient and impractical in a real-system especially as in the time that a universe was last scanned another source might have joined and started transmitting. Universe discovery solves this problem through the universe discovery mechanism. This mechanism works by having a reserved universe of 64214 (as defined in ANSI E1.31-2018 Appendix A) on which sources send universe discovery advert packets. These packets contain a list of universes that the source sends which is referred to as a universe page. Each page can hold 512 universes and so therefore a source may send multiple discovery packets each with a different page that the receiver can then put together to build up a complete list of universes that the source is sending. To allow a receiver to know when all the pages have been received for a given source each universe discovery page has a numbering which increases sequentially with the number of the last page expected included. By having multiple pages it prevents the protocol being required to send large packets on the network (size limited by page size not by the much larger number of possible universes). This is advantageous as it prevents problems with sending large packets such as causing a-lot of fragmentation at the link layer which will fragment packets into frames that are the size of link-layers maximum transmission unit (e.g. 1500 bytes for ethernet \cite{ETHERNET_MTU}). A figure showing a typical usage of universe discovery is shown in figure \ref{UNI_DISCOVERY_DESC}. 
+sACN allows sending on up-to 63998 universes with each universe having a unique multicast address. Any of the universes can be used by any source and so in initial versions of the protocol such as ANSI E1.31-2009 \cite{ANSI_E1.31_2009} the only way to learn which universes were in use were either to have prior knowledge or to scan every single possible address and listen for packets. This is very inefficient and impractical in a real-system especially as in the time that a universe was last scanned another source might have joined and started transmitting. Universe discovery solves this problem through the universe discovery mechanism. This mechanism works by having a reserved universe of 64214 (as defined in ANSI E1.31-2018 Appendix A) on which sources send universe discovery advert packets. These packets contain a list of universes that the source sends which is referred to as a universe page. Each page can hold 512 universes and so therefore a source may send multiple discovery packets each with a different page that the receiver can then put together to build up a complete list of universes that the source is sending. To allow a receiver to know when all the pages have been received for a given source each universe discovery page has a numbering which increases sequentially with the number of the last page expected included. By having multiple pages it prevents the protocol being required to send large packets on the network (size limited by page size not by the much larger number of possible universes). This is advantageous as it prevents problems with sending large packets such as causing a-lot of fragmentation at the link layer which will fragment packets into frames that are the size of link-layers maximum transmission unit (e.g. 1500 bytes for Ethernet \cite{ETHERNET_MTU}). A figure showing a typical usage of universe discovery is shown in figure \ref{UNI_DISCOVERY_DESC}. 
 
 \begin{figure}[H]
-	\label{UNI_DISCOVERY_DESC}
 	\includegraphics[width=\textwidth]{CS4099-Discovery-Explaination}
 	\caption{A diagram and explanation demonstrating how universe discovery can be used by a receiver to discover sources}
+	\label{UNI_DISCOVERY_DESC}
 \end{figure}
 
 It should be noted that by default a receiver will receive and act on data packets from a source even if it hasn't been 'discovered' yet. This means that the number of sources communicating over multicast is completely transparent to the receiver meaning it places no limit on the number of allowed sources which allows the system to scale if required. Put another way this means that if a receiver is only interested in receiving from universe 1 then it only needs to listen to universe 1 and can completely ignore other universes and universe discovery.
+
+\subsubsection{Network Layers / Transport Modes}
+sACN falls within the application layer of the 5-layer network stack as shown in Figure \ref{NET_STACK}. This is because it sits on top of UDP (layer 4) and IP(layer 3). As UDP is used as the underlying transport protocol it means that there is no guaranteed delivery of packets. The protocol itself also doesn't provide this which means that data send by a source may not reach a receiver and there is no way for the source to know within the protocol scope. This loss of guarantee comes with the advantage that there is less packet overhead and no hand-shake is required meaning data can be sent immediately. The use of UDP also avoids many of the problems associated with session transport protocols like TCP such as lost packets significantly reducing throughput due to the congestion control mechanism. Theses trade-offs fit the expected usage of the sACN protocol as they minimise latency which is vital in a real-time event/lighting system. \\
+
+\begin{figure}[H]
+	\includegraphics[width=\textwidth]{net_stack}
+	\caption{Image showing the 5 network layers, image from \cite{NET_STACK_IMAGE}}
+	\label{NET_STACK}
+\end{figure}
+
+The usage of UDP additionally means that packets can be delivered in any order, this can cause random jumps in data on the protocol which is noted within the specification to be problematic if this is used with a moving head lighting fixture as it effects the predictive algorithms used (ANSI E1.31-2018 Section 6.7.2). To reduce this happening the protocol uses sequence numbers to allow out of order packets to be discarded. It is important to note that because a packet might have been lost the protocol doesn't attempt to wait for packets which haven't been received yet and instead always acts on the most recent data (with regards to sequence number), discarding any old data received. This keeps the latency of the system low and prevents slightly out of order packets causing unexpected jumps back and forth in the data. As the sequence number field is only 1 byte in length it is expected to wrap around frequently, therefore the sequence numbering mechanism accounts for this by looking at the difference between the last and current sequence numbers as oppose to the numbers themselves directly. This difference is then checked if it is within the range of (-20, 0] (greater than -20 exclusive, less than or equal to 0 inclusive). If it is within this range then the packet is rejected otherwise it is accepted. This allows the sequence number to wrap around without packets being incorrectly discarded. It also means that if a packet with an unexpected sequence number is received it allows the system to quickly (within 20 sequentially numbered packets) start accepting packets again which minimises latency.\\
+
+In its current 2018 state the protocol specifies operation over IPv4 and IPv6 using 3 different IP communication modes. The first mode is unicast, this is where a source sends data directly to the receivers IP and this means that any data sent by a source must individually be sent to all receivers for them to see it. The next mode is broadcast, this is where the destination IP is set to a special broadcast IP which causes all receivers to see the data. This mode means that a sender doesn't have to individually send to each receiver but does mean that there is the potential to flood the network with these broadcast packets with all receivers getting packets even if they didn't want them.\\
+
+The final IP communication mode utilised by the protocol is IP Multicast. This is the default mode used and works by receivers joining ip multicast groups which senders can send to with only the receivers that joined the relevant multicast group seeing the sent packets. This minimises the packets transmitted to uninterested receivers with packets only routed to receivers that have joined the relevant multicast group but without the senders having to know the address of each receiver. Within the sACN protocol each universe utilises a different multicast address and therefore all receives and senders can use a specific address to receive from / send to a specific universe. As this mechanism does not require the receiver(s) or sender(s) to know about each-other ahead of time it improves the scalability of the system as a sender requires the same amount of processing power to send a single universe of data to one receiver or to a thousand. \\
+
+\paragraph{Multicast Address Assignment}
+To allow usage of multicast within an sACN network there are standard multicast addresses defined for each universe so that a receiver and sender know where to receive/send data. For a sACN universe IPv4 multicast address the first 2 bytes are always 239 and 255 respectively. The 3rd byte is the upper, most significant byte of the universe (when the universe is expressed as a 2 byte unsigned number) and the 4th byte is the least significant byte. The IPv6 mapping is similar with the least significant 16 bits used for the universe number. This is shown in figure \ref{UNI_IP_MAPPING} below.
+
+\begin{figure}[H]
+	\includegraphics[width=\textwidth]{IpMulticastMapping}
+	\caption{The mapping used from an sACN universe to an IPv4 or IPv6 multicast address within an sACN network}
+	\label{UNI_IP_MAPPING}
+\end{figure}
+
+As specified in the internet engineering task force (IETF) RFC 5771 \cite{IETF_RFC_5771} all of the IPv4 multicast address fall within the 'Administratively Scoped Block' as specified in IETF RFC 2365 \cite{IETF_RFC_2365}. This then clarifies that the sACN multicast address fall within the IPv4 Local Scope range (6.1). These multicast addresses are reserved for usage dependent on the specific local network within which they are deployed. This limits the sACN usage to a local dedicated network and not for use on a wide area network (WAN) for as the public internet. As discussed previously this fits with the other design decisions made which based the protocol around usage on a private, isolated dedicated network.\\
+
+The IPv6 multicast address assignment starts with 0xFF in the first byte, this indicates that the address is a multicast address. This is then followed by 0x18 which can be broken down as per section 2.7 of \cite{IETF_RFC_4291} into a flag value of 1 and a scop value of 8. This flag value mean that this is a transient address which indicates that it isn't statically assigned by the IETF and may change in future. The scope value of 8 indicates organisation-local scope which has a similar reasoning as the local-scope used for IPv4 meaning that this address is only valid within a specific environment / group of networks. Therefore the sACN protocol is not aimed at usage on a WAN regardless of IPv4 or IPv6. 
 
 \subsection{Critical Analysis of the sACN protocol}
 ANSI E1.31-2018 sACN over a purely DMX network provides a solution to a number of problems as discussed above but also has its own problems.\\
@@ -134,12 +166,12 @@ The ACN based family of lighting control protocols aren't the only protocols tha
 
 There are a number of existing implementations of sACN in rust however none are fully compliant with the protocol as specified in ANSI E1.31-2018. One of the most complete is \cite{ORIGNIAL_IMPL} which was used as the base for this project. As this is hosted on github it can be seen that while there are a number of forks (6 at time of writing) no public fork has any further progress which leads to the conclusion that this is the most complete open source rust implementation available. Note that this implementation appears in a number of places such as \cite{ORIGINAL_IMPL_RUST_DOC} but this is still the same implementation. This existing implementation provides support for parsing sACN packets and sending sACN data packets using multicast. The existing implementation however does not provide support for universe synchronisation/discovery, sending data using a mechanism other than multicast or receiving data.\\
 
-Implementations of sACN exist in multiple languages, at the time of writing (Jan 2020) a cursory search for E1.31 repositories on github reveals the most prevalent libraries being in C++ and C as shown by Figure: \ref{E131_REPO_SEARCH}. An example of one of these projects is \ref{C_IMPL} which allows both sending and receiving of sACN packets but does not support universe synchronisation or discovery.
+Implementations of sACN exist in multiple languages, at the time of writing (Jan 2020) a cursory search for E1.31 repositories on github reveals the most prevalent libraries being in C++ and C as shown by Figure: \ref{E131_REPO_SEARCH}. An example of one of these projects is \cite{C_IMPL} which allows both sending and receiving of sACN packets but does not support universe synchronisation or discovery.
 
 \begin{figure}
-	\label{E131_REPO_SEARCH}
 	\includegraphics[width=\textwidth]{E131-Repo-Search}
 	\caption{A search of repositories on github with the search term "E1.31" as of Jan 2020}
+	\label{E131_REPO_SEARCH}
 \end{figure}
 
 \section{Requirement specification}
@@ -164,9 +196,9 @@ SACN is commonly used in heterogeneous device environments with a mix of differe
 A waterfall based process model was used for the development of the program. In the waterfall method there are several distinct phases of the project as shown in figure: \ref{waterfall-diag} which follow on from each other with loops back possible if a problem is found at a later stage. This development approach was chosen as it has a very clear structure which allows easy to manage distinct milestones so progress through the project can be more easily tracked. The main disadvantage of this process is the inflexibility, if something major needed to change it would be difficult to adapt the project. This is not a problem for this project however as the project is based on a clearly defined specification provided by the protocol specification and the domains were clearly defined at the start. This means that this inflexibility isn't an issue and so therefore choosing the waterfall method is a suitable software engineering process for this project.
 
 \begin{figure}
-\label{waterfall-diag}
-\includegraphics[width=\textwidth]{sdlc_waterfall_model.jpg}
-\caption{A diagram showing the waterfall development process, [\cite{waterfall-diagram}]}
+	\includegraphics[width=\textwidth]{sdlc_waterfall_model.jpg}
+	\caption{A diagram showing the waterfall development process, [\cite{waterfall-diagram}]}
+	\label{waterfall-diag}
 \end{figure}
 
 The waterfall model can be clearly seen throughout the development of the program. The first phase of 'requirement analysis' is the protocol specification itself as it clearly lays out the goals of the protocol and what it is required to do. On top of this there is the project goals which were defined around the protocol specifically for how much of the protocol this specification should implement for example universe-synchronisation, IPv4/IPv6 support, Unix/Windows support etc. When taken together this gives a clear list of requirements as so allows moving onto the 'system design' phase.\\
@@ -188,9 +220,9 @@ The approach fit the project well as it made it clear which stages the project w
 A high level view of the development of the project over time is shown in Figure \ref{project_dev_timeline}. This shows that the waterfall methodology was followed starting with the deployed existing library which is moved into the requirement analysis stage as new requirements are set as discussed in the requirements section. The requirements are then turned into a design using some of the structure provided by the existing base implementation and a set of milestones created. As discussed above the project then enters its main stages of implementation and testing which loop around as sections of the program are created, tested and debugged. It can be seen that on the 12th of January the project had to loop back 2 steps to the design stage and this was due to the non-threaded structure of the program being insufficient to allow the periodic universe discovery adverts and so the design had to be changed to a threaded structure to allow this. This change was a fairly minor change and so the project quickly got back on track. The implementation of this new design and testing was then performed as part of the next 2 steps as per the waterfall model. This was then followed by a stage of further testing indicating the start of the test phase. This phase also included instances of steps back being required such as the bug found on March 7th which required implementing a new OS specific socket handling mechanism to fix. The testing phase then continued up until the code was ready to be demoed in the real-world environment which marks the transition from the testing phase into the deployment phase. The deployment phase then continued right up until the final deployment marked by the final submission.\\
 
 \begin{figure}[H]
-\label{project_dev_timeline}
-\includegraphics[width=\textwidth]{CS4099-dev-timeline}
-\caption{The development of the project over time with the water-fall methodology stages marked. As this may be too small to read in place it is also included as "Development-Timeline.pdf"}
+	\includegraphics[width=\textwidth]{CS4099-dev-timeline}
+	\caption{The development of the project over time with the water-fall methodology stages marked. As this may be too small to read in place it is also included as "Development-Timeline.pdf"}
+	\label{project_dev_timeline}
 \end{figure}
 
 
@@ -227,9 +259,9 @@ One of the verification methods used with the library is unit tests, these are s
 As a network protocol sACN packets can be inspected on the network and the main tool used for this was Wireshark \cite{WIRESHARK}. This was a crucial debugging tool as it allowed checking that packets were formatted and contained the data that was expected. It was also used to trace a number of bugs related to sending/receiving as it can be used to ensure that packets are actually reaching the destination or if not find where they are lost.  To allow working with sACN specifically wireshark has built-in support for the protocol as-well as displaying the internal DMX payload, these settings are not enabled by default so in addition to enabling the ACN protocol the following settings were used shown in figure \ref{WIRESHARK_SETTINGS}.
 
 \begin{figure}[H]
-	\label{WIRESHARK_SETTINGS}
 	\includegraphics[width=\textwidth]{wireshark-settings}
 	\caption{The settings used for display sACN packets in wireshark}
+	\label{WIRESHARK_SETTINGS}
 \end{figure}
 
 \subsection{Version Control: Git, Gitlab, Github}
@@ -244,9 +276,9 @@ sACNView \cite{SACN_VIEW} is a simple tool which allows sending and receiving wi
 The main page for this tool says it is for the ANSI E1.17 \cite{ANSI_E1.17} protocol (the base ACN protocol) however this is a typo and it really means the ANSI E1.31 protocol (the sACN part of ACN). The reasoning for this assumption is that at multiple points within the documentation such as \cite{SACN_VIEWER_DOC} it says things such as 'E1.17 (2018)' which must mean E1.31 (a related part of E1.17) as there is no 2018 version of E1.31. The documentation also describes the universe discovery feature which is not part of E1.17 as it is part of E1.31. Version v2.1.0 of sACNView was used with this project. \\
 
 \begin{figure}
-	\label{SACN_VIEW_EXPLAINED}
 	\includegraphics[width=\textwidth]{sacnViewExplained}
 	\caption{A screenshot from the main part of the SACNView program (v2.1.0) with added explanation of the various features}
+	\label{SACN_VIEW_EXPLAINED}
 \end{figure}
 
 \subsection{Real-world Usage Tool: Visualisers: Vision}
@@ -255,58 +287,57 @@ When creating a lighting design for an event a common step for a lighting design
 The project extends it thanks to the St Andrews Students Association, particularly the director of events and services (Mika Schmeling) for their permission to use their real-world visualiser setup with this project.
 
 \begin{figure}[H]
-	\label{VISION_EXPLAINED}
 	\includegraphics[width=\textwidth]{vision_explained}
 	\caption{A screenshot from the vision visualiser with added explanation to explain the interface.}
+	\label{VISION_EXPLAINED}
 \end{figure}
 
 \subsection{Real-world Usage Tool: Lighting Control: Avolites Titan}
 The visualiser provides a way to test that the library can send sACN which can be utilised by a real-world system but it doesn't test the other-way around where the library is receiving sACN. To test this a source of sACN was required and this came in the form of a real-world lighting controller. The lighting controller used was an Avolites Titan Mobile \cite{AVO_TITAN_MOBILE}. This controller is part of a family of Avolites lighting controllers which are used across the world to control lighting systems with sizes ranging from small few light setups up-to arena sized world-tours. All the different controllers in the family run the same Avolites Titan software. This software is another professional example of a product which claims compliance with sACN and through its extensive usage by professionals in a variety of systems has show that it is conformant with many systems using the sACN protocol. By testing the library receiver against this lighting controller it therefore adds evidence that it is compliant with the protocol and can actually be used for its intended purpose. This controller was available for the project as I already own it for use as part of my work in the lighting industry outside of university. A brief explanation of the Avolites Titan software is included in figure \ref{AVO_EXPLAINED}, the interface is also further detailed within the relevant interoperability/acceptance tests. Avolites Titan V11.4 was used for testing. Show files (the saved configuration + data Avolites save files) for the tests are included in the interoperability tests folder. Note that each of the folders e.g. "CS4099-Receiver-Interoperability" is a show-file with the files inside all being part of the overall show-file + show-file versions.
 
 \begin{figure}[H]
-	\label{AVO_EXPLAINED}
 	\includegraphics[width=\textwidth]{avo_titan_explained}
 	\caption{A screenshot from Avolites Titan with some of the features explained.}
+	\label{AVO_EXPLAINED}
 \end{figure}
 
 \section{Ethics}
 This project has no ethical considerations that require notification in this section.
 
 \section{Design}
-\subsection{Expected System Usage/Layout}
-Figure \ref{Expected_usage} shows a layout of a typical network in which sACN may be deployed. It shows that there are expected to be many sources of sACN in the form of lighting controllers and many receivers in the form of lighting fixtures and E1.31 to DMX converters. It also shows that the senders may send onto the same or separate universes as each other. Receivers can receive one or multiple different universes and multiple receivers can receive the same universes. Within these universes individual devices all have their own 'addresses' which refer to which section of the universe they are listening to as-well as 'modes' which refer to how many 'channels' (Bytes) are used and what each channel controls on the fixture. This within universe addressing as-well as protocols for assigning and communicating addresses that fixtures should use is outwith the scope of ANSI E1.31-2018. The protocol is focused on the section shown in blue which contains the sending of data from sources such as lighting controllers onto receivers such as the lighting fixtures.\\
+
 
 \subsection{Packet structure}
 All sACN packets are based on the standard ACN header as shown in Figure \ref{ACN_HEADER}. By using the general ACN header it allows other ACN protocols to be used on the network alongside sACN without conflicts. To designate the rest of the packet as an sACN packet the vector field is set either to VECTOR\_ROOT\_E131\_DATA to indicate that the packet is a E1.31 data packet or VECTOR\_ROOT\_E131\_EXTENDED (note these are defined constant numbers not strings) to indicate that the packet is either a synchronisation or discovery packet. The rest of the data packet is then structures as specified in Figure \ref{ACN_DATA_STRUCTURE}. For the universe synchronisation and discovery packets the next part of the structure starts the same as shown in Figure \ref{ACN_EXTENDED_START} with the vector field deciding if the rest of the packet follows a synchronisation or discovery packet structure. The synchronisation structure after this is fairly short as shown in Figure \ref{ACN_REST_SYNC_PACKET}. The discovery structure is longer as it may include a list of upto 512 universes and is show in Figure \ref{ACN_REST_DISCOVERY_PACKET}.
 
 \begin{figure}[H]
-\label{ACN_HEADER}
-\includegraphics[width=\textwidth]{Acn_header}
-\caption{The layout of the standard ACN header used for all sACN packets}
+	\includegraphics[width=\textwidth]{Acn_header}
+	\caption{The layout of the standard ACN header used for all sACN packets}
+	\label{ACN_HEADER}
 \end{figure}
 
 \begin{figure}[H]
-\label{ACN_DATA_STRUCTURE}
-\includegraphics[width=\textwidth]{acn_data_structure}
-\caption{The structure of the rest of the sACN data packet}
+	\includegraphics[width=\textwidth]{acn_data_structure}
+	\caption{The structure of the rest of the sACN data packet}
+	\label{ACN_DATA_STRUCTURE}
 \end{figure}
 
 \begin{figure}[H]
-\label{ACN_EXTENDED_START}
-\includegraphics[width=\textwidth]{Acn_extended_framing_structure_sync_discovery}
-\caption{The structure of the next part of the sACN universe synchronisation and discovery packet}
+	\includegraphics[width=\textwidth]{Acn_extended_framing_structure_sync_discovery}
+	\caption{The structure of the next part of the sACN universe synchronisation and discovery packet}
+	\label{ACN_EXTENDED_START}
 \end{figure}
 
 \begin{figure}[H]
-\label{ACN_REST_SYNC_PACKET}
-\includegraphics[width=\textwidth]{acn_sync_packet_specific_structure}
-\caption{The structure of the rest of the sACN universe synchronisation packet}
+	\includegraphics[width=\textwidth]{acn_sync_packet_specific_structure}
+	\caption{The structure of the rest of the sACN universe synchronisation packet}
+	\label{ACN_REST_SYNC_PACKET}
 \end{figure}
 
 \begin{figure}[H]
-\label{ACN_REST_DISCOVERY_PACKET}
-\includegraphics[width=\textwidth]{acn_discovery_packet_specific_structure}
-\caption{The structure of the rest of the sACN universe discovery packet}
+	\includegraphics[width=\textwidth]{acn_discovery_packet_specific_structure}
+	\caption{The structure of the rest of the sACN universe discovery packet}
+	\label{ACN_REST_DISCOVERY_PACKET}
 \end{figure}
 
 \subsubsection{Universe Discovery}
@@ -317,41 +348,6 @@ The universe discovery mechanism sends discovery adverts on the
 \subsubsection{Universe Synchronisation}
 The universe synchronisation mechanism allows multiple universes of data to be acted upon almost simultaneously. The mechanism for how this works on the receiver side is shown in the include 'Sync-Mechanism.pdf' file as it doesn't fit into the report format in a clear way (splits across pages).
 
-\subsection{Network Layers / Transport Modes}
-sACN falls within the application layer of the 5-layer network stack as shown in Figure \ref{NET_STACK}. This is because it sits on top of UDP (layer 4) and IP(layer 3). As UDP is used as the underlying transport protocol it means that there is no guaranteed delivery of packets. The protocol itself also doesn't provide this which means that data send by a source may not reach a receiver and there is no way for the source to know within the protocol scope. This loss of guarantee comes with the advantage that there is less packet overhead and no hand-shake is required meaning data can be sent immediately. The use of UDP also avoids many of the problems associated with session transport protocols like TCP such as lost packets significantly reducing throughput due to the congestion control mechanism. Theses trade-offs fit the expected usage of the sACN protocol as they minimise latency which is vital in a real-time event/lighting system. \\
-
-\begin{figure}[H]
-\label{NET_STACK}
-\includegraphics[width=\textwidth]{net_stack}
-\caption{Image showing the 5 network layers}
-\end{figure}
-
-The usage of UDP additionally means that packets can be delivered in any order, this can cause random jumps in data on the protocol which is noted within the specification to be problematic if this is used with a moving head lighting fixture as it effects the predictive algorithms used (ANSI E1.31-2018 Section 6.7.2). To reduce this happening the protocol uses sequence numbers to allow out of order packets to be discarded. It is important to note that because a packet might have been lost the protocol doesn't attempt to wait for packets which haven't be received yet instead always acting on the most recent data (with regards to sequence number) and discarding any old data received. This keeps the latency of the system low and prevents slightly out of order packets causing unexpected jumps back and forth in the data. As the sequence number field is only 1 byte in length it is expected to wrap around frequently, therefore the sequence numbering mechanism accounts for this by looking at the difference between the last and current sequence numbers as oppose to the numbers themselves directly. This combined with using a reject range for the difference of (-20, 0] with other values accepted allows for the sequence number to wrap around and for the system to quickly (within 20 sequentially numbered packets) start accepting packets again - once again minimising latency. 
-
-The protocol is specified for usage over IP however it doesn't have any inherent requirements for this meaning that in future it could be used over another network protocol with a suitable adaptation. This makes the protocol more future proof and more widely applicable to different applications which might be non-IP. In its current 2018 state however the protocol only specifies operation over IPv4 and IPv6 using 3 different communication modes. The first mode is unicast, this is where a source sends data directly to the receivers IP and this means that any data sent by a source must individually be sent to all receivers for them to see it. The next mode is broadcast, this is where the destination IP is set to a special broadcast IP which causes all receivers to see the data. This mode means that a sender doesn't have to individually send to each receiver but does mean that there is the potential to flood the network with these broadcast packets with all receivers getting packets even if they didn't want them.\\
-
-The final IP communication mode utilised by the protocol is IP Multicast. This is the default mode used and works by receivers joining ip multicast groups which senders then send to with only the receivers that joined the relevant multicast group seeing the send packets. This minimises the packets sent with only registered interested receivers seeing packets. Within the sACN protocol each universe utilises a different multicast address and therefore each receiver and sender can use a specific address to receive from / send to a specific universe. This assignment of addresses to universes is described below.\\
-
-\subsubsection{Multicast Address Assignment}
-For a sACN universe IPv4 multicast address the first 2 bytes are always 239 and 255 respectively. The 3rd byte is the upper, most significant byte of the universe (when the universe is expressed as a 2 byte unsigned number) and the 4th byte is the least significant byte. This is shown by Figure \ref{IPV4_MULTICAST_MAPPING}.
-
-\begin{figure}[H]
-\label{IPV4_MULTICAST_MAPPING}
-\includegraphics[width=\textwidth]{Ipv4MulticastMapping}
-\caption{The mapping used from a universe to an Ipv4 address used for multicast with sACN}
-\end{figure}
-
-The Ipv6 mapping is similar with the least significant 16 bits used, Figure: \ref{IPV6_MULTICAST_MAPPING}.
-
-\begin{figure}[H]
-\label{IPV6_MULTICAST_MAPPING}
-\includegraphics[width=\textwidth]{Ipv6MulticastMapping}
-\caption{The mapping used from a universe to an Ipv6 address used for multicast with sACN}
-\end{figure}
-
-As specified in the internet engineering task force (IETF) RFC 5771 \cite{IETF_RFC_5771} all of the Ipv4 multicast address fall within the 'Administratively Scoped Block' as specified in IETF RFC 2365 \cite{IETF_RFC_2365}. This then clarifies that the sACN multicast address fall within the IPv4 Local Scope range (6.1). These multicast addresses are reserved for usage dependent on the specific local network within which they are deployed. This limits the sACN usage to a local dedicated network and not for use on a wide area network (WAN) for as the public internet. As discussed previously this fits with the other design decisions made which based the protocol around usage on a private, isolated dedicated network.\\
-
-The IPv6 multicast address assignment starts with 0xFF in the first byte, this indicates that the address is a multicast address. This is then followed by 0x18 which can be broken down as per section 2.7 of \cite{IETF_RFC_4291} into a flag value of 1 and a scop value of 8. This flag value mean that this is a transient address which indicates that it isn't statically assigned by the IETF and may change in future. The scope value of 8 indicates organisation-local scope which has a similar reasoning as the local-scope used for IPv4 meaning that this address is only valid within a specific environment / group of networks. Therefore the sACN protocol is not aimed at usage on a WAN regardless of Ipv4 or Ipv6. 
 
 \section{Implementation}
 Implementation
@@ -402,27 +398,27 @@ Unit testing relies on testing each unit to be effective and so therefore as par
 As described in the tools section unit tests created using the in-built rust/cargo unit testing framework. In addition to this the code coverage of these unit tests was checked using the grcov tool created by mozilla \cite{GRCOV}. The output of the test coverage is included as a webpage (index.html in the coverage folder) and the library view of the results are shown in \ref{GRCOV_TOP_LEVEL}. The library is focused on as this is the focus of the testing (the other modules are part of the webpage but not shown in the screenshot). The code coverage tool shows that ... 
 
 \begin{figure}[H]
-	\label{GRCOV_TOP_LEVEL}
 	\includegraphics[width=\textwidth]{todo.jpg}
 	\caption{The library view of the code coverage tool output showing the code coverage of each part of the code}
+	\label{GRCOV_TOP_LEVEL}
 \end{figure}
 
 \subsubsection{Integration Testing}
 Unit testing shows that individual parts of the code works as expected, integration comes as the next step where the parts are tested (integrated) together. This included testing the sender and receiver as full units as well as testing them with each other. This was done using two separate mechanisms. The first utilised the rust testing framework that already exists (as used for the unit tests) by creating multiple threads within a test with each thread representing a sender or receiver. These senders and receivers then connect to the same network using different addresses and generate/receive packets to check the output in a variety of scenarios. This simulates the senders and receivers being independent as they only share data through the protocol with no shared memory (sharing memory between threads can only be done explicitly in rust a normal variable cannot be shared). The only exception to this was the usage of the rust thread message passing system which allowed the sender/receiver threads to wait on each other as appropriate to allow repeatedly creating the desired test scenario. An example of this is shown in figure \ref{UNIT_INTEGRATION_TEST}. This shows how a typical test is set-up . First the constant parameters are defined first. Second the senders or in this case receiver created are created. The sender/receivers are then put into the expected states by using the thread message passing to communicate as certain points are reached in the code which in this case is the receiver being ready to receive. The actions being tested, in this case sending a single universe of data over multicast, are then performed and the outcome is checked against the expected results. These integration tests mimic the real-usage of the system but with the advantage that the states of the sender/receive can be more easily synchronised to test a specific scenario using the thread message passing system. These tests can also be run on a single machine utilising a feature within both Fedora and Windows which allows a single interface to a network to use multiple IP addresses. This is required because the receiver must use the protocol defined ACN port and so different addresses have to be used to provide separation. As the states can be easily synchronised and only a single computer is needed these tests allow a large range of possible scenarios and functionality to be checked without requiring a more complicated (and prone to breakages) set-up. 
 
 \begin{figure}[H]
-	\label{UNIT_INTEGRATION_TEST}
 	\includegraphics[width=\textwidth]{integration-test-example.png}
-	\caption{}
+	\caption{An example of the code used for a single machine integration test}
+	\label{UNIT_INTEGRATION_TEST}
 \end{figure}
 
 \paragraph{Across Machines}
 The threaded integration tests are limited because the protocol is designed to work across multiple machines and the tests only use one machine. This means that to fully test the protocol it also has to be tested in a more representative environment of its actual usage. In-order to allow this 2 small demo programs were created, these programs were also written in rust and represent an example implementation of a sender ('demo\_src') and a receiver ('demo\_rcv') that uses the library. A testing framework was then created as shown in the 'script-testing' folder. This framework works between multiple machines by using SSH to start up the required senders and receivers and then predefined input is provided to both and the output written to a file on a shared file system. Once all the tests are run the output is then compared against the expected output (utilising the diff tool) and if it matches the test is marked as passed (failed otherwise). This allows a way of showing the that the protocol works across a real network setup with multiple machines while still being reproducible without having large amounts of manual input. This test setup can be represented as the abstract and physical layout shown in Figure \ref{INTEGRATION_TEST_SETUP}.
 
 \begin{figure}[H]
-	\label{INTEGRATION_TEST_SETUP}
 	\includegraphics[width=\textwidth]{SH-Project-Intergration-Tests-Abstract-View.png}
 	\caption{The abstract setup of the integration tests along with the actual implementation}
+	\label{INTEGRATION_TEST_SETUP}
 \end{figure}
 
 The test-scripts used as-well as the expected output files and given inputs are included in the script-testing/single-rcv-src folder. The test\_run script actually runs the test, it starts the receiver and sender and then provides the receiver the commands in the 'rcv' file and the sender the commands in the 'src' file. The output of both sender and receiver are piped into an output file 'xrcv-out.temp' and 'xsrc-out.temp' where 'x' is the test number. The test\_check script then checks the output against the expected output for each test and reports pass/fail. The reason for separate run/check scripts is that it helps to account for the delay in the file-system syncing the output from the test machines so that the master can check it. The test.sh file calls each test / check in turn and is the entry point for the testing mechanism (as described in usage).
@@ -440,9 +436,9 @@ To guide the fuzzer to produce data based on sACN expected packets the raw data 
 The results of the fuzzer run are shown in figure \ref{FUZZ_RESULTS}. These results show...
 
 \begin{figure}[H]
-	\label{FUZZ_RESULTS}
 	\includegraphics[width=\textwidth]{todo}
 	\caption{The results of the fuzz testing on the parsing part of the library.}
+	\label{FUZZ_RESULTS}
 \end{figure}
 
 \subsubsection{Testing External Interoperability}
@@ -454,15 +450,15 @@ These tests can highlight problems with the program which are hidden until this 
 To allow repeatability the show files used for the interoperability tests are included in the Avolites Titan Show Files sub folder in the Interoperability Testing folder. These show files were made for version 11.4 and run on an Avolites Titan Mobile. Within the show file each universe was assigned to an sACN universe with a 1 to 1 mapping and no other network protocols were used as shown in figure \ref{AVO_DMX_LINES}.  In addition to this within the show-file itself 1 channel lighting fixtures called 'dimmers' were used to allow a 1:1 mapping between a fixture in the show-file and a DMX-address. This mapping is shown in figure \ref{AVO_RECV_INTEROP_SETUP} which shows some of the dimmers used (the groups part of the window shows that 8190 dimmers were added to represent each channel in universes 1 - 16). All settings used are included within the save files but in general were left to their defaults.
 
 \begin{figure}[H]
-	\label{AVO_DMX_LINES}
 	\includegraphics*[width=\textwidth]{avo-dmx-lines.png}
 	\caption{The setup of the avolites show file network protocols used for the interoperability testing}
+	\label{AVO_DMX_LINES}
 \end{figure}
 
 \begin{figure}[H]
-	\label{AVO_RECV_INTEROP_SETUP}
 	\includegraphics*[width=\textwidth]{avo-file-dims.png}
 	\caption{The setup of the avolites show file used for interoperability testing showing some of the fixtures patched}
+	\label{AVO_RECV_INTEROP_SETUP}
 \end{figure}
 
 \paragraph*{Industry Receiver - Vectorworks Vision Setup}
@@ -472,15 +468,15 @@ The vectorworks vision visualiser uses the vision files "CS4099-TEST.v3s" and "S
 sACNView was setup using the default settings with the ethernet interface assigned to 192.168.0.6 set as the network interface as shown in figure \ref{SACN_VIEW_INTEROP_SETUP}. Universes 1 - 16 inclusive were listened to for every test even if less than that were used for a specific test. Unicast and multicast were enabled for every universe as shown in figure \ref{SACN_VIEW_UNICAST_MULTICAST_ENABLED}.
 
 \begin{figure}[H]
-	\label{SACN_VIEW_INTEROP_SETUP}
 	\includegraphics*[width=\textwidth]{sacnViewSettings.png}
 	\caption{The setup of sacnView used for the interoperability tests}
+	\label{SACN_VIEW_INTEROP_SETUP}
 \end{figure}
 
 \begin{figure}[H]
-	\label{SACN_VIEW_UNICAST_MULTICAST_ENABLED}
 	\includegraphics*[width=\textwidth]{sacnViewIPmodes.png}
 	\caption{The IP modes enabled in sacnView used for the interoperability tests}
+	\label{SACN_VIEW_UNICAST_MULTICAST_ENABLED}
 \end{figure}
 
 \paragraph*{Testing receiver implementation}
@@ -491,15 +487,15 @@ For some of the tests it was easier to determine if they passed by visualising t
 Similar to test 5, tests 3 and 4 also included visualisation elements as part of the check and details of these as-well as further specifics/details of all tests are included within the screenshots/videos within the relevant folders test folders (excluded from report for brevity).\\
 
 \begin{figure}[H]
-	\label{AVO_SETUP}
 	\includegraphics[width=\textwidth]{CS4099-Avo-setup.png}
 	\caption{The set-up of the text with the implementation receiver and an industry sACN source}
+	\label{AVO_SETUP}
 \end{figure}
 
 \begin{figure}[H]
-	\label{RCV_INTEROP_TEST_5_GRAPH}
 	\includegraphics[width=\textwidth]{test-5-processed-first-value-chart}
 	\caption{A graph showing the values of each universe per packet received for that universe. This shows the ranges of each universe fit within the expected.}
+	\label{RCV_INTEROP_TEST_5_GRAPH}
 \end{figure}
 
 \paragraph*{Testing sender implementation}
@@ -510,15 +506,15 @@ The test was set-up identically for both receivers as shown in figure \ref{VIS_V
 To allow the visualiser output to be easier to interpret the 3D scene used uses a large number of simple lighting fixtures. These fixtures are laid out as shown in figure \ref{VIS_LX_PLOT} with each fixture corresponding to a single channel on a universe.\\
 
 \begin{figure}[H]
-	\label{VIS_VIEWER_SETUP}
 	\includegraphics[width=\textwidth]{CS4099-Visualiser-setup.png}
 	\caption{The set-up of the sender implementation interoperability test}
+	\label{VIS_VIEWER_SETUP}
 \end{figure}
 
 \begin{figure}[H]
-	\label{VIS_LX_PLOT}
 	\includegraphics[width=\textwidth]{Vision-File-LX-Plot.png}
 	\caption{The lighting plot of the lights used as part of the Vision Visualiser test scene}
+	\label{VIS_LX_PLOT}
 \end{figure}
 
 \subsubsection{Acceptance Testing}
@@ -533,15 +529,15 @@ The test layout is shown in \ref{ACCEPTANCE_TEST_LAYOUT}, the plan for the demon
 The lighting layout used for visualisation in this test is setup to be similar to the actual setup used in the students union thereby being a representative example of an actual industry use case. The layout of this setup with accompanying explanation is shown in figure \ref{ACCEPTANCE_TEST_LX_PLOT}. 
 
 \begin{figure}[H]
-	\label{ACCEPTANCE_TEST_LAYOUT}
 	\includegraphics[width=\textwidth]{CS4099-Acceptance-Test-Layout.png}
 	\caption{The layout of the acceptance test performed}
+	\label{ACCEPTANCE_TEST_LAYOUT}
 \end{figure}
 
 \begin{figure}[H]
-	\label{ACCEPTANCE_TEST_LX_PLOT}
 	\includegraphics[width=\textwidth]{Union-Setup-Vision-File-LX-Plot.png}
 	\caption{The lighting plot showing the locations and addresses of fixtures within the visualiser used as part of the acceptance test. This is based on the actual lighting layout used within the students association. Additional explanation has been added on top of the plan to describe what each part means.}
+	\label{ACCEPTANCE_TEST_LX_PLOT}
 \end{figure}
 
 \subsection{What Testing Shows}
@@ -628,9 +624,9 @@ Usage of the library is described in the generated rust-doc documentation. Once 
 To check that the documentation contains the right information it was compared to the documentation for another sACN library \cite{C_IMPL} and this is summarised in the table in figure \ref{DOC_COMPARISON}.
 
 \begin{figure}[H]
-	\label{DOC_COMPARISON}
 	\includegraphics[width=\textwidth]{documentation-comparison-table}
 	\caption{A table showing a comparison between the documentation of another sACN library \cite{C_IMPL} and this project, green indicates that the area is covered}
+	\label{DOC_COMPARISON}
 \end{figure}
 
 \section{Other Appendices}
