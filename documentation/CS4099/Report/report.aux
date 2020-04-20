@@ -36,7 +36,8 @@
 \citation{IETF_RFC_4291}
 \@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces The mapping used from an sACN universe to an IPv4 or IPv6 multicast address within an sACN network}}{15}\protected@file@percent }
 \newlabel{UNI_IP_MAPPING}{{6}{15}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Critical Analysis of the sACN protocol}{15}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}sACN Packet Structure}{16}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Critical Analysis of the sACN protocol}{16}\protected@file@percent }
 \citation{ANSI_E1.31_2009}
 \citation{ANSI_E1.31_2016}
 \citation{WHAT_COMES_AFTER_SACN}
@@ -44,35 +45,35 @@
 \citation{ANSI_E1.33_2019}
 \citation{ETC}
 \citation{ANSI_E1.33_IMPL}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Related Work}{17}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Related Work}{17}\protected@file@percent }
 \citation{ARNET}
 \citation{ARTNET}
 \citation{ORIGNIAL_IMPL}
 \citation{ORIGINAL_IMPL_RUST_DOC}
 \citation{C_IMPL}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Requirement specification}{18}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces A search of repositories on github with the search term "E1.31" as of Jan 2020}}{19}\protected@file@percent }
 \newlabel{E131_REPO_SEARCH}{{7}{19}}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Software Engineering Process}{20}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Requirement specification}{20}\protected@file@percent }
 \citation{waterfall-diagram}
 \@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces A diagram showing the waterfall development process, [\cite  {waterfall-diagram}]}}{21}\protected@file@percent }
 \newlabel{waterfall-diag}{{8}{21}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Software Engineering Process}{21}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Implementation, Testing and Deployment Phases}{22}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Reflection on Methodology Used}{23}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Reflection on Methodology Used}{24}\protected@file@percent }
 \citation{RUST_LANG}
 \citation{RUST_C_COMPARISON}
-\citation{RUST_TRY}
 \@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces The development of the project over time with the water-fall methodology stages marked. As this may be too small to read in place it is also included as "Development-Timeline.pdf"}}{25}\protected@file@percent }
 \newlabel{project_dev_timeline}{{9}{25}}
 \@writefile{toc}{\contentsline {section}{\numberline {7}Tools \& Technologies}{25}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Language: Rust}{25}\protected@file@percent }
+\citation{RUST_TRY}
 \citation{ERROR_CHAIN}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {7.1.1}Error handling: Error-chain}{26}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Dependency Management: Cargo}{26}\protected@file@percent }
-\citation{WIRESHARK}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.1}Run}{27}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.2}Docs}{27}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.3}Test}{27}\protected@file@percent }
+\citation{WIRESHARK}
 \@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Debug Tools: Wireshark}{28}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces The settings used for display sACN packets in wireshark}}{28}\protected@file@percent }
 \newlabel{WIRESHARK_SETTINGS}{{10}{28}}
@@ -95,75 +96,63 @@
 \newlabel{AVO_EXPLAINED}{{13}{32}}
 \@writefile{toc}{\contentsline {section}{\numberline {8}Ethics}{32}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {9}Design}{32}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {9.1}Expected System Usage/Layout}{32}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {9.2}Packet structure}{32}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces The layout of the standard ACN header used for all sACN packets}}{33}\protected@file@percent }
-\newlabel{ACN_HEADER}{{14}{33}}
-\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces The structure of the rest of the sACN data packet}}{34}\protected@file@percent }
-\newlabel{ACN_DATA_STRUCTURE}{{15}{34}}
-\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces The structure of the next part of the sACN universe synchronisation and discovery packet}}{34}\protected@file@percent }
-\newlabel{ACN_EXTENDED_START}{{16}{34}}
-\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces The structure of the rest of the sACN universe synchronisation packet}}{35}\protected@file@percent }
-\newlabel{ACN_REST_SYNC_PACKET}{{17}{35}}
-\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces The structure of the rest of the sACN universe discovery packet}}{35}\protected@file@percent }
-\newlabel{ACN_REST_DISCOVERY_PACKET}{{18}{35}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.1}Universe Discovery}{35}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.2}Universe Synchronisation}{35}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {10}Implementation}{35}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {10.1}SacnReceiver}{36}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {10.2}SacnSource}{37}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {10.3}Std vs Non-Std}{38}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {10.4}Drop / Closing}{38}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {11}Testing}{39}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}Scope}{40}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.0.1}Universe Discovery}{32}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.0.2}Universe Synchronisation}{33}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {10}Implementation}{33}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.1}SacnReceiver}{33}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.2}SacnSource}{34}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.3}Std vs Non-Std}{35}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.4}Drop / Closing}{36}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {11}Testing}{37}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}Scope}{37}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{38}\protected@file@percent }
 \citation{GRCOV}
-\@writefile{toc}{\contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{41}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{41}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces The library view of the code coverage tool output showing the code coverage of each part of the code}}{42}\protected@file@percent }
-\newlabel{GRCOV_TOP_LEVEL}{{19}{42}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{42}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces An example of the code used for a single machine integration test}}{43}\protected@file@percent }
-\newlabel{UNIT_INTEGRATION_TEST}{{20}{43}}
-\@writefile{toc}{\contentsline {paragraph}{Across Machines}{43}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces The abstract setup of the integration tests along with the actual implementation}}{45}\protected@file@percent }
-\newlabel{INTEGRATION_TEST_SETUP}{{21}{45}}
-\@writefile{toc}{\contentsline {paragraph}{More than 2 machines}{46}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{46}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{39}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces The library view of the code coverage tool output showing the code coverage of each part of the code}}{40}\protected@file@percent }
+\newlabel{GRCOV_TOP_LEVEL}{{14}{40}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{40}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces An example of the code used for a single machine integration test}}{41}\protected@file@percent }
+\newlabel{UNIT_INTEGRATION_TEST}{{15}{41}}
+\@writefile{toc}{\contentsline {paragraph}{Across Machines}{41}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces The abstract setup of the integration tests along with the actual implementation}}{43}\protected@file@percent }
+\newlabel{INTEGRATION_TEST_SETUP}{{16}{43}}
+\@writefile{toc}{\contentsline {paragraph}{More than 2 machines}{44}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{44}\protected@file@percent }
 \citation{RUST_AFL_FUZZ}
 \citation{RUST_AFL_FUZZ_DOC}
 \citation{WIRESHARK_EXPORT_RAW}
-\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces The results of the fuzz testing on the parsing part of the library.}}{48}\protected@file@percent }
-\newlabel{FUZZ_RESULTS}{{22}{48}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{48}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces The setup of the avolites show file network protocols used for the interoperability testing}}{49}\protected@file@percent }
-\newlabel{AVO_DMX_LINES}{{23}{49}}
-\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces The setup of the avolites show file used for interoperability testing showing some of the fixtures patched}}{50}\protected@file@percent }
-\newlabel{AVO_RECV_INTEROP_SETUP}{{24}{50}}
-\@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces The setup of sacnView used for the interoperability tests}}{51}\protected@file@percent }
-\newlabel{SACN_VIEW_INTEROP_SETUP}{{25}{51}}
-\@writefile{lof}{\contentsline {figure}{\numberline {26}{\ignorespaces The IP modes enabled in sacnView used for the interoperability tests}}{52}\protected@file@percent }
-\newlabel{SACN_VIEW_UNICAST_MULTICAST_ENABLED}{{26}{52}}
-\@writefile{lof}{\contentsline {figure}{\numberline {27}{\ignorespaces The set-up of the text with the implementation receiver and an industry sACN source}}{53}\protected@file@percent }
-\newlabel{AVO_SETUP}{{27}{53}}
-\@writefile{lof}{\contentsline {figure}{\numberline {28}{\ignorespaces A graph showing the values of each universe per packet received for that universe. This shows the ranges of each universe fit within the expected.}}{54}\protected@file@percent }
-\newlabel{RCV_INTEROP_TEST_5_GRAPH}{{28}{54}}
-\@writefile{lof}{\contentsline {figure}{\numberline {29}{\ignorespaces The set-up of the sender implementation interoperability test}}{55}\protected@file@percent }
-\newlabel{VIS_VIEWER_SETUP}{{29}{55}}
-\@writefile{lof}{\contentsline {figure}{\numberline {30}{\ignorespaces The lighting plot of the lights used as part of the Vision Visualiser test scene}}{56}\protected@file@percent }
-\newlabel{VIS_LX_PLOT}{{30}{56}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{56}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {31}{\ignorespaces The layout of the acceptance test performed}}{57}\protected@file@percent }
-\newlabel{ACCEPTANCE_TEST_LAYOUT}{{31}{57}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces The results of the fuzz testing on the parsing part of the library.}}{46}\protected@file@percent }
+\newlabel{FUZZ_RESULTS}{{17}{46}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{46}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces The setup of the avolites show file network protocols used for the interoperability testing}}{47}\protected@file@percent }
+\newlabel{AVO_DMX_LINES}{{18}{47}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces The setup of the avolites show file used for interoperability testing showing some of the fixtures patched}}{48}\protected@file@percent }
+\newlabel{AVO_RECV_INTEROP_SETUP}{{19}{48}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces The setup of sacnView used for the interoperability tests}}{49}\protected@file@percent }
+\newlabel{SACN_VIEW_INTEROP_SETUP}{{20}{49}}
+\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces The IP modes enabled in sacnView used for the interoperability tests}}{50}\protected@file@percent }
+\newlabel{SACN_VIEW_UNICAST_MULTICAST_ENABLED}{{21}{50}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces The set-up of the text with the implementation receiver and an industry sACN source}}{51}\protected@file@percent }
+\newlabel{AVO_SETUP}{{22}{51}}
+\@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces A graph showing the values of each universe per packet received for that universe. This shows the ranges of each universe fit within the expected.}}{52}\protected@file@percent }
+\newlabel{RCV_INTEROP_TEST_5_GRAPH}{{23}{52}}
+\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces The set-up of the sender implementation interoperability test}}{53}\protected@file@percent }
+\newlabel{VIS_VIEWER_SETUP}{{24}{53}}
+\@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces The lighting plot of the lights used as part of the Vision Visualiser test scene}}{54}\protected@file@percent }
+\newlabel{VIS_LX_PLOT}{{25}{54}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{54}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {26}{\ignorespaces The layout of the acceptance test performed}}{55}\protected@file@percent }
+\newlabel{ACCEPTANCE_TEST_LAYOUT}{{26}{55}}
 \citation{ANSI_E1.31}
-\@writefile{lof}{\contentsline {figure}{\numberline {32}{\ignorespaces The lighting plot showing the locations and addresses of fixtures within the visualiser used as part of the acceptance test. This is based on the actual lighting layout used within the students association. Additional explanation has been added on top of the plan to describe what each part means.}}{58}\protected@file@percent }
-\newlabel{ACCEPTANCE_TEST_LX_PLOT}{{32}{58}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {11.3}What Testing Shows}{58}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {27}{\ignorespaces The lighting plot showing the locations and addresses of fixtures within the visualiser used as part of the acceptance test. This is based on the actual lighting layout used within the students association. Additional explanation has been added on top of the plan to describe what each part means.}}{56}\protected@file@percent }
+\newlabel{ACCEPTANCE_TEST_LX_PLOT}{{27}{56}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.3}What Testing Shows}{56}\protected@file@percent }
 \citation{ARDUINO}
-\@writefile{toc}{\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{59}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {12.1}Extraneous Circumstances - COVID-19}{61}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {13}Conclusions}{62}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {14}Appendices}{62}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {15}User Manual}{62}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{57}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {12.1}Extraneous Circumstances - COVID-19}{59}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {13}Conclusions}{60}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {14}Appendices}{60}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {15}User Manual}{60}\protected@file@percent }
 \citation{C_IMPL}
 \citation{C_IMPL}
 \citation{C_IMPL}
@@ -172,9 +161,9 @@
 \bibcite{ANSI_E1.31}{3}
 \bibcite{ANSI_E1.11}{4}
 \bibcite{DMX_INFO}{5}
-\@writefile{lof}{\contentsline {figure}{\numberline {33}{\ignorespaces A table showing a comparison between the documentation of another sACN library \cite  {C_IMPL} and this project, green indicates that the area is covered}}{64}\protected@file@percent }
-\newlabel{DOC_COMPARISON}{{33}{64}}
-\@writefile{toc}{\contentsline {section}{\numberline {16}Other Appendices}{64}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {28}{\ignorespaces A table showing a comparison between the documentation of another sACN library \cite  {C_IMPL} and this project, green indicates that the area is covered}}{62}\protected@file@percent }
+\newlabel{DOC_COMPARISON}{{28}{62}}
+\@writefile{toc}{\contentsline {section}{\numberline {16}Other Appendices}{62}\protected@file@percent }
 \bibcite{C_IMPL}{6}
 \bibcite{C++_IMPL}{7}
 \bibcite{RUST_LANG}{8}
