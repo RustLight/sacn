@@ -149,40 +149,7 @@ As specified in the internet engineering task force (IETF) RFC 5771 \cite{IETF_R
 The IPv6 multicast address assignment starts with 0xFF in the first byte, this indicates that the address is a multicast address. This is then followed by 0x18 which can be broken down as per section 2.7 of \cite{IETF_RFC_4291} into a flag value of 1 and a scop value of 8. This flag value mean that this is a transient address which indicates that it isn't statically assigned by the IETF and may change in future. The scope value of 8 indicates organisation-local scope which has a similar reasoning as the local-scope used for IPv4 meaning that this address is only valid within a specific environment / group of networks. Therefore the sACN protocol is not aimed at usage on a WAN regardless of IPv4 or IPv6. 
 
 \subsection{sACN Packet Structure}
-As sACN is a subset of the wider ACN family of protocols it utilises a common standard ACN header. By using the general ACN header it allows other ACN protocols to be used on the network alongside sACN without conflicts, for example it is later discussed in the relate works that ANSI E1.33-2019 (remote device management) and ANSI E1.31-2018 can be used together to increase the available functionality in the system. The packets are split into layers with each layer handling a different part of the packet. As there may be multiple possible layers the packet contains multiple 'vector' fields. These fields contain predefined values which tell the receiver about what the data will be. The structure of the packets is described directly within the protocol as a table which has been condensed into the diagram in figure \ref{PACKET_STRUCTURE}.
-
-
-To designate the rest of the packet as an sACN packet the vector field is set either to VECTOR\_ROOT\_E131\_DATA to indicate that the packet is a E1.31 data packet or VECTOR\_ROOT\_E131\_EXTENDED (note these are defined constant numbers not strings) to indicate that the packet is either a synchronisation or discovery packet. The rest of the data packet is then structures as specified in Figure \ref{ACN_DATA_STRUCTURE}. For the universe synchronisation and discovery packets the next part of the structure starts the same as shown in Figure \ref{ACN_EXTENDED_START} with the vector field deciding if the rest of the packet follows a synchronisation or discovery packet structure. The synchronisation structure after this is fairly short as shown in Figure \ref{ACN_REST_SYNC_PACKET}. The discovery structure is longer as it may include a list of upto 512 universes and is show in Figure \ref{ACN_REST_DISCOVERY_PACKET}.
-	
-	\begin{figure}[H]
-		\includegraphics[width=\textwidth]{Acn_header}
-		\caption{The layout of the standard ACN header used for all sACN packets}
-		\label{ACN_HEADER}
-	\end{figure}
-	
-	\begin{figure}[H]
-		\includegraphics[width=\textwidth]{acn_data_structure}
-		\caption{The structure of the rest of the sACN data packet}
-		\label{ACN_DATA_STRUCTURE}
-	\end{figure}
-	
-	\begin{figure}[H]
-		\includegraphics[width=\textwidth]{Acn_extended_framing_structure_sync_discovery}
-		\caption{The structure of the next part of the sACN universe synchronisation and discovery packet}
-		\label{ACN_EXTENDED_START}
-	\end{figure}
-	
-	\begin{figure}[H]
-		\includegraphics[width=\textwidth]{acn_sync_packet_specific_structure}
-		\caption{The structure of the rest of the sACN universe synchronisation packet}
-		\label{ACN_REST_SYNC_PACKET}
-	\end{figure}
-	
-	\begin{figure}[H]
-		\includegraphics[width=\textwidth]{acn_discovery_packet_specific_structure}
-		\caption{The structure of the rest of the sACN universe discovery packet}
-		\label{ACN_REST_DISCOVERY_PACKET}
-\end{figure}}
+As sACN is a subset of the wider ACN family of protocols it utilises a common standard ACN header. By using the general ACN header it allows other ACN protocols to be used on the network alongside sACN without conflicts, for example it is later discussed in the relate works that ANSI E1.33-2019 (remote device management) and ANSI E1.31-2018 can be used together to increase the available functionality in the system. The packets are split into layers with each layer handling a different part of the packet. As there may be multiple possible layers the packet contains multiple 'vector' fields. These fields contain predefined values which tell the receiver about what the data will be. The structure of the packets is described directly within the protocol as a table and has also been expressed as a diagram in "Packet-Structure.pdf".
 
 \subsection{Critical Analysis of the sACN protocol}
 ANSI E1.31-2018 sACN over a purely DMX network provides a solution to a number of problems as discussed above but also has its own problems.\\
