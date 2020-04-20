@@ -58,7 +58,13 @@ Currently within rust there does not exist a library which fully supports all as
 \end{figure}
 
 \subsubsection{sACN}
-One solution to solve some of the problems with DMX is to send it using UDP over a standard IP based network and one of the protocols created to do this is sACN. This allows many DMX packets (and so many universes) to be simultaneously sent using a single network cable from the console and then to be received by the devices. Often for backwards compatibility reasons the sACN is converted back into DMX packets before being sent to the device as most devices older than a few years do not support direct sACN communication but this is rapidly increasing - particularly with higher end professional fixtures. The points below show how a protocol like sACN addresses many of the problems listed above with DMX512.
+\begin{figure}[H]
+	\label{Expected_usage}
+	\includegraphics[width=\textwidth]{CS4099-Expected-Usage.png}
+	\caption{A diagram showing a usage scenario for a system which utilises sACN}
+\end{figure}
+
+One solution to solve some of the problems with DMX is to send it using UDP over a standard IP based network and one of the protocols created to do this is sACN. This allows many DMX packets (and so many universes) to be simultaneously sent using a single network cable from the console and then to be received by the devices. Often for backwards compatibility reasons the sACN is converted back into DMX packets before being sent to the device as most devices older than a few years do not support direct sACN communication but this is rapidly increasing - particularly with higher end professional fixtures. Figure \ref{Expected_usage} shows an example in which sACN is used for part of the setup with an "E1.31 -> DMX converter" used to convert it back to DMX for use with some legacy lighting fixtures. The points below show how a protocol like sACN addresses many of the problems listed above with DMX512.
 
 \begin{enumerate}{}
 	\item A single network cable (E.g. CAT6) can be used to transport many universes minimising how cables have to be run to the back of the venue.
@@ -267,18 +273,7 @@ The visualiser provides a way to test that the library can send sACN which can b
 This project has no ethical considerations that require notification in this section.
 
 \section{Design}
-Design
-Indicating the structure of the system, with particular
-focus on main ideas of the design, unusual design
-features, etc.
-
 \subsection{Expected System Usage/Layout}
-\begin{figure}
-\label{Expected_usage}
-\includegraphics[width=\textwidth]{CS4099-Expected-Usage.png}
-\caption{A diagram showing a usage scenario for a system which utilises sACN}
-\end{figure}
-
 Figure \ref{Expected_usage} shows a layout of a typical network in which sACN may be deployed. It shows that there are expected to be many sources of sACN in the form of lighting controllers and many receivers in the form of lighting fixtures and E1.31 to DMX converters. It also shows that the senders may send onto the same or separate universes as each other. Receivers can receive one or multiple different universes and multiple receivers can receive the same universes. Within these universes individual devices all have their own 'addresses' which refer to which section of the universe they are listening to as-well as 'modes' which refer to how many 'channels' (Bytes) are used and what each channel controls on the fixture. This within universe addressing as-well as protocols for assigning and communicating addresses that fixtures should use is outwith the scope of ANSI E1.31-2018. The protocol is focused on the section shown in blue which contains the sending of data from sources such as lighting controllers onto receivers such as the lighting fixtures.\\
 
 \subsection{Packet structure}
