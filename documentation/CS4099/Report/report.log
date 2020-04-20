@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.3.5)  20 APR 2020 20:10
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.3.5)  21 APR 2020 00:54
 entering extended mode
 **./report.tex
 (report.tex
@@ -495,359 +495,397 @@ Package pdftex.def Info: avo_titan_explained.png  used on input line 302.
 File: Project-Expected-Usage-Diagram.png Graphic file (type png)
 <use Project-Expected-Usage-Diagram.png>
 Package pdftex.def Info: Project-Expected-Usage-Diagram.png  used on input line
- 317.
+ 314.
 (pdftex.def)             Requested size: 360.0pt x 270.45834pt.
  [33 <./Project-Expected-Usage-Diagram.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 327--328
+Underfull \hbox (badness 10000) in paragraph at lines 324--325
 
  []
 
 [34] [35]
-Underfull \hbox (badness 10000) in paragraph at lines 354--355
+Underfull \hbox (badness 10000) in paragraph at lines 344--345
 
  []
 
 [36]
-Underfull \hbox (badness 10000) in paragraph at lines 360--361
+Underfull \hbox (badness 10000) in paragraph at lines 346--347
+
+ []
+
+
+Overfull \hbox (27.48442pt too wide) in paragraph at lines 348--349
+\OT1/cmr/m/n/10.95 the dis-cov-ered sources so this is still pos-si-ble by us-i
+ng the 'get[]discovered[]sources()'
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 348--349
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 350--351
 
  []
 
 [37]
+Underfull \hbox (badness 10000) in paragraph at lines 352--353
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 354--355
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 356--357
+
+ []
+
+[38]
 Underfull \hbox (badness 10000) in paragraph at lines 362--363
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 367--368
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 370--371
-
- []
-
-[38]
-Underfull \hbox (badness 10000) in paragraph at lines 375--376
+Underfull \hbox (badness 10000) in paragraph at lines 364--365
 
  []
 
 [39]
-Underfull \hbox (badness 10000) in paragraph at lines 380--381
+Underfull \hbox (badness 10000) in paragraph at lines 373--374
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 376--377
 
  []
 
 [40]
-Underfull \hbox (badness 10000) in paragraph at lines 385--386
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 388--389
+Underfull \hbox (badness 10000) in paragraph at lines 381--382
 
  []
 
 [41]
-Underfull \hbox (badness 10000) in paragraph at lines 390--391
+Underfull \hbox (badness 10000) in paragraph at lines 386--387
 
  []
 
-<todo.jpg, id=165, 399.4925pt x 303.1325pt>
+[42]
+Underfull \hbox (badness 10000) in paragraph at lines 391--392
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 394--395
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 396--397
+
+ []
+
+[43]
+<todo.jpg, id=172, 399.4925pt x 303.1325pt>
 File: todo.jpg Graphic file (type jpg)
 <use todo.jpg>
-Package pdftex.def Info: todo.jpg  used on input line 395.
+Package pdftex.def Info: todo.jpg  used on input line 401.
 (pdftex.def)             Requested size: 360.0pt x 273.1775pt.
-[42] [43 <./todo.jpg>]
-<integration-test-example.png, id=173, 1407.2575pt x 846.16125pt>
+ [44 <./todo.jpg>]
+<integration-test-example.png, id=176, 1407.2575pt x 846.16125pt>
 File: integration-test-example.png Graphic file (type png)
 <use integration-test-example.png>
-Package pdftex.def Info: integration-test-example.png  used on input line 404.
+Package pdftex.def Info: integration-test-example.png  used on input line 410.
 (pdftex.def)             Requested size: 360.0pt x 216.45901pt.
- [44 <./integration-test-example.png>]
-<SH-Project-Intergration-Tests-Abstract-View.png, id=178, 683.55376pt x 985.682
+ [45]
+<SH-Project-Intergration-Tests-Abstract-View.png, id=180, 683.55376pt x 985.682
 5pt>
 File: SH-Project-Intergration-Tests-Abstract-View.png Graphic file (type png)
 <use SH-Project-Intergration-Tests-Abstract-View.png>
 Package pdftex.def Info: SH-Project-Intergration-Tests-Abstract-View.png  used 
-on input line 413.
+on input line 419.
 (pdftex.def)             Requested size: 360.0pt x 519.13045pt.
- [45] [46 <./SH-Project-Intergration-Tests-Abstract-View.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 424--425
+ [46 <./integration-test-example.png>] [47 <./SH-Project-Intergration-Tests-Abs
+tract-View.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 430--431
 
  []
 
-[47]
-Underfull \hbox (badness 10000) in paragraph at lines 426--427
+[48]
+Underfull \hbox (badness 10000) in paragraph at lines 432--433
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 428--429
+Underfull \hbox (badness 10000) in paragraph at lines 434--435
 
  []
 
 File: todo.jpg Graphic file (type jpg)
 <use todo.jpg>
-Package pdftex.def Info: todo.jpg  used on input line 433.
+Package pdftex.def Info: todo.jpg  used on input line 439.
 (pdftex.def)             Requested size: 360.0pt x 273.1775pt.
-[48]
-Underfull \hbox (badness 10000) in paragraph at lines 439--440
+[49]
+Underfull \hbox (badness 10000) in paragraph at lines 445--446
 
  []
 
-[49]
-<avo-dmx-lines.png, id=196, 2256.93187pt x 1223.32031pt>
+[50]
+<avo-dmx-lines.png, id=199, 2256.93187pt x 1223.32031pt>
 File: avo-dmx-lines.png Graphic file (type png)
 <use avo-dmx-lines.png>
-Package pdftex.def Info: avo-dmx-lines.png  used on input line 447.
+Package pdftex.def Info: avo-dmx-lines.png  used on input line 453.
 (pdftex.def)             Requested size: 360.0pt x 195.11926pt.
-<avo-file-dims.png, id=198, 2254.67343pt x 1248.91594pt>
+<avo-file-dims.png, id=201, 2254.67343pt x 1248.91594pt>
 File: avo-file-dims.png Graphic file (type png)
 <use avo-file-dims.png>
-Package pdftex.def Info: avo-file-dims.png  used on input line 453.
+Package pdftex.def Info: avo-file-dims.png  used on input line 459.
 (pdftex.def)             Requested size: 360.0pt x 199.41138pt.
- [50 <./avo-dmx-lines.png>]
-<sacnViewSettings.png, id=205, 563.10374pt x 420.06938pt>
+ [51 <./avo-dmx-lines.png>]
+<sacnViewSettings.png, id=208, 563.10374pt x 420.06938pt>
 File: sacnViewSettings.png Graphic file (type png)
 <use sacnViewSettings.png>
-Package pdftex.def Info: sacnViewSettings.png  used on input line 465.
+Package pdftex.def Info: sacnViewSettings.png  used on input line 471.
 (pdftex.def)             Requested size: 360.0pt x 268.55505pt.
- [51 <./avo-file-dims.png>]
-<sacnViewIPmodes.png, id=212, 487.8225pt x 366.61969pt>
+ [52 <./avo-file-dims.png>]
+<sacnViewIPmodes.png, id=215, 487.8225pt x 366.61969pt>
 File: sacnViewIPmodes.png Graphic file (type png)
 <use sacnViewIPmodes.png>
-Package pdftex.def Info: sacnViewIPmodes.png  used on input line 471.
+Package pdftex.def Info: sacnViewIPmodes.png  used on input line 477.
 (pdftex.def)             Requested size: 360.0pt x 270.5559pt.
- [52 <./sacnViewSettings.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 479--480
+ [53 <./sacnViewSettings.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 485--486
 
  []
 
-[53 <./sacnViewIPmodes.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 481--482
+[54 <./sacnViewIPmodes.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 487--488
 
  []
 
-<CS4099-Avo-setup.png, id=224, 412.54124pt x 296.10625pt>
+<CS4099-Avo-setup.png, id=228, 412.54124pt x 296.10625pt>
 File: CS4099-Avo-setup.png Graphic file (type png)
 <use CS4099-Avo-setup.png>
-Package pdftex.def Info: CS4099-Avo-setup.png  used on input line 484.
+Package pdftex.def Info: CS4099-Avo-setup.png  used on input line 490.
 (pdftex.def)             Requested size: 360.0pt x 258.39651pt.
-<test-5-processed-first-value-chart.png, id=225, 979.40906pt x 418.56375pt>
+<test-5-processed-first-value-chart.png, id=229, 979.40906pt x 418.56375pt>
 File: test-5-processed-first-value-chart.png Graphic file (type png)
 <use test-5-processed-first-value-chart.png>
 Package pdftex.def Info: test-5-processed-first-value-chart.png  used on input 
-line 490.
+line 496.
 (pdftex.def)             Requested size: 360.0pt x 153.85066pt.
-[54 <./CS4099-Avo-setup.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 496--497
+[55 <./CS4099-Avo-setup.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 502--503
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 498--499
+Underfull \hbox (badness 10000) in paragraph at lines 504--505
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 500--501
+Underfull \hbox (badness 10000) in paragraph at lines 506--507
 
  []
 
-[55 <./test-5-processed-first-value-chart.png>]
-<CS4099-Visualiser-setup.png, id=235, 412.54124pt x 343.2825pt>
+[56 <./test-5-processed-first-value-chart.png>]
+<CS4099-Visualiser-setup.png, id=238, 412.54124pt x 343.2825pt>
 File: CS4099-Visualiser-setup.png Graphic file (type png)
 <use CS4099-Visualiser-setup.png>
-Package pdftex.def Info: CS4099-Visualiser-setup.png  used on input line 503.
+Package pdftex.def Info: CS4099-Visualiser-setup.png  used on input line 509.
 (pdftex.def)             Requested size: 360.0pt x 299.56477pt.
-<Vision-File-LX-Plot.png, id=236, 1655.4347pt x 1075.76906pt>
+<Vision-File-LX-Plot.png, id=239, 1655.4347pt x 1075.76906pt>
 File: Vision-File-LX-Plot.png Graphic file (type png)
 <use Vision-File-LX-Plot.png>
-Package pdftex.def Info: Vision-File-LX-Plot.png  used on input line 509.
+Package pdftex.def Info: Vision-File-LX-Plot.png  used on input line 515.
 (pdftex.def)             Requested size: 360.0pt x 233.94505pt.
- [56 <./CS4099-Visualiser-setup.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 515--516
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 517--518
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 519--520
-
- []
-
-[57 <./Vision-File-LX-Plot.png>]
+ [57 <./CS4099-Visualiser-setup.png>]
 Underfull \hbox (badness 10000) in paragraph at lines 521--522
 
  []
 
-<CS4099-Acceptance-Test-Layout.png, id=245, 748.7975pt x 322.20375pt>
-File: CS4099-Acceptance-Test-Layout.png Graphic file (type png)
-<use CS4099-Acceptance-Test-Layout.png>
-Package pdftex.def Info: CS4099-Acceptance-Test-Layout.png  used on input line 
-526.
-(pdftex.def)             Requested size: 360.0pt x 154.90677pt.
-<Union-Setup-Vision-File-LX-Plot.png, id=246, 1040.38687pt x 864.98157pt>
-File: Union-Setup-Vision-File-LX-Plot.png Graphic file (type png)
-<use Union-Setup-Vision-File-LX-Plot.png>
-Package pdftex.def Info: Union-Setup-Vision-File-LX-Plot.png  used on input lin
-e 532.
-(pdftex.def)             Requested size: 360.0pt x 299.30327pt.
-[58 <./CS4099-Acceptance-Test-Layout.png>] [59 <./Union-Setup-Vision-File-LX-Pl
-ot.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 544--545
+
+Underfull \hbox (badness 10000) in paragraph at lines 523--524
 
  []
 
 
-Overfull \hbox (1.08833pt too wide) detected at line 550
+Underfull \hbox (badness 10000) in paragraph at lines 525--526
+
+ []
+
+[58 <./Vision-File-LX-Plot.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 527--528
+
+ []
+
+<CS4099-Acceptance-Test-Layout.png, id=248, 748.7975pt x 322.20375pt>
+File: CS4099-Acceptance-Test-Layout.png Graphic file (type png)
+<use CS4099-Acceptance-Test-Layout.png>
+Package pdftex.def Info: CS4099-Acceptance-Test-Layout.png  used on input line 
+532.
+(pdftex.def)             Requested size: 360.0pt x 154.90677pt.
+<Union-Setup-Vision-File-LX-Plot.png, id=249, 1040.38687pt x 864.98157pt>
+File: Union-Setup-Vision-File-LX-Plot.png Graphic file (type png)
+<use Union-Setup-Vision-File-LX-Plot.png>
+Package pdftex.def Info: Union-Setup-Vision-File-LX-Plot.png  used on input lin
+e 538.
+(pdftex.def)             Requested size: 360.0pt x 299.30327pt.
+[59 <./CS4099-Acceptance-Test-Layout.png>] [60 <./Union-Setup-Vision-File-LX-Pl
+ot.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 550--551
+
+ []
+
+
+Overfull \hbox (1.08833pt too wide) detected at line 556
 [] \OMS/cmsy/m/n/10.95  [] \OT1/cmr/m/n/10.95 = 63999 \OMS/cmsy/m/n/10.95  \O
 T1/cmr/m/n/10.95 513\OML/cmm/m/it/10.95 B \U/msb/m/n/10.95 u \OT1/cmr/m/n/10.95
  31\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 3\OML/cmm/m/it/10.95 megabytes:
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 552--553
+Underfull \hbox (badness 10000) in paragraph at lines 558--559
 
  []
 
-[60]
-Overfull \hbox (41.10214pt too wide) in paragraph at lines 554--555
+[61]
+Overfull \hbox (41.10214pt too wide) in paragraph at lines 560--561
 []\OT1/cmr/m/n/10.95 The re-ceiver uses a sin-gle threaded de-sign with the tim
 e-out for all source+universe
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 554--555
-
- []
-
-[61]
-Underfull \hbox (badness 10000) in paragraph at lines 587--588
+Underfull \hbox (badness 10000) in paragraph at lines 560--561
 
  []
 
 [62]
-Underfull \hbox (badness 10000) in paragraph at lines 589--590
+Underfull \hbox (badness 10000) in paragraph at lines 593--594
+
+ []
+
+[63]
+Underfull \hbox (badness 10000) in paragraph at lines 595--596
 
  []
 
 
-Overfull \hbox (10.96207pt too wide) in paragraph at lines 592--597
+Overfull \hbox (10.96207pt too wide) in paragraph at lines 598--603
 \OT1/cmr/m/n/10.95 Conclusions You should sum-marise your project, em-pha-sis-i
 ng your key achieve-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 609--611
+Underfull \hbox (badness 10000) in paragraph at lines 615--617
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 612--613
+Underfull \hbox (badness 10000) in paragraph at lines 618--619
 
  []
 
-[63]
-Underfull \hbox (badness 10000) in paragraph at lines 614--615
+[64]
+Underfull \hbox (badness 10000) in paragraph at lines 620--621
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 616--617
+Underfull \hbox (badness 10000) in paragraph at lines 622--623
 
  []
 
-<documentation-comparison-table.png, id=272, 1082.54437pt x 512.66531pt>
+<documentation-comparison-table.png, id=275, 1082.54437pt x 512.66531pt>
 File: documentation-comparison-table.png Graphic file (type png)
 <use documentation-comparison-table.png>
 Package pdftex.def Info: documentation-comparison-table.png  used on input line
- 621.
+ 627.
 (pdftex.def)             Requested size: 360.0pt x 170.48645pt.
-[64]
-Underfull \hbox (badness 1406) in paragraph at lines 646--648
+[65]
+Underfull \hbox (badness 1406) in paragraph at lines 652--654
 []\OT1/cmr/m/n/10.95 ANSI E1.11 - 2008 (R2018) En-ter-tain-ment Tech-nol-ogy - 
 USITT
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 649--650
+Underfull \hbox (badness 10000) in paragraph at lines 655--656
 []\OT1/cmr/m/n/10.95 https://www.element14.com/community/groups/open-source-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 649--650
+Underfull \hbox (badness 10000) in paragraph at lines 655--656
 \OT1/cmr/m/n/10.95 hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-
  []
 
-[65 <./documentation-comparison-table.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 657--658
+[66 <./documentation-comparison-table.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 663--664
 []\OT1/cmr/m/n/10.95 http://artisticlicence.com/WebSiteMaster/User%20Guides/art
 -net.pdf
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 661--663
+Underfull \hbox (badness 10000) in paragraph at lines 667--669
 []\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31[]2009.pdf
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 664--666
+Underfull \hbox (badness 10000) in paragraph at lines 670--672
 []\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31-2016.pdf
  []
 
 
-Overfull \hbox (144.9842pt too wide) in paragraph at lines 667--668
+Overfull \hbox (144.9842pt too wide) in paragraph at lines 673--674
 []\OT1/cmr/m/n/10.95 http://www.rdmprotocol.org/files/What[]Comes[]After[]Strea
 ming[]DMX[]over[]ACN[]%20%284%29.pdf
  []
 
 
-Overfull \hbox (66.0468pt too wide) in paragraph at lines 677--678
+Overfull \hbox (66.0468pt too wide) in paragraph at lines 683--684
 []\OT1/cmr/m/n/10.95 https://benchmarksgame-team.pages.debian.net/benchmarksgam
 e/fastest/rust.html
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 679--680
+Underfull \hbox (badness 10000) in paragraph at lines 685--686
 []\OT1/cmr/m/n/10.95 https://www.techrepublic.com/article/rust-programming-lang
 uage-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 681--682
+Underfull \hbox (badness 10000) in paragraph at lines 687--688
 []\OT1/cmr/m/n/10.95 https://www.tutorialspoint.com/sdlc/sdlc[]waterfall[]model
 .htm
  []
 
-[66]
-Underfull \hbox (badness 10000) in paragraph at lines 703--704
+[67]
+Underfull \hbox (badness 10000) in paragraph at lines 709--710
 []\OT1/cmr/m/n/10.95 https://www.dcs.bbk.ac.uk/ ptw/teaching/IWT/transport-
  []
 
 
-Overfull \hbox (42.60158pt too wide) in paragraph at lines 721--722
+Overfull \hbox (42.60158pt too wide) in paragraph at lines 727--728
 []\OT1/cmr/m/n/10.95 https://www.wireshark.org/docs/wsug[]html[]chunked/ChIOExp
 ortSection.html
  []
 
-[67] (report.aux)
+[68] (report.aux)
 
 LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 3000 strings out of 492484
- 43060 string characters out of 3122055
- 107085 words of memory out of 3000000
- 7288 multiletter control sequences out of 15000+200000
+ 3002 strings out of 492484
+ 43075 string characters out of 3122055
+ 107093 words of memory out of 3000000
+ 7290 multiletter control sequences out of 15000+200000
  10853 words of font info for 40 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 55i,5n,32p,3145b,226s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 55i,5n,32p,2514b,226s stack positions out of 5000i,500n,10000p,200000b,50000s
 <C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/
 cm/cmbx10.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/publ
 ic/amsfonts/cm/cmbx12.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/font
@@ -857,9 +895,9 @@ rograms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/paul/App
 Data/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Us
 ers/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/
 msbm10.pfb>
-Output written on report.pdf (68 pages, 4012532 bytes).
+Output written on report.pdf (69 pages, 4017234 bytes).
 PDF statistics:
- 312 PDF objects out of 1000 (max. 8388607)
+ 315 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  176 words of extra memory for PDF output out of 10000 (max. 10000000)
 
