@@ -6,10 +6,12 @@
 \usepackage{amssymb}
 \usepackage{rotating,mwe}
 \usepackage{graphicx}
+\usepackage{pdfpages}
 \author{Paul Lancaster}
 \title{Rust Implementation of the ANSI E1.31-2018 sACN Protocol}
 
 \begin{document}
+\setboolean{@twoside}{false}
 \input{title-page.tex}
 
 \section{Abstract}
@@ -22,8 +24,8 @@ explicitly given to others by citation or
 acknowledgement. This work was performed during
 the current academic year except where otherwise
 stated.
-"The main text of this project report is 21,274
-words long, including project specification and plan.
+"The main text of this project report is 20,659
+words long, excluding appendices but including testing.
 "In submitting this project report to the University of
 St Andrews, I give permission for it to be made
 available for use in accordance with the regulations of the University Library. I also give permission for
@@ -743,5 +745,13 @@ To check that the documentation contains the right information it was compared t
 	\bibitem{RUST_ARC}
 	Unknown. (Unknown). Struct std::sync::Arc [Online, Accessed: 21/04/2020] Available: https://doc.rust-lang.org/std/sync/struct.Arc.html
 \end{thebibliography}
+
+\pagenumbering{gobble}
+
+\includepdf[pages=-,pagecommand={},scale=1.0]{Packet-Structure.pdf}
+\includepdf[pages=-,pagecommand={},scale=1.0]{Sync-Mechanism.pdf}
+\includepdf[pages=-,pagecommand={},scale=1.0]{Discovery-Mechanism.pdf}
+\includepdf[pages=-,pagecommand={},scale=1.1]{ANSI-E1.31-2018-Compliance-Check-List.pdf}
+\includepdf[pages=-,pagecommand={},scale=1.0]{usage.pdf}
 
 \end{document}
