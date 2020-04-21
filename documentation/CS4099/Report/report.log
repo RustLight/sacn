@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.3.5)  21 APR 2020 03:10
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.3.5)  21 APR 2020 14:11
 entering extended mode
 **./report.tex
 (report.tex
@@ -763,152 +763,167 @@ e 541.
 (pdftex.def)             Requested size: 360.0pt x 299.30327pt.
 [61 <./CS4099-Acceptance-Test-Layout.png>] [62 <./Union-Setup-Vision-File-LX-Pl
 ot.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 553--554
+<Project-Requirements-Checklist.png, id=268, 605.26125pt x 641.39626pt>
+File: Project-Requirements-Checklist.png Graphic file (type png)
+<use Project-Requirements-Checklist.png>
+Package pdftex.def Info: Project-Requirements-Checklist.png  used on input line
+ 551.
+(pdftex.def)             Requested size: 360.0pt x 381.49359pt.
+ [63 <./Project-Requirements-Checklist.png>]
+<DOER_REQ.png, id=273, 523.9575pt x 426.09187pt>
+File: DOER_REQ.png Graphic file (type png)
+<use DOER_REQ.png>
+Package pdftex.def Info: DOER_REQ.png  used on input line 559.
+(pdftex.def)             Requested size: 360.0pt x 292.76839pt.
+ [64]
+Underfull \hbox (badness 10000) in paragraph at lines 564--565
+
+ []
+
+[65 <./DOER_REQ.png>]
+<lib-comparison.png, id=281, 663.98062pt x 624.83438pt>
+File: lib-comparison.png Graphic file (type png)
+<use lib-comparison.png>
+Package pdftex.def Info: lib-comparison.png  used on input line 567.
+(pdftex.def)             Requested size: 360.0pt x 338.77846pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 572--573
+
+ []
+
+[66 <./lib-comparison.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 577--578
 
  []
 
 
-Overfull \hbox (1.08833pt too wide) detected at line 559
-[] \OMS/cmsy/m/n/10.95  [] \OT1/cmr/m/n/10.95 = 63999 \OMS/cmsy/m/n/10.95  \O
-T1/cmr/m/n/10.95 513\OML/cmm/m/it/10.95 B \U/msb/m/n/10.95 u \OT1/cmr/m/n/10.95
- 31\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 3\OML/cmm/m/it/10.95 megabytes:
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 561--562
+Underfull \hbox (badness 10000) in paragraph at lines 579--580
 
  []
 
-[63]
-Overfull \hbox (41.10214pt too wide) in paragraph at lines 563--564
-[]\OT1/cmr/m/n/10.95 The re-ceiver uses a sin-gle threaded de-sign with the tim
-e-out for all source+universe
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 563--564
+[67]
+Underfull \hbox (badness 10000) in paragraph at lines 581--582
 
  []
 
-[64]
+
+Underfull \hbox (badness 10000) in paragraph at lines 583--584
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 586--587
+
+ []
+
+[68]
+Underfull \hbox (badness 10000) in paragraph at lines 592--593
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 594--595
+
+ []
+
+
 Underfull \hbox (badness 10000) in paragraph at lines 597--598
 
  []
 
-[65]
+[69]
 Underfull \hbox (badness 10000) in paragraph at lines 599--600
 
  []
 
 
-Overfull \hbox (10.96207pt too wide) in paragraph at lines 602--607
-\OT1/cmr/m/n/10.95 Conclusions You should sum-marise your project, em-pha-sis-i
-ng your key achieve-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 619--621
+Underfull \hbox (badness 10000) in paragraph at lines 601--602
 
  []
 
-[66]
-Underfull \hbox (badness 10000) in paragraph at lines 622--623
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 624--625
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 626--627
-
- []
-
-<documentation-comparison-table.png, id=285, 1082.54437pt x 512.66531pt>
+<documentation-comparison-table.png, id=300, 1082.54437pt x 512.66531pt>
 File: documentation-comparison-table.png Graphic file (type png)
 <use documentation-comparison-table.png>
 Package pdftex.def Info: documentation-comparison-table.png  used on input line
- 631.
+ 606.
 (pdftex.def)             Requested size: 360.0pt x 170.48645pt.
-[67]
-Underfull \hbox (badness 1406) in paragraph at lines 656--658
+[70]
+Underfull \hbox (badness 1406) in paragraph at lines 619--621
 []\OT1/cmr/m/n/10.95 ANSI E1.11 - 2008 (R2018) En-ter-tain-ment Tech-nol-ogy - 
 USITT
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 659--660
+Underfull \hbox (badness 10000) in paragraph at lines 622--623
 []\OT1/cmr/m/n/10.95 https://www.element14.com/community/groups/open-source-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 659--660
+Underfull \hbox (badness 10000) in paragraph at lines 622--623
 \OT1/cmr/m/n/10.95 hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-
  []
 
-[68 <./documentation-comparison-table.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 667--668
+[71 <./documentation-comparison-table.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 638--639
 []\OT1/cmr/m/n/10.95 http://artisticlicence.com/WebSiteMaster/User%20Guides/art
--net.pdf
+-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 671--673
+Underfull \hbox (badness 10000) in paragraph at lines 642--644
 []\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31[]2009.pdf
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 674--676
+Underfull \hbox (badness 10000) in paragraph at lines 645--647
 []\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31-2016.pdf
  []
 
 
-Overfull \hbox (144.9842pt too wide) in paragraph at lines 677--678
+Overfull \hbox (144.9842pt too wide) in paragraph at lines 648--649
 []\OT1/cmr/m/n/10.95 http://www.rdmprotocol.org/files/What[]Comes[]After[]Strea
 ming[]DMX[]over[]ACN[]%20%284%29.pdf
  []
 
 
-Overfull \hbox (66.0468pt too wide) in paragraph at lines 687--688
+Overfull \hbox (66.0468pt too wide) in paragraph at lines 658--659
 []\OT1/cmr/m/n/10.95 https://benchmarksgame-team.pages.debian.net/benchmarksgam
 e/fastest/rust.html
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 689--690
+Underfull \hbox (badness 10000) in paragraph at lines 660--661
 []\OT1/cmr/m/n/10.95 https://www.techrepublic.com/article/rust-programming-lang
 uage-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 691--692
+Underfull \hbox (badness 10000) in paragraph at lines 662--663
 []\OT1/cmr/m/n/10.95 https://www.tutorialspoint.com/sdlc/sdlc[]waterfall[]model
 .htm
  []
 
-[69]
-Underfull \hbox (badness 10000) in paragraph at lines 713--714
+
+Underfull \hbox (badness 10000) in paragraph at lines 684--685
 []\OT1/cmr/m/n/10.95 https://www.dcs.bbk.ac.uk/ ptw/teaching/IWT/transport-
  []
 
-
-Overfull \hbox (42.60158pt too wide) in paragraph at lines 731--732
+[72]
+Overfull \hbox (42.60158pt too wide) in paragraph at lines 702--703
 []\OT1/cmr/m/n/10.95 https://www.wireshark.org/docs/wsug[]html[]chunked/ChIOExp
 ortSection.html
  []
 
-[70] (report.aux)
+[73] (report.aux)
 
 LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 3008 strings out of 492484
- 43295 string characters out of 3122055
- 106097 words of memory out of 3000000
- 7297 multiletter control sequences out of 15000+200000
+ 3036 strings out of 492484
+ 43899 string characters out of 3122055
+ 106143 words of memory out of 3000000
+ 7325 multiletter control sequences out of 15000+200000
  10853 words of font info for 40 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
  55i,5n,32p,2719b,226s stack positions out of 5000i,500n,10000p,200000b,50000s
@@ -921,9 +936,9 @@ rograms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/paul/App
 Data/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Us
 ers/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/
 msbm10.pfb>
-Output written on report.pdf (71 pages, 4029248 bytes).
+Output written on report.pdf (74 pages, 4379662 bytes).
 PDF statistics:
- 324 PDF objects out of 1000 (max. 8388607)
+ 341 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 181 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 196 words of extra memory for PDF output out of 10000 (max. 10000000)
 

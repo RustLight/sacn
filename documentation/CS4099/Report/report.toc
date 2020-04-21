@@ -57,8 +57,7 @@
 \contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{60}%
 \contentsline {subsection}{\numberline {11.3}What Testing Shows}{62}%
 \contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{63}%
-\contentsline {subsection}{\numberline {12.1}Extraneous Circumstances - COVID-19}{66}%
-\contentsline {section}{\numberline {13}Conclusions}{66}%
-\contentsline {section}{\numberline {14}Appendices}{66}%
-\contentsline {section}{\numberline {15}User Manual}{67}%
-\contentsline {section}{\numberline {16}Other Appendices}{68}%
+\contentsline {section}{\numberline {13}Conclusions}{68}%
+\contentsline {section}{\numberline {14}Appendices}{69}%
+\contentsline {subsection}{\numberline {14.1}Extraneous Circumstances - COVID-19}{69}%
+\contentsline {subsection}{\numberline {14.2}User Manual}{69}%
