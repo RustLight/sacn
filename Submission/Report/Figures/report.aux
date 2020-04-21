@@ -1,0 +1,222 @@
+\relax 
+\citation{ANSI_E1.31}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Abstract}{1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Declaration}{1}\protected@file@percent }
+\citation{ANSI_E1.31}
+\citation{ORIGINAL_IMPL}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Introduction}{4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Context Survey}{4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}DMX, SACN and ACN}{4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.1}DMX512}{4}\protected@file@percent }
+\citation{ANSI_E1.11}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces A diagram showing a typical DMX setup which doesn't utilise any IP networking}}{6}\protected@file@percent }
+\newlabel{DMX_TYPICAL_SETUP}{{1}{6}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.2}sACN}{7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces A diagram showing a usage scenario for a system which utilises sACN}}{7}\protected@file@percent }
+\newlabel{Expected_usage}{{2}{7}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.3}sACN - Universe Synchronisation}{8}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces A diagram demonstrating how sACN universe synchronisation allows simultaneous control of multiple DMX universes and its use cases}}{9}\protected@file@percent }
+\newlabel{UNI_SYNC_DESC}{{3}{9}}
+\@writefile{toc}{\contentsline {paragraph}{Usage Example:}{10}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{The End Goal}{10}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Using sACN without any universe synchronisation}{10}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Same example using sACN with universe synchronisation}{10}\protected@file@percent }
+\citation{ANSI_E1.31_2009}
+\citation{ETHERNET_MTU}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.4}sACN - Universe Discovery}{11}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces A diagram and explanation demonstrating how universe discovery can be used by a receiver to discover sources}}{12}\protected@file@percent }
+\newlabel{UNI_DISCOVERY_DESC}{{4}{12}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.5}sACN - Network Layers / Transport Modes}{12}\protected@file@percent }
+\citation{IETF_RFC_5771}
+\citation{IETF_RFC_2365}
+\@writefile{toc}{\contentsline {paragraph}{Multicast Address Assignment}{14}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces The mapping used from an sACN universe to an IPv4 or IPv6 multicast address within an sACN network}}{14}\protected@file@percent }
+\newlabel{UNI_IP_MAPPING}{{5}{14}}
+\citation{IETF_RFC_4291}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}sACN Packet Structure}{15}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Critical Analysis of the sACN protocol}{15}\protected@file@percent }
+\citation{ANSI_E1.31_2009}
+\citation{ANSI_E1.31_2016}
+\citation{WHAT_COMES_AFTER_SACN}
+\citation{ANSI_E1.20_2010}
+\citation{ANSI_E1.33_2019}
+\citation{ETC}
+\citation{ANSI_E1.33_IMPL}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Related Work}{17}\protected@file@percent }
+\citation{ARNET}
+\citation{ARTNET}
+\citation{ORIGNIAL_IMPL}
+\citation{ORIGINAL_IMPL_RUST_DOC}
+\citation{C_IMPL}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Requirement specification}{18}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces A search of repositories on github with the search term "E1.31" as of Jan 2020}}{19}\protected@file@percent }
+\newlabel{E131_REPO_SEARCH}{{6}{19}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Software Engineering Process}{20}\protected@file@percent }
+\citation{waterfall-diagram}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces A diagram showing the waterfall development process, [\cite  {waterfall-diagram}]}}{21}\protected@file@percent }
+\newlabel{waterfall-diag}{{7}{21}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Implementation, Testing and Deployment Phases}{22}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Reflection on Methodology Used}{23}\protected@file@percent }
+\citation{RUST_LANG}
+\citation{RUST_C_COMPARISON}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces The development of the project over time with the water-fall methodology stages marked. As this may be too small to read in place it is also included as "Development-Timeline.pdf"}}{25}\protected@file@percent }
+\newlabel{project_dev_timeline}{{8}{25}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Tools \& Technologies}{26}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Language: Rust}{26}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Dependency Management: Cargo}{26}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.1}Run}{26}\protected@file@percent }
+\citation{WIRESHARK}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.2}Docs}{27}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {7.2.3}Test}{27}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Debug Tools: Wireshark}{27}\protected@file@percent }
+\citation{GRCOV}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces The settings used for display sACN packets in wireshark}}{28}\protected@file@percent }
+\newlabel{WIRESHARK_SETTINGS}{{9}{28}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Version Control: Git, Gitlab, Github}{28}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.5}Test Coverage Tool}{28}\protected@file@percent }
+\citation{SACN_VIEW}
+\citation{ANSI_E1.17}
+\citation{SACN_VIEWER_DOC}
+\citation{VISION}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces A screenshot from the main part of the SACNView program (v2.1.0) with added explanation of the various features}}{29}\protected@file@percent }
+\newlabel{SACN_VIEW_EXPLAINED}{{10}{29}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.6}Compliance Testing Tools: sACNView}{29}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.7}Real-world Usage Tool: Visualisers: Vision}{30}\protected@file@percent }
+\citation{AVO_TITAN_MOBILE}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces A screenshot from the vision visualiser with added explanation to explain the interface.}}{31}\protected@file@percent }
+\newlabel{VISION_EXPLAINED}{{11}{31}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.8}Real-world Usage Tool: Lighting Control: Avolites Titan}{31}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces A screenshot from Avolites Titan with some of the features explained.}}{32}\protected@file@percent }
+\newlabel{AVO_EXPLAINED}{{12}{32}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Ethics}{32}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}Design}{32}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces A diagram showing where the 2 separate parts of the project are expected to be utilised within an sACN and DMX system}}{33}\protected@file@percent }
+\newlabel{PROJ_EXPECTED_USAGE}{{13}{33}}
+\citation{RUST_DATA_RACE}
+\citation{ANSI_E1.31}
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.1}Sender}{34}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {9.2}Receiver}{35}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.1}Data and Universe Synchronisation}{35}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {9.2.2}Universe Discovery}{35}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {10}Implementation}{36}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.1}SacnReceiver}{36}\protected@file@percent }
+\citation{NET2}
+\citation{SOCKET2}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.2}SacnSource}{38}\protected@file@percent }
+\citation{RUST_ARC}
+\citation{ANSI_E1.31}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.3}Protocol Packet Parsing / Packing}{41}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.4}Std vs Non-Std}{42}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.5}Drop / Closing / Termination}{42}\protected@file@percent }
+\citation{RUST_TRY}
+\citation{ERROR_CHAIN}
+\@writefile{toc}{\contentsline {subsection}{\numberline {10.6}Errors}{43}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {11}Testing}{44}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.1}Scope}{45}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{46}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{46}\protected@file@percent }
+\citation{GRCOV}
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces The library view of the code coverage tool output showing the code coverage of each part of the code, more detail is shown in the include coverage webpage / folder}}{48}\protected@file@percent }
+\newlabel{GRCOV_TOP_LEVEL}{{14}{48}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{49}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces An example of the code used for a single machine integration test}}{50}\protected@file@percent }
+\newlabel{UNIT_INTEGRATION_TEST}{{15}{50}}
+\@writefile{toc}{\contentsline {paragraph}{Across Machines}{51}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces The abstract setup of the integration tests along with the actual implementation}}{52}\protected@file@percent }
+\newlabel{INTEGRATION_TEST_SETUP}{{16}{52}}
+\@writefile{toc}{\contentsline {paragraph}{More than 2 machines}{53}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{53}\protected@file@percent }
+\citation{RUST_AFL_FUZZ}
+\citation{RUST_AFL_FUZZ_DOC}
+\citation{WIRESHARK_EXPORT_RAW}
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces The results of the fuzz testing on the parsing part of the library.}}{55}\protected@file@percent }
+\newlabel{FUZZ_RESULTS}{{17}{55}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{56}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces The setup of the avolites show file network protocols used for the interoperability testing}}{57}\protected@file@percent }
+\newlabel{AVO_DMX_LINES}{{18}{57}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces The setup of the avolites show file used for interoperability testing showing some of the fixtures patched}}{58}\protected@file@percent }
+\newlabel{AVO_RECV_INTEROP_SETUP}{{19}{58}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces The setup of sacnView used for the interoperability tests}}{59}\protected@file@percent }
+\newlabel{SACN_VIEW_INTEROP_SETUP}{{20}{59}}
+\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces The IP modes enabled in sacnView used for the interoperability tests}}{60}\protected@file@percent }
+\newlabel{SACN_VIEW_UNICAST_MULTICAST_ENABLED}{{21}{60}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces The set-up of the text with the implementation receiver and an industry sACN source}}{61}\protected@file@percent }
+\newlabel{AVO_SETUP}{{22}{61}}
+\@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces A graph showing the values of each universe per packet received for that universe. This shows the ranges of each universe fit within the expected.}}{62}\protected@file@percent }
+\newlabel{RCV_INTEROP_TEST_5_GRAPH}{{23}{62}}
+\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces The set-up of the sender implementation interoperability test}}{64}\protected@file@percent }
+\newlabel{VIS_VIEWER_SETUP}{{24}{64}}
+\@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces The lighting plot of the lights used as part of the Vision Visualiser test scene}}{65}\protected@file@percent }
+\newlabel{VIS_LX_PLOT}{{25}{65}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{66}\protected@file@percent }
+\citation{ANSI_E1.31}
+\@writefile{lof}{\contentsline {figure}{\numberline {26}{\ignorespaces The layout of the acceptance test performed}}{67}\protected@file@percent }
+\newlabel{ACCEPTANCE_TEST_LAYOUT}{{26}{67}}
+\@writefile{lof}{\contentsline {figure}{\numberline {27}{\ignorespaces The lighting plot showing the locations and addresses of fixtures within the visualiser used as part of the acceptance test. This is based on the actual lighting layout used within the students association. Additional explanation has been added on top of the plan to describe what each part means.}}{67}\protected@file@percent }
+\newlabel{ACCEPTANCE_TEST_LX_PLOT}{{27}{67}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {11.3}What Testing Shows}{68}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{69}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {28}{\ignorespaces A table showing the features attempted, implemented and tested as part of this project based on the requirements}}{69}\protected@file@percent }
+\newlabel{REQ_CHECKLIST}{{28}{69}}
+\citation{OPEN_LIGHTING_IMPL}
+\@writefile{lof}{\contentsline {figure}{\numberline {29}{\ignorespaces The requirements of the project as listed in the DOER at the start of the project}}{70}\protected@file@percent }
+\newlabel{DOER_REQ}{{29}{70}}
+\citation{ARDUINO}
+\citation{ARDUINO_IMPL}
+\@writefile{lof}{\contentsline {figure}{\numberline {30}{\ignorespaces A table showing a comparison between this project and other similar projects in terms of sACN features implemented}}{72}\protected@file@percent }
+\newlabel{LIB_COMPARISON}{{30}{72}}
+\@writefile{toc}{\contentsline {section}{\numberline {13}Conclusions}{74}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {14}Appendices}{75}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.1}Extraneous Circumstances - COVID-19}{75}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {14.2}User Manual}{75}\protected@file@percent }
+\citation{C_IMPL}
+\citation{C_IMPL}
+\citation{C_IMPL}
+\bibcite{ANSI_E1.17}{1}
+\@writefile{lof}{\contentsline {figure}{\numberline {31}{\ignorespaces A table showing a comparison between the documentation of another sACN library \cite  {C_IMPL} and this project, green indicates that the area is covered}}{76}\protected@file@percent }
+\newlabel{DOC_COMPARISON}{{31}{76}}
+\bibcite{ORIGNIAL_IMPL}{2}
+\bibcite{ANSI_E1.31}{3}
+\bibcite{ANSI_E1.11}{4}
+\bibcite{DMX_INFO}{5}
+\bibcite{C_IMPL}{6}
+\bibcite{ARDUINO_IMPL}{7}
+\bibcite{NODE_IMPL}{8}
+\bibcite{PYTHON_IMPL}{9}
+\bibcite{OPEN_LIGHTING_IMPL}{10}
+\bibcite{RUST_LANG}{11}
+\bibcite{ARTNET}{12}
+\bibcite{ORIGINAL_IMPL_RUST_DOC}{13}
+\bibcite{ANSI_E1.31_2009}{14}
+\bibcite{ANSI_E1.31_2016}{15}
+\bibcite{WHAT_COMES_AFTER_SACN}{16}
+\bibcite{ANSI_E1.33_2019}{17}
+\bibcite{ANSI_E1.33_IMPL}{18}
+\bibcite{ANSI_E1.20_2010}{19}
+\bibcite{ETC}{20}
+\bibcite{RUST_C_COMPARISON}{21}
+\bibcite{WHY_LEARN_RUST}{22}
+\bibcite{waterfall-diagram}{23}
+\bibcite{ETHERNET_MTU}{24}
+\bibcite{NO_STD_LIB}{25}
+\bibcite{ARDUINO}{26}
+\bibcite{RUST_TRY}{27}
+\bibcite{ERROR_CHAIN}{28}
+\bibcite{WIRESHARK}{29}
+\bibcite{SACN_VIEW}{30}
+\bibcite{SACN_VIEW_DOC}{31}
+\bibcite{VISION}{32}
+\bibcite{AVO_TITAN_MOBILE}{33}
+\bibcite{IETF_RFC_5771}{34}
+\bibcite{IETF_RFC_2365}{35}
+\bibcite{IETF_RFC_4291}{36}
+\bibcite{UNIT_TESTING}{37}
+\bibcite{GRCOV}{38}
+\bibcite{CODE_COVERAGE}{39}
+\bibcite{RUST_AFL_FUZZ}{40}
+\bibcite{RUST_AFL_FUZZ_DOC}{41}
+\bibcite{WIRESHARK_EXPORT_RAW}{42}
+\bibcite{RUST_DATA_RACE}{43}
+\bibcite{NET2}{44}
+\bibcite{SOCKET2}{45}
+\bibcite{RUST_ARC}{46}

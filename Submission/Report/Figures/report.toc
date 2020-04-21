@@ -1,0 +1,63 @@
+\contentsline {section}{\numberline {1}Abstract}{1}%
+\contentsline {section}{\numberline {2}Declaration}{1}%
+\contentsline {section}{\numberline {3}Introduction}{4}%
+\contentsline {section}{\numberline {4}Context Survey}{4}%
+\contentsline {subsection}{\numberline {4.1}DMX, SACN and ACN}{4}%
+\contentsline {subsubsection}{\numberline {4.1.1}DMX512}{4}%
+\contentsline {subsubsection}{\numberline {4.1.2}sACN}{7}%
+\contentsline {subsubsection}{\numberline {4.1.3}sACN - Universe Synchronisation}{8}%
+\contentsline {paragraph}{Usage Example:}{10}%
+\contentsline {paragraph}{The End Goal}{10}%
+\contentsline {paragraph}{Using sACN without any universe synchronisation}{10}%
+\contentsline {paragraph}{Same example using sACN with universe synchronisation}{10}%
+\contentsline {subsubsection}{\numberline {4.1.4}sACN - Universe Discovery}{11}%
+\contentsline {subsubsection}{\numberline {4.1.5}sACN - Network Layers / Transport Modes}{12}%
+\contentsline {paragraph}{Multicast Address Assignment}{14}%
+\contentsline {subsection}{\numberline {4.2}sACN Packet Structure}{15}%
+\contentsline {subsection}{\numberline {4.3}Critical Analysis of the sACN protocol}{15}%
+\contentsline {subsection}{\numberline {4.4}Related Work}{17}%
+\contentsline {section}{\numberline {5}Requirement specification}{18}%
+\contentsline {section}{\numberline {6}Software Engineering Process}{20}%
+\contentsline {subsection}{\numberline {6.1}Implementation, Testing and Deployment Phases}{22}%
+\contentsline {subsection}{\numberline {6.2}Reflection on Methodology Used}{23}%
+\contentsline {section}{\numberline {7}Tools \& Technologies}{26}%
+\contentsline {subsection}{\numberline {7.1}Language: Rust}{26}%
+\contentsline {subsection}{\numberline {7.2}Dependency Management: Cargo}{26}%
+\contentsline {subsubsection}{\numberline {7.2.1}Run}{26}%
+\contentsline {subsubsection}{\numberline {7.2.2}Docs}{27}%
+\contentsline {subsubsection}{\numberline {7.2.3}Test}{27}%
+\contentsline {subsection}{\numberline {7.3}Debug Tools: Wireshark}{27}%
+\contentsline {subsection}{\numberline {7.4}Version Control: Git, Gitlab, Github}{28}%
+\contentsline {subsection}{\numberline {7.5}Test Coverage Tool}{28}%
+\contentsline {subsection}{\numberline {7.6}Compliance Testing Tools: sACNView}{29}%
+\contentsline {subsection}{\numberline {7.7}Real-world Usage Tool: Visualisers: Vision}{30}%
+\contentsline {subsection}{\numberline {7.8}Real-world Usage Tool: Lighting Control: Avolites Titan}{31}%
+\contentsline {section}{\numberline {8}Ethics}{32}%
+\contentsline {section}{\numberline {9}Design}{32}%
+\contentsline {subsection}{\numberline {9.1}Sender}{34}%
+\contentsline {subsection}{\numberline {9.2}Receiver}{35}%
+\contentsline {subsubsection}{\numberline {9.2.1}Data and Universe Synchronisation}{35}%
+\contentsline {subsubsection}{\numberline {9.2.2}Universe Discovery}{35}%
+\contentsline {section}{\numberline {10}Implementation}{36}%
+\contentsline {subsection}{\numberline {10.1}SacnReceiver}{36}%
+\contentsline {subsection}{\numberline {10.2}SacnSource}{38}%
+\contentsline {subsection}{\numberline {10.3}Protocol Packet Parsing / Packing}{41}%
+\contentsline {subsection}{\numberline {10.4}Std vs Non-Std}{42}%
+\contentsline {subsection}{\numberline {10.5}Drop / Closing / Termination}{42}%
+\contentsline {subsection}{\numberline {10.6}Errors}{43}%
+\contentsline {section}{\numberline {11}Testing}{44}%
+\contentsline {subsection}{\numberline {11.1}Scope}{45}%
+\contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{46}%
+\contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{46}%
+\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{49}%
+\contentsline {paragraph}{Across Machines}{51}%
+\contentsline {paragraph}{More than 2 machines}{53}%
+\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{53}%
+\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{56}%
+\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{66}%
+\contentsline {subsection}{\numberline {11.3}What Testing Shows}{68}%
+\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{69}%
+\contentsline {section}{\numberline {13}Conclusions}{74}%
+\contentsline {section}{\numberline {14}Appendices}{75}%
+\contentsline {subsection}{\numberline {14.1}Extraneous Circumstances - COVID-19}{75}%
+\contentsline {subsection}{\numberline {14.2}User Manual}{75}%

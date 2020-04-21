@@ -1,0 +1,11 @@
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+sudo: false
+script:
+  - cargo build --verbose --all
+  - cargo test --verbose --all
+  - if [ $TRAVIS_RUST_VERSION == nightly ]; then cargo build --verbose --all --no-default-features --features unstable; fi
+  - if [ $TRAVIS_RUST_VERSION == nightly ]; then cargo test --verbose --all --no-default-features --features unstable; fi
