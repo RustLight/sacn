@@ -22,14 +22,13 @@
 \contentsline {subsection}{\numberline {6.2}Reflection on Methodology Used}{24}%
 \contentsline {section}{\numberline {7}Tools \& Technologies}{25}%
 \contentsline {subsection}{\numberline {7.1}Language: Rust}{25}%
-\contentsline {subsubsection}{\numberline {7.1.1}Error handling: Error-chain}{26}%
 \contentsline {subsection}{\numberline {7.2}Dependency Management: Cargo}{26}%
-\contentsline {subsubsection}{\numberline {7.2.1}Run}{27}%
-\contentsline {subsubsection}{\numberline {7.2.2}Docs}{27}%
+\contentsline {subsubsection}{\numberline {7.2.1}Run}{26}%
+\contentsline {subsubsection}{\numberline {7.2.2}Docs}{26}%
 \contentsline {subsubsection}{\numberline {7.2.3}Test}{27}%
-\contentsline {subsection}{\numberline {7.3}Debug Tools: Wireshark}{28}%
+\contentsline {subsection}{\numberline {7.3}Debug Tools: Wireshark}{27}%
 \contentsline {subsection}{\numberline {7.4}Version Control: Git, Gitlab, Github}{28}%
-\contentsline {subsection}{\numberline {7.5}Test Coverage Tool}{29}%
+\contentsline {subsection}{\numberline {7.5}Test Coverage Tool}{28}%
 \contentsline {subsection}{\numberline {7.6}Compliance Testing Tools: sACNView}{29}%
 \contentsline {subsection}{\numberline {7.7}Real-world Usage Tool: Visualisers: Vision}{29}%
 \contentsline {subsection}{\numberline {7.8}Real-world Usage Tool: Lighting Control: Avolites Titan}{31}%
@@ -42,23 +41,24 @@
 \contentsline {section}{\numberline {10}Implementation}{36}%
 \contentsline {subsection}{\numberline {10.1}SacnReceiver}{36}%
 \contentsline {subsection}{\numberline {10.2}SacnSource}{39}%
-\contentsline {subsection}{\numberline {10.3}Protocol Packet Parsing / Packing}{40}%
-\contentsline {subsection}{\numberline {10.4}Std vs Non-Std}{40}%
-\contentsline {subsection}{\numberline {10.5}Drop / Closing}{40}%
-\contentsline {section}{\numberline {11}Testing}{41}%
-\contentsline {subsection}{\numberline {11.1}Scope}{42}%
-\contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{43}%
-\contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{43}%
-\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{44}%
-\contentsline {paragraph}{Across Machines}{46}%
-\contentsline {paragraph}{More than 2 machines}{48}%
-\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{48}%
-\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{50}%
-\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{58}%
-\contentsline {subsection}{\numberline {11.3}What Testing Shows}{60}%
-\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{61}%
-\contentsline {subsection}{\numberline {12.1}Extraneous Circumstances - COVID-19}{63}%
-\contentsline {section}{\numberline {13}Conclusions}{64}%
-\contentsline {section}{\numberline {14}Appendices}{64}%
-\contentsline {section}{\numberline {15}User Manual}{64}%
-\contentsline {section}{\numberline {16}Other Appendices}{66}%
+\contentsline {subsection}{\numberline {10.3}Protocol Packet Parsing / Packing}{41}%
+\contentsline {subsection}{\numberline {10.4}Std vs Non-Std}{42}%
+\contentsline {subsection}{\numberline {10.5}Drop / Closing / Termination}{42}%
+\contentsline {subsection}{\numberline {10.6}Errors}{43}%
+\contentsline {section}{\numberline {11}Testing}{44}%
+\contentsline {subsection}{\numberline {11.1}Scope}{45}%
+\contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{46}%
+\contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{46}%
+\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{48}%
+\contentsline {paragraph}{Across Machines}{49}%
+\contentsline {paragraph}{More than 2 machines}{51}%
+\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{51}%
+\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{53}%
+\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{61}%
+\contentsline {subsection}{\numberline {11.3}What Testing Shows}{63}%
+\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{64}%
+\contentsline {subsection}{\numberline {12.1}Extraneous Circumstances - COVID-19}{66}%
+\contentsline {section}{\numberline {13}Conclusions}{67}%
+\contentsline {section}{\numberline {14}Appendices}{67}%
+\contentsline {section}{\numberline {15}User Manual}{67}%
+\contentsline {section}{\numberline {16}Other Appendices}{69}%
