@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.3.5)  21 APR 2020 15:23
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.3.5)  21 APR 2020 16:24
 entering extended mode
 **./report.tex
 (report.tex
@@ -1067,21 +1067,15 @@ Package pdftex.def Info: documentation-comparison-table.png  used on input line
  647.
 (pdftex.def)             Requested size: 360.0pt x 170.48645pt.
 [76 <./documentation-comparison-table.png>]
-Underfull \hbox (badness 2197) in paragraph at lines 656--657
+Underfull \hbox (badness 1448) in paragraph at lines 656--657
 []\OT1/cmr/m/n/10.95 User: lschmierer. (2018, April. 20). Stream-ing ACN im-ple
 -men-
  []
 
 
-Underfull \hbox (badness 2269) in paragraph at lines 656--657
+Underfull \hbox (badness 1502) in paragraph at lines 656--657
 \OT1/cmr/m/n/10.95 ta-tion for Rust [On-line, Ac-cessed: Septem-ber 2019]. Avai
 l-able:
- []
-
-
-Underfull \hbox (badness 1406) in paragraph at lines 660--661
-[]\OT1/cmr/m/n/10.95 ANSI E1.11 - 2008 (R2018) En-ter-tain-ment Tech-nol-ogy - 
-USITT
  []
 
 
@@ -1110,57 +1104,161 @@ Underfull \hbox (badness 10000) in paragraph at lines 662--663
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 676--677
-[]\OT1/cmr/m/n/10.95 http://artisticlicence.com/WebSiteMaster/User%20Guides/art
--
+Underfull \hbox (badness 1178) in paragraph at lines 670--671
+[]\OT1/cmr/m/n/10.95 User: Hun-de-meier. (2019, Dec. 7). A sim-ple ANSI E1.31 (
+aka
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 680--682
-[]\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31[]2009.pdf
+Underfull \hbox (badness 10000) in paragraph at lines 672--673
+[]\OT1/cmr/m/n/10.95 Open Light-ing Project. (Un-known). Open Light-ing Ar-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 683--685
-[]\OT1/cmr/m/n/10.95 https://tsp.esta.org/tsp/documents/docs/E1-31-2016.pdf
- []
-
-
-Overfull \hbox (144.9842pt too wide) in paragraph at lines 686--687
-[]\OT1/cmr/m/n/10.95 http://www.rdmprotocol.org/files/What[]Comes[]After[]Strea
-ming[]DMX[]over[]ACN[]%20%284%29.pdf
+Underfull \hbox (badness 10000) in paragraph at lines 672--673
+\OT1/cmr/m/n/10.95 chi-tec-ture. [On-line, Ac-cessed: 21/04/2020]. Avail-able:
  []
 
 [77]
-Overfull \hbox (66.0468pt too wide) in paragraph at lines 696--697
-[]\OT1/cmr/m/n/10.95 https://benchmarksgame-team.pages.debian.net/benchmarksgam
-e/fastest/rust.html
+Underfull \hbox (badness 5133) in paragraph at lines 684--686
+[]\OT1/cmr/m/n/10.95 S. Blair, D. Fleenor, S. New-ton. (Un-known). What Comes
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 698--699
-[]\OT1/cmr/m/n/10.95 https://www.techrepublic.com/article/rust-programming-lang
-uage-
+Underfull \hbox (badness 10000) in paragraph at lines 684--686
+\OT1/cmr/m/n/10.95 Af-ter Stream-ing DMX Over ACN? [On-line, Ac-cessed:
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 700--701
-[]\OT1/cmr/m/n/10.95 https://www.tutorialspoint.com/sdlc/sdlc[]waterfall[]model
-.htm
+Underfull \hbox (badness 10000) in paragraph at lines 684--686
+\OT1/cmr/m/n/10.95 26/01/2020]. Avail-able: http://www.rdmprotocol.org/files/
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 722--723
-[]\OT1/cmr/m/n/10.95 https://www.dcs.bbk.ac.uk/ ptw/teaching/IWT/transport-
+Underfull \hbox (badness 1005) in paragraph at lines 687--688
+\OT1/cmr/m/n/10.95 E1.20 (RDM) com-pat-i-ble and sim-i-lar de-vices over IP Net
+-works,
  []
 
 
-Overfull \hbox (42.60158pt too wide) in paragraph at lines 740--741
-[]\OT1/cmr/m/n/10.95 https://www.wireshark.org/docs/wsug[]html[]chunked/ChIOExp
-ortSection.html
+Underfull \hbox (badness 10000) in paragraph at lines 689--690
+[]\OT1/cmr/m/n/10.95 ETCLabs. (2020, Apr. 6). Im-ple-men-ta-tion of ANSI
  []
 
-[78] [79] (report.aux)
+
+Underfull \hbox (badness 10000) in paragraph at lines 689--690
+\OT1/cmr/m/n/10.95 E1.33 [On-line, Ac-cessed: 26/01/2020]. Avail-able:
+ []
+
+
+Underfull \hbox (badness 1107) in paragraph at lines 695--696
+\OT1/cmr/m/n/10.95 line, Ac-cessed: 28/01/2020] Avail-able: https://benchmarksg
+ame-
+ []
+
+
+Underfull \hbox (badness 1092) in paragraph at lines 697--698
+\OT1/cmr/m/n/10.95 Avail-able: https://www.techrepublic.com/article/rust-progra
+mming-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 699--700
+[]\OT1/cmr/m/n/10.95 Unknown. (Un-known) SDLC - Wa-ter-fall Model
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 699--700
+\OT1/cmr/m/n/10.95 [On-line, Ac-cessed: 01/01/2020] Avail-able:
+ []
+
+[78]
+Underfull \hbox (badness 1394) in paragraph at lines 712--714
+[]\OT1/cmr/m/n/10.95 Wireshark Foun-da-tion. (Un-known). Wire-shark [On-line, A
+c-cessed:
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 715--716
+[]\OT1/cmr/m/n/10.95 User: doc-steer. (Un-known). sAC-N-View [On-line, Ac-cesse
+d:
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 724--725
+[]\OT1/cmr/m/n/10.95 Unknown. (Un-known). 10. Trans-port Layer
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 724--725
+\OT1/cmr/m/n/10.95 [On-line, Ac-cessed: 13/03/2020]. Avail-able:
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 724--725
+\OT1/cmr/m/n/10.95 https://www.dcs.bbk.ac.uk/~ptw/teaching/IWT/transport-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 726--727
+[]\OT1/cmr/m/n/10.95 IANA Guide-lines for IPv4 Mul-ti-cast Ad-dress As-sign-men
+ts,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 736--737
+[]\OT1/cmr/m/n/10.95 M. Fowler. (2012, Apr. 17). Test-Cov-er-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 736--737
+\OT1/cmr/m/n/10.95 age [On-line, Ac-cessed: 21/04/2020] Avail-able:
+ []
+
+[79]
+Underfull \hbox (badness 6559) in paragraph at lines 740--741
+[]\OT1/cmr/m/n/10.95 Unknown. (Un-known). Fuzzing with afl.rs [On-line, Ac-cess
+ed:
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 742--744
+[]\OT1/cmr/m/n/10.95 Unknown. (Un-known). 5.7. Ex-port-ing Data
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 742--744
+\OT1/cmr/m/n/10.95 [On-line, Ac-cessed: 08/04/2020] Avail-able:
+ []
+
+
+Overfull \hbox (42.60158pt too wide) in paragraph at lines 742--744
+\OT1/cmr/m/n/10.95 https://www.wireshark.org/docs/wsug[]html[]chunked/ChIOExpor
+tSection.html 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 745--746
+[]\OT1/cmr/m/n/10.95 Unknown. (Un-known). Data Races and Race Con-di-tions
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 745--746
+\OT1/cmr/m/n/10.95 [On-line, Ac-cessed: 20/04/2020] Avail-able: https://doc.rus
+t-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 752--753
+[]\OT1/cmr/m/n/10.95 Unknown. (Un-known). Struct std::sync::Arc [On-line,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 752--753
+\OT1/cmr/m/n/10.95 Ac-cessed: 21/04/2020] Avail-able: https://doc.rust-
+ []
+
+[80] (report.aux)
 
 LaTeX Warning: There were undefined references.
 
@@ -1182,9 +1280,9 @@ rograms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/paul/App
 Data/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Us
 ers/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/
 msbm10.pfb>
-Output written on report.pdf (80 pages, 4382777 bytes).
+Output written on report.pdf (81 pages, 4386390 bytes).
 PDF statistics:
- 360 PDF objects out of 1000 (max. 8388607)
+ 363 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  196 words of extra memory for PDF output out of 10000 (max. 10000000)
 
