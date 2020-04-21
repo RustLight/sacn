@@ -404,18 +404,28 @@ Unit testing relies on testing each unit to be effective and so therefore as par
 As described in the tools section unit tests created using the in-built rust/cargo unit testing framework. In addition to this the code coverage of these unit tests was checked using the grcov tool created by mozilla \cite{GRCOV}. The output of the test coverage is included as a webpage (index.html in the coverage folder) and the library view of the results are shown in \ref{GRCOV_TOP_LEVEL}. The library is focused on as this is the focus of the testing (the other modules are part of the webpage but not shown in the screenshot). The code coverage tool shows that the test provide good line coverage with packet and receive particularly well tested. This makes sense as a large amount of testing went into the packet parsing specifically as part of the compliance testing. The low scores for the functions column would indicate poor coverage but actually inspecting the coverage for each file shows that the majority of functions are covered. There is limited documentation available for the grcov tool so it is hard to say why the functions score is so low while the line coverage is high. One possibility is that in a few functions there are situations which were not tested. This includes possibilities that are extremely difficult to trigger intentionally such as the PoisonedMutex error discussed previously. An inspection of the files with coverage highlighting also indicates multiple non-code areas being highlighted which potentially indicates a problem with the code-coverage tool used.
 
 \begin{figure}[H]
-	\includegraphics[width=\textwidth]{code-coverage}
-	\caption{The library view of the code coverage tool output showing the code coverage of each part of the code}
-	\label{GRCOV_TOP_LEVEL}
+	\begin{turn}{90}
+		\begin{minipage}[c][\textwidth][c]{\textheight}
+			\centering
+			\includegraphics[width=\textwidth]{code-coverage}
+			\caption{The library view of the code coverage tool output showing the code coverage of each part of the code, more detail is shown in the include coverage webpage / folder}
+			\label{GRCOV_TOP_LEVEL}
+		\end{minipage}
+	\end{turn}
 \end{figure}
 
 \subsubsection{Integration Testing}
 Unit testing shows that individual parts of the code works as expected, integration comes as the next step where the parts are tested (integrated) together. This included testing the sender and receiver as full units as well as testing them with each other. This was done using two separate mechanisms. The first utilised the rust testing framework that already exists (as used for the unit tests) by creating multiple threads within a test with each thread representing a sender or receiver. These senders and receivers then connect to the same network using different addresses and generate/receive packets to check the output in a variety of scenarios. This simulates the senders and receivers being independent as they only share data through the protocol with no shared memory (sharing memory between threads can only be done explicitly in rust a normal variable cannot be shared). The only exception to this was the usage of the rust thread message passing system which allowed the sender/receiver threads to wait on each other as appropriate to allow repeatedly creating the desired test scenario. An example of this is shown in figure \ref{UNIT_INTEGRATION_TEST}. This shows how a typical test is set-up . First the constant parameters are defined first. Second the senders or in this case receiver created are created. The sender/receivers are then put into the expected states by using the thread message passing to communicate as certain points are reached in the code which in this case is the receiver being ready to receive. The actions being tested, in this case sending a single universe of data over multicast, are then performed and the outcome is checked against the expected results. These integration tests mimic the real-usage of the system but with the advantage that the states of the sender/receive can be more easily synchronised to test a specific scenario using the thread message passing system. These tests can also be run on a single machine utilising a feature within both Fedora and Windows which allows a single interface to a network to use multiple IP addresses. This is required because the receiver must use the protocol defined ACN port and so different addresses have to be used to provide separation. As the states can be easily synchronised and only a single computer is needed these tests allow a large range of possible scenarios and functionality to be checked without requiring a more complicated (and prone to breakages) set-up. 
 
 \begin{figure}[H]
-	\includegraphics[width=\textwidth]{integration-test-example.png}
-	\caption{An example of the code used for a single machine integration test}
-	\label{UNIT_INTEGRATION_TEST}
+	\begin{turn}{90}
+		\begin{minipage}[c][\textwidth][c]{\textheight}
+			\centering
+			\includegraphics[width=\textwidth]{integration-test-example.png}
+			\caption{An example of the code used for a single machine integration test}
+			\label{UNIT_INTEGRATION_TEST}
+		\end{minipage}
+	\end{turn}
 \end{figure}
 
 \paragraph{Across Machines}
@@ -442,9 +452,14 @@ To guide the fuzzer to produce data based on sACN expected packets the raw data 
 The fuzzer was run with 2 separate instances with run conditions and the results of the fuzzer shown in figure \ref{FUZZ_RESULTS}. These results show that out of the 218 million packets tried 98.7 thousand produced a crash with 14 unique 'types' of packet generation that caused a crash. This corresponds to a calculated crash rate of 0.045\% based on the inputs generated by the fuzzer. While ideally the project would have a crash rate of 0\% this crash rate is still low enough to be acceptable. 
 
 \begin{figure}[H]
-	\includegraphics[width=\textwidth]{Fuzzing_Terminal}
-	\caption{The results of the fuzz testing on the parsing part of the library.}
-	\label{FUZZ_RESULTS}
+	\begin{turn}{90}
+		\begin{minipage}[c][\textwidth][c]{\textheight}
+			\centering
+			\includegraphics[width=\textwidth]{Fuzzing_Terminal}
+			\caption{The results of the fuzz testing on the parsing part of the library.}
+			\label{FUZZ_RESULTS}
+		\end{minipage}
+	\end{turn}
 \end{figure}
 
 \subsubsection{Testing External Interoperability}
@@ -456,15 +471,25 @@ These tests can highlight problems with the program which are hidden until this 
 To allow repeatability the show files used for the interoperability tests are included in the Avolites Titan Show Files sub folder in the Interoperability Testing folder. These show files were made for version 11.4 and run on an Avolites Titan Mobile. Within the show file each universe was assigned to an sACN universe with a 1 to 1 mapping and no other network protocols were used as shown in figure \ref{AVO_DMX_LINES}.  In addition to this within the show-file itself 1 channel lighting fixtures called 'dimmers' were used to allow a 1:1 mapping between a fixture in the show-file and a DMX-address. This mapping is shown in figure \ref{AVO_RECV_INTEROP_SETUP} which shows some of the dimmers used (the groups part of the window shows that 8190 dimmers were added to represent each channel in universes 1 - 16). All settings used are included within the save files but in general were left to their defaults.
 
 \begin{figure}[H]
-	\includegraphics*[width=\textwidth]{avo-dmx-lines.png}
-	\caption{The setup of the avolites show file network protocols used for the interoperability testing}
-	\label{AVO_DMX_LINES}
+	\begin{turn}{90}
+		\begin{minipage}[c][\textwidth][c]{\textheight}
+			\centering
+			\includegraphics*[width=\textwidth]{avo-dmx-lines.png}
+			\caption{The setup of the avolites show file network protocols used for the interoperability testing}
+			\label{AVO_DMX_LINES}
+		\end{minipage}
+	\end{turn}
 \end{figure}
 
 \begin{figure}[H]
-	\includegraphics*[width=\textwidth]{avo-file-dims.png}
-	\caption{The setup of the avolites show file used for interoperability testing showing some of the fixtures patched}
-	\label{AVO_RECV_INTEROP_SETUP}
+	\begin{turn}{90}
+		\begin{minipage}[c][\textwidth][c]{\textheight}
+			\centering
+			\includegraphics*[width=\textwidth]{avo-file-dims.png}
+			\caption{The setup of the avolites show file used for interoperability testing showing some of the fixtures patched}
+			\label{AVO_RECV_INTEROP_SETUP}
+		\end{minipage}
+	\end{turn}
 \end{figure}
 
 \paragraph*{Industry Receiver - Vectorworks Vision Setup}
@@ -499,9 +524,14 @@ Similar to test 5, tests 3 and 4 also included visualisation elements as part of
 \end{figure}
 
 \begin{figure}[H]
-	\includegraphics[width=\textwidth]{test-5-processed-first-value-chart}
-	\caption{A graph showing the values of each universe per packet received for that universe. This shows the ranges of each universe fit within the expected.}
-	\label{RCV_INTEROP_TEST_5_GRAPH}
+	\begin{turn}{90}
+		\begin{minipage}[c][\textwidth][c]{\textheight}
+			\centering
+			\includegraphics[width=\textwidth]{test-5-processed-first-value-chart}
+			\caption{A graph showing the values of each universe per packet received for that universe. This shows the ranges of each universe fit within the expected.}
+			\label{RCV_INTEROP_TEST_5_GRAPH}
+		\end{minipage}
+	\end{turn}
 \end{figure}
 
 \paragraph*{Testing sender implementation}
@@ -517,10 +547,16 @@ To allow the visualiser output to be easier to interpret the 3D scene used uses 
 	\label{VIS_VIEWER_SETUP}
 \end{figure}
 
+
 \begin{figure}[H]
-	\includegraphics[width=\textwidth]{Vision-File-LX-Plot.png}
-	\caption{The lighting plot of the lights used as part of the Vision Visualiser test scene}
-	\label{VIS_LX_PLOT}
+	\begin{turn}{90}
+		\begin{minipage}[c][\textwidth][c]{\textheight}
+			\centering
+			\includegraphics[width=\textwidth]{Vision-File-LX-Plot.png}
+			\caption{The lighting plot of the lights used as part of the Vision Visualiser test scene}
+			\label{VIS_LX_PLOT}
+		\end{minipage}
+	\end{turn}
 \end{figure}
 
 \subsubsection{Acceptance Testing}
@@ -591,6 +627,8 @@ An implementation was successfully created with supports the ANSI E1.31-2018 sAC
 For future work there are two directions to propose taking the project in. The first is from the perspective of continuing to increase the library support itself, this could take the form of supporting more devices but I believe the next step to look at is integrating the features of ANSI E1.33 (RDMnet) into the library. This is because driven by support from major companies such as ETC the features provided by E1.33 are likely to be become a major part of the lighting over IP eco-system in the next few years. Rust does not have any implementation of E1.33 public-ally available so if extended the library would be the only library with support. The other direction is in using the library to make devices/software for usage with sACN. Rust provides a high level of performance while maintaining many safety guarantees which would make it an ideal language to create show critical high performance lighting control software that is robust and usable on multiple platforms. By creating this library it opens the door to the development of this software in the language and the potential benefits this brings.
 
 \section{Appendices}
+After the references more appendices are appended to show more details of the project. These documents are referred to as relevant throughout the report and attached so that they are all within one report file. The documents are also included as separate files within the project resources submission.
+
 \subsection{Extraneous Circumstances - COVID-19}
 Unfortunately the acceptance test which was planned for sometime between the 14th and 29th of March based on when the technician was free was unable to take place. This is due to the outbreak of the COVID-19 virus which forced the students association to close and non-essential contact to be stopped before the demonstration could be conducted. It is predicted that based on the very similar integration tests passing as-well as the other testing that had the demonstration gone ahead the program would have worked as expected and the evaluation been positive. It is a shame that the test could not be conducted as comments could have led to recommended improvements for the project which would have ultimately resulted in a higher quality submission. An annotated video is included showing what one of the acceptance tests may have looked like is included although this video is performed on my own hardware rather than the students union equipment.\\
 
@@ -613,34 +651,32 @@ To check that the documentation contains the right information it was compared t
 
 \begin{thebibliography}{9}
 	\bibitem{ANSI_E1.17}
-	ANSI E1.17 - 2015 Entertainment Technology?Architecture for Control Networks
+	ANSI E1.17 - 2015 Entertainment Technology - Architecture for Control Networks, CP/2011-1007, 21 May 2015.
 	\bibitem{ORIGNIAL_IMPL}
-	https://github.com/lschmierer/sacn (September 2019)
+	User: lschmierer. (2018, April. 20). Streaming ACN implementation for Rust [Online, Accessed: September 2019]. Available: https://github.com/lschmierer/sacn
 	\bibitem{ANSI_E1.31}
-	ANSI E1.31 ? 2018 Entertainment Technology Lightweight streaming protocol for transport of DMX512 using ACN
+	ANSI E1.31 - 2018 Entertainment Technology Lightweight streaming protocol for transport of DMX512 using ACN, CP/2014-1009r6a, 7 November 2018.
 	\bibitem{ANSI_E1.11}
-	ANSI E1.11 - 2008 (R2018) Entertainment Technology - USITT DMX512-A  Asynchronous Serial Digital Data Transmission 
-	Standard for Controlling Lighting Equipment and Accessories Document Number: CP/2007-1013r3.1
+	ANSI E1.11 - 2008 (R2018) Entertainment Technology - USITT DMX512-A  Asynchronous Serial Digital Data Transmission Standard for Controlling Lighting Equipment and Accessories, CP/2007-1013r3.1, 31 May 2018.
 	\bibitem{DMX_INFO}
-	https://www.element14.com/community/groups/open-source-hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-protocol-detail-for-lighting-applications (17/09/2019)
+	User: shabaz. (2017, Aug. 24). DMX Explained; DMX512 and RS-485 Protocol Detail for Lighting Applications [Online, Accessed: 17/09/2019]. Available: https://www.element14.com/community/groups/open-source-hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-protocol-detail-for-lighting-applications
 	\bibitem{C_IMPL}
-	https://github.com/hhromic/libe131 (17/09/2019)
-	\bibitem{C++_IMPL}
-	https://github.com/hhromic/libe131
+	User: hhromic. (2020, Jan. 4). libE131: a lightweight C/C++ library for the E1.31 (sACN) protocol [Online, Accessed: 17/09/2019]. Available: https://github.com/hhromic/libe131
 	\bibitem{ARDUINO_IMPL}
-	https://github.com/forkineye/E131 (21/04/2020)
+	User: forkineye. (2017, Aug. 11). E1.31 (sACN) library for Arduino with ESP8266 support [Online, Accessed: 21/04/2020]
 	\bibitem{NODE_IMPL}
-	https://github.com/hhromic/e131-node (21/04/2020)
+	User hhromic. (2018, Dec. 16). Node.js client/server library for the E1.31 (sACN) protocol [Online, Accessed: 21/04/2020]. Available: https://github.com/hhromic/e131-node
 	\bibitem{PYTHON_IMPL}
-	https://github.com/Hundemeier/sacn (21/04/2020)
+	User: Hundemeier. (2019, Dec. 7). A simple ANSI E1.31 (aka sACN) module for python. [Online, Accessed: 21/04/2020]. Available: https://github.com/Hundemeier/sacn
 	\bibitem{OPEN_LIGHTING_IMPL}
-	https://www.openlighting.org/ola/ (21/04/2020)
+	Open Lighting Project. (Unknown). Open Lighting Architecture. [Online, Accessed: 21/04/2020]. Available: https://www.openlighting.org/ola/
 	\bibitem{RUST_LANG}
-	https://www.rust-lang.org/ (17/09/2019)
+	Rust Team. (Unknown). Rust Programming Language. [Online, Accessed: 17/09/2019]. Available: https://www.rust-lang.org/
 	\bibitem{ARTNET}
-	http://artisticlicence.com/WebSiteMaster/User\%20Guides/art-net.pdf (17/09/2019)
+	Art-Net 4 Protocol Release V1.4, Document Revision 1.4dd, 22 Jan 2017.
 	\bibitem{ORIGINAL_IMPL_RUST_DOC}
-	https://docs.rs/sacn/0.4.4/sacn/index.html (26/01/2020)
+	Lukas Schmierer (Unknown). sacn - Rust [Onlinee, Accessed: 26/01/2020]. Available: https://docs.rs/sacn/0.4.4/sacn/index.html
+	
 	\bibitem{ANSI_E1.31_2009}
 	https://tsp.esta.org/tsp/documents/docs/E1-31\_2009.pdf
 	(26/01/2020)

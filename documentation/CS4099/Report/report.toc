@@ -49,15 +49,15 @@
 \contentsline {subsection}{\numberline {11.1}Scope}{45}%
 \contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{46}%
 \contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{46}%
-\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{47}%
-\contentsline {paragraph}{Across Machines}{49}%
-\contentsline {paragraph}{More than 2 machines}{51}%
-\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{51}%
-\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{53}%
-\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{60}%
-\contentsline {subsection}{\numberline {11.3}What Testing Shows}{62}%
-\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{63}%
-\contentsline {section}{\numberline {13}Conclusions}{68}%
-\contentsline {section}{\numberline {14}Appendices}{69}%
-\contentsline {subsection}{\numberline {14.1}Extraneous Circumstances - COVID-19}{69}%
-\contentsline {subsection}{\numberline {14.2}User Manual}{69}%
+\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{49}%
+\contentsline {paragraph}{Across Machines}{51}%
+\contentsline {paragraph}{More than 2 machines}{53}%
+\contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{53}%
+\contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{56}%
+\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{66}%
+\contentsline {subsection}{\numberline {11.3}What Testing Shows}{68}%
+\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{69}%
+\contentsline {section}{\numberline {13}Conclusions}{74}%
+\contentsline {section}{\numberline {14}Appendices}{75}%
+\contentsline {subsection}{\numberline {14.1}Extraneous Circumstances - COVID-19}{75}%
+\contentsline {subsection}{\numberline {14.2}User Manual}{75}%
