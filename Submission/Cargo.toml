@@ -1,0 +1,5 @@
+[workspace]
+members = ["Lib", "demo_rcv", "demo_src"]
+
+# Need to add sacn-parse-fuzz-target if fuzzing. This will prevent compilation on windows if present as the fuzzing library is linux only.
+# members = ["Lib", "demo_rcv", "demo_src", "sacn-parse-fuzz-target"]

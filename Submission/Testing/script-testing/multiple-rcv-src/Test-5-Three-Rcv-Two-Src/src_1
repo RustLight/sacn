@@ -1,0 +1,12 @@
+# Register on 4 different universes and then sent data, the packets to universe 1 and 2 are unsyncronised and then universe 3 and 4 are synced.
+r 100
+r 101
+r 102
+r 103
+# Unsynchronised data packets to universe 100, 101, 102, 103.
+d 100 0 100 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30
+d 101 0 100 89 88 87 86 85 84 83 82 81 80 79 78 77 76 75 74 73 72 71 70 69 68 67 66 65 64 63
+d 102 0 100 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116
+d 103 0 100 200 201 202 203 204 205 206 207 208 209 210 211 212 213 214 215 216
+# Wait to allow universe discovery packet to be sent.
+w 25000

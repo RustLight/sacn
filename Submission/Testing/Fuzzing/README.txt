@@ -1,0 +1,1 @@
+To run the fuzzer make sure to modify the project Cargo.toml first (see details in that file).

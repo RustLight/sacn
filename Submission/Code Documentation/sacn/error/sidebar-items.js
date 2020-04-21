@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["errors","The errors used within the SacnLibrary. The ErrorKind subsection of this within the documentation contains details of all the errors."]]});
