@@ -20,17 +20,17 @@
 \contentsline {section}{\numberline {6}Software Engineering Process}{21}%
 \contentsline {subsection}{\numberline {6.1}Implementation, Testing and Deployment Phases}{22}%
 \contentsline {subsection}{\numberline {6.2}Reflection on Methodology Used}{24}%
-\contentsline {section}{\numberline {7}Tools \& Technologies}{25}%
-\contentsline {subsection}{\numberline {7.1}Language: Rust}{25}%
+\contentsline {section}{\numberline {7}Tools \& Technologies}{26}%
+\contentsline {subsection}{\numberline {7.1}Language: Rust}{26}%
 \contentsline {subsection}{\numberline {7.2}Dependency Management: Cargo}{26}%
 \contentsline {subsubsection}{\numberline {7.2.1}Run}{26}%
-\contentsline {subsubsection}{\numberline {7.2.2}Docs}{26}%
+\contentsline {subsubsection}{\numberline {7.2.2}Docs}{27}%
 \contentsline {subsubsection}{\numberline {7.2.3}Test}{27}%
 \contentsline {subsection}{\numberline {7.3}Debug Tools: Wireshark}{27}%
 \contentsline {subsection}{\numberline {7.4}Version Control: Git, Gitlab, Github}{28}%
 \contentsline {subsection}{\numberline {7.5}Test Coverage Tool}{28}%
 \contentsline {subsection}{\numberline {7.6}Compliance Testing Tools: sACNView}{29}%
-\contentsline {subsection}{\numberline {7.7}Real-world Usage Tool: Visualisers: Vision}{29}%
+\contentsline {subsection}{\numberline {7.7}Real-world Usage Tool: Visualisers: Vision}{30}%
 \contentsline {subsection}{\numberline {7.8}Real-world Usage Tool: Lighting Control: Avolites Titan}{31}%
 \contentsline {section}{\numberline {8}Ethics}{32}%
 \contentsline {section}{\numberline {9}Design}{32}%
