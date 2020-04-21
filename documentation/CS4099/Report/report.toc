@@ -40,7 +40,7 @@
 \contentsline {subsubsection}{\numberline {9.2.2}Universe Discovery}{35}%
 \contentsline {section}{\numberline {10}Implementation}{36}%
 \contentsline {subsection}{\numberline {10.1}SacnReceiver}{36}%
-\contentsline {subsection}{\numberline {10.2}SacnSource}{39}%
+\contentsline {subsection}{\numberline {10.2}SacnSource}{38}%
 \contentsline {subsection}{\numberline {10.3}Protocol Packet Parsing / Packing}{41}%
 \contentsline {subsection}{\numberline {10.4}Std vs Non-Std}{42}%
 \contentsline {subsection}{\numberline {10.5}Drop / Closing / Termination}{42}%
@@ -49,16 +49,16 @@
 \contentsline {subsection}{\numberline {11.1}Scope}{45}%
 \contentsline {subsection}{\numberline {11.2}Testing Mechanisms}{46}%
 \contentsline {subsubsection}{\numberline {11.2.1}Unit Testing}{46}%
-\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{48}%
+\contentsline {subsubsection}{\numberline {11.2.2}Integration Testing}{47}%
 \contentsline {paragraph}{Across Machines}{49}%
 \contentsline {paragraph}{More than 2 machines}{51}%
 \contentsline {subsubsection}{\numberline {11.2.3}Fuzz Testing}{51}%
 \contentsline {subsubsection}{\numberline {11.2.4}Testing External Interoperability}{53}%
-\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{61}%
-\contentsline {subsection}{\numberline {11.3}What Testing Shows}{63}%
-\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{64}%
+\contentsline {subsubsection}{\numberline {11.2.5}Acceptance Testing}{60}%
+\contentsline {subsection}{\numberline {11.3}What Testing Shows}{62}%
+\contentsline {section}{\numberline {12}Evaluation and Critical Appraisal}{63}%
 \contentsline {subsection}{\numberline {12.1}Extraneous Circumstances - COVID-19}{66}%
-\contentsline {section}{\numberline {13}Conclusions}{67}%
-\contentsline {section}{\numberline {14}Appendices}{67}%
+\contentsline {section}{\numberline {13}Conclusions}{66}%
+\contentsline {section}{\numberline {14}Appendices}{66}%
 \contentsline {section}{\numberline {15}User Manual}{67}%
-\contentsline {section}{\numberline {16}Other Appendices}{69}%
+\contentsline {section}{\numberline {16}Other Appendices}{68}%
