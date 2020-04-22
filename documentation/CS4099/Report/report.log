@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.4.21)  21 APR 2020 21:38
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.4.21)  22 APR 2020 14:24
 entering extended mode
 **./report.tex
 (report.tex
@@ -1614,7 +1614,7 @@ LaTeX Warning: There were undefined references.
  ) 
 Here is how much of TeX's memory you used:
  14938 strings out of 492484
- 276084 string characters out of 3122054
+ 276042 string characters out of 3122054
  447491 words of memory out of 3000000
  19119 multiletter control sequences out of 15000+200000
  539551 words of font info for 50 fonts, out of 3000000 for 9000
@@ -1629,7 +1629,7 @@ rograms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/paul/App
 Data/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Us
 ers/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/
 msbm10.pfb>
-Output written on report.pdf (92 pages, 4632389 bytes).
+Output written on report.pdf (92 pages, 4632386 bytes).
 PDF statistics:
  607 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
