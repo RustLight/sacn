@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.4.21)  22 APR 2020 14:24
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (MiKTeX 2.9.7250 64-bit) (preloaded format=pdflatex 2020.4.21)  23 APR 2020 17:25
 entering extended mode
 **./report.tex
 (report.tex
@@ -525,12 +525,12 @@ Package pdftex.def Info: st_a.png  used on input line 7.
 
 {C:/Users/paul/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map} <./st_a.png>]
 ) [1] (report.toc
-LaTeX Font Info:    Trying to load font information for U+msa on input line 5.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 4.
 
 ("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex/latex/amsfonts\umsa.fd"
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 5.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 4.
 
 ("C:\Users\paul\AppData\Local\Programs\MiKTeX 2.9\tex/latex/amsfonts\umsb.fd"
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
@@ -540,28 +540,33 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 \openout3 = `report.toc'.
 
  [3]
-
-LaTeX Warning: Citation `ORIGINAL_IMPL' on page 4 undefined on input line 41.
-
-
 Underfull \hbox (badness 10000) in paragraph at lines 41--42
 
  []
 
-[4]
-<TypicalDmxSetup.png, id=25, 960.58875pt x 663.47874pt>
+
+Underfull \hbox (badness 10000) in paragraph at lines 44--45
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 46--47
+
+ []
+
+[4] [5]
+<TypicalDmxSetup.png, id=28, 960.58875pt x 663.47874pt>
 File: TypicalDmxSetup.png Graphic file (type png)
 <use TypicalDmxSetup.png>
-Package pdftex.def Info: TypicalDmxSetup.png  used on input line 58.
+Package pdftex.def Info: TypicalDmxSetup.png  used on input line 63.
 (pdftex.def)             Requested size: 360.0pt x 248.65205pt.
- [5]
 <CS4099-Expected-Usage.png, id=29, 960.58875pt x 743.77875pt>
 File: CS4099-Expected-Usage.png Graphic file (type png)
 <use CS4099-Expected-Usage.png>
-Package pdftex.def Info: CS4099-Expected-Usage.png  used on input line 65.
+Package pdftex.def Info: CS4099-Expected-Usage.png  used on input line 70.
 (pdftex.def)             Requested size: 360.0pt x 278.74611pt.
  [6 <./TypicalDmxSetup.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 72--73
+Underfull \hbox (badness 10000) in paragraph at lines 77--78
 
  []
 
@@ -569,7 +574,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 72--73
 <sacn-uni-sync-example.png, id=42, 864.22874pt x 764.8575pt>
 File: sacn-uni-sync-example.png Graphic file (type png)
 <use sacn-uni-sync-example.png>
-Package pdftex.def Info: sacn-uni-sync-example.png  used on input line 89.
+Package pdftex.def Info: sacn-uni-sync-example.png  used on input line 94.
 (pdftex.def)             Requested size: 360.0pt x 318.60036pt.
  [9 <./sacn-uni-sync-example.png>]
 [10]
@@ -577,25 +582,25 @@ Package pdftex.def Info: sacn-uni-sync-example.png  used on input line 89.
 File: CS4099-Discovery-Explaination.png Graphic file (type png)
 <use CS4099-Discovery-Explaination.png>
 Package pdftex.def Info: CS4099-Discovery-Explaination.png  used on input line 
-119.
+124.
 (pdftex.def)             Requested size: 360.0pt x 268.49684pt.
  [11]
-Underfull \hbox (badness 10000) in paragraph at lines 127--128
+Underfull \hbox (badness 10000) in paragraph at lines 132--133
 
  []
 
 [12 <./CS4099-Discovery-Explaination.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 129--130
+Underfull \hbox (badness 10000) in paragraph at lines 134--135
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 131--132
+Underfull \hbox (badness 10000) in paragraph at lines 136--137
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 133--134
+Underfull \hbox (badness 10000) in paragraph at lines 138--139
 
  []
 
@@ -603,35 +608,25 @@ Underfull \hbox (badness 10000) in paragraph at lines 133--134
 <IpMulticastMapping.png, id=62, 854.19125pt x 395.4775pt>
 File: IpMulticastMapping.png Graphic file (type png)
 <use IpMulticastMapping.png>
-Package pdftex.def Info: IpMulticastMapping.png  used on input line 139.
+Package pdftex.def Info: IpMulticastMapping.png  used on input line 144.
 (pdftex.def)             Requested size: 360.0pt x 166.67268pt.
 
-Underfull \hbox (badness 10000) in paragraph at lines 144--145
+Underfull \hbox (badness 10000) in paragraph at lines 149--150
 
  []
 
 [14 <./IpMulticastMapping.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 152--153
+Underfull \hbox (badness 10000) in paragraph at lines 157--158
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 154--155
+Underfull \hbox (badness 10000) in paragraph at lines 159--160
 
  []
 
 [15]
-Underfull \hbox (badness 10000) in paragraph at lines 156--157
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 158--159
-
- []
-
-[16]
-Underfull \hbox (badness 10000) in paragraph at lines 160--161
+Underfull \hbox (badness 10000) in paragraph at lines 161--162
 
  []
 
@@ -640,32 +635,38 @@ Underfull \hbox (badness 10000) in paragraph at lines 163--164
 
  []
 
-[17]
-
-LaTeX Warning: Citation `ARNET' on page 18 undefined on input line 165.
-
-
+[16]
 Underfull \hbox (badness 10000) in paragraph at lines 165--166
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 167--168
+Underfull \hbox (badness 10000) in paragraph at lines 168--169
+
+ []
+
+[17]
+Underfull \hbox (badness 10000) in paragraph at lines 170--171
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 172--173
 
  []
 
 <E131-Repo-Search.png, id=76, 545.78906pt x 441.52454pt>
 File: E131-Repo-Search.png Graphic file (type png)
 <use E131-Repo-Search.png>
-Package pdftex.def Info: E131-Repo-Search.png  used on input line 172.
+Package pdftex.def Info: E131-Repo-Search.png  used on input line 177.
 (pdftex.def)             Requested size: 360.0pt x 291.22519pt.
 [18] [19 <./E131-Repo-Search.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 191--192
+Underfull \hbox (badness 10000) in paragraph at lines 196--197
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 193--194
+Underfull \hbox (badness 10000) in paragraph at lines 198--199
 
  []
 
@@ -673,19 +674,9 @@ Underfull \hbox (badness 10000) in paragraph at lines 193--194
 <sdlc_waterfall_model.jpg, id=88, 451.6875pt x 301.8778pt>
 File: sdlc_waterfall_model.jpg Graphic file (type jpg)
 <use sdlc_waterfall_model.jpg>
-Package pdftex.def Info: sdlc_waterfall_model.jpg  used on input line 199.
+Package pdftex.def Info: sdlc_waterfall_model.jpg  used on input line 204.
 (pdftex.def)             Requested size: 360.0pt x 240.61356pt.
 
-Underfull \hbox (badness 10000) in paragraph at lines 204--205
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 206--207
-
- []
-
-[21 <./sdlc_waterfall_model.jpg>]
 Underfull \hbox (badness 10000) in paragraph at lines 209--210
 
  []
@@ -695,18 +686,28 @@ Underfull \hbox (badness 10000) in paragraph at lines 211--212
 
  []
 
+[21 <./sdlc_waterfall_model.jpg>]
+Underfull \hbox (badness 10000) in paragraph at lines 214--215
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 216--217
+
+ []
+
 [22]
-Underfull \hbox (badness 10000) in paragraph at lines 213--214
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 215--216
-
- []
-
-
 Underfull \hbox (badness 10000) in paragraph at lines 218--219
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 220--221
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 223--224
 
  []
 
@@ -714,15 +715,15 @@ Underfull \hbox (badness 10000) in paragraph at lines 218--219
 <CS4099-dev-timeline.png, id=98, 1184.425pt x 743.77875pt>
 File: CS4099-dev-timeline.png Graphic file (type png)
 <use CS4099-dev-timeline.png>
-Package pdftex.def Info: CS4099-dev-timeline.png  used on input line 225.
+Package pdftex.def Info: CS4099-dev-timeline.png  used on input line 230.
 (pdftex.def)             Requested size: 595.80026pt x 374.14694pt.
  [24]
-Underfull \hbox (badness 10000) in paragraph at lines 233--234
+Underfull \hbox (badness 10000) in paragraph at lines 238--239
 
  []
 
 [25 <./CS4099-dev-timeline.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 246--247
+Underfull \hbox (badness 10000) in paragraph at lines 251--252
 
  []
 
@@ -730,29 +731,25 @@ Underfull \hbox (badness 10000) in paragraph at lines 246--247
 <wireshark-settings.png, id=113, 671.50874pt x 379.4175pt>
 File: wireshark-settings.png Graphic file (type png)
 <use wireshark-settings.png>
-Package pdftex.def Info: wireshark-settings.png  used on input line 257.
+Package pdftex.def Info: wireshark-settings.png  used on input line 262.
 (pdftex.def)             Requested size: 360.0pt x 203.40608pt.
  [28 <./wireshark-settings.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 269--270
+Underfull \hbox (badness 10000) in paragraph at lines 274--275
 
  []
 
 
-LaTeX Warning: Citation `SACN_VIEWER_DOC' on page 29 undefined on input line 27
-1.
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 271--272
+Underfull \hbox (badness 10000) in paragraph at lines 276--277
 
  []
 
 <sacnViewExplained.png, id=118, 1444.64719pt x 781.41937pt>
 File: sacnViewExplained.png Graphic file (type png)
 <use sacnViewExplained.png>
-Package pdftex.def Info: sacnViewExplained.png  used on input line 274.
+Package pdftex.def Info: sacnViewExplained.png  used on input line 279.
 (pdftex.def)             Requested size: 360.0pt x 194.72241pt.
 
-Underfull \hbox (badness 10000) in paragraph at lines 280--281
+Underfull \hbox (badness 10000) in paragraph at lines 285--286
 
  []
 
@@ -760,64 +757,54 @@ Underfull \hbox (badness 10000) in paragraph at lines 280--281
 <vision_explained.png, id=122, 1443.89438pt x 785.18344pt>
 File: vision_explained.png Graphic file (type png)
 <use vision_explained.png>
-Package pdftex.def Info: vision_explained.png  used on input line 285.
+Package pdftex.def Info: vision_explained.png  used on input line 290.
 (pdftex.def)             Requested size: 360.0pt x 195.76822pt.
  [30]
 <avo_titan_explained.png, id=127, 1128.84235pt x 721.19438pt>
 File: avo_titan_explained.png Graphic file (type png)
 <use avo_titan_explained.png>
-Package pdftex.def Info: avo_titan_explained.png  used on input line 294.
+Package pdftex.def Info: avo_titan_explained.png  used on input line 299.
 (pdftex.def)             Requested size: 360.0pt x 229.99458pt.
  [31 <./vision_explained.png>]
 <Project-Expected-Usage-Diagram.png, id=131, 803.0pt x 603.25375pt>
 File: Project-Expected-Usage-Diagram.png Graphic file (type png)
 <use Project-Expected-Usage-Diagram.png>
 Package pdftex.def Info: Project-Expected-Usage-Diagram.png  used on input line
- 306.
+ 311.
 (pdftex.def)             Requested size: 360.0pt x 270.45834pt.
  [32 <./avo_titan_explained.png>] [33 <./Project-Expected-Usage-Diagram.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 316--317
+Underfull \hbox (badness 10000) in paragraph at lines 321--322
 
  []
 
 [34] [35]
-Underfull \hbox (badness 10000) in paragraph at lines 333--334
+Underfull \hbox (badness 10000) in paragraph at lines 338--339
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 335--336
+Underfull \hbox (badness 10000) in paragraph at lines 340--341
 
  []
 
 [36]
-Overfull \hbox (27.48442pt too wide) in paragraph at lines 337--338
+Overfull \hbox (27.48442pt too wide) in paragraph at lines 342--343
 \OT1/cmr/m/n/10.95 the dis-cov-ered sources so this is still pos-si-ble by us-i
 ng the 'get[]discovered[]sources()'
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 337--338
+Underfull \hbox (badness 10000) in paragraph at lines 342--343
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 339--340
+Underfull \hbox (badness 10000) in paragraph at lines 344--345
 
  []
 
 [37]
-Underfull \hbox (badness 10000) in paragraph at lines 341--342
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 343--344
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 345--346
+Underfull \hbox (badness 10000) in paragraph at lines 346--347
 
  []
 
@@ -826,78 +813,88 @@ Underfull \hbox (badness 10000) in paragraph at lines 348--349
 
  []
 
-[38]
+
 Underfull \hbox (badness 10000) in paragraph at lines 350--351
 
  []
 
+
+Underfull \hbox (badness 10000) in paragraph at lines 353--354
+
+ []
+
+[38]
+Underfull \hbox (badness 10000) in paragraph at lines 355--356
+
+ []
+
 [39]
-Underfull \hbox (badness 10000) in paragraph at lines 352--353
+Underfull \hbox (badness 10000) in paragraph at lines 357--358
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 354--355
+Underfull \hbox (badness 10000) in paragraph at lines 359--360
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 356--357
-
- []
-
-[40]
 Underfull \hbox (badness 10000) in paragraph at lines 361--362
 
  []
 
-[41]
+[40]
 Underfull \hbox (badness 10000) in paragraph at lines 366--367
 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 369--370
-
- []
-
-
+[41]
 Underfull \hbox (badness 10000) in paragraph at lines 371--372
 
  []
 
-[42]
+
+Underfull \hbox (badness 10000) in paragraph at lines 374--375
+
+ []
+
+
 Underfull \hbox (badness 10000) in paragraph at lines 376--377
 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 378--379
+[42]
+Underfull \hbox (badness 10000) in paragraph at lines 381--382
 
  []
 
-[43]
+
 Underfull \hbox (badness 10000) in paragraph at lines 383--384
 
  []
 
-[44]
+[43]
 Underfull \hbox (badness 10000) in paragraph at lines 388--389
 
  []
 
-[45]
+[44]
 Underfull \hbox (badness 10000) in paragraph at lines 393--394
 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 396--397
+[45]
+Underfull \hbox (badness 10000) in paragraph at lines 398--399
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 398--399
+Underfull \hbox (badness 10000) in paragraph at lines 401--402
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 403--404
 
  []
 
@@ -905,13 +902,13 @@ Underfull \hbox (badness 10000) in paragraph at lines 398--399
 <code-coverage.png, id=180, 1439.3775pt x 146.79843pt>
 File: code-coverage.png Graphic file (type png)
 <use code-coverage.png>
-Package pdftex.def Info: code-coverage.png  used on input line 406.
+Package pdftex.def Info: code-coverage.png  used on input line 411.
 (pdftex.def)             Requested size: 595.80026pt x 60.76564pt.
  [47] [48 <./code-coverage.png>]
 <integration-test-example.png, id=189, 1407.2575pt x 846.16125pt>
 File: integration-test-example.png Graphic file (type png)
 <use integration-test-example.png>
-Package pdftex.def Info: integration-test-example.png  used on input line 420.
+Package pdftex.def Info: integration-test-example.png  used on input line 425.
 (pdftex.def)             Requested size: 595.80026pt x 358.23872pt.
  [49] [50 <./integration-test-example.png>]
 <SH-Project-Intergration-Tests-Abstract-View.png, id=197, 683.55376pt x 985.682
@@ -919,30 +916,30 @@ Package pdftex.def Info: integration-test-example.png  used on input line 420.
 File: SH-Project-Intergration-Tests-Abstract-View.png Graphic file (type png)
 <use SH-Project-Intergration-Tests-Abstract-View.png>
 Package pdftex.def Info: SH-Project-Intergration-Tests-Abstract-View.png  used 
-on input line 431.
+on input line 436.
 (pdftex.def)             Requested size: 360.0pt x 519.13045pt.
 [51] [52 <./SH-Project-Intergration-Tests-Abstract-View.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 442--443
+Underfull \hbox (badness 10000) in paragraph at lines 447--448
 
  []
 
 [53]
-Underfull \hbox (badness 10000) in paragraph at lines 444--445
+Underfull \hbox (badness 10000) in paragraph at lines 449--450
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 446--447
+Underfull \hbox (badness 10000) in paragraph at lines 451--452
 
  []
 
 <Fuzzing_Terminal.png, id=208, 1925.1925pt x 618.31pt>
 File: Fuzzing_Terminal.png Graphic file (type png)
 <use Fuzzing_Terminal.png>
-Package pdftex.def Info: Fuzzing_Terminal.png  used on input line 454.
+Package pdftex.def Info: Fuzzing_Terminal.png  used on input line 459.
 (pdftex.def)             Requested size: 595.80026pt x 191.3439pt.
 [54]
-Underfull \hbox (badness 10000) in paragraph at lines 462--463
+Underfull \hbox (badness 10000) in paragraph at lines 467--468
 
  []
 
@@ -950,89 +947,89 @@ Underfull \hbox (badness 10000) in paragraph at lines 462--463
 <avo-dmx-lines.png, id=217, 2256.93187pt x 1223.32031pt>
 File: avo-dmx-lines.png Graphic file (type png)
 <use avo-dmx-lines.png>
-Package pdftex.def Info: avo-dmx-lines.png  used on input line 473.
+Package pdftex.def Info: avo-dmx-lines.png  used on input line 478.
 (pdftex.def)             Requested size: 595.80026pt x 322.94637pt.
  [56]
 <avo-file-dims.png, id=222, 2254.67343pt x 1248.91594pt>
 File: avo-file-dims.png Graphic file (type png)
 <use avo-file-dims.png>
-Package pdftex.def Info: avo-file-dims.png  used on input line 484.
+Package pdftex.def Info: avo-file-dims.png  used on input line 489.
 (pdftex.def)             Requested size: 595.80026pt x 330.02736pt.
  [57 <./avo-dmx-lines.png>] [58 <./avo-file-dims.png>]
 <sacnViewSettings.png, id=234, 563.10374pt x 420.06938pt>
 File: sacnViewSettings.png Graphic file (type png)
 <use sacnViewSettings.png>
-Package pdftex.def Info: sacnViewSettings.png  used on input line 498.
+Package pdftex.def Info: sacnViewSettings.png  used on input line 503.
 (pdftex.def)             Requested size: 360.0pt x 268.55505pt.
 <sacnViewIPmodes.png, id=236, 487.8225pt x 366.61969pt>
 File: sacnViewIPmodes.png Graphic file (type png)
 <use sacnViewIPmodes.png>
-Package pdftex.def Info: sacnViewIPmodes.png  used on input line 504.
+Package pdftex.def Info: sacnViewIPmodes.png  used on input line 509.
 (pdftex.def)             Requested size: 360.0pt x 270.5559pt.
  [59 <./sacnViewSettings.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 512--513
+Underfull \hbox (badness 10000) in paragraph at lines 517--518
 
  []
 
 [60 <./sacnViewIPmodes.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 514--515
+Underfull \hbox (badness 10000) in paragraph at lines 519--520
 
  []
 
 <CS4099-Avo-setup.png, id=249, 412.54124pt x 296.10625pt>
 File: CS4099-Avo-setup.png Graphic file (type png)
 <use CS4099-Avo-setup.png>
-Package pdftex.def Info: CS4099-Avo-setup.png  used on input line 517.
+Package pdftex.def Info: CS4099-Avo-setup.png  used on input line 522.
 (pdftex.def)             Requested size: 360.0pt x 258.39651pt.
 <test-5-processed-first-value-chart.png, id=250, 979.40906pt x 418.56375pt>
 File: test-5-processed-first-value-chart.png Graphic file (type png)
 <use test-5-processed-first-value-chart.png>
 Package pdftex.def Info: test-5-processed-first-value-chart.png  used on input 
-line 526.
+line 531.
 (pdftex.def)             Requested size: 595.80026pt x 254.62735pt.
 [61 <./CS4099-Avo-setup.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 534--535
+Underfull \hbox (badness 10000) in paragraph at lines 539--540
 
  []
 
 [62 <./test-5-processed-first-value-chart.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 536--537
+Underfull \hbox (badness 10000) in paragraph at lines 541--542
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 538--539
+Underfull \hbox (badness 10000) in paragraph at lines 543--544
 
  []
 
 <CS4099-Visualiser-setup.png, id=259, 412.54124pt x 343.2825pt>
 File: CS4099-Visualiser-setup.png Graphic file (type png)
 <use CS4099-Visualiser-setup.png>
-Package pdftex.def Info: CS4099-Visualiser-setup.png  used on input line 541.
+Package pdftex.def Info: CS4099-Visualiser-setup.png  used on input line 546.
 (pdftex.def)             Requested size: 360.0pt x 299.56477pt.
 [63]
 <Vision-File-LX-Plot.png, id=263, 1655.4347pt x 1075.76906pt>
 File: Vision-File-LX-Plot.png Graphic file (type png)
 <use Vision-File-LX-Plot.png>
-Package pdftex.def Info: Vision-File-LX-Plot.png  used on input line 551.
+Package pdftex.def Info: Vision-File-LX-Plot.png  used on input line 556.
 (pdftex.def)             Requested size: 595.80026pt x 387.17807pt.
  [64 <./CS4099-Visualiser-setup.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 559--560
+Underfull \hbox (badness 10000) in paragraph at lines 564--565
 
  []
 
 [65 <./Vision-File-LX-Plot.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 561--562
+Underfull \hbox (badness 10000) in paragraph at lines 566--567
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 563--564
+Underfull \hbox (badness 10000) in paragraph at lines 568--569
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 565--566
+Underfull \hbox (badness 10000) in paragraph at lines 570--571
 
  []
 
@@ -1040,14 +1037,14 @@ Underfull \hbox (badness 10000) in paragraph at lines 565--566
 File: CS4099-Acceptance-Test-Layout.png Graphic file (type png)
 <use CS4099-Acceptance-Test-Layout.png>
 Package pdftex.def Info: CS4099-Acceptance-Test-Layout.png  used on input line 
-570.
+575.
 (pdftex.def)             Requested size: 360.0pt x 154.90677pt.
 [66]
 <Union-Setup-Vision-File-LX-Plot.png, id=277, 1040.38687pt x 864.98157pt>
 File: Union-Setup-Vision-File-LX-Plot.png Graphic file (type png)
 <use Union-Setup-Vision-File-LX-Plot.png>
 Package pdftex.def Info: Union-Setup-Vision-File-LX-Plot.png  used on input lin
-e 576.
+e 581.
 (pdftex.def)             Requested size: 360.0pt x 299.30327pt.
  [67 <./CS4099-Acceptance-Test-Layout.png> <./Union-Setup-Vision-File-LX-Plot.p
 ng>]
@@ -1055,16 +1052,16 @@ ng>]
 File: Project-Requirements-Checklist.png Graphic file (type png)
 <use Project-Requirements-Checklist.png>
 Package pdftex.def Info: Project-Requirements-Checklist.png  used on input line
- 586.
+ 591.
 (pdftex.def)             Requested size: 360.0pt x 381.49359pt.
  [68] [69 <./Project-Requirements-Checklist.png>]
 <DOER_REQ.png, id=291, 523.9575pt x 426.09187pt>
 File: DOER_REQ.png Graphic file (type png)
 <use DOER_REQ.png>
-Package pdftex.def Info: DOER_REQ.png  used on input line 594.
+Package pdftex.def Info: DOER_REQ.png  used on input line 599.
 (pdftex.def)             Requested size: 360.0pt x 292.76839pt.
 
-Underfull \hbox (badness 10000) in paragraph at lines 599--600
+Underfull \hbox (badness 10000) in paragraph at lines 604--605
 
  []
 
@@ -1072,30 +1069,20 @@ Underfull \hbox (badness 10000) in paragraph at lines 599--600
 <lib-comparison.png, id=296, 663.98062pt x 624.83438pt>
 File: lib-comparison.png Graphic file (type png)
 <use lib-comparison.png>
-Package pdftex.def Info: lib-comparison.png  used on input line 602.
+Package pdftex.def Info: lib-comparison.png  used on input line 607.
 (pdftex.def)             Requested size: 360.0pt x 338.77846pt.
  [71]
-Underfull \hbox (badness 10000) in paragraph at lines 607--608
-
- []
-
-[72 <./lib-comparison.png>]
 Underfull \hbox (badness 10000) in paragraph at lines 612--613
 
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 614--615
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 616--617
+[72 <./lib-comparison.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 617--618
 
  []
 
-[73]
-Underfull \hbox (badness 10000) in paragraph at lines 618--619
+
+Underfull \hbox (badness 10000) in paragraph at lines 619--620
 
  []
 
@@ -1104,17 +1091,17 @@ Underfull \hbox (badness 10000) in paragraph at lines 621--622
 
  []
 
+[73]
+Underfull \hbox (badness 10000) in paragraph at lines 623--624
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 626--627
+
+ []
+
 [74]
-Underfull \hbox (badness 10000) in paragraph at lines 629--630
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 631--632
-
- []
-
-
 Underfull \hbox (badness 10000) in paragraph at lines 634--635
 
  []
@@ -1124,18 +1111,18 @@ Underfull \hbox (badness 10000) in paragraph at lines 636--637
 
  []
 
-[75]
+
 Underfull \hbox (badness 10000) in paragraph at lines 638--639
 
  []
 
-<documentation-comparison-table.png, id=318, 1082.54437pt x 512.66531pt>
+<documentation-comparison-table.png, id=315, 1082.54437pt x 512.66531pt>
 File: documentation-comparison-table.png Graphic file (type png)
 <use documentation-comparison-table.png>
 Package pdftex.def Info: documentation-comparison-table.png  used on input line
  643.
 (pdftex.def)             Requested size: 360.0pt x 170.48645pt.
-[76 <./documentation-comparison-table.png>]
+[75]
 Underfull \hbox (badness 1448) in paragraph at lines 652--653
 []\OT1/cmr/m/n/10.95 User: lschmierer. (2018, April. 20). Stream-ing ACN im-ple
 -men-
@@ -1172,7 +1159,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 658--659
 \OT1/cmr/m/n/10.95 hardware/blog/2017/08/24/dmx-explained-dmx512-and-rs-485-
  []
 
-
+[76 <./documentation-comparison-table.png>]
 Underfull \hbox (badness 1178) in paragraph at lines 666--667
 []\OT1/cmr/m/n/10.95 User: Hun-de-meier. (2019, Dec. 7). A sim-ple ANSI E1.31 (
 aka
@@ -1188,7 +1175,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 668--669
 \OT1/cmr/m/n/10.95 chi-tec-ture. [On-line, Ac-cessed: 21/04/2020]. Avail-able:
  []
 
-[77]
+
 Underfull \hbox (badness 5133) in paragraph at lines 680--682
 []\OT1/cmr/m/n/10.95 S. Blair, D. Fleenor, S. New-ton. (Un-known). What Comes
  []
@@ -1225,7 +1212,7 @@ Underfull \hbox (badness 1107) in paragraph at lines 691--692
 ame-
  []
 
-
+[77]
 Underfull \hbox (badness 1092) in paragraph at lines 693--694
 \OT1/cmr/m/n/10.95 Avail-able: https://www.techrepublic.com/article/rust-progra
 mming-
@@ -1241,7 +1228,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 695--696
 \OT1/cmr/m/n/10.95 [On-line, Ac-cessed: 01/01/2020] Avail-able:
  []
 
-[78]
+
 Underfull \hbox (badness 1394) in paragraph at lines 708--710
 []\OT1/cmr/m/n/10.95 Wireshark Foun-da-tion. (Un-known). Wire-shark [On-line, A
 c-cessed:
@@ -1259,7 +1246,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 720--721
 ts,
  []
 
-
+[78]
 Underfull \hbox (badness 10000) in paragraph at lines 730--731
 []\OT1/cmr/m/n/10.95 M. Fowler. (2012, Apr. 17). Test-Cov-er-
  []
@@ -1275,7 +1262,7 @@ Underfull \hbox (badness 6559) in paragraph at lines 734--735
 ed:
  []
 
-[79]
+
 Underfull \hbox (badness 10000) in paragraph at lines 736--738
 []\OT1/cmr/m/n/10.95 Unknown. (Un-known). 5.7. Ex-port-ing Data
  []
@@ -1312,36 +1299,37 @@ Underfull \hbox (badness 10000) in paragraph at lines 746--747
 \OT1/cmr/m/n/10.95 Ac-cessed: 21/04/2020] Avail-able: https://doc.rust-
  []
 
+[79]
 <Packet-Structure.pdf, id=333, 906.26581pt x 2167.13644pt>
 File: Packet-Structure.pdf Graphic file (type pdf)
 <use Packet-Structure.pdf>
-Package pdftex.def Info: Packet-Structure.pdf  used on input line 751.
+Package pdftex.def Info: Packet-Structure.pdf  used on input line 753.
 (pdftex.def)             Requested size: 906.2636pt x 2167.13118pt.
 File: Packet-Structure.pdf Graphic file (type pdf)
 <use Packet-Structure.pdf>
-Package pdftex.def Info: Packet-Structure.pdf  used on input line 751.
+Package pdftex.def Info: Packet-Structure.pdf  used on input line 753.
 (pdftex.def)             Requested size: 906.2636pt x 2167.13118pt.
 <Packet-Structure.pdf, id=336, page=1, 906.26581pt x 2167.13644pt>
 File: Packet-Structure.pdf Graphic file (type pdf)
 <use Packet-Structure.pdf, page 1>
-Package pdftex.def Info: Packet-Structure.pdf , page1 used on input line 751.
+Package pdftex.def Info: Packet-Structure.pdf , page1 used on input line 753.
 (pdftex.def)             Requested size: 906.2636pt x 2167.13118pt.
 File: Packet-Structure.pdf Graphic file (type pdf)
 <use Packet-Structure.pdf, page 1>
-Package pdftex.def Info: Packet-Structure.pdf , page1 used on input line 751.
+Package pdftex.def Info: Packet-Structure.pdf , page1 used on input line 753.
 (pdftex.def)             Requested size: 906.2636pt x 2167.13118pt.
-[1]
+ [1]
 File: Packet-Structure.pdf Graphic file (type pdf)
 <use Packet-Structure.pdf, page 1>
-Package pdftex.def Info: Packet-Structure.pdf , page1 used on input line 751.
-(pdftex.def)             Requested size: 906.2636pt x 2167.13118pt.
-File: Packet-Structure.pdf Graphic file (type pdf)
-<use Packet-Structure.pdf, page 1>
-Package pdftex.def Info: Packet-Structure.pdf , page1 used on input line 751.
+Package pdftex.def Info: Packet-Structure.pdf , page1 used on input line 753.
 (pdftex.def)             Requested size: 906.2636pt x 2167.13118pt.
 File: Packet-Structure.pdf Graphic file (type pdf)
 <use Packet-Structure.pdf, page 1>
-Package pdftex.def Info: Packet-Structure.pdf , page1 used on input line 751.
+Package pdftex.def Info: Packet-Structure.pdf , page1 used on input line 753.
+(pdftex.def)             Requested size: 906.2636pt x 2167.13118pt.
+File: Packet-Structure.pdf Graphic file (type pdf)
+<use Packet-Structure.pdf, page 1>
+Package pdftex.def Info: Packet-Structure.pdf , page1 used on input line 753.
 (pdftex.def)             Requested size: 906.2636pt x 2167.13118pt.
  [2 <./Packet-Structure.pdf
 
@@ -1351,287 +1339,287 @@ lid other resource which is no dict (key 'ProcSets', type <array>); ignored.
 <Sync-Mechanism.pdf, id=382, 650.43pt x 1228.59pt>
 File: Sync-Mechanism.pdf Graphic file (type pdf)
 <use Sync-Mechanism.pdf>
-Package pdftex.def Info: Sync-Mechanism.pdf  used on input line 752.
+Package pdftex.def Info: Sync-Mechanism.pdf  used on input line 755.
 (pdftex.def)             Requested size: 650.4284pt x 1228.587pt.
 File: Sync-Mechanism.pdf Graphic file (type pdf)
 <use Sync-Mechanism.pdf>
-Package pdftex.def Info: Sync-Mechanism.pdf  used on input line 752.
+Package pdftex.def Info: Sync-Mechanism.pdf  used on input line 755.
 (pdftex.def)             Requested size: 650.4284pt x 1228.587pt.
 <Sync-Mechanism.pdf, id=385, page=1, 650.43pt x 1228.59pt>
 File: Sync-Mechanism.pdf Graphic file (type pdf)
 <use Sync-Mechanism.pdf, page 1>
-Package pdftex.def Info: Sync-Mechanism.pdf , page1 used on input line 752.
+Package pdftex.def Info: Sync-Mechanism.pdf , page1 used on input line 755.
 (pdftex.def)             Requested size: 650.4284pt x 1228.587pt.
 File: Sync-Mechanism.pdf Graphic file (type pdf)
 <use Sync-Mechanism.pdf, page 1>
-Package pdftex.def Info: Sync-Mechanism.pdf , page1 used on input line 752.
+Package pdftex.def Info: Sync-Mechanism.pdf , page1 used on input line 755.
+(pdftex.def)             Requested size: 650.4284pt x 1228.587pt.
+ [3]
+File: Sync-Mechanism.pdf Graphic file (type pdf)
+<use Sync-Mechanism.pdf, page 1>
+Package pdftex.def Info: Sync-Mechanism.pdf , page1 used on input line 755.
 (pdftex.def)             Requested size: 650.4284pt x 1228.587pt.
 File: Sync-Mechanism.pdf Graphic file (type pdf)
 <use Sync-Mechanism.pdf, page 1>
-Package pdftex.def Info: Sync-Mechanism.pdf , page1 used on input line 752.
+Package pdftex.def Info: Sync-Mechanism.pdf , page1 used on input line 755.
 (pdftex.def)             Requested size: 650.4284pt x 1228.587pt.
 File: Sync-Mechanism.pdf Graphic file (type pdf)
 <use Sync-Mechanism.pdf, page 1>
-Package pdftex.def Info: Sync-Mechanism.pdf , page1 used on input line 752.
+Package pdftex.def Info: Sync-Mechanism.pdf , page1 used on input line 755.
 (pdftex.def)             Requested size: 650.4284pt x 1228.587pt.
-File: Sync-Mechanism.pdf Graphic file (type pdf)
-<use Sync-Mechanism.pdf, page 1>
-Package pdftex.def Info: Sync-Mechanism.pdf , page1 used on input line 752.
-(pdftex.def)             Requested size: 650.4284pt x 1228.587pt.
- [3 <./Sync-Mechanism.pdf
+ [4 <./Sync-Mechanism.pdf
 
 pdfTeX warning: pdflatex.exe (file ./Sync-Mechanism.pdf): PDF inclusion: invali
 d other resource which is no dict (key 'ProcSets', type <array>); ignored.
 >]
-<Discovery-Mechanism.pdf, id=428, 650.43pt x 1011.78pt>
+<Discovery-Mechanism.pdf, id=431, 650.43pt x 1011.78pt>
 File: Discovery-Mechanism.pdf Graphic file (type pdf)
 <use Discovery-Mechanism.pdf>
-Package pdftex.def Info: Discovery-Mechanism.pdf  used on input line 753.
+Package pdftex.def Info: Discovery-Mechanism.pdf  used on input line 757.
 (pdftex.def)             Requested size: 650.4284pt x 1011.77753pt.
 File: Discovery-Mechanism.pdf Graphic file (type pdf)
 <use Discovery-Mechanism.pdf>
-Package pdftex.def Info: Discovery-Mechanism.pdf  used on input line 753.
+Package pdftex.def Info: Discovery-Mechanism.pdf  used on input line 757.
 (pdftex.def)             Requested size: 650.4284pt x 1011.77753pt.
-<Discovery-Mechanism.pdf, id=431, page=1, 650.43pt x 1011.78pt>
+<Discovery-Mechanism.pdf, id=434, page=1, 650.43pt x 1011.78pt>
 File: Discovery-Mechanism.pdf Graphic file (type pdf)
 <use Discovery-Mechanism.pdf, page 1>
-Package pdftex.def Info: Discovery-Mechanism.pdf , page1 used on input line 753
+Package pdftex.def Info: Discovery-Mechanism.pdf , page1 used on input line 757
 .
 (pdftex.def)             Requested size: 650.4284pt x 1011.77753pt.
 File: Discovery-Mechanism.pdf Graphic file (type pdf)
 <use Discovery-Mechanism.pdf, page 1>
-Package pdftex.def Info: Discovery-Mechanism.pdf , page1 used on input line 753
+Package pdftex.def Info: Discovery-Mechanism.pdf , page1 used on input line 757
+.
+(pdftex.def)             Requested size: 650.4284pt x 1011.77753pt.
+ [5]
+File: Discovery-Mechanism.pdf Graphic file (type pdf)
+<use Discovery-Mechanism.pdf, page 1>
+Package pdftex.def Info: Discovery-Mechanism.pdf , page1 used on input line 757
 .
 (pdftex.def)             Requested size: 650.4284pt x 1011.77753pt.
 File: Discovery-Mechanism.pdf Graphic file (type pdf)
 <use Discovery-Mechanism.pdf, page 1>
-Package pdftex.def Info: Discovery-Mechanism.pdf , page1 used on input line 753
+Package pdftex.def Info: Discovery-Mechanism.pdf , page1 used on input line 757
 .
 (pdftex.def)             Requested size: 650.4284pt x 1011.77753pt.
 File: Discovery-Mechanism.pdf Graphic file (type pdf)
 <use Discovery-Mechanism.pdf, page 1>
-Package pdftex.def Info: Discovery-Mechanism.pdf , page1 used on input line 753
+Package pdftex.def Info: Discovery-Mechanism.pdf , page1 used on input line 757
 .
 (pdftex.def)             Requested size: 650.4284pt x 1011.77753pt.
-File: Discovery-Mechanism.pdf Graphic file (type pdf)
-<use Discovery-Mechanism.pdf, page 1>
-Package pdftex.def Info: Discovery-Mechanism.pdf , page1 used on input line 753
-.
-(pdftex.def)             Requested size: 650.4284pt x 1011.77753pt.
- [4 <./Discovery-Mechanism.pdf
+ [6 <./Discovery-Mechanism.pdf
 
 pdfTeX warning: pdflatex.exe (file ./Discovery-Mechanism.pdf): PDF inclusion: i
 nvalid other resource which is no dict (key 'ProcSets', type <array>); ignored.
 
 >]
-<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=474, 794.97pt x 614.295pt>
+<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=481, 794.97pt x 614.295pt>
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf  used on inp
-ut line 754.
+ut line 759.
 (pdftex.def)             Requested size: 794.96806pt x 614.29349pt.
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf  used on inp
-ut line 754.
+ut line 759.
 (pdftex.def)             Requested size: 794.96806pt x 614.29349pt.
-<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=477, page=1, 794.97pt x 614.295p
+<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=484, page=1, 794.97pt x 614.295p
 t>
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 1>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page1 used
- on input line 754.
+ on input line 759.
 (pdftex.def)             Requested size: 794.96806pt x 614.29349pt.
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 1>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page1 used
- on input line 754.
+ on input line 759.
+(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
+ [7]
+File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
+<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 1>
+Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page1 used
+ on input line 759.
 (pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 1>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page1 used
- on input line 754.
+ on input line 759.
 (pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 1>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page1 used
- on input line 754.
+ on input line 759.
 (pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
-File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
-<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 1>
-Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page1 used
- on input line 754.
-(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
- [5 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
-<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=500, page=2, 794.97pt x 614.295p
+ [8 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
+<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=509, page=2, 794.97pt x 614.295p
 t>
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 2>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page2 used
- on input line 754.
+ on input line 759.
 (pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 2>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page2 used
- on input line 754.
+ on input line 759.
 (pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 2>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page2 used
- on input line 754.
-(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
- [6 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
-<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=505, page=3, 794.97pt x 614.295p
-t>
-File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
-<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 3>
-Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page3 used
- on input line 754.
-(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
-File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
-<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 3>
-Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page3 used
- on input line 754.
-(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
-File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
-<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 3>
-Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page3 used
- on input line 754.
-(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
- [7 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
-<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=510, page=4, 794.97pt x 614.295p
-t>
-File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
-<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 4>
-Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page4 used
- on input line 754.
-(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
-File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
-<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 4>
-Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page4 used
- on input line 754.
-(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
-File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
-<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 4>
-Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page4 used
- on input line 754.
-(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
-
-[8 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
-<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=515, page=5, 794.97pt x 614.295p
-t>
-File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
-<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 5>
-Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page5 used
- on input line 754.
-(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
-File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
-<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 5>
-Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page5 used
- on input line 754.
-(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
-File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
-<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 5>
-Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page5 used
- on input line 754.
+ on input line 759.
 (pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
  [9 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
-<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=520, page=6, 794.97pt x 614.295p
+<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=514, page=3, 794.97pt x 614.295p
+t>
+File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
+<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 3>
+Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page3 used
+ on input line 759.
+(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
+File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
+<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 3>
+Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page3 used
+ on input line 759.
+(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
+File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
+<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 3>
+Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page3 used
+ on input line 759.
+(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
+ [10 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
+<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=519, page=4, 794.97pt x 614.295p
+t>
+File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
+<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 4>
+Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page4 used
+ on input line 759.
+(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
+File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
+<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 4>
+Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page4 used
+ on input line 759.
+(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
+File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
+<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 4>
+Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page4 used
+ on input line 759.
+(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
+
+[11 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
+<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=525, page=5, 794.97pt x 614.295p
+t>
+File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
+<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 5>
+Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page5 used
+ on input line 759.
+(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
+File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
+<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 5>
+Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page5 used
+ on input line 759.
+(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
+File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
+<use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 5>
+Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page5 used
+ on input line 759.
+(pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
+ [12 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
+<ANSI-E1.31-2018-Compliance-Check-List.pdf, id=530, page=6, 794.97pt x 614.295p
 t>
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 6>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page6 used
- on input line 754.
+ on input line 759.
 (pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 6>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page6 used
- on input line 754.
+ on input line 759.
 (pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
 File: ANSI-E1.31-2018-Compliance-Check-List.pdf Graphic file (type pdf)
 <use ANSI-E1.31-2018-Compliance-Check-List.pdf, page 6>
 Package pdftex.def Info: ANSI-E1.31-2018-Compliance-Check-List.pdf , page6 used
- on input line 754.
+ on input line 759.
 (pdftex.def)             Requested size: 874.46971pt x 675.72658pt.
- [10 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
-<usage.pdf, id=525, 845.07718pt x 1195.5867pt>
+ [13 <./ANSI-E1.31-2018-Compliance-Check-List.pdf>]
+<usage.pdf, id=535, 845.07718pt x 1195.5867pt>
 File: usage.pdf Graphic file (type pdf)
 <use usage.pdf>
-Package pdftex.def Info: usage.pdf  used on input line 755.
+Package pdftex.def Info: usage.pdf  used on input line 761.
 (pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
 File: usage.pdf Graphic file (type pdf)
 <use usage.pdf>
-Package pdftex.def Info: usage.pdf  used on input line 755.
+Package pdftex.def Info: usage.pdf  used on input line 761.
 (pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
-<usage.pdf, id=528, page=1, 845.07718pt x 1195.5867pt>
+<usage.pdf, id=538, page=1, 845.07718pt x 1195.5867pt>
 File: usage.pdf Graphic file (type pdf)
 <use usage.pdf, page 1>
-Package pdftex.def Info: usage.pdf , page1 used on input line 755.
-(pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
-File: usage.pdf Graphic file (type pdf)
-<use usage.pdf, page 1>
-Package pdftex.def Info: usage.pdf , page1 used on input line 755.
+Package pdftex.def Info: usage.pdf , page1 used on input line 761.
 (pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
 File: usage.pdf Graphic file (type pdf)
 <use usage.pdf, page 1>
-Package pdftex.def Info: usage.pdf , page1 used on input line 755.
-(pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
-File: usage.pdf Graphic file (type pdf)
-<use usage.pdf, page 1>
-Package pdftex.def Info: usage.pdf , page1 used on input line 755.
-(pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
-File: usage.pdf Graphic file (type pdf)
-<use usage.pdf, page 1>
-Package pdftex.def Info: usage.pdf , page1 used on input line 755.
+Package pdftex.def Info: usage.pdf , page1 used on input line 761.
 (pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
 
-[11 <./usage.pdf
+[14]
+File: usage.pdf Graphic file (type pdf)
+<use usage.pdf, page 1>
+Package pdftex.def Info: usage.pdf , page1 used on input line 761.
+(pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
+File: usage.pdf Graphic file (type pdf)
+<use usage.pdf, page 1>
+Package pdftex.def Info: usage.pdf , page1 used on input line 761.
+(pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
+File: usage.pdf Graphic file (type pdf)
+<use usage.pdf, page 1>
+Package pdftex.def Info: usage.pdf , page1 used on input line 761.
+(pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
+ [15 <./usage.pdf
 
 pdfTeX warning: pdflatex.exe (file ./usage.pdf): PDF inclusion: invalid other r
 esource which is no dict (key 'ProcSets', type <array>); ignored.
 >]
-<usage.pdf, id=577, page=2, 845.07718pt x 1195.5867pt>
+<usage.pdf, id=589, page=2, 845.07718pt x 1195.5867pt>
 File: usage.pdf Graphic file (type pdf)
 <use usage.pdf, page 2>
-Package pdftex.def Info: usage.pdf , page2 used on input line 755.
+Package pdftex.def Info: usage.pdf , page2 used on input line 761.
 (pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
 File: usage.pdf Graphic file (type pdf)
 <use usage.pdf, page 2>
-Package pdftex.def Info: usage.pdf , page2 used on input line 755.
+Package pdftex.def Info: usage.pdf , page2 used on input line 761.
 (pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
 File: usage.pdf Graphic file (type pdf)
 <use usage.pdf, page 2>
-Package pdftex.def Info: usage.pdf , page2 used on input line 755.
+Package pdftex.def Info: usage.pdf , page2 used on input line 761.
 (pdftex.def)             Requested size: 845.07512pt x 1195.58379pt.
- [12 <./usage.pdf
+ [16 <./usage.pdf
 
 pdfTeX warning: pdflatex.exe (file ./usage.pdf): PDF inclusion: invalid other r
 esource which is no dict (key 'ProcSets', type <array>); ignored.
->] (report.aux)
-
-LaTeX Warning: There were undefined references.
-
- ) 
+>] (report.aux) ) 
 Here is how much of TeX's memory you used:
  14938 strings out of 492484
  276042 string characters out of 3122054
- 447491 words of memory out of 3000000
+ 448491 words of memory out of 3000000
  19119 multiletter control sequences out of 15000+200000
  539551 words of font info for 50 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 52i,19n,71p,2719b,452s stack positions out of 5000i,500n,10000p,200000b,50000s
-<C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/
-cm/cmbx10.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/publ
-ic/amsfonts/cm/cmbx12.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/font
-s/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/paul/AppData/Local/Programs/MiK
-TeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/paul/AppData/Local/P
-rograms/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/paul/App
-Data/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Us
-ers/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/symbols/
-msbm10.pfb>
-Output written on report.pdf (92 pages, 4632386 bytes).
+ 52i,19n,71p,2719b,454s stack positions out of 5000i,500n,10000p,200000b,50000s
+<C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/p
+ublic/amsfonts/cm/cmbx10.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/f
+onts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/paul/AppData/Local/Programs/
+MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/paul/AppData/Loc
+al/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/paul/
+AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:
+/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cm
+ti10.pfb><C:/Users/paul/AppData/Local/Programs/MiKTeX 2.9/fonts/type1/public/am
+sfonts/symbols/msbm10.pfb>
+Output written on report.pdf (96 pages, 4634198 bytes).
 PDF statistics:
- 607 PDF objects out of 1000 (max. 8388607)
+ 619 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  321 words of extra memory for PDF output out of 10000 (max. 10000000)
 
