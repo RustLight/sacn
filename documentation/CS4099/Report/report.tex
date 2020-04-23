@@ -25,7 +25,7 @@ acknowledgement. This work was performed during
 the current academic year except where otherwise
 stated.
 "The main text of this project report is 20,659
-words long, excluding appendices but including testing.
+words long, including project specification, plan and testing excluding appendices.
 "In submitting this project report to the University of
 St Andrews, I give permission for it to be made
 available for use in accordance with the regulations of the University Library. I also give permission for
@@ -39,6 +39,11 @@ copyright in this work.
 
 \section{Introduction}
 Currently within rust there does not exist a library which fully supports all aspects of the ANSI E1.31-2018 streaming ACN protocol \cite{ANSI_E1.31} (sACN). sACN is a commonly used protocol for transmitting control data for lighting devices (such as those used during concerts) and so the lack of a public-ally available open-source rust library hinders development of lighting devices or controllers in the language. Previous to this project the progress towards creating such a library was an implementation \cite{ORIGINAL_IMPL} which supported the sending and parsing of data using sACN but with many newer features such as Universe Synchronisation and Discovery not available as well as no mechanism to allow receiving sACN data. This project therefore utilised parts of this existing implementation to create a new sACN library which supports ANSI E1.31-2018 sACN universe synchronisation and discovery features as-well as sending and receiving data. This project then goes beyond implementation to thoroughly test the created library to show that it is compliant with the protocol specification and interoperable with a number of commonly used programs which already exist within the sACN protocol space. \\
+
+\subsection{Extraneous Circumstances - COVID-19}
+Unfortunately the acceptance test which was planned for sometime between the 14th and 29th of March based on when the technician was free was unable to take place. This is due to the outbreak of the COVID-19 virus which forced the students association to close and non-essential contact to be stopped before the demonstration could be conducted. It is predicted that based on the very similar integration tests passing as-well as the other testing that had the demonstration gone ahead the program would have worked as expected and the evaluation been positive. It is a shame that the test could not be conducted as comments could have led to recommended improvements for the project which would have ultimately resulted in a higher quality submission. An annotated video is included showing what one of the acceptance tests may have looked like is included although this video is performed on my own hardware rather than the students union equipment.\\
+
+The COVID-19 also meant that I was unable to remain in St Andrews and continue to have access to the computing labs. This had a number of impacts. The first was the time lost due to the move and having to create a new setup for working at home. This environment was less than ideal and meant that some features which may have been possible had things continued as normal were not. The move also meant that I no longer had direct access to more than 1-2 machines. This means that tests like the ssh integration tests were much more difficult to create because they had to be done completely remotely from home SSH'd into labs. This lead to far fewer of these tests being created than would have been hoped. \\
 
 \section{Context Survey}
 \subsection{DMX, SACN and ACN}
@@ -162,9 +167,9 @@ The protocol layers (UDP + sACN) also add a significant amount of over-head, for
 \subsection{Related Work}
 The ANSI E1.31 sACN protocol was originally specified in the document ANSI E1.31-2009 \cite{ANSI_E1.31_2009}. This represented the base version of the protocol without any universe synchronisation, universe discovery or discussion of operation with IPv6. Since then it has been revised in 2016 (universe synchronisation and discovery) \cite{ANSI_E1.31_2016} and again to its current latest version in 2018 (IPv6). The future of ANSI E1.31 is still being actively developed and discussed \cite{WHAT_COMES_AFTER_SACN} with the direction of the ACN eco-system being focused on supporting communication from receivers back to sources. This would allow sources to detect receivers and optionally configure them remotely. This has significant use in cases where there are a significant number of receivers or the receivers are located in hard to reach areas (such as high up in an arena lighting rig). Within traditional DMX systems this is supported using the remote device management protocol (RDM) as described in ANSI E1.20-2010 \cite{ANSI_E1.20_2010}. This protocol allows a number of configuration options such as remotely setting the DMX addresses of fixtures and has proven usage within real-world environments. A recent iteration of this protocol is an IP version known as RDMnet \cite{ANSI_E1.33_2019} which is ACN based and allows discovery and control of receivers over a network. RDMnet as a fairly new protocol and so is still in the process of being taken up by vendors but has strong support from ETC (a large lighting company \cite{ETC}) in the form of a maintained open source implementation of RDMnet in C++ \cite{ANSI_E1.33_IMPL}. RDMnet while a good forward step still suffers from some of the problems related to sACN in that it is still based on DMX. Similar to what happened within the traditional networking world it is very likely that eventually the entertainment control ecosystem will move to a completely IP based system. This would have significant benefits as fixtures could be configured completely remotely (using standard mechanisms such as SSH / Telnet / Webservices) and rather than requiring specialist DMX control at all it could all be commodity network hardware which is cheaper and more flexible in its usage. This would also allow many of the advancements in other areas of computing to brought into the industry such as advances in IoT\\
 
-The ACN based family of lighting control protocols aren't the only protocols that allow sending DMX data over an IP network. Another widely adopted protocol is ArtNet which at time of writing is in its 4th version. Unlike sACN on its own ArtNet allows discovery of receivers, remote configuration and transporting remote device management data (receiver meta-data) \cite{ARNET} in addition to sending data. ArtNet therefore has taken the strategy of being a larger protocol which covers multiple use-cases within a single protocol as opposed to the more split up ACN strategy (ArtNet v4 is roughly equivalent to ANSI E1.31-2018 and ANSI E1.33-2019). While they are developed independently the ArtNet v4 standard does include the ability to interoperate with sACN. In this mode ArtNet is used to configure and control sACN devices and then sACN is used for sending data \cite[Pg. 3]{ARTNET}.\\
+The ACN based family of lighting control protocols aren't the only protocols that allow sending DMX data over an IP network. Another widely adopted protocol is ArtNet which at time of writing is in its 4th version. Unlike sACN on its own ArtNet allows discovery of receivers, remote configuration and transporting remote device management data (receiver meta-data) \cite{ARTNET} in addition to sending data. ArtNet therefore has taken the strategy of being a larger protocol which covers multiple use-cases within a single protocol as opposed to the more split up ACN strategy (ArtNet v4 is roughly equivalent to ANSI E1.31-2018 and ANSI E1.33-2019). While they are developed independently the ArtNet v4 standard does include the ability to interoperate with sACN. In this mode ArtNet is used to configure and control sACN devices and then sACN is used for sending data \cite[Pg. 3]{ARTNET}.\\
 
-There are a number of existing implementations of sACN in rust however none are fully compliant with the protocol as specified in ANSI E1.31-2018. One of the most complete is \cite{ORIGNIAL_IMPL} which was used as the base for this project. As this is hosted on github it can be seen that while there are a number of forks (6 at time of writing) no public fork has any further progress which leads to the conclusion that this is the most complete open source rust implementation available. Note that this implementation appears in a number of places such as \cite{ORIGINAL_IMPL_RUST_DOC} but this is still the same implementation. This existing implementation provides support for parsing sACN packets and sending sACN data packets using multicast. The existing implementation however does not provide support for universe synchronisation/discovery, sending data using a mechanism other than multicast or receiving data.\\
+There are a number of existing implementations of sACN in rust however none are fully compliant with the protocol as specified in ANSI E1.31-2018. One of the most complete is \cite{ORIGINAL_IMPL} which was used as the base for this project. As this is hosted on github it can be seen that while there are a number of forks (6 at time of writing) no public fork has any further progress which leads to the conclusion that this is the most complete open source rust implementation available. Note that this implementation appears in a number of places such as \cite{ORIGINAL_IMPL_RUST_DOC} but this is still the same implementation. This existing implementation provides support for parsing sACN packets and sending sACN data packets using multicast. The existing implementation however does not provide support for universe synchronisation/discovery, sending data using a mechanism other than multicast or receiving data.\\
 
 Implementations of sACN exist in multiple languages, at the time of writing (Jan 2020) a cursory search for E1.31 repositories on github reveals the most prevalent libraries being in C++ and C as shown by Figure: \ref{E131_REPO_SEARCH}. An example of one of these projects is \cite{C_IMPL} which allows both sending and receiving of sACN packets but does not support universe synchronisation or discovery.
 
@@ -268,7 +273,7 @@ The grcov \cite{GRCOV} tool was used to show code test coverage of the library. 
 \subsection{Compliance Testing Tools: sACNView}
 sACNView \cite{SACN_VIEW} is a simple tool which allows sending and receiving with the sACN protocol. It is used as part of the compliance testing of this library as it acts as a real-world deployed version of the protocol which can be tested against. This viewer notably provides support for the universe discovery feature which isn't supported in the other tools used to test compliance making it particularly useful.\\
 
-The main page for this tool says it is for the ANSI E1.17 \cite{ANSI_E1.17} protocol (the base ACN protocol) however this is a typo and it really means the ANSI E1.31 protocol (the sACN part of ACN). The reasoning for this assumption is that at multiple points within the documentation such as \cite{SACN_VIEWER_DOC} it says things such as 'E1.17 (2018)' which must mean E1.31 (a related part of E1.17) as there is no 2018 version of E1.31. The documentation also describes the universe discovery feature which is not part of E1.17 as it is part of E1.31. Version v2.1.0 of sACNView was used with this project. \\
+The main page for this tool says it is for the ANSI E1.17 \cite{ANSI_E1.17} protocol (the base ACN protocol) however this is a typo and it really means the ANSI E1.31 protocol (the sACN part of ACN). The reasoning for this assumption is that at multiple points within the documentation such as \cite{SACN_VIEW_DOC} it says things such as 'E1.17 (2018)' which must mean E1.31 (a related part of E1.17) as there is no 2018 version of E1.31. The documentation also describes the universe discovery feature which is not part of E1.17 as it is part of E1.31. Version v2.1.0 of sACNView was used with this project. \\
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{sacnViewExplained}
@@ -625,13 +630,8 @@ For future work there are two directions to propose taking the project in. The f
 \section{Appendices}
 After the references more appendices are appended to show more details of the project. These documents are referred to as relevant throughout the report and attached so that they are all within one report file. The documents are also included as separate files within the project resources submission.
 
-\subsection{Extraneous Circumstances - COVID-19}
-Unfortunately the acceptance test which was planned for sometime between the 14th and 29th of March based on when the technician was free was unable to take place. This is due to the outbreak of the COVID-19 virus which forced the students association to close and non-essential contact to be stopped before the demonstration could be conducted. It is predicted that based on the very similar integration tests passing as-well as the other testing that had the demonstration gone ahead the program would have worked as expected and the evaluation been positive. It is a shame that the test could not be conducted as comments could have led to recommended improvements for the project which would have ultimately resulted in a higher quality submission. An annotated video is included showing what one of the acceptance tests may have looked like is included although this video is performed on my own hardware rather than the students union equipment.\\
-
-The COVID-19 also meant that I was unable to remain in St Andrews and continue to have access to the computing labs. This had a number of impacts. The first was the time lost due to the move and having to create a new setup for working at home. This environment was less than ideal and meant that some features which may have been possible had things continued as normal were not. The move also meant that I no longer had direct access to more than 1-2 machines. This means that tests like the ssh integration tests were much more difficult to create because they had to be done completely remotely from home SSH'd into labs. This lead to far fewer of these tests being created than would have been hoped. \\
-
 \subsection{User Manual}
-The details of how to run the various tests, demo-programs and examples are described in the "usage.pdf" file. Installation instructions are detailed within the README file.\\
+The details of how to run the various tests, demo-programs and examples are described in the "usage.pdf" file (the "usage" appendix). Installation instructions are detailed within the README file.\\
 
 The core part of this project was the sACN library created. This library is packaged as a rust cargo crate and therefore can be imported using a local import as demonstrated in the 'demo\_src' and 'demo\_rcv' programs. After this project is complete the project will hopefully be uploaded to the public rust cargo repository which would allow much easier installation through the cargo tool-chain and fetch mechanism.\\
 
@@ -648,7 +648,7 @@ To check that the documentation contains the right information it was compared t
 \begin{thebibliography}{20}	
 	\bibitem{ANSI_E1.17}
 	ANSI E1.17 - 2015 Entertainment Technology - Architecture for Control Networks, CP/2011-1007, 21 May 2015.
-	\bibitem{ORIGNIAL_IMPL}
+	\bibitem{ORIGINAL_IMPL}
 	User: lschmierer. (2018, April. 20). Streaming ACN implementation for Rust [Online, Accessed: September 2019]. Available: https://github.com/lschmierer/sacn
 	\bibitem{ANSI_E1.31}
 	ANSI E1.31 - 2018 Entertainment Technology Lightweight streaming protocol for transport of DMX512 using ACN, CP/2014-1009r6a, 7 November 2018.
@@ -746,12 +746,18 @@ To check that the documentation contains the right information it was compared t
 	Unknown. (Unknown). Struct std::sync::Arc [Online, Accessed: 21/04/2020] Available: https://doc.rust-lang.org/std/sync/struct.Arc.html
 \end{thebibliography}
 
+\pagebreak
 \pagenumbering{gobble}
 
+\subsection{Packet-Structure}
 \includepdf[pages=-,pagecommand={},scale=1.0]{Packet-Structure.pdf}
+\subsection{Synchronisation Mechanism}
 \includepdf[pages=-,pagecommand={},scale=1.0]{Sync-Mechanism.pdf}
+\subsection{Discovery Mechanism}
 \includepdf[pages=-,pagecommand={},scale=1.0]{Discovery-Mechanism.pdf}
+\subsection{ANSI E1.31-2018 Compliance Testing Check List}
 \includepdf[pages=-,pagecommand={},scale=1.1]{ANSI-E1.31-2018-Compliance-Check-List.pdf}
+\subsection{Usage}
 \includepdf[pages=-,pagecommand={},scale=1.0]{usage.pdf}
 
 \end{document}
