@@ -1,0 +1,9 @@
+[package]
+name = "demo_src"
+version = "0.1.0"
+authors = ["Paul <pl59@st-andrews.ac.uk>"]
+edition = "2018"
+
+[dependencies]
+sacn = { path = "../Lib"}
+error-chain = "0.12.2"

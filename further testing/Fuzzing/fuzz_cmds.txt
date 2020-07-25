@@ -1,0 +1,6 @@
+From parent SACN-SH-PROJECT directory.
+cargo afl build
+cargo afl fuzz -i Fuzzing/fuzz_in/ -o fuzz_out/ target/debug/sacn-parse-fuzz-target
+
+
+

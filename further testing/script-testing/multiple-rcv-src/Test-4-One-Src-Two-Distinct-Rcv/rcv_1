@@ -1,0 +1,11 @@
+# Listen to universes 1 and 2.
+l 1
+l 2
+# Receive the 2 expected sets of data (data packet 1 and 2).
+r 0
+r 0
+# Wait for a period to allow universe discovery packets to be received and print resultant discovered source list.
+r 15
+x
+# Quit
+q
