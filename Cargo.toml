@@ -1,5 +1,30 @@
-[workspace]
-members = ["Lib", "demo_rcv", "demo_src"]
+[package]
+name = "sacn"
+description = "Rust sACN implementation."
+version = "0.9"
+readme = "README.md"
+keywords = ["acn", "sacn", "dmx", "e131", "ansi"]
+authors = ["Lukas Schmierer <lukas.schmierer@lschmierer.de>", "Paul Lancaster <paul@lancasterzone.com>"]
+documentation = ""
+repository = "https://github.com/Lan2u/RustSacn"
+license = "MIT OR Apache-2.0"
 
-# Need to add sacn-parse-fuzz-target if fuzzing. This will prevent compilation on windows if present as the fuzzing library is linux only.
-# members = ["Lib", "demo_rcv", "demo_src", "sacn-parse-fuzz-target"]
+[dependencies]
+byteorder = { version = "1.2.2", features = [] }
+net2 = { version = "0.2.31", optional = true }
+heapless = { version = "0.5.3", optional = true }
+socket2 = { version = "0.3.4", features = ["reuseport"] }
+libc = { version = "0.2.67" } 
+
+lazy_static = "1.4.0"
+error-chain = "0.12.2"
+
+uuid = { version = "0.6.3", features = ["use_std", "v4"] }
+
+[features]
+default = ["std"]
+std = ["net2"]
+unstable = ["heapless"]
+
+[badges]
+travis-ci = { repository = "Lan2u/RustSacn" }

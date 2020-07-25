@@ -1,7 +1,0 @@
-Started
-[{ Universe(s): 101, Sync_Universe: 0, Values: [89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63] }, ]
-[{ Universe(s): 102, Sync_Universe: 0, Values: [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116] }, ]
-[{ Universe(s): 101, Sync_Universe: 101, Values: [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65] }, { Universe(s): 102, Sync_Universe: 101, Values: [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85] }, ]
-Error Encountered: Io(Custom { kind: WouldBlock, error: "No data available in given timeout" })
-Name: 1, Universes: [100, 101, 102, 103]
-Name: 2, Universes: [101, 102]
