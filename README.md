@@ -15,5 +15,7 @@ TODO: distribution documentation (installation, testing etc.)
 ## INSTALLATION
 ### Prerequisites
 ## Getting Started
+## Compliance
+Compliance with the ANSI E1.31-2018 protocol was tested (April 2020) and the results are shown at [https://github.com/Lan2u/RustSacn/blob/master/documentation/ANSI-E1.31-2018-Compliance-Check-List.pdf].
 ## Testing
 ## Demo Implementation
