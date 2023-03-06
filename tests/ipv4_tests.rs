@@ -1768,8 +1768,8 @@ fn test_universe_discovery_interval_ipv4(){
                 ErrorKind::SourceDiscovered(_) => {
                     let interval = interval_start.elapsed();
                     let interval_millis = interval.as_millis();
-                    assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), format!("Discovery interval is shorter than expected, {} ms", interval_millis));
-                    assert!(interval_millis < (INTERVAL_EXPECTED_MILLIS + INTERVAL_TOLERANCE_MILLIS), format!("Discovery interval is longer than expected, {} ms", interval_millis));
+                    assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), "Discovery interval is shorter than expected, {} ms", interval_millis);
+                    assert!(interval_millis < (INTERVAL_EXPECTED_MILLIS + INTERVAL_TOLERANCE_MILLIS), "Discovery interval is longer than expected, {} ms", interval_millis);
                 }
                 k => {
                     assert!(false, "Unexpected error kind, {:?}", k);
@@ -1852,8 +1852,8 @@ fn test_universe_discovery_interval_with_updates_ipv4(){
                 ErrorKind::SourceDiscovered(_) => {
                     let interval = interval_start.elapsed();
                     let interval_millis = interval.as_millis();
-                    assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), format!("Discovery interval is shorter than expected, {} ms", interval_millis));
-                    assert!(interval_millis < (INTERVAL_EXPECTED_MILLIS + INTERVAL_TOLERANCE_MILLIS), format!("Discovery interval is longer than expected, {} ms", interval_millis));
+                    assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), "Discovery interval is shorter than expected, {} ms", interval_millis);
+                    assert!(interval_millis < (INTERVAL_EXPECTED_MILLIS + INTERVAL_TOLERANCE_MILLIS), "Discovery interval is longer than expected, {} ms", interval_millis);
                 }
                 k => {
                     assert!(false, "Unexpected error kind, {:?}", k);
@@ -2517,7 +2517,7 @@ fn test_source_1_universe_timeout(){
             }
         }
         Ok(x) => {
-            assert!(false, format!("Data received unexpectedly as none sent! {:?}", x));
+            assert!(false, "Data received unexpectedly as none sent! {:?}", x);
         }
     }
 
@@ -2660,7 +2660,7 @@ fn test_source_2_universe_1_timeout(){
                                 }
                             }
                             Ok(x) => {
-                                assert!(false, format!("Data received unexpectedly as none sent! {:?}", x));
+                                assert!(false, "Data received unexpectedly as none sent! {:?}", x);
                             }
                         }
                         break;
@@ -2668,7 +2668,7 @@ fn test_source_2_universe_1_timeout(){
                     ErrorKind::Io(ref s) => {
                         match s.kind() {
                             std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
-                                assert!(false, format!("Timeout took too long to come through: {:?}", start_time.elapsed()));
+                                assert!(false, "Timeout took too long to come through: {:?}", start_time.elapsed());
                             },
                             _ => {
                                 assert!(false, "Unexpected error returned");
@@ -2885,7 +2885,7 @@ fn test_send_sync_timeout(){
         }
         Ok(p) => {
             // println!("Elapsed {:?}", p[0].recv_timestamp.elapsed());
-            assert!(false, format!("Received data unexpectedly: {:?}", p));
+            assert!(false, "Received data unexpectedly: {:?}", p);
         }
     }
     snd_thread.join().unwrap();
@@ -2974,7 +2974,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv4() {
                 }
             }
             Err(e) => {
-                assert!(false, format!("Unexpected error returned: {:?}", e));
+                assert!(false, "Unexpected error returned: {:?}", e);
             }
         }
     }
