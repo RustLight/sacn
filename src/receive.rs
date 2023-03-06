@@ -2659,7 +2659,7 @@ mod test {
                 assert!(false, "Receiver incorrectly accepted third data packet");
             }
             Err(e) => {
-                assert!(false, format!("Receiver correctly rejected third data packet but with unexpected error: {}", e));
+                assert!(false, "Receiver correctly rejected third data packet but with unexpected error: {}", e);
             }
         }
     }
@@ -2745,10 +2745,8 @@ mod test {
                     } else {
                         assert!(
                             false,
-                            format!(
-                                "Data packet with sequence number: {} was rejected incorrectly",
+                            "Data packet with sequence number: {} was rejected incorrectly",
                                 i
-                            )
                         );
                     }
                 }
@@ -2757,10 +2755,8 @@ mod test {
                     if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
                         assert!(
                             false,
-                            format!(
-                                "Data packet with sequence number: {} was accepted incorrectly",
-                                i
-                            )
+                            "Data packet with sequence number: {} was accepted incorrectly", 
+                                1
                         );
                     } else {
                         assert!(
@@ -2771,7 +2767,7 @@ mod test {
                 }
                 Err(e) => {
                     // This is never expected and always means test failure.
-                    assert!(false, format!("Receiver produced unexpected error: {}", e));
+                    assert!(false, "Receiver produced unexpected error: {}", e);
                 }
             }
         }
@@ -2861,10 +2857,8 @@ mod test {
                     } else {
                         assert!(
                             false,
-                            format!(
-                                "Sync packet with sequence number: {} was rejected incorrectly",
-                                i
-                            )
+                            "Sync packet with sequence number: {} was rejected incorrectly",
+                            i
                         );
                     }
                 }
@@ -2873,10 +2867,8 @@ mod test {
                     if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
                         assert!(
                             false,
-                            format!(
-                                "Sync packet with sequence number: {} was accepted incorrectly",
-                                i
-                            )
+                            "Sync packet with sequence number: {} was accepted incorrectly",
+                            i
                         );
                     } else {
                         assert!(
@@ -2887,7 +2879,7 @@ mod test {
                 }
                 Err(e) => {
                     // This is never expected and always means test failure.
-                    assert!(false, format!("Receiver produced unexpected error: {}", e));
+                    assert!(false, "Receiver produced unexpected error: {}", e);
                 }
             }
         }
@@ -2945,7 +2937,7 @@ mod test {
                 assert!(false, "Receiver incorrectly accepted third sync packet");
             }
             Err(e) => {
-                assert!(false, format!("Receiver correctly rejected third sync packet but with unexpected error: {}", e));
+                assert!(false, "Receiver correctly rejected third sync packet but with unexpected error: {}", e);
             }
         }
     }
