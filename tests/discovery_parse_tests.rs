@@ -815,7 +815,7 @@ fn test_discovery_packet_root_layer_unknown_vector_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -840,7 +840,7 @@ fn test_discovery_packet_root_layer_data_vector_parse() {
                     assert!(true, "Expected error family returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -863,7 +863,7 @@ fn test_discovery_packet_too_short_cid_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -889,7 +889,7 @@ fn test_discovery_packet_too_long_cid_parse() {
                     assert!(true, "Expected error family returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -912,7 +912,7 @@ fn test_discovery_packet_wrong_flags_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -935,7 +935,7 @@ fn test_discovery_packet_framing_layer_length_too_long_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -958,7 +958,7 @@ fn test_discovery_packet_framing_layer_length_too_short_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -981,7 +981,7 @@ fn test_discovery_packet_framing_layer_wrong_flags_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -1007,7 +1007,7 @@ fn test_discovery_packet_sync_framing_vector_parse() {
                     assert!(true, "Expected error family returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -1030,7 +1030,7 @@ fn test_discovery_packet_unknown_framing_vector_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -1048,7 +1048,7 @@ fn test_discovery_packet_unknown_framing_vector_parse() {
 fn test_discovery_packet_arbitrary_reserved_parse() {
     match AcnRootLayerProtocol::parse(&TEST_UNIVERSE_DISCOVERY_PACKET_ARBITRARY_RESERVED) {
         Err(e) => {
-                assert!(false, format!("Unexpected error returned: {}", e));
+                assert!(false, "Unexpected error returned: {}", e);
             }
         Ok(p) => {
             match p.pdu.data {
@@ -1075,7 +1075,7 @@ fn test_discovery_packet_discovery_layer_wrong_flags_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -1098,7 +1098,7 @@ fn test_discovery_packet_discovery_layer_length_too_short_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -1106,7 +1106,7 @@ fn test_discovery_packet_discovery_layer_length_too_short_parse() {
         Ok(p) => {
             assert!(
                 false,
-                format!("Malformed packet was parsed when should have been rejected: {:?}", p)
+                "Malformed packet was parsed when should have been rejected: {:?}", p
             );
         }
     }
@@ -1121,7 +1121,7 @@ fn test_discovery_packet_discovery_layer_length_too_long_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -1144,7 +1144,7 @@ fn test_discovery_packet_discovery_layer_vector_unknown_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -1167,7 +1167,7 @@ fn test_discovery_packet_page_higher_than_last_page_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -1190,7 +1190,7 @@ fn test_discovery_packet_decending_order_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -1213,7 +1213,7 @@ fn test_discovery_packet_random_order_parse() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
             
@@ -1317,7 +1317,7 @@ fn test_discovery_packet_no_universes() {
 
     match AcnRootLayerProtocol::parse(&generated_packet) {
         Err(e) => {
-            assert!(false, format!("Unexpected error returned: {}", e));
+            assert!(false, "Unexpected error returned: {}", e);
         }
         Ok(p) => {
             match p.pdu.data {
@@ -1343,7 +1343,7 @@ fn test_discovery_packet_max_universe_capacity() {
 
     match AcnRootLayerProtocol::parse(&generated_packet) {
         Err(e) => {
-            assert!(false, format!("Unexpected error returned: {}", e));
+            assert!(false, "Unexpected error returned: {}", e);
         }
         Ok(p) => {
             match p.pdu.data {
@@ -1370,7 +1370,7 @@ fn test_discovery_packet_above_max_universe_capacity() {
                     assert!(true, "Expected error returned");
                 }
                 x => {
-                    assert!(false, format!("Unexpected error type returned: {}", x));
+                    assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
         }
