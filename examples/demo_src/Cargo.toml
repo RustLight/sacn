@@ -5,5 +5,5 @@ authors = ["Paul <pl59@st-andrews.ac.uk>"]
 edition = "2018"
 
 [dependencies]
-sacn = { path = "../Lib"}
+sacn = { path = "../../"}
 error-chain = "0.12.2"

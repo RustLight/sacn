@@ -38,11 +38,11 @@ use std::net::{Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
 /// Extra net imports required for the IPv6 handling on the linux side.
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 use std::net::{IpAddr, Ipv6Addr};
 
 /// Constants required to detect if an IP is IPv4 or IPv6.
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 use libc::{AF_INET, AF_INET6};
 
 /// The libc constants required are not available on many windows environments and therefore are hard-coded.
@@ -1231,7 +1231,7 @@ impl SacnNetworkReceiver {
 
 /// Windows and linux handle multicast sockets differently.
 /// This is built for / tested with Fedora 30/31.
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 impl SacnNetworkReceiver {
     /// Creates a new DMX receiver on the interface specified by the given address.
     ///
@@ -1471,7 +1471,7 @@ impl DiscoveredSacnSource {
 /// Will return an error if the socket cannot be created, see (Socket::new)[fn.new.Socket].
 ///
 /// Will return an error if the socket cannot be bound to the given address, see (bind)[fn.bind.Socket2].
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
         let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
@@ -1510,7 +1510,7 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 ///
 /// Will return an IpVersionError if addr and interface_addr are not the same IP version.
 ///
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.family() as i32 {
         // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
@@ -1561,7 +1561,7 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
 ///
 /// Will return an IpVersionError if addr and interface_addr are not the same IP version.
 ///
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.family() as i32 {
         // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
@@ -2659,7 +2659,7 @@ mod test {
                 assert!(false, "Receiver incorrectly accepted third data packet");
             }
             Err(e) => {
-                assert!(false, format!("Receiver correctly rejected third data packet but with unexpected error: {}", e));
+                assert!(false, "Receiver correctly rejected third data packet but with unexpected error: {}", e);
             }
         }
     }
@@ -2745,10 +2745,8 @@ mod test {
                     } else {
                         assert!(
                             false,
-                            format!(
-                                "Data packet with sequence number: {} was rejected incorrectly",
+                            "Data packet with sequence number: {} was rejected incorrectly",
                                 i
-                            )
                         );
                     }
                 }
@@ -2757,10 +2755,8 @@ mod test {
                     if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
                         assert!(
                             false,
-                            format!(
-                                "Data packet with sequence number: {} was accepted incorrectly",
-                                i
-                            )
+                            "Data packet with sequence number: {} was accepted incorrectly", 
+                                1
                         );
                     } else {
                         assert!(
@@ -2771,7 +2767,7 @@ mod test {
                 }
                 Err(e) => {
                     // This is never expected and always means test failure.
-                    assert!(false, format!("Receiver produced unexpected error: {}", e));
+                    assert!(false, "Receiver produced unexpected error: {}", e);
                 }
             }
         }
@@ -2861,10 +2857,8 @@ mod test {
                     } else {
                         assert!(
                             false,
-                            format!(
-                                "Sync packet with sequence number: {} was rejected incorrectly",
-                                i
-                            )
+                            "Sync packet with sequence number: {} was rejected incorrectly",
+                            i
                         );
                     }
                 }
@@ -2873,10 +2867,8 @@ mod test {
                     if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
                         assert!(
                             false,
-                            format!(
-                                "Sync packet with sequence number: {} was accepted incorrectly",
-                                i
-                            )
+                            "Sync packet with sequence number: {} was accepted incorrectly",
+                            i
                         );
                     } else {
                         assert!(
@@ -2887,7 +2879,7 @@ mod test {
                 }
                 Err(e) => {
                     // This is never expected and always means test failure.
-                    assert!(false, format!("Receiver produced unexpected error: {}", e));
+                    assert!(false, "Receiver produced unexpected error: {}", e);
                 }
             }
         }
@@ -2945,7 +2937,7 @@ mod test {
                 assert!(false, "Receiver incorrectly accepted third sync packet");
             }
             Err(e) => {
-                assert!(false, format!("Receiver correctly rejected third sync packet but with unexpected error: {}", e));
+                assert!(false, "Receiver correctly rejected third sync packet but with unexpected error: {}", e);
             }
         }
     }
