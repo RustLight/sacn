@@ -1,13 +1,14 @@
 [package]
 name = "sacn"
-description = "Rust sACN implementation."
+description = "A Rust implementation of the ANSI E1.31 Streaming ACN protocol, tested against protocol version ANSI E1.31-2018."
 version = "0.9.0"
 readme = "README.md"
 keywords = ["acn", "sacn", "dmx", "e131", "ansi"]
 authors = ["Lukas Schmierer <lukas.schmierer@lschmierer.de>", "Paul Lancaster <paul@lancasterzone.com>"]
 documentation = ""
-repository = "https://github.com/Lan2u/RustSacn"
+repository = "https://github.com/RustLight/sacn"
 license = "MIT OR Apache-2.0"
+homepage = "https://github.com/RustLight/sacn"
 
 [dependencies]
 byteorder = { version = "1.2.2", features = [] }
