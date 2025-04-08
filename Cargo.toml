@@ -9,6 +9,13 @@ documentation = "https://github.com/RustLight/sacn"
 repository = "https://github.com/RustLight/sacn"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/RustLight/sacn"
+exclude = [
+    "documentation/*",
+    "further testing/*",
+    ".github/*",
+    ".travis.yml",
+    ".gitignore",
+]
 
 [dependencies]
 byteorder = { version = "1.2.2", features = [] }
