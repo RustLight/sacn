@@ -8,10 +8,6 @@ A Rust implementation of the ANSI E1.31 Streaming ACN protocol, tested against p
 * Universe Synchronisation
 * Universe Discovery
 
-Originally forked from https://github.com/lschmierer/sacn and then further developed as part of a final year project at the University of St Andrews.
-
-TODO: distribution documentation (installation, testing etc.)
-
 ## INSTALLATION
 ### Prerequisites
 ## Getting Started
@@ -19,3 +15,6 @@ TODO: distribution documentation (installation, testing etc.)
 Compliance with the ANSI E1.31-2018 protocol was tested (April 2020) and the results are shown at [https://github.com/Lan2u/RustSacn/blob/master/documentation/ANSI-E1.31-2018-Compliance-Check-List.pdf].
 ## Testing
 ## Demo Implementation
+
+
+Originally forked from https://github.com/lschmierer/sacn and then further developed as part of a final year project at the University of St Andrews.
