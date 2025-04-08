@@ -36,3 +36,7 @@ unstable = ["heapless"]
 
 [badges]
 travis-ci = { repository = "Lan2u/RustSacn" }
+
+[[examples]]
+path = 'examples/sine-wave-sender.rs'
+edition = '2024'
