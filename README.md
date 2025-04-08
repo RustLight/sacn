@@ -8,6 +8,10 @@ A Rust implementation of the ANSI E1.31 Streaming ACN protocol, tested against p
 * Universe Synchronisation
 * Universe Discovery
 
+### Examples
+#### Simple application to send a sine wave to universe 1 on localhost
+`cargo run --example sine-wave-sender`
+
 ## INSTALLATION
 ### Prerequisites
 ## Getting Started
