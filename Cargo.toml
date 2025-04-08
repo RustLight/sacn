@@ -29,6 +29,9 @@ error-chain = "0.12.2"
 
 uuid = { version = "0.6.3", features = ["use_std", "v4"] }
 
+[dev-dependencies]
+crossterm = "0.29.0"
+
 [features]
 default = ["std"]
 std = ["net2"]
