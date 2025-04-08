@@ -26,7 +26,7 @@ fn main() {
     let interface_ip = "127.0.0.1";
     let universe = 1;
     let duration = Duration::from_secs(12);
-
+    let max_wait = Duration::from_secs(1);
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(interface_ip.parse().unwrap(), ACN_SDT_MULTICAST_PORT), None).unwrap();
     dmx_recv.listen_universes(&[universe]).unwrap();
 
@@ -38,13 +38,13 @@ fn main() {
     let mut stdout = io::stdout();
     execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
     while remaining > Duration::from_millis(250) {
-        match dmx_recv.recv(Some(remaining)) {
+        match dmx_recv.recv(Some(max_wait)) {
             Ok(data) => {
-                display_data(&mut stdout, &data[0]);
+                display_data(&mut stdout, &remaining, &data[0]);
             }
             Err(e) => {
                 execute!(stdout, cursor::MoveTo(0, 0), terminal::Clear(terminal::ClearType::All)).unwrap();
-                println!("{}", e);
+                println!("{} - universe {}: {}ms left", e, universe, remaining.as_millis());
             },
         }
         remaining = duration.checked_sub(start.elapsed()).unwrap_or(Duration::from_millis(0));
@@ -52,13 +52,15 @@ fn main() {
     execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
 }
 
-fn display_data(stdout: &mut Stdout, data: &DMXData) {
+fn display_data(stdout: &mut Stdout, remaining: &Duration, data: &DMXData) {
     // Don't worry about this bit - its just for actually displaying the data
     execute!(stdout, terminal::Clear(terminal::ClearType::All)).unwrap();
+    queue!(stdout, cursor::MoveTo(0, 0), Print(format!("Received from universe {}: {}ms left", data.universe, remaining.as_millis()))).unwrap();
     for y in 0..16 {
+        let cursor_y = y + 1;
         queue!(
             stdout,
-            cursor::MoveTo(0, y),
+            cursor::MoveTo(0, cursor_y),
             Print("|")
         ).unwrap();
         for x in 0..32 {
@@ -66,7 +68,7 @@ fn display_data(stdout: &mut Stdout, data: &DMXData) {
             let cursor_x = x * 4 + 1;
             queue!(
                 stdout,
-                cursor::MoveTo(cursor_x, y),
+                cursor::MoveTo(cursor_x, cursor_y),
                 Print(
                     format!("{:03}|", data.values[data_index])
                 )
