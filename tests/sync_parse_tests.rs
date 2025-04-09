@@ -17,26 +17,26 @@ use sacn::sacn_parse_pack_error::sacn_parse_pack_error;
 const TEST_SYNCHRONIZATION_PACKET: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0b, 
+    0x70, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     0, 0,
 ];
@@ -45,26 +45,26 @@ const TEST_SYNCHRONIZATION_PACKET: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_ROOT_LAYER_UNKNOWN_VECTOR: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x09, 
+    0x00, 0x00, 0x00, 0x09,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0b, 
+    0x70, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     0, 0,
 ];
@@ -73,26 +73,26 @@ const TEST_SYNCHRONIZATION_PACKET_ROOT_LAYER_UNKNOWN_VECTOR: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_ROOT_LAYER_DATA_VECTOR: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x04, 
+    0x00, 0x00, 0x00, 0x04,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0b, 
+    0x70, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     0, 0,
 ];
@@ -102,26 +102,26 @@ const TEST_SYNCHRONIZATION_PACKET_ROOT_LAYER_DATA_VECTOR: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_TOO_LONG_CID: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0b, 
+    0x70, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     0, 0,
 ];
@@ -131,26 +131,26 @@ const TEST_SYNCHRONIZATION_PACKET_TOO_LONG_CID: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_TOO_SHORT_CID: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0b, 
+    0x70, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     0, 0,
 ];
@@ -159,26 +159,26 @@ const TEST_SYNCHRONIZATION_PACKET_TOO_SHORT_CID: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_WRONG_FLAGS: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x60, 0x0b, 
+    0x60, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     0, 0,
 ];
@@ -187,26 +187,26 @@ const TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_WRONG_FLAGS: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_LENGTH_TOO_LONG: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0c, 
+    0x70, 0x0c,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     0, 0,
 ];
@@ -215,26 +215,26 @@ const TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_LENGTH_TOO_LONG: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_LENGTH_TOO_SHORT: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0a, 
+    0x70, 0x0a,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     0, 0,
 ];
@@ -243,26 +243,26 @@ const TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_LENGTH_TOO_SHORT: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_DISCOVERY_VECTOR: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0b, 
+    0x70, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x02,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     0, 0,
 ];
@@ -271,26 +271,26 @@ const TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_DISCOVERY_VECTOR: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_UNKNOWN_VECTOR: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0b, 
+    0x70, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x07,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     0, 0,
 ];
@@ -300,20 +300,20 @@ const TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_UNKNOWN_VECTOR: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_TOO_HIGH_SYNC_ADDRESS: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0b, 
+    0x70, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
@@ -329,20 +329,20 @@ const TEST_SYNCHRONIZATION_PACKET_TOO_HIGH_SYNC_ADDRESS: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_TOO_LOW_SYNC_ADDRESS: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0b, 
+    0x70, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
@@ -358,26 +358,26 @@ const TEST_SYNCHRONIZATION_PACKET_TOO_LOW_SYNC_ADDRESS: &[u8] = &[
 const TEST_SYNCHRONIZATION_PACKET_ARBITARY_RESERVED: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
     0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x21, 
+    0x70, 0x21,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Synchronization Packet Framing Layer */
     /* Flags and Length */
-    0x70, 0x0b, 
+    0x70, 0x0b,
     /* Vector */
     0x00, 0x00, 0x00, 0x01,
     /* Sequence Number - Specifies a value of 367 which doesn't fit within a unsigned 8-bit byte, therefore used 367 % 0xff = 0x70 */
     0x70,
     /* Synchronization Address = 7962 */
-    0x1F, 0x1A, 
+    0x1F, 0x1A,
     /* Reserved */
     255, 254,
 ];
@@ -425,7 +425,7 @@ fn test_sync_packet_root_layer_data_vector_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -448,7 +448,7 @@ fn test_sync_packet_root_layer_unknown_vector_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -473,7 +473,7 @@ fn test_sync_packet_too_short_cid_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -498,7 +498,7 @@ fn test_sync_packet_too_long_cid_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -521,7 +521,7 @@ fn test_sync_packet_framing_layer_wrong_flags_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -544,7 +544,7 @@ fn test_sync_packet_framing_layer_length_too_long_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -567,7 +567,7 @@ fn test_sync_packet_framing_layer_length_too_short_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -593,7 +593,7 @@ fn test_sync_packet_framing_layer_discovery_vector() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -616,7 +616,7 @@ fn test_sync_packet_framing_layer_unknown_vector() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -639,7 +639,7 @@ fn test_sync_packet_too_high_sync_addr() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -662,7 +662,7 @@ fn test_sync_packet_too_low_sync_addr() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(

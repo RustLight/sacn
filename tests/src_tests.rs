@@ -188,7 +188,7 @@ fn test_get_cid() {
 
     let src = SacnSource::with_cid_ip("Test name", cid, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
-    assert_eq!(src.cid().unwrap(), cid, "CID does not match CID set"); 
+    assert_eq!(src.cid().unwrap(), cid, "CID does not match CID set");
 }
 
 #[test]
@@ -201,7 +201,7 @@ fn test_set_get_cid() {
 
     src.set_cid(new_cid).unwrap();
 
-    assert_eq!(src.cid().unwrap(), new_cid, "CID does not match CID set"); 
+    assert_eq!(src.cid().unwrap(), new_cid, "CID does not match CID set");
 }
 
 #[test]
@@ -261,12 +261,12 @@ fn test_set_get_multicast_loop() {
 #[test]
 fn test_send_without_registering(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
-    
+
     let priority = 100;
 
     match src.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
         Ok(_) => {assert!(false, "Source didn't prevent sending without registering")},
-        Err(e) => 
+        Err(e) =>
             match e.kind() {
                 &ErrorKind::UniverseNotRegistered(ref _s) => assert!(true),
                 _ => assert!(false, "Unexpected error type returned, {}", e.kind())
@@ -274,13 +274,13 @@ fn test_send_without_registering(){
     }
 }
 
-/// Attempts to send a packet with a priority higher (> 200) than the maximum allowed as per ANSI E1.31-2018 Section 6.2.3. 
+/// Attempts to send a packet with a priority higher (> 200) than the maximum allowed as per ANSI E1.31-2018 Section 6.2.3.
 #[test]
 fn test_send_above_priority(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
     let universe = 1;
     let priority = 201;
-    
+
     src.register_universe(universe).unwrap();
 
     match src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
@@ -293,7 +293,7 @@ fn test_send_above_priority(){
                     assert!(false, "Unexpected error type returned, {:?}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -304,8 +304,8 @@ fn test_send_above_priority(){
     }
 }
 
-/// Tests sending a single universe of data, this appear 'assertion-free' but it isn't because .unwrap() will panic 
-/// if a function returns an error. 
+/// Tests sending a single universe of data, this appear 'assertion-free' but it isn't because .unwrap() will panic
+/// if a function returns an error.
 /// This test therefore checks that the sender works without crashing in one of the simplest cases.
 #[test]
 fn test_send_single_universe(){
