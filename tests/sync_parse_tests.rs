@@ -1,3 +1,4 @@
+#![cfg_attr(rustfmt, rustfmt_skip)]
 extern crate sacn;
 extern crate uuid;
 
