@@ -11,6 +11,7 @@ extern crate sacn;
 extern crate uuid;
 extern crate socket2;
 
+use std::io::Read;
 use std::{thread};
 use std::thread::sleep;
 use std::sync::mpsc;
@@ -2917,7 +2918,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv4() {
     let source_name = "Source_A";
     let data = [0x00, 0xe, 0x0, 0xc, 0x1, 0x7, 0x1, 0x4, 0x8, 0x0, 0xd, 0xa, 0x7, 0xa];
     let data2 = [0x00, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa];
-    let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+    let src_cid: Uuid = Uuid::from_bytes([0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e].try_into().unwrap());
 
     let snd_thread = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1);
@@ -3047,7 +3048,7 @@ fn test_discover_recv_sync_runthrough_ipv4() {
     const DATA2: [u8; 16] =[0x00, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa, 0x9, 0x8];
 
     // The source CID.
-    let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+    let src_cid: Uuid = Uuid::from_bytes([0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e].try_into().unwrap());
 
     let snd_thread = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1);
@@ -3308,12 +3309,12 @@ fn test_data_packet_transmit_format() {
     let packet = generate_data_packet_raw(CID, universe, source_name.clone(), PRIORITY, sequence, OPTIONS, dmx_data.clone());
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ip).unwrap();
 
     source.set_preview_mode(false).unwrap();
     source.set_multicast_loop_v4(true).unwrap();
 
-    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    let mut recv_socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
     
     let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
 
@@ -3327,7 +3328,7 @@ fn test_data_packet_transmit_format() {
     source.register_universes(&[universe]).unwrap();
 
     source.send(&[universe], &dmx_data, Some(PRIORITY), None, None).unwrap();
-    let (amt, _) = recv_socket.recv_from(&mut recv_buf).unwrap();
+    let amt = recv_socket.read(&mut recv_buf).unwrap();
 
     assert_eq!(&packet[..], &recv_buf[0..amt]);
 }
@@ -3340,11 +3341,11 @@ fn test_terminate_packet_transmit_format() {
     let cid = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&"Source", Uuid::from_bytes(&cid).unwrap(), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(&"Source", Uuid::from_bytes(cid), ip).unwrap();
 
     source.set_multicast_loop_v4(true).unwrap();
 
-    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    let mut recv_socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
     
     let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
 
@@ -3362,7 +3363,7 @@ fn test_terminate_packet_transmit_format() {
 
     source.terminate_stream(1, start_code).unwrap();
     for _ in 0..2 {
-        recv_socket.recv_from(&mut recv_buf).unwrap();
+        recv_socket.read(&mut recv_buf).unwrap();
         assert_eq!(
             match AcnRootLayerProtocol::parse(&recv_buf).unwrap().pdu.data {
                 E131RootLayerData::DataPacket(data) => data.stream_terminated,
@@ -3394,12 +3395,12 @@ fn test_sync_packet_transmit_format() {
     let sync_packet = generate_sync_packet_raw(CID, SYNC_ADDR, SEQUENCE_NUM);
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&"Source", Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(&"Source", Uuid::from_bytes(CID), ip).unwrap();
 
     source.set_multicast_loop_v4(true).unwrap();
 
     // Create a standard udp receive socket to receive the packet sent by the source.
-    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    let mut recv_socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
     
     let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
 
@@ -3416,7 +3417,7 @@ fn test_sync_packet_transmit_format() {
     source.send_sync_packet(SYNC_ADDR, None).unwrap();
 
     // Receive the packet and compare its content to the expected.
-    recv_socket.recv_from(&mut recv_buf).unwrap();
+    recv_socket.read(&mut recv_buf).unwrap();
 
     assert_eq!(recv_buf[..], sync_packet[..], "Sync packet sent by source doesn't match expected format");
 }
@@ -3506,19 +3507,19 @@ fn test_discovery_packet_transmit_format() {
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
 
     // Creates the source.
-    let mut source = SacnSource::with_cid_ip(&str::from_utf8(&SOURCE_NAME).unwrap(), Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(&str::from_utf8(&SOURCE_NAME).unwrap(), Uuid::from_bytes(CID), ip).unwrap();
 
     source.set_multicast_loop_v4(true).unwrap();
 
     // Create a standard udp receive socket to receive the packet sent by the source.
-    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    let mut recv_socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
     
     let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
 
     recv_socket.bind(&addr.into()).unwrap();
 
     // Receiving on the discovery universe shows that the discovery universe is correctly used for discovery packets as per ANSI E1.31-2018 Section 6.2.7.
-    let address = universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap().as_inet();
+    let address = universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap().as_socket_ipv4();
 
     recv_socket
         .join_multicast_v4(&address.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
@@ -3536,7 +3537,7 @@ fn test_discovery_packet_transmit_format() {
     // The source is expected to eventually send a universe discovery packet. 
 
     // Receive the packet and compare its content to the expected.
-    recv_socket.recv_from(&mut recv_buf).unwrap();
+    recv_socket.read(&mut recv_buf).unwrap();
 
     assert_eq!(recv_buf[..], discovery_packet[..], "Discovery packet sent by source doesn't match expected format");
 }
@@ -3601,12 +3602,12 @@ fn test_sync_packet_transmit_seq_numbers() {
     sync_packet.push(0);
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&"Source", Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(&"Source", Uuid::from_bytes(CID), ip).unwrap();
 
     source.set_multicast_loop_v4(true).unwrap();
 
     // Create a standard udp receive socket to receive the packet sent by the source.
-    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    let mut recv_socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
     
     let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
 
@@ -3623,7 +3624,7 @@ fn test_sync_packet_transmit_seq_numbers() {
     source.send_sync_packet(UNIVERSE, None).unwrap();
 
     // Receive the packet and compare its content to the expected.
-    recv_socket.recv_from(&mut recv_buf).unwrap();
+    recv_socket.read(&mut recv_buf).unwrap();
 
     assert_eq!(recv_buf[..], sync_packet[..], "Sync packet sent by source doesn't match expected format");
 }
@@ -3665,7 +3666,7 @@ fn test_track_data_packet_seq_numbers() {
 
     // Create a source.
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ip).unwrap();
     source.set_multicast_loop_v4(true).unwrap();
     source.register_universes(&UNIVERSES).unwrap();
 
@@ -3673,13 +3674,13 @@ fn test_track_data_packet_seq_numbers() {
     source.set_is_sending_discovery(false);
 
     // Create receiver socket.
-    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    let mut recv_socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
     let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
     recv_socket.bind(&addr.into()).unwrap();
 
     // Join the multicast groups for each of the universes.
     for u in UNIVERSES.iter() {
-        let address = universe_to_ipv4_multicast_addr(*u).unwrap().as_inet();
+        let address = universe_to_ipv4_multicast_addr(*u).unwrap().as_socket_ipv4();
 
         recv_socket
             .join_multicast_v4(&address.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
@@ -3693,7 +3694,7 @@ fn test_track_data_packet_seq_numbers() {
             source.send(&[*u], &dmx_data, Some(PRIORITY), None, None).unwrap();
 
             let mut recv_buf = [0; 1024];
-            let (amt, _) = recv_socket.recv_from(&mut recv_buf).unwrap();
+            let amt = recv_socket.read(&mut recv_buf).unwrap();
 
             assert_eq!(&recv_buf[0..amt], &expected_packet[..]);
         }
@@ -3732,7 +3733,7 @@ fn test_track_sync_packet_seq_numbers() {
 
     // Create a source.
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ip).unwrap();
     source.set_multicast_loop_v4(true).unwrap();
 
     // Register the synchronisation addresses.
@@ -3742,13 +3743,13 @@ fn test_track_sync_packet_seq_numbers() {
     source.set_is_sending_discovery(false);
 
     // Create receiver socket.
-    let recv_socket = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    let mut recv_socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
     let addr: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
     recv_socket.bind(&addr.into()).unwrap();
 
     // Join the multicast groups for each of the synchronisation addresses.
     for u in SYNC_ADDRESSES.iter() {
-        let address = universe_to_ipv4_multicast_addr(*u).unwrap().as_inet();
+        let address = universe_to_ipv4_multicast_addr(*u).unwrap().as_socket_ipv4();
 
         recv_socket
             .join_multicast_v4(&address.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
@@ -3762,7 +3763,7 @@ fn test_track_sync_packet_seq_numbers() {
             source.send_sync_packet(*a, None).unwrap();
 
             let mut recv_buf = [0; 1024];
-            let (amt, _) = recv_socket.recv_from(&mut recv_buf).unwrap();
+            let amt = recv_socket.read(&mut recv_buf).unwrap();
 
             assert_eq!(&recv_buf[0..amt], &expected_packet[..]);
         }
@@ -3807,7 +3808,7 @@ fn test_sync_packet_multicast_address() {
 
     // Create a source.
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(&CID).unwrap(), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ip).unwrap();
     source.set_multicast_loop_v4(true).unwrap();
 
     // Register the synchronisation addresses.
@@ -3821,13 +3822,13 @@ fn test_sync_packet_multicast_address() {
 
     let mut i = 0;
     for sync_addr in SYNC_ADDRESSES.iter() {
-        recv_sockets.push(Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap());
+        recv_sockets.push(Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap());
 
         // Join only the multicast address corresponding to the synchronisation address.
         let multicast_addr = universe_to_ipv4_multicast_addr(*sync_addr).unwrap();
         recv_sockets[i].bind(&multicast_addr).unwrap();
         recv_sockets[i]
-            .join_multicast_v4(&multicast_addr.as_inet().unwrap().ip(), &TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap())
+            .join_multicast_v4(&multicast_addr.as_socket_ipv4().unwrap().ip(), &TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap())
             .unwrap();
 
         i = i + 1;
@@ -3847,7 +3848,7 @@ fn test_sync_packet_multicast_address() {
             // This means that the sync address must have been sent to the correct multicast address.
             // If it was also sent to other addresses then this will be caught the next time the other sockets
             // receive as they will receive the wrong packet.
-            let (amt, _) = recv_sockets[i].recv_from(&mut recv_buf).unwrap();
+            let amt = recv_sockets[i].read(&mut recv_buf).unwrap();
 
             assert_eq!(&recv_buf[0..amt], &expected_packet[..]);
 

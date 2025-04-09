@@ -14,21 +14,21 @@
 // of each public item without relying on referring to private items.
 //
 
-use error::errors::{*};
+use error::errors::*;
 use packet::*;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::cmp;
 use std::cmp::min;
-use std::time::{Duration, Instant};
-use std::thread::{JoinHandle};
-use std::thread;
-use std::sync::{Arc, MutexGuard, Mutex};
+use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::sync::{Arc, Mutex, MutexGuard};
+use std::thread;
+use std::thread::JoinHandle;
+use std::time::{Duration, Instant};
 
 /// Socket2 used to create the underlying UDP socket that sACN is sent on.
-use socket2::{Socket, Domain, Type};
+use socket2::{Domain, Socket, Type};
 
 /// UUID library used to handle the UUID's used in the CID fields.
 use uuid::Uuid;
@@ -83,7 +83,7 @@ pub struct SacnSource {
 
     /// Update thread which performs actions every DEFAULT_POLL_PERIOD such as checking if a universe 
     /// discovery packet should be sent.
-    update_thread: Option<JoinHandle<()>>
+    update_thread: Option<JoinHandle<()>>,
 }
 
 /// Internal sACN sender, this does most of the work however is encapsulated within SacnSource
@@ -147,7 +147,10 @@ impl SacnSource {
     /// # Errors
     /// See (with_cid_ip)[with_cid_ip]
     pub fn with_cid_v4(name: &str, cid: Uuid) -> Result<SacnSource> {
-        let ip = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
+        let ip = SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
+            ACN_SDT_MULTICAST_PORT,
+        );
         SacnSource::with_cid_ip(name, cid, ip)
     }
 
@@ -166,7 +169,10 @@ impl SacnSource {
     /// # Errors
     /// See (with_cid_ip)[with_cid_ip]
     pub fn with_cid_v6(name: &str, cid: Uuid) -> Result<SacnSource> {
-        let ip = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT);
+        let ip = SocketAddr::new(
+            IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)),
+            ACN_SDT_MULTICAST_PORT,
+        );
         SacnSource::with_cid_ip(name, cid, ip)
     }
 
@@ -190,7 +196,9 @@ impl SacnSource {
     /// 
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
         if name.len() > E131_SOURCE_NAME_FIELD_LENGTH {
-            bail!(ErrorKind::MalformedSourceName("Source name provided is longer than maximum allowed".to_string()));
+            bail!(ErrorKind::MalformedSourceName(
+                "Source name provided is longer than maximum allowed".to_string()
+            ));
         }
 
         let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
@@ -212,7 +220,6 @@ impl SacnSource {
                         _ => {
                             // In-case of an error on the discovery thread the source continues to operate and tries again.
                             // As no unsafe code blocks are used the rust compiler guarantees this is memory safe.
-                            
                         }
                     }
                 }
@@ -306,8 +313,21 @@ impl SacnSource {
     /// SourceCorrupt: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
     /// a panic while accessing causing the source to be left in a potentially inconsistent state. 
     /// 
-    pub fn send(&mut self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, synchronisation_addr: Option<u16>) -> Result<()> {
-        unlock_internal_mut(&mut self.internal)?.send(universes, data, priority, dst_ip, synchronisation_addr)
+    pub fn send(
+        &mut self,
+        universes: &[u16],
+        data: &[u8],
+        priority: Option<u8>,
+        dst_ip: Option<SocketAddr>,
+        synchronisation_addr: Option<u16>,
+    ) -> Result<()> {
+        unlock_internal_mut(&mut self.internal)?.send(
+            universes,
+            data,
+            priority,
+            dst_ip,
+            synchronisation_addr,
+        )
     }
 
     /// Sends a synchronisation packet to trigger the sending of packets waiting to be sent together.
@@ -528,13 +548,18 @@ impl SacnSource {
 impl Drop for SacnSource {
     fn drop(&mut self){
         match unlock_internal_mut(&mut self.internal) {
-            Ok(mut i) => { i.running = false; }
-            Err(_) => { return; } // As drop isn't always explicitly called and cannot return an error the error is ignored. Memory safety is maintain and this prevents causing a panic!.
+            Ok(mut i) => {
+                i.running = false;
+            }
+            Err(_) => {
+                return;
+            } // As drop isn't always explicitly called and cannot return an error the error is ignored. Memory safety is maintain and this prevents causing a panic!.
         };
 
         if let Some(thread) = self.update_thread.take() {
             {
-                match unlock_internal_mut(&mut self.internal) { // Internal is accessed twice separately, this allows the discovery thread to interleave between running being set to false speeding up termination.
+                match unlock_internal_mut(&mut self.internal) {
+                    // Internal is accessed twice separately, this allows the discovery thread to interleave between running being set to false speeding up termination.
                     Ok(mut i) => { 
                         match i.terminate(DEFAULT_TERMINATE_START_CODE) {
                             _ => {} // For same reasons as above a potential error is ignored and a 'best attempt' is used to clean up.
@@ -566,11 +591,13 @@ impl SacnSourceInternal {
     /// 
     fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSourceInternal> {
         let socket = if ip.is_ipv4() {
-            Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap()
+            Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap()
         } else if ip.is_ipv6() {
-            Socket::new(Domain::ipv6(), Type::dgram(), None).unwrap()
+            Socket::new(Domain::IPV6, Type::DGRAM, None).unwrap()
         } else {
-            bail!(ErrorKind::UnsupportedIpVersion("Address to create SacnSource is not IPv4 or IPv6".to_string()));
+            bail!(ErrorKind::UnsupportedIpVersion(
+                "Address to create SacnSource is not IPv4 or IPv6".to_string()
+            ));
         };
         
         // Multiple different processes might want to send to the sACN stream so therefore need to allow re-using the ACN port.
@@ -593,7 +620,7 @@ impl SacnSourceInternal {
             universes: Vec::new(),
             running: true,
             last_discovery_advert_timestamp: Instant::now(),
-            is_sending_discovery: true
+            is_sending_discovery: true,
         };
 
         Ok(ds)
@@ -642,7 +669,8 @@ impl SacnSourceInternal {
             self.universes.push(universe);
         } else {
             match self.universes.binary_search(&universe) {
-                Err(i) => { // Value not found, i is the position it should be inserted
+                Err(i) => {
+                    // Value not found, i is the position it should be inserted
                     self.universes.insert(i, universe);
                 }
                 Ok(_) => {
@@ -664,10 +692,14 @@ impl SacnSourceInternal {
         is_universe_in_range(universe)?;
 
         match self.universes.binary_search(&universe) {
-            Err(_i) => { // Value not found
-                bail!(ErrorKind::UniverseNotFound("Attempted to de-register a universe that was never registered".to_string()))
+            Err(_i) => {
+                // Value not found
+                bail!(ErrorKind::UniverseNotFound(
+                    "Attempted to de-register a universe that was never registered".to_string()
+                ))
             }
-            Ok(i) => { // Value found, i is index.
+            Ok(i) => {
+                // Value found, i is index.
                 self.universes.remove(i);
                 Ok(())
             }
@@ -685,7 +717,9 @@ impl SacnSourceInternal {
         is_universe_in_range(*u)?;
 
         if !self.universes.contains(u) {
-            bail!(ErrorKind::UniverseNotRegistered(format!("Attempted to send on unregistered universe : {}", u).to_string()));
+            bail!(ErrorKind::UniverseNotRegistered(
+                format!("Attempted to send on unregistered universe : {}", u).to_string()
+            ));
         }
 
         Ok(())
@@ -728,13 +762,26 @@ impl SacnSourceInternal {
     /// 
     /// Io: Returned if the data fails to be sent on the socket, see send_to(fn.send_to.Socket).
     /// 
-    fn send(&self, universes: &[u16], data: &[u8], priority: Option<u8>, dst_ip: Option<SocketAddr>, synchronisation_addr: Option<u16>) -> Result<()> {
-        if self.running == false { // Indicates that this sender has been terminated.
-            bail!(ErrorKind::SenderAlreadyTerminated("Attempted to send".to_string())); 
+    fn send(
+        &self,
+        universes: &[u16],
+        data: &[u8],
+        priority: Option<u8>,
+        dst_ip: Option<SocketAddr>,
+        synchronisation_addr: Option<u16>,
+    ) -> Result<()> {
+        if self.running == false {
+            // Indicates that this sender has been terminated.
+            bail!(ErrorKind::SenderAlreadyTerminated(
+                "Attempted to send".to_string()
+            ));
         }
 
         if data.len() == 0 {
-           bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Must provide data to send, data.len() == 0"));
+            bail!(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Must provide data to send, data.len() == 0"
+            ));
         }
 
         // Check all the given universes are valid before doing any action.
@@ -745,14 +792,22 @@ impl SacnSourceInternal {
 
         // Check that the synchronisation universe is also valid.
         if synchronisation_addr.is_some() {
-            self.universe_allowed(&synchronisation_addr.unwrap()).chain_err(|| "Synchronisation universe not allowed")?;
+            self.universe_allowed(&synchronisation_addr.unwrap())
+                .chain_err(|| "Synchronisation universe not allowed")?;
         }
 
         // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
-        let required_universes = (data.len() as f64 / UNIVERSE_CHANNEL_CAPACITY as f64).ceil() as usize;
+        let required_universes =
+            (data.len() as f64 / UNIVERSE_CHANNEL_CAPACITY as f64).ceil() as usize;
 
         if universes.len() < required_universes {
-            bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Must provide enough universes to send on, universes provided: {}", universes.len())));
+            bail!(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!(
+                    "Must provide enough universes to send on, universes provided: {}",
+                    universes.len()
+                )
+            ));
         }
         
         for i in 0 .. required_universes {
@@ -760,8 +815,13 @@ impl SacnSourceInternal {
             // Safety check to make sure that the end index doesn't exceed the data length
             let end_index = cmp::min((i + 1) * UNIVERSE_CHANNEL_CAPACITY, data.len());
 
-            self.send_universe(universes[i], &data[start_index .. end_index], 
-                priority.unwrap_or(E131_DEFAULT_PRIORITY), &dst_ip, synchronisation_addr.unwrap_or(NO_SYNC_UNIVERSE))?;
+            self.send_universe(
+                universes[i],
+                &data[start_index..end_index],
+                priority.unwrap_or(E131_DEFAULT_PRIORITY),
+                &dst_ip,
+                synchronisation_addr.unwrap_or(NO_SYNC_UNIVERSE),
+            )?;
         }
 
         Ok(())
@@ -790,13 +850,23 @@ impl SacnSourceInternal {
     /// 
     /// Io: Returned if the data fails to be sent on the socket, see send_to(fn.send_to.Socket).
     /// 
-    fn send_universe(&self, universe: u16, data: &[u8], priority: u8, dst_ip: &Option<SocketAddr>, sync_address: u16) -> Result<()> {
+    fn send_universe(
+        &self,
+        universe: u16,
+        data: &[u8],
+        priority: u8,
+        dst_ip: &Option<SocketAddr>,
+        sync_address: u16,
+    ) -> Result<()> {
         if priority > E131_MAX_PRIORITY {
             bail!(ErrorKind::InvalidPriority(format!("Priority must be within allowed range of [0-E131_MAX_PRIORITY], priority provided: {}", priority)));
         }
 
         if data.len() > UNIVERSE_CHANNEL_CAPACITY {
-            bail!(ErrorKind::ExceedUniverseCapacity(format!("Data provided must fit in a single universe, data len: {}", data.len())));
+            bail!(ErrorKind::ExceedUniverseCapacity(format!(
+                "Data provided must fit in a single universe, data len: {}",
+                data.len()
+            )));
         }
 
         let mut sequence = match self.data_sequences.borrow().get(&universe) {
@@ -828,17 +898,23 @@ impl SacnSourceInternal {
         };
 
         if dst_ip.is_some() {
-            self.socket.send_to(&packet.pack_alloc().unwrap(), &dst_ip.unwrap().into()).chain_err(|| "Failed to send data unicast on socket")?;
+            self.socket
+                .send_to(&packet.pack_alloc().unwrap(), &dst_ip.unwrap().into())
+                .chain_err(|| "Failed to send data unicast on socket")?;
         } else {
             let dst;
 
             if self.addr.is_ipv6(){
-                dst = universe_to_ipv6_multicast_addr(universe).chain_err(|| "Failed to convert universe to Ipv6 multicast address")?;
+                dst = universe_to_ipv6_multicast_addr(universe)
+                    .chain_err(|| "Failed to convert universe to Ipv6 multicast address")?;
             } else {
-                dst = universe_to_ipv4_multicast_addr(universe).chain_err(|| "Failed to convert universe to Ipv4 multicast address")?;
+                dst = universe_to_ipv4_multicast_addr(universe)
+                    .chain_err(|| "Failed to convert universe to Ipv4 multicast address")?;
             }
 
-            self.socket.send_to(&packet.pack_alloc().unwrap(), &dst).chain_err(|| "Failed to send data multicast on socket")?;
+            self.socket
+                .send_to(&packet.pack_alloc().unwrap(), &dst)
+                .chain_err(|| "Failed to send data multicast on socket")?;
         }
 
         if sequence == 255 {
@@ -894,11 +970,13 @@ impl SacnSourceInternal {
                 cid: self.cid,
                 data: E131RootLayerData::SynchronizationPacket(SynchronizationPacketFramingLayer {
                     sequence_number: sequence,
-                    synchronization_address: universe
-                })
-            }
+                    synchronization_address: universe,
+                }),
+            },
         };
-        self.socket.send_to(&packet.pack_alloc()?, &ip).chain_err(|| "Failed to send sync packet on socket")?;
+        self.socket
+            .send_to(&packet.pack_alloc()?, &ip)
+            .chain_err(|| "Failed to send sync packet on socket")?;
 
         if sequence == 255 {
             sequence = 0;
@@ -925,7 +1003,12 @@ impl SacnSourceInternal {
     /// 
     /// Io: Returned if the termination packets fail to be sent on the underlying socket.
     /// 
-    fn send_terminate_stream_pkt(&self, universe: u16, dst_ip: Option<SocketAddr>, start_code: u8) -> Result<()> {
+    fn send_terminate_stream_pkt(
+        &self,
+        universe: u16,
+        dst_ip: Option<SocketAddr>,
+        start_code: u8,
+    ) -> Result<()> {
         self.universe_allowed(&universe)?;
 
         let ip = match dst_ip{
@@ -1034,8 +1117,15 @@ impl SacnSourceInternal {
 
         for p in 0 .. pages_req {
             let start_index = (p as usize) * DISCOVERY_UNI_PER_PAGE;
-            let end_index = min( ((p as usize) + 1) * DISCOVERY_UNI_PER_PAGE , self.universes.len());
-            self.send_universe_discovery_detailed(p, pages_req - 1, &self.universes[start_index .. end_index])?;
+            let end_index = min(
+                ((p as usize) + 1) * DISCOVERY_UNI_PER_PAGE,
+                self.universes.len(),
+            );
+            self.send_universe_discovery_detailed(
+                p,
+                pages_req - 1,
+                &self.universes[start_index..end_index],
+            )?;
         }
         Ok(())
     }
@@ -1057,7 +1147,12 @@ impl SacnSourceInternal {
     /// 
     /// SacnParsePackError: Returned if the discovery packet cannot be packed to send.
     /// 
-    fn send_universe_discovery_detailed(&self, page: u8, last_page: u8, universes: &[u16]) -> Result<()>{
+    fn send_universe_discovery_detailed(
+        &self,
+        page: u8,
+        last_page: u8,
+        universes: &[u16],
+    ) -> Result<()> {
         let packet = AcnRootLayerProtocol {
             pdu: E131RootLayer {
                 cid: self.cid,
@@ -1115,7 +1210,9 @@ impl SacnSourceInternal {
     /// 
     fn set_name(&mut self, name: &str) -> Result<()> {
         if name.len() > E131_SOURCE_NAME_FIELD_LENGTH {
-            bail!(ErrorKind::MalformedSourceName("Source name provided is longer than maximum allowed".to_string()));
+            bail!(ErrorKind::MalformedSourceName(
+                "Source name provided is longer than maximum allowed".to_string()
+            ));
         }
         self.name = name.to_string();
 
@@ -1212,7 +1309,9 @@ impl SacnSourceInternal {
 /// SourceCorrupt: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
 /// a panic while accessing causing the source to be left in a potentially inconsistent state. 
 /// 
-fn unlock_internal(internal: &Arc<Mutex<SacnSourceInternal>>) -> Result<MutexGuard<SacnSourceInternal>> {
+fn unlock_internal(
+    internal: &Arc<Mutex<SacnSourceInternal>>,
+) -> Result<MutexGuard<SacnSourceInternal>> {
     match internal.lock() {
         Err(_) => {
             // The PoisonError returned doesn't contain further information and just allows access to the internal potentially inconsistent sender which 
@@ -1221,9 +1320,7 @@ fn unlock_internal(internal: &Arc<Mutex<SacnSourceInternal>>) -> Result<MutexGua
             // error_chain.
             bail!(ErrorKind::SourceCorrupt("Mutex poisoned".to_string()));
         }
-        Ok(lock) => {
-            Ok(lock)
-        }
+        Ok(lock) => Ok(lock),
     }
 }
 
@@ -1240,7 +1337,9 @@ fn unlock_internal(internal: &Arc<Mutex<SacnSourceInternal>>) -> Result<MutexGua
 /// Returns an SourceCorrupt error if the Mutex used to control access to the internal sender is poisoned by a thread encountering
 /// a panic while accessing causing the source to be left in a potentially inconsistent state. 
 /// 
-fn unlock_internal_mut(internal: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<MutexGuard<SacnSourceInternal>> {
+fn unlock_internal_mut(
+    internal: &mut Arc<Mutex<SacnSourceInternal>>,
+) -> Result<MutexGuard<SacnSourceInternal>> {
     match internal.lock() {
         Err(_) => {
             // The PoisonError returned doesn't contain further information and just allows access to the internal potentially inconsistent sender which 
@@ -1249,9 +1348,7 @@ fn unlock_internal_mut(internal: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<
             // error_chain.
             bail!(ErrorKind::SourceCorrupt("Mutex poisoned".to_string()));
         }
-        Ok(lock) => {
-            Ok(lock)
-        }
+        Ok(lock) => Ok(lock),
     }
 }
 
@@ -1269,7 +1366,10 @@ fn unlock_internal_mut(internal: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<
 /// 
 fn perform_periodic_update(src: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<()>{
     let mut unwrap_src = unlock_internal_mut(src)?;
-    if unwrap_src.is_sending_discovery && Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp) > E131_UNIVERSE_DISCOVERY_INTERVAL {
+    if unwrap_src.is_sending_discovery
+        && Instant::now().duration_since(unwrap_src.last_discovery_advert_timestamp)
+            > E131_UNIVERSE_DISCOVERY_INTERVAL
+    {
         unwrap_src.send_universe_discovery()?;
         unwrap_src.last_discovery_advert_timestamp = Instant::now();
     }

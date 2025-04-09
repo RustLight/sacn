@@ -34,6 +34,7 @@ use std::borrow::Cow;
 use std::cmp::{max, Ordering};
 use std::collections::HashMap;
 use std::fmt;
+use std::io::Read;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
@@ -1203,10 +1204,10 @@ impl SacnNetworkReceiver {
     /// May return an error if there is an issue parsing the data from the underlying socket, see (parse)[fn.AcnRootLayerProtocol::parse.packet].
     ///
     fn recv<'a>(
-        &self,
+        &mut self,
         buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE],
     ) -> Result<AcnRootLayerProtocol<'a>> {
-        self.socket.recv(&mut buf[0..])?;
+        self.socket.read_exact(buf)?;
 
         Ok(AcnRootLayerProtocol::parse(buf)?)
     }
@@ -1356,10 +1357,10 @@ impl SacnNetworkReceiver {
     /// May return an error if there is an issue parsing the data from the underlying socket, see (parse)[fn.AcnRootLayerProtocol::parse.packet].
     ///
     fn recv<'a>(
-        &self,
+        &mut self,
         buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE],
     ) -> Result<AcnRootLayerProtocol<'a>> {
-        self.socket.recv(&mut buf[0..])?;
+        self.socket.read_exact(buf)?;
 
         Ok(AcnRootLayerProtocol::parse(buf)?)
     }
@@ -1474,7 +1475,7 @@ impl DiscoveredSacnSource {
 #[cfg(not(target_os = "windows"))]
 fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
-        let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
+        let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
 
         // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
         socket.set_reuse_port(true)?;
@@ -1485,7 +1486,7 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
         socket.bind(&socket_addr.into())?;
         Ok(socket)
     } else {
-        let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
+        let socket = Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?;
 
         // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
         socket.set_reuse_port(true)?;
@@ -1514,7 +1515,7 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.family() as i32 {
         // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
-        AF_INET => match addr.as_inet() {
+        AF_INET => match addr.as_socket_ipv4() {
             Some(a) => match interface_addr {
                 IpAddr::V4(ref interface_v4) => {
                     socket
@@ -1531,7 +1532,7 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
                 bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
             }
         },
-        AF_INET6 => match addr.as_inet6() {
+        AF_INET6 => match addr.as_socket_ipv6() {
             Some(a) => {
                 socket
                     .join_multicast_v6(a.ip(), 0)
@@ -1565,7 +1566,7 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
 fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.family() as i32 {
         // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
-        AF_INET => match addr.as_inet() {
+        AF_INET => match addr.as_socket_ipv4() {
             Some(a) => match interface_addr {
                 IpAddr::V4(ref interface_v4) => {
                     socket
@@ -1582,7 +1583,7 @@ fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr)
                 bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
             }
         },
-        AF_INET6 => match addr.as_inet6() {
+        AF_INET6 => match addr.as_socket_ipv6() {
             Some(a) => {
                 socket
                     .leave_multicast_v6(a.ip(), 0)
@@ -2621,11 +2622,10 @@ mod test {
 
         dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
 
-        let src_cid: Uuid = Uuid::from_bytes(&[
+        let src_cid: Uuid = Uuid::from_bytes([
             0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
             0x14, 0x3e,
-        ])
-        .unwrap();
+        ]);
 
         let data_packet = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 0);
         let data_packet2 = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 1);
@@ -2659,7 +2659,11 @@ mod test {
                 assert!(false, "Receiver incorrectly accepted third data packet");
             }
             Err(e) => {
-                assert!(false, "Receiver correctly rejected third data packet but with unexpected error: {}", e);
+                assert!(
+                    false,
+                    "Receiver correctly rejected third data packet but with unexpected error: {}",
+                    e
+                );
             }
         }
     }
@@ -2692,11 +2696,10 @@ mod test {
         // The exclusive lower bound on the diff values (new_packet_seq_num - last_packet_seq_num) that will be rejected.
         const REJECT_RANGE_LOWER_BOUND: i16 = -20;
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
-        let src_cid: Uuid = Uuid::from_bytes(&[
+        let src_cid: Uuid = Uuid::from_bytes([
             0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
             0x14, 0x3e,
-        ])
-        .unwrap();
+        ]);
 
         for i in SEQ_NUM_LOWER_BOUND..SEQ_NUM_UPPER_BOUND {
             // Create the receiver.
@@ -2803,11 +2806,10 @@ mod test {
         // The exclusive lower bound on the diff values (new_packet_seq_num - last_packet_seq_num) that will be rejected.
         const REJECT_RANGE_LOWER_BOUND: i16 = -20;
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
-        let src_cid: Uuid = Uuid::from_bytes(&[
+        let src_cid: Uuid = Uuid::from_bytes([
             0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
             0x14, 0x3e,
-        ])
-        .unwrap();
+        ]);
 
         for i in SEQ_NUM_LOWER_BOUND..SEQ_NUM_UPPER_BOUND {
             // Create the receiver.
@@ -2899,11 +2901,10 @@ mod test {
 
         dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
 
-        let src_cid: Uuid = Uuid::from_bytes(&[
+        let src_cid: Uuid = Uuid::from_bytes([
             0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
             0x14, 0x3e,
-        ])
-        .unwrap();
+        ]);
 
         let sync_packet = generate_sync_packet_framing_layer_seq_num(UNIVERSE1, 0);
         let sync_packet2 = generate_sync_packet_framing_layer_seq_num(UNIVERSE1, 1);
@@ -2937,7 +2938,11 @@ mod test {
                 assert!(false, "Receiver incorrectly accepted third sync packet");
             }
             Err(e) => {
-                assert!(false, "Receiver correctly rejected third sync packet but with unexpected error: {}", e);
+                assert!(
+                    false,
+                    "Receiver correctly rejected third sync packet but with unexpected error: {}",
+                    e
+                );
             }
         }
     }
@@ -2957,11 +2962,10 @@ mod test {
 
         dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
 
-        let src_cid: Uuid = Uuid::from_bytes(&[
+        let src_cid: Uuid = Uuid::from_bytes([
             0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
             0x14, 0x3e,
-        ])
-        .unwrap();
+        ]);
 
         let sync_packet = generate_sync_packet_framing_layer_seq_num(UNIVERSE1, 0);
         let sync_packet2 = generate_sync_packet_framing_layer_seq_num(UNIVERSE1, 1);
@@ -3010,11 +3014,10 @@ mod test {
 
         dmx_rcv.listen_universes(&[UNIVERSE1]).unwrap();
 
-        let src_cid: Uuid = Uuid::from_bytes(&[
+        let src_cid: Uuid = Uuid::from_bytes([
             0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
             0x14, 0x3e,
-        ])
-        .unwrap();
+        ]);
 
         let data_packet = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 0);
         let data_packet2 = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 1);
@@ -3064,11 +3067,10 @@ mod test {
 
         dmx_rcv.listen_universes(&[UNIVERSE]).unwrap();
 
-        let src_cid: Uuid = Uuid::from_bytes(&[
+        let src_cid: Uuid = Uuid::from_bytes([
             0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
             0x14, 0x3e,
-        ])
-        .unwrap();
+        ]);
 
         let data_packet = generate_data_packet_framing_layer_seq_num(UNIVERSE, 0);
         let data_packet2 = generate_data_packet_framing_layer_seq_num(UNIVERSE, 1);
@@ -3119,11 +3121,10 @@ mod test {
 
         dmx_rcv.listen_universes(&[UNIVERSE1, UNIVERSE2]).unwrap();
 
-        let src_cid: Uuid = Uuid::from_bytes(&[
+        let src_cid: Uuid = Uuid::from_bytes([
             0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
             0x14, 0x3e,
-        ])
-        .unwrap();
+        ]);
 
         let data_packet = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 0);
         let data_packet2 = generate_data_packet_framing_layer_seq_num(UNIVERSE1, 1);
@@ -3175,11 +3176,10 @@ mod test {
             .listen_universes(&[SYNC_ADDR_1, SYNC_ADDR_2])
             .unwrap();
 
-        let src_cid: Uuid = Uuid::from_bytes(&[
+        let src_cid: Uuid = Uuid::from_bytes([
             0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
             0x14, 0x3e,
-        ])
-        .unwrap();
+        ]);
 
         let sync_packet = generate_sync_packet_framing_layer_seq_num(SYNC_ADDR_1, 0);
         let sync_packet2 = generate_sync_packet_framing_layer_seq_num(SYNC_ADDR_1, 1);
@@ -3218,25 +3218,24 @@ mod test {
         let source_limit: Option<usize> = Some(0);
 
         match SacnReceiver::with_ip(addr, source_limit) {
-            Err(e) => {
-                match e.kind() {
-                    ErrorKind::Io(x) => {
-                        match x.kind() {
+            Err(e) => match e.kind() {
+                ErrorKind::Io(x) => match x.kind() {
                             std::io::ErrorKind::InvalidInput => {
                                 assert!(true, "Correct error returned");
                             }
                             _ => {
                                 assert!(false, "Expected error returned");
                             }
-                        }
-                    }
+                },
                     _ => {
                         assert!(false, "Unexpected error type returned");
                     }
-                }
-            }
+            },
             _ => {
-                assert!(false, "SacnReceiver accepted 0 source limit when it shouldn't");
+                assert!(
+                    false,
+                    "SacnReceiver accepted 0 source limit when it shouldn't"
+                );
             }
         }
     }
@@ -3246,7 +3245,10 @@ mod test {
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
         let dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
-        assert!(dmx_rcv.is_multicast_enabled(), "Multicast not enabled by default");
+        assert!(
+            dmx_rcv.is_multicast_enabled(),
+            "Multicast not enabled by default"
+        );
     }
 
     #[test]
@@ -3256,7 +3258,10 @@ mod test {
 
         dmx_rcv.set_is_multicast_enabled(false).unwrap();
 
-        assert!(!dmx_rcv.is_multicast_enabled(), "Multicast not disabled correctly");
+        assert!(
+            !dmx_rcv.is_multicast_enabled(),
+            "Multicast not disabled correctly"
+        );
     }
 
     #[test]
@@ -3280,7 +3285,11 @@ mod test {
 
         dmx_rcv.clear_all_waiting_data();
 
-        assert_eq!(dmx_rcv.rtrv_waiting_data(SYNC_ADDR), Vec::new(), "Data was not reset as expected");
+        assert_eq!(
+            dmx_rcv.rtrv_waiting_data(SYNC_ADDR),
+            Vec::new(),
+            "Data was not reset as expected"
+        );
     }
 
     #[test]
@@ -3288,7 +3297,10 @@ mod test {
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
         let dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
-        assert!(!dmx_rcv.get_announce_source_discovery(), "Announce source discovery is true by default when should be false");
+        assert!(
+            !dmx_rcv.get_announce_source_discovery(),
+            "Announce source discovery is true by default when should be false"
+        );
     }
 
     #[test]
@@ -3296,7 +3308,10 @@ mod test {
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
         let dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
-        assert!(!dmx_rcv.get_announce_timeout(), "Announce timeout flag is true by default when should be false");
+        assert!(
+            !dmx_rcv.get_announce_timeout(),
+            "Announce timeout flag is true by default when should be false"
+        );
     }
 
     #[test]
@@ -3304,7 +3319,10 @@ mod test {
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
         let dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
-        assert!(!dmx_rcv.get_announce_stream_termination(), "Announce termination flag is true by default when should be false");
+        assert!(
+            !dmx_rcv.get_announce_stream_termination(),
+            "Announce termination flag is true by default when should be false"
+        );
     }
 
     /// Tests handling a sync packet for a synchronisation address which isn't currently being listened to.
@@ -3313,10 +3331,15 @@ mod test {
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
         let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
 
-        let res = dmx_rcv.handle_sync_packet(Uuid::new_v4(), SynchronizationPacketFramingLayer{
+        let res = dmx_rcv
+            .handle_sync_packet(
+                Uuid::new_v4(),
+                SynchronizationPacketFramingLayer {
             sequence_number: 0,
-            synchronization_address: 1
-        }).unwrap(); // Checks that no error is produced.
+                    synchronization_address: 1,
+                },
+            )
+            .unwrap(); // Checks that no error is produced.
 
         assert_eq!(res, None, "Sync packet produced output when should have been ignored as for an address that isn't being listened to");
     }
@@ -3325,7 +3348,7 @@ mod test {
     #[test]
     fn test_dmx_data_eq() {
         const UNIVERSE: u16 = 1;
-        let values: Vec<u8> = vec!(1,2,3);
+        let values: Vec<u8> = vec![1, 2, 3];
         const SYNC_ADDR: u16 = 1;
         const PRIORITY: u8 = 100;
         const PREVIEW: bool = false;
@@ -3354,6 +3377,9 @@ mod test {
             recv_timestamp: Instant::now(),
         };
 
-        assert_eq!(data1, data2, "DMX data not seen as equivalent when should be");
+        assert_eq!(
+            data1, data2,
+            "DMX data not seen as equivalent when should be"
+        );
     }
 }

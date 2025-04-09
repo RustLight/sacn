@@ -19,10 +19,10 @@ exclude = [
 
 [dependencies]
 byteorder = { version = "1.5.0", features = [] }
-socket2 = { version = "0.3.4", features = ["reuseport"] }
-libc = { version = "0.2.171" } 
 error-chain = "0.12.4"
-uuid = { version = "0.6.3", features = ["use_std", "v4"] }
+libc = { version = "0.2.171" }
+socket2 = { version = "0.5.9", features = ["all"] }
+uuid = { version = "1.12", features = ["v4"] }
 
 [dev-dependencies]
 crossterm = "0.29.0"

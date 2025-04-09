@@ -959,7 +959,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
     let source_name = "Source_A";
     let data = [0x00, 0xe, 0x0, 0xc, 0x1, 0x7, 0x1, 0x4, 0x8, 0x0, 0xd, 0xa, 0x7, 0xa];
     let data2 = [0x00, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa];
-    let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+    let src_cid: Uuid = Uuid::from_bytes([0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e].try_into().unwrap());
 
     let snd_thread = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1);
@@ -1092,7 +1092,7 @@ fn test_discover_recv_sync_runthrough_ipv6() {
     const DATA2: [u8; 16] =[0x00, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa, 0x9, 0x8];
 
     // The source CID.
-    let src_cid: Uuid = Uuid::from_bytes(&[0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e]).unwrap();
+    let src_cid: Uuid = Uuid::from_bytes([0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e].try_into().unwrap());
 
     let snd_thread = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1);
@@ -1219,13 +1219,13 @@ fn test_ip_equivalence() {
 
     // Create and setup the ipv4 source.
     let ipv4: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
-    let mut ipv4_source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(&CID).unwrap(), ipv4).unwrap();
+    let mut ipv4_source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ipv4).unwrap();
     ipv4_source.set_preview_mode(false).unwrap();
     ipv4_source.set_multicast_loop_v4(true).unwrap();
     ipv4_source.register_universes(&[universe as u16]).unwrap();
 
     // Create and setup the ipv4 receiver socket.
-    let ipv4_recv = Socket::new(Domain::ipv4(), Type::dgram(), None).unwrap();
+    let mut ipv4_recv = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
     let ipv4_multicast_addr = universe_to_ipv4_multicast_addr(universe).unwrap();
     let ipv4_discovery_multicast_addr = universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap();
 
@@ -1236,17 +1236,17 @@ fn test_ip_equivalence() {
     // Bind to the unspecified 0.0.0.0 address allowing receiving any data on that port then join the universe and the discovery multicast groups.
     // Binding to unspecified required to allow receiving from multiple multicast addresses.
     ipv4_recv.bind(&SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT).into()).unwrap();
-    ipv4_recv.join_multicast_v4(&ipv4_multicast_addr.as_inet().unwrap().ip(), &Ipv4Addr::UNSPECIFIED).unwrap();
-    ipv4_recv.join_multicast_v4(&ipv4_discovery_multicast_addr.as_inet().unwrap().ip(), &Ipv4Addr::UNSPECIFIED).unwrap();
+    ipv4_recv.join_multicast_v4(&ipv4_multicast_addr.as_socket_ipv4().unwrap().ip(), &Ipv4Addr::UNSPECIFIED).unwrap();
+    ipv4_recv.join_multicast_v4(&ipv4_discovery_multicast_addr.as_socket_ipv4().unwrap().ip(), &Ipv4Addr::UNSPECIFIED).unwrap();
     
     // Create and setup the ipv6 source.
     let ipv6: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
-    let mut ipv6_source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(&CID).unwrap(), ipv6).unwrap();
+    let mut ipv6_source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ipv6).unwrap();
     ipv6_source.set_preview_mode(false).unwrap();
     ipv6_source.register_universes(&[universe]).unwrap();
 
     // Create and setup the ipv6 receiver socket.
-    let ipv6_recv = Socket::new(Domain::ipv6(), Type::dgram(), None).unwrap();
+    let mut ipv6_recv = Socket::new(Domain::IPV6, Type::DGRAM, None).unwrap();
     let ipv6_multicast_addr = universe_to_ipv6_multicast_addr(universe).unwrap();
     let ipv6_discovery_multicast_addr = universe_to_ipv6_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap();
 
@@ -1256,18 +1256,18 @@ fn test_ip_equivalence() {
 
     // Bind to the unspecified :: address for same reason as for IPv4.
     ipv6_recv.bind(&SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT).into()).unwrap();
-    ipv6_recv.join_multicast_v6(&ipv6_multicast_addr.as_inet6().unwrap().ip(), 0).unwrap();
-    ipv6_recv.join_multicast_v6(&ipv6_discovery_multicast_addr.as_inet6().unwrap().ip(), 0).unwrap();
+    ipv6_recv.join_multicast_v6(&ipv6_multicast_addr.as_socket_ipv6().unwrap().ip(), 0).unwrap();
+    ipv6_recv.join_multicast_v6(&ipv6_discovery_multicast_addr.as_socket_ipv6().unwrap().ip(), 0).unwrap();
     
     // Send and receive the data packet over IPv4.
     let mut ipv4_recv_buf = [0; 1024];
     ipv4_source.send(&[universe], &dmx_data, Some(PRIORITY), None, None).unwrap();
-    let (ipv4_len, _) = ipv4_recv.recv_from(&mut ipv4_recv_buf).unwrap();
+    let ipv4_len = ipv4_recv.read(&mut ipv4_recv_buf).unwrap();
 
     // Send and receive the data packet over IPv6.
     let mut ipv6_recv_buf = [0; 1024];
     ipv6_source.send(&[universe], &dmx_data, Some(PRIORITY), None, None).unwrap();
-    let (ipv6_len, _) = ipv6_recv.recv_from(&mut ipv6_recv_buf).unwrap();
+    let ipv6_len = ipv6_recv.read(&mut ipv6_recv_buf).unwrap();
 
     // Check that the data packets match.
     assert_eq!(ipv4_recv_buf[.. ipv4_len], ipv6_recv_buf[.. ipv6_len], "IPv4 and IPv6 data packets aren't identical");
@@ -1275,23 +1275,23 @@ fn test_ip_equivalence() {
     // Send and receive the sync packet over IPv4.
     ipv4_recv_buf = [0; 1024];
     ipv4_source.send_sync_packet(universe, None).unwrap();
-    let (ipv4_len, _) = ipv4_recv.recv_from(&mut ipv4_recv_buf).unwrap();
+    let ipv4_len = ipv4_recv.read(&mut ipv4_recv_buf).unwrap();
 
     // Send and receive the sync packet over IPv6.
     ipv6_recv_buf = [0; 1024];
     ipv6_source.send_sync_packet(universe, None).unwrap();
-    let (ipv6_len, _) = ipv6_recv.recv_from(&mut ipv6_recv_buf).unwrap();
+    let ipv6_len = ipv6_recv.read(&mut ipv6_recv_buf).unwrap();
 
     // Check the sync packets match.
     assert_eq!(ipv4_recv_buf[.. ipv4_len], ipv6_recv_buf[.. ipv6_len], "IPv4 and IPv6 sync packets aren't identical");
 
     // Wait for discovery packet over IPv4.
     ipv4_recv_buf = [0; 1024];
-    let (ipv4_len, _) = ipv4_recv.recv_from(&mut ipv4_recv_buf).unwrap();
+    let ipv4_len = ipv4_recv.read(&mut ipv4_recv_buf).unwrap();
 
     // Wait for discovery packet over IPv6.
     ipv6_recv_buf = [0; 1024];
-    let (ipv6_len, _) = ipv6_recv.recv_from(&mut ipv6_recv_buf).unwrap();
+    let ipv6_len = ipv6_recv.read(&mut ipv6_recv_buf).unwrap();
 
     // Check the discovery packets match.
     assert_eq!(ipv4_recv_buf[.. ipv4_len], ipv6_recv_buf[.. ipv6_len], "IPv4 and IPv6 discovery packets aren't identical");
@@ -1304,11 +1304,11 @@ fn test_ip_equivalence() {
     for _ in 0 .. E131_TERMINATE_STREAM_PACKET_COUNT {
         // Send and receive a termination packet over IPv4.
         ipv4_recv_buf = [0; 1024];
-        let (ipv4_len, _) = ipv4_recv.recv_from(&mut ipv4_recv_buf).unwrap();
+        let ipv4_len = ipv4_recv.read(&mut ipv4_recv_buf).unwrap();
 
         // Send and receive a termination packet over IPv6.
         ipv6_recv_buf = [0; 1024];
-        let (ipv6_len, _) = ipv6_recv.recv_from(&mut ipv6_recv_buf).unwrap();
+        let ipv6_len = ipv6_recv.read(&mut ipv6_recv_buf).unwrap();
 
         // Check that the termination packets match
         assert_eq!(ipv4_recv_buf[.. ipv4_len], ipv6_recv_buf[.. ipv6_len], "IPv4 and IPv6 termination packets aren't identical");
