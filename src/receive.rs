@@ -21,17 +21,17 @@
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 /// Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
-use packet::{E131RootLayerData::*, *};
+use crate::packet::{E131RootLayerData::*, *};
 
 /// Same reasoning as for packet meaning all sacn errors are imported.
-use error::errors::{ErrorKind::*, *};
+use crate::error::errors::{ErrorKind::*, *};
 
 /// The uuid crate is used for working with/generating UUIDs which sACN uses as part of the cid field in the protocol.
 /// This is used for uniquely identifying sources when counting sequence numbers.
 use uuid::Uuid;
 
 use std::borrow::Cow;
-use std::cmp::{max, Ordering};
+use std::cmp::{Ordering, max};
 use std::collections::HashMap;
 use std::fmt;
 use std::net::{Ipv4Addr, SocketAddr};
@@ -293,7 +293,10 @@ impl SacnReceiver {
         match source_limit {
             Some(x) => {
                 if x == 0 {
-                    bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Source_limit has a value of Some(0) which would indicate this receiver can never receive from any source"));
+                    bail!(std::io::Error::new(
+                        std::io::ErrorKind::InvalidInput,
+                        "Source_limit has a value of Some(0) which would indicate this receiver can never receive from any source"
+                    ));
                 }
             }
             None => {}
@@ -3318,7 +3321,10 @@ mod test {
             synchronization_address: 1
         }).unwrap(); // Checks that no error is produced.
 
-        assert_eq!(res, None, "Sync packet produced output when should have been ignored as for an address that isn't being listened to");
+        assert_eq!(
+            res, None,
+            "Sync packet produced output when should have been ignored as for an address that isn't being listened to"
+        );
     }
 
     /// Tests the equivalence of 2 DMXDatas which are only similar in the aspects used for checking equivalence.
