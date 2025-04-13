@@ -1,3 +1,5 @@
+#![cfg_attr(rustfmt, rustfmt_skip)]
+
 // Copyright 2020 sacn Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
@@ -31,11 +33,11 @@ const TEST_DATA_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -61,7 +63,7 @@ const TEST_DATA_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -69,7 +71,7 @@ const TEST_DATA_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -98,11 +100,11 @@ const TEST_DATA_PACKET_PARTIAL: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x8B, 
+    0x70, 0x8B,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x70, 0x75,
@@ -128,7 +130,7 @@ const TEST_DATA_PACKET_PARTIAL: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -136,7 +138,7 @@ const TEST_DATA_PACKET_PARTIAL: &[u8] = &[
     /* Property value count = 30 */
     0x00, 0x1E,
     /* Property values */
-    0, 0, 0, 0, 0,   
+    0, 0, 0, 0, 0,
     0, 0, 0, 0, 0,
     0, 0, 0, 0, 0,
     0, 0, 0, 0, 0,
@@ -154,11 +156,11 @@ const TEST_DATA_PACKET_EMPTY: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x70, 0x58,
@@ -184,7 +186,7 @@ const TEST_DATA_PACKET_EMPTY: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -205,11 +207,11 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -235,7 +237,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -243,7 +245,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -272,11 +274,11 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -302,7 +304,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -310,7 +312,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -339,11 +341,11 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_POSTAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -369,7 +371,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_POSTAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -377,7 +379,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_POSTAMBLE_SIZE_UPPER_BYTE: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -406,11 +408,11 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_POSTAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -436,7 +438,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_POSTAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -444,7 +446,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_POSTAMBLE_SIZE_LOWER_BYTE: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -473,11 +475,11 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_ACN_IDENTIFIER: &[u8] = &[
     /* ACN Packet Identifier */
     0x42, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -503,7 +505,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_ACN_IDENTIFIER: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -511,7 +513,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_ACN_IDENTIFIER: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -540,11 +542,11 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_FLAGS: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x62, 0x6e, 
+    0x62, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -570,7 +572,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_FLAGS: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -578,7 +580,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_WRONG_FLAGS: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -607,11 +609,11 @@ const TEST_DATA_PACKET_ROOT_LAYER_TOO_LOW_LENGTH: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6d, 
+    0x72, 0x6d,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -637,7 +639,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_TOO_LOW_LENGTH: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -645,7 +647,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_TOO_LOW_LENGTH: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -674,11 +676,11 @@ const TEST_DATA_PACKET_ROOT_LAYER_TOO_HIGH_LENGTH: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6f, 
+    0x72, 0x6f,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -704,7 +706,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_TOO_HIGH_LENGTH: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -712,7 +714,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_TOO_HIGH_LENGTH: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -741,11 +743,11 @@ const TEST_DATA_PACKET_ROOT_LAYER_UNKNOWN_ACN_VECTOR: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x14,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -771,7 +773,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_UNKNOWN_ACN_VECTOR: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -779,7 +781,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_UNKNOWN_ACN_VECTOR: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -808,11 +810,11 @@ const TEST_DATA_PACKET_ROOT_LAYER_EXTENDED_VECTOR: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x08,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -838,7 +840,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_EXTENDED_VECTOR: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -846,7 +848,7 @@ const TEST_DATA_PACKET_ROOT_LAYER_EXTENDED_VECTOR: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -875,7 +877,7 @@ const TEST_DATA_PACKET_TOO_LONG_CID: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
@@ -905,7 +907,7 @@ const TEST_DATA_PACKET_TOO_LONG_CID: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -913,7 +915,7 @@ const TEST_DATA_PACKET_TOO_LONG_CID: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -942,7 +944,7 @@ const TEST_DATA_PACKET_TOO_SHORT_CID: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
@@ -972,7 +974,7 @@ const TEST_DATA_PACKET_TOO_SHORT_CID: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -980,7 +982,7 @@ const TEST_DATA_PACKET_TOO_SHORT_CID: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1009,11 +1011,11 @@ const TEST_DATA_PACKET_FRAMING_LAYER_WRONG_FLAGS: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x82, 0x58,
@@ -1039,7 +1041,7 @@ const TEST_DATA_PACKET_FRAMING_LAYER_WRONG_FLAGS: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1047,7 +1049,7 @@ const TEST_DATA_PACKET_FRAMING_LAYER_WRONG_FLAGS: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1076,11 +1078,11 @@ const TEST_DATA_PACKET_FRAMING_LAYER_LOW_LENGTH: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x50,
@@ -1106,7 +1108,7 @@ const TEST_DATA_PACKET_FRAMING_LAYER_LOW_LENGTH: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1114,7 +1116,7 @@ const TEST_DATA_PACKET_FRAMING_LAYER_LOW_LENGTH: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1143,11 +1145,11 @@ const TEST_DATA_PACKET_FRAMING_LAYER_HIGH_LENGTH: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x62,
@@ -1173,7 +1175,7 @@ const TEST_DATA_PACKET_FRAMING_LAYER_HIGH_LENGTH: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1181,7 +1183,7 @@ const TEST_DATA_PACKET_FRAMING_LAYER_HIGH_LENGTH: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1210,11 +1212,11 @@ const TEST_DATA_PACKET_FRAMING_LAYER_WRONG_VECTOR: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1240,7 +1242,7 @@ const TEST_DATA_PACKET_FRAMING_LAYER_WRONG_VECTOR: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1248,7 +1250,7 @@ const TEST_DATA_PACKET_FRAMING_LAYER_WRONG_VECTOR: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1277,11 +1279,11 @@ const TEST_DATA_PACKET_MAX_SOURCE_NAME: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1317,7 +1319,7 @@ const TEST_DATA_PACKET_MAX_SOURCE_NAME: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1325,7 +1327,7 @@ const TEST_DATA_PACKET_MAX_SOURCE_NAME: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1354,11 +1356,11 @@ const TEST_DATA_PACKET_NOT_NULL_TERMINATED_SOURCE_NAME: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1394,7 +1396,7 @@ const TEST_DATA_PACKET_NOT_NULL_TERMINATED_SOURCE_NAME: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1402,7 +1404,7 @@ const TEST_DATA_PACKET_NOT_NULL_TERMINATED_SOURCE_NAME: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1431,11 +1433,11 @@ const TEST_DATA_PACKET_TOO_HIGH_PRIORITY: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1461,7 +1463,7 @@ const TEST_DATA_PACKET_TOO_HIGH_PRIORITY: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1469,7 +1471,7 @@ const TEST_DATA_PACKET_TOO_HIGH_PRIORITY: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1498,11 +1500,11 @@ const TEST_DATA_PACKET_LOWEST_PRIORITY: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1528,7 +1530,7 @@ const TEST_DATA_PACKET_LOWEST_PRIORITY: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1536,7 +1538,7 @@ const TEST_DATA_PACKET_LOWEST_PRIORITY: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1566,11 +1568,11 @@ const TEST_DATA_PACKET_NO_SYNC_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1596,7 +1598,7 @@ const TEST_DATA_PACKET_NO_SYNC_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1604,7 +1606,7 @@ const TEST_DATA_PACKET_NO_SYNC_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1633,11 +1635,11 @@ const TEST_DATA_PACKET_TOO_HIGH_SYNC_ADDR_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1663,7 +1665,7 @@ const TEST_DATA_PACKET_TOO_HIGH_SYNC_ADDR_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1671,7 +1673,7 @@ const TEST_DATA_PACKET_TOO_HIGH_SYNC_ADDR_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1701,11 +1703,11 @@ const TEST_DATA_PACKET_OPTIONS_BIT_0_SET_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1731,7 +1733,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_0_SET_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1739,7 +1741,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_0_SET_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1769,11 +1771,11 @@ const TEST_DATA_PACKET_OPTIONS_BIT_1_SET_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1799,7 +1801,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_1_SET_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1807,7 +1809,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_1_SET_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1837,11 +1839,11 @@ const TEST_DATA_PACKET_OPTIONS_BIT_2_SET_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1867,7 +1869,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_2_SET_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1875,7 +1877,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_2_SET_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1905,11 +1907,11 @@ const TEST_DATA_PACKET_OPTIONS_BIT_3_SET_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -1935,7 +1937,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_3_SET_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -1943,7 +1945,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_3_SET_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1973,11 +1975,11 @@ const TEST_DATA_PACKET_OPTIONS_BIT_4_SET_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2003,7 +2005,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_4_SET_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2011,7 +2013,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_4_SET_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2041,11 +2043,11 @@ const TEST_DATA_PACKET_OPTIONS_BIT_5_SET_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2071,7 +2073,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_5_SET_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2079,7 +2081,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_5_SET_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2109,11 +2111,11 @@ const TEST_DATA_PACKET_OPTIONS_BIT_6_SET_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2139,7 +2141,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_6_SET_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2147,7 +2149,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_6_SET_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2177,11 +2179,11 @@ const TEST_DATA_PACKET_OPTIONS_BIT_7_SET_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2207,7 +2209,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_7_SET_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2215,7 +2217,7 @@ const TEST_DATA_PACKET_OPTIONS_BIT_7_SET_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2245,11 +2247,11 @@ const TEST_DATA_PACKET_TOO_HIGH_UNIVERSE: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2275,7 +2277,7 @@ const TEST_DATA_PACKET_TOO_HIGH_UNIVERSE: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2283,7 +2285,7 @@ const TEST_DATA_PACKET_TOO_HIGH_UNIVERSE: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2313,11 +2315,11 @@ const TEST_DATA_PACKET_TOO_LOW_UNIVERSE: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2343,7 +2345,7 @@ const TEST_DATA_PACKET_TOO_LOW_UNIVERSE: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2351,7 +2353,7 @@ const TEST_DATA_PACKET_TOO_LOW_UNIVERSE: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2381,11 +2383,11 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_HIGH_LENGTH: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2411,7 +2413,7 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_HIGH_LENGTH: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2419,7 +2421,7 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_HIGH_LENGTH: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2449,11 +2451,11 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_LOW_LENGTH: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2479,7 +2481,7 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_LOW_LENGTH: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2487,7 +2489,7 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_LOW_LENGTH: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2517,11 +2519,11 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_FLAGS: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2547,7 +2549,7 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_FLAGS: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2555,7 +2557,7 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_FLAGS: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2585,11 +2587,11 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_VECTOR: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2615,7 +2617,7 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_VECTOR: &[u8] = &[
     /* Vector */
     0x07,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2623,7 +2625,7 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_VECTOR: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2653,11 +2655,11 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_ADDRESS_DATA: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2683,7 +2685,7 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_ADDRESS_DATA: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa2, 
+    0xa2,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2691,7 +2693,7 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_ADDRESS_DATA: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2721,11 +2723,11 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_FIRST_PROPERTY_ADDRESS: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2751,7 +2753,7 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_FIRST_PROPERTY_ADDRESS: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x01,
     /* Address Increment */
@@ -2759,7 +2761,7 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_FIRST_PROPERTY_ADDRESS: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2789,11 +2791,11 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_ADDRESS_INCREMENT: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2819,7 +2821,7 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_ADDRESS_INCREMENT: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2827,7 +2829,7 @@ const TEST_DATA_PACKET_DMP_LAYER_WRONG_ADDRESS_INCREMENT: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2857,11 +2859,11 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_HIGH_PROPERTY_COUNT: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2887,7 +2889,7 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_HIGH_PROPERTY_COUNT: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2895,7 +2897,7 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_HIGH_PROPERTY_COUNT: &[u8] = &[
     /* Property value count */
     0x02, 0x02,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2925,11 +2927,11 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_LOW_PROPERTY_COUNT: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -2955,7 +2957,7 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_LOW_PROPERTY_COUNT: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -2963,7 +2965,7 @@ const TEST_DATA_PACKET_DMP_LAYER_TOO_LOW_PROPERTY_COUNT: &[u8] = &[
     /* Property value count */
     0x02, 0x00,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2994,11 +2996,11 @@ const TEST_TERMINATION_FULL_PROPERTY_VALUES_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x72, 0x6e, 
+    0x72, 0x6e,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length */
     0x72, 0x58,
@@ -3024,7 +3026,7 @@ const TEST_TERMINATION_FULL_PROPERTY_VALUES_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -3032,7 +3034,7 @@ const TEST_TERMINATION_FULL_PROPERTY_VALUES_PACKET: &[u8] = &[
     /* Property value count */
     0x02, 0x01,
     /* Property values */
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3063,11 +3065,11 @@ const TEST_TERMINATION_EMPTY_PROPERTY_VALUES_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol, Length = 109*/
-    0x70, 0x6D, 
+    0x70, 0x6D,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length, Length = 87 */
     0x70, 0x57,
@@ -3093,7 +3095,7 @@ const TEST_TERMINATION_EMPTY_PROPERTY_VALUES_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -3114,11 +3116,11 @@ const TEST_TERMINATION_PARTIAL_PROPERTY_VALUES_PACKET: &[u8] = &[
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol, Length = 139 */
-    0x70, 0x8B, 
+    0x70, 0x8B,
     /* Vector */
     0x00, 0x00, 0x00, 0x04,
     /* CID */
-    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 
+    0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* Data Packet Framing Layer */
     /* Flags and Length, Length = 117 */
     0x70, 0x75,
@@ -3144,7 +3146,7 @@ const TEST_TERMINATION_PARTIAL_PROPERTY_VALUES_PACKET: &[u8] = &[
     /* Vector */
     0x02,
     /* Address and Data Type */
-    0xa1, 
+    0xa1,
     /* First Property Address */
     0x00, 0x00,
     /* Address Increment */
@@ -3152,7 +3154,7 @@ const TEST_TERMINATION_PARTIAL_PROPERTY_VALUES_PACKET: &[u8] = &[
     /* Property value count = 30 */
     0x00, 0x1E,
     /* Property values */
-    0, 0, 0, 0, 0,   
+    0, 0, 0, 0, 0,
     0, 0, 0, 0, 0,
     0, 0, 0, 0, 0,
     0, 0, 0, 0, 0,
@@ -3274,7 +3276,7 @@ fn test_malformed_data_packet_wrong_preample_lower_byte_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3297,7 +3299,7 @@ fn test_malformed_data_packet_wrong_preample_upper_byte_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3320,7 +3322,7 @@ fn test_malformed_data_packet_wrong_postample_lower_byte_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3343,7 +3345,7 @@ fn test_malformed_data_packet_wrong_postample_upper_byte_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3366,7 +3368,7 @@ fn test_malformed_data_packet_root_layer_wrong_flags() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3389,7 +3391,7 @@ fn test_malformed_data_packet_root_layer_too_low_length() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3412,7 +3414,7 @@ fn test_malformed_data_packet_root_layer_too_high_length() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3435,7 +3437,7 @@ fn test_malformed_data_packet_wrong_acn_identifier_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3458,7 +3460,7 @@ fn test_malformed_data_packet_unknown_acn_vector_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3483,7 +3485,7 @@ fn test_malformed_data_packet_extended_acn_vector_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3508,7 +3510,7 @@ fn test_malformed_data_packet_too_long_cid_parse() {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3531,7 +3533,7 @@ fn test_malformed_data_packet_too_short_cid_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3554,7 +3556,7 @@ fn test_malformed_data_packet_framing_layer_wrong_flags_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3577,7 +3579,7 @@ fn test_malformed_data_packet_framing_layer_low_length_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3600,7 +3602,7 @@ fn test_malformed_data_packet_framing_layer_high_length_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3623,7 +3625,7 @@ fn test_malformed_data_packet_framing_layer_wrong_vector_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3678,7 +3680,7 @@ fn test_malformed_data_packet_source_name_not_null_terminated_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3701,7 +3703,7 @@ fn test_malformed_data_packet_too_high_priority_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3729,9 +3731,9 @@ fn test_data_packet_lowest_priority_parse() {
                     assert!(!dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3775,9 +3777,9 @@ fn test_data_packet_no_sync_parse() {
                     assert!(!dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3816,7 +3818,7 @@ fn test_malformed_data_packet_too_high_sync_addr_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -3844,9 +3846,9 @@ fn test_data_packet_options_bit_0_set_parse() {
                     assert!(!dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3892,9 +3894,9 @@ fn test_data_packet_options_bit_1_set_parse() {
                     assert!(!dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3940,9 +3942,9 @@ fn test_data_packet_options_bit_2_set_parse() {
                     assert!(!dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3988,9 +3990,9 @@ fn test_data_packet_options_bit_3_set_parse() {
                     assert!(!dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4036,9 +4038,9 @@ fn test_data_packet_options_bit_4_set_parse() {
                     assert!(!dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4082,9 +4084,9 @@ fn test_data_packet_options_bit_5_set_parse() {
                     assert!(!dpfl.stream_terminated);
                     assert!(dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4130,9 +4132,9 @@ fn test_data_packet_options_bit_6_set_parse() {
                     assert!(dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4178,9 +4180,9 @@ fn test_data_packet_options_bit_7_set_parse() {
                     assert!(!dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4219,7 +4221,7 @@ fn test_malformed_data_packet_too_high_universe_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4242,7 +4244,7 @@ fn test_malformed_data_packet_too_low_universe_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4265,7 +4267,7 @@ fn test_malformed_data_packet_dmp_layer_too_high_length_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4288,7 +4290,7 @@ fn test_malformed_data_packet_dmp_layer_too_low_length_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4311,7 +4313,7 @@ fn test_malformed_data_packet_dmp_layer_wrong_flags_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4334,7 +4336,7 @@ fn test_malformed_data_packet_dmp_layer_wrong_vector_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4357,7 +4359,7 @@ fn test_malformed_data_packet_dmp_layer_wrong_address_data_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4380,7 +4382,7 @@ fn test_malformed_data_packet_dmp_layer_wrong_first_property_address_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4403,7 +4405,7 @@ fn test_malformed_data_packet_dmp_layer_wrong_address_increment_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4426,7 +4428,7 @@ fn test_malformed_data_packet_dmp_layer_too_high_property_count_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4449,7 +4451,7 @@ fn test_malformed_data_packet_dmp_layer_too_low_property_count_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -4477,9 +4479,9 @@ fn test_termination_packet_full_property_values_parse() {
                     assert!(dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4523,9 +4525,9 @@ fn test_termination_packet_partial_property_values_parse() {
                     assert!(dpfl.stream_terminated);
                     assert!(!dpfl.force_synchronization);
                     assert_eq!(dpfl.universe, 1);
-                    assert_eq!(dpfl.data.property_values, 
+                    assert_eq!(dpfl.data.property_values,
                         vec!{
-                            0, 0, 0, 0, 0,   
+                            0, 0, 0, 0, 0,
                             0, 0, 0, 0, 0,
                             0, 0, 0, 0, 0,
                             0, 0, 0, 0, 0,
