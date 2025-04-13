@@ -1,3 +1,5 @@
+#![cfg_attr(rustfmt, rustfmt_skip)]
+
 extern crate sacn;
 extern crate uuid;
 
@@ -26,37 +28,37 @@ const UNIVERSE_DISCOVERY_PACKET_EXPECTED_MAX_SIZE: usize = 1144;
 const TEST_UNIVERSE_DISCOVERY_PACKET: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes, note each universe takes 2 bytes so this represents 3 universes (0x0001, 0x0203, 0x0405) not 6. */
     0x0, 0x1, 0x2, 0x3, 0x4, 0x5,
 ];
@@ -65,37 +67,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_ROOT_LAYER_UNKNOWN_VECTOR: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x01, 0x08, 
+    0x00, 0x00, 0x01, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -104,37 +106,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_ROOT_LAYER_UNKNOWN_VECTOR: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_ROOT_LAYER_DATA_VECTOR: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x04, 
+    0x00, 0x00, 0x00, 0x04,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -143,37 +145,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_ROOT_LAYER_DATA_VECTOR: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_WRONG_FLAGS: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x60, 0x6e, 
+    0x60, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -182,37 +184,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_WRONG_FLAGS: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_TOO_LONG_CID: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -221,37 +223,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_TOO_LONG_CID: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_TOO_SHORT_CID: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -260,37 +262,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_TOO_SHORT_CID: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_WRONG_FLAGS: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x60, 0x58, 
+    0x60, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -299,37 +301,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_WRONG_FLAGS: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_LENGTH_TOO_SHORT: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x57, 
+    0x70, 0x57,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -338,37 +340,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_LENGTH_TOO_SHORT: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_LENGTH_TOO_LONG: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x59, 
+    0x70, 0x59,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -377,37 +379,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_FRAMING_LAYER_LENGTH_TOO_LONG: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_SYNC_FRAMING_VECTOR: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector, Set to the value for a synchronisation packet */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -416,77 +418,77 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_SYNC_FRAMING_VECTOR: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_UNKNOWN_FRAMING_VECTOR: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector, Set to an unknown value*/
-    0x00, 0x00, 0x00, 0x07, 
+    0x00, 0x00, 0x00, 0x07,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
 
-/// Universe discovery packet with the reserved bytes set to values, this should be ignored and the packet 
+/// Universe discovery packet with the reserved bytes set to values, this should be ignored and the packet
 /// parsed normally as per ANSI E1.31-2018 Section 6.4.3.
 const TEST_UNIVERSE_DISCOVERY_PACKET_ARBITRARY_RESERVED: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved, Set to arbitrary values */
-    255, 254, 253, 252, 
+    255, 254, 253, 252,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes (3 universes, 0x0001, 0x0203, 0x0405) */
     0, 1, 2, 3, 4, 5,
 ];
@@ -496,37 +498,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_ARBITRARY_RESERVED: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_DISCOVERY_LAYER_WRONG_FLAGS: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x60, 0x0e, 
+    0x60, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -536,37 +538,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_DISCOVERY_LAYER_WRONG_FLAGS: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_DISCOVERY_LAYER_LENGTH_TOO_SHORT: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0d, 
+    0x70, 0x0d,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -576,37 +578,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_DISCOVERY_LAYER_LENGTH_TOO_SHORT: &[u8] = &
 const TEST_UNIVERSE_DISCOVERY_PACKET_DISCOVERY_LAYER_LENGTH_TOO_LONG: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0f, 
+    0x70, 0x0f,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -616,37 +618,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_DISCOVERY_LAYER_LENGTH_TOO_LONG: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_DISCOVERY_LAYER_VECTOR_UNKNOWN: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x00, 
+    0x00, 0x00, 0x00, 0x00,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -656,37 +658,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_DISCOVERY_LAYER_VECTOR_UNKNOWN: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_PAGE_HIGHER_THAN_LAST_PAGE: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     3,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     0, 1, 2, 3, 4, 5,
 ];
@@ -696,37 +698,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_PAGE_HIGHER_THAN_LAST_PAGE: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_DECENDING_ORDER: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     5, 4, 3, 2, 1, 0,
 ];
@@ -736,37 +738,37 @@ const TEST_UNIVERSE_DISCOVERY_PACKET_DECENDING_ORDER: &[u8] = &[
 const TEST_UNIVERSE_DISCOVERY_PACKET_RANDOM_ORDER: &[u8] = &[
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    0x70, 0x6e, 
+    0x70, 0x6e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    0x70, 0x58, 
+    0x70, 0x58,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
-    0x70, 0x0e, 
+    0x70, 0x0e,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */
-    2, 
+    2,
     /* Universes */
     3, 7, 5, 9, 1, 2,
 ];
@@ -818,7 +820,7 @@ fn test_discovery_packet_root_layer_unknown_vector_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -843,7 +845,7 @@ fn test_discovery_packet_root_layer_data_vector_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -866,7 +868,7 @@ fn test_discovery_packet_too_short_cid_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -883,7 +885,7 @@ fn test_discovery_packet_too_long_cid_parse() {
         Err(e) => {
             match e.kind() {
                 ErrorKind::SacnParsePackError(_) => {
-                    // Difficult to predict / assert what error should be caused by a field being too long as all 
+                    // Difficult to predict / assert what error should be caused by a field being too long as all
                     // other fields will be shifted and no clear way to know the true end of the CID field.
                     // Therefore just assert that the packet was detected as malformed rather than a specific error.
                     assert!(true, "Expected error family returned");
@@ -892,7 +894,7 @@ fn test_discovery_packet_too_long_cid_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -915,7 +917,7 @@ fn test_discovery_packet_wrong_flags_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -938,7 +940,7 @@ fn test_discovery_packet_framing_layer_length_too_long_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -961,7 +963,7 @@ fn test_discovery_packet_framing_layer_length_too_short_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -984,7 +986,7 @@ fn test_discovery_packet_framing_layer_wrong_flags_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -1010,7 +1012,7 @@ fn test_discovery_packet_sync_framing_vector_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -1033,7 +1035,7 @@ fn test_discovery_packet_unknown_framing_vector_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -1078,7 +1080,7 @@ fn test_discovery_packet_discovery_layer_wrong_flags_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -1101,7 +1103,7 @@ fn test_discovery_packet_discovery_layer_length_too_short_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(p) => {
             assert!(
@@ -1124,7 +1126,7 @@ fn test_discovery_packet_discovery_layer_length_too_long_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -1147,7 +1149,7 @@ fn test_discovery_packet_discovery_layer_vector_unknown_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -1170,7 +1172,7 @@ fn test_discovery_packet_page_higher_than_last_page_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -1193,7 +1195,7 @@ fn test_discovery_packet_decending_order_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -1216,7 +1218,7 @@ fn test_discovery_packet_random_order_parse() {
                     assert!(false, "Unexpected error type returned: {}", x);
                 }
             }
-            
+
         }
         Ok(_) => {
             assert!(
@@ -1253,7 +1255,7 @@ fn generate_test_universe_discovery_packet(universes_to_generate: u16) -> Vec<u8
 
     let framing_layer_flags_length_upper: u8 = flags_val | framing_layer_parts[0];
     let framing_layer_flags_length_lower: u8 = framing_layer_parts[1];
-    
+
     // 22 as this is the number of bytes always in the root layer.
     // + the framing layer as the root layer encapsulates it.
     // As per ANSI E1.31-2018 Table 4-3: E1.31 Universe Discovery Packet Format.
@@ -1267,33 +1269,33 @@ fn generate_test_universe_discovery_packet(universes_to_generate: u16) -> Vec<u8
     let mut test_universe_discovery_packet = vec!{
     /* Root Layer */
     /* Preamble Size */
-    0x00, 0x10, 
+    0x00, 0x10,
     /* Post-amble Size */
-    0x00, 0x00, 
+    0x00, 0x00,
     /* ACN Packet Identifier */
     0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x37, 0x00, 0x00, 0x00,
     /* Flags and Length Protocol */
-    root_layer_flags_length_upper, root_layer_flags_length_lower, 
+    root_layer_flags_length_upper, root_layer_flags_length_lower,
     /* Vector */
-    0x00, 0x00, 0x00, 0x08, 
+    0x00, 0x00, 0x00, 0x08,
     /* CID */
     0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e,
     /* E1.31 Framing Layer */
     /* Flags and Length */
-    framing_layer_flags_length_upper, framing_layer_flags_length_lower, 
+    framing_layer_flags_length_upper, framing_layer_flags_length_lower,
     /* Vector */
-    0x00, 0x00, 0x00, 0x02, 
+    0x00, 0x00, 0x00, 0x02,
     /* Source Name */
     b'S', b'o', b'u', b'r', b'c', b'e', b'_', b'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0,
     /* Reserved */
-    0, 0, 0, 0, 
+    0, 0, 0, 0,
     /* Universe Discovery Layer */
     /* Flags and Length */
     discovery_layer_flags_length_upper, discovery_layer_flags_length_lower,
     /* Vector */
-    0x00, 0x00, 0x00, 0x01, 
+    0x00, 0x00, 0x00, 0x01,
     /* Page */
     1,
     /* Last Page */

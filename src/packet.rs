@@ -53,8 +53,8 @@
 //! ```
 
 /// Uses the sACN error-chain errors.
-use error::errors::*;
-use sacn_parse_pack_error::sacn_parse_pack_error;
+use crate::error::errors::*;
+use crate::sacn_parse_pack_error::sacn_parse_pack_error;
 
 /// The core crate is used for string processing during packet parsing/packing as well as to provide access to the Hash trait.
 use core::hash::{self, Hash};
@@ -177,26 +177,26 @@ const E131_SEQ_NUM_FIELD_LENGTH: usize = 1;
 /// The length in bytes of the options field within an ANSI E1.31-2018 data packet as defined in ANSI E1.31-2018 Section 4, Table 4-1.
 const E131_OPTIONS_FIELD_LENGTH: usize = 1;
 
-/// The length in bytes of a universe field within an ANSI E1.31-2018 packet as defined in ANSI E1.31-2018 Section 4, Table 4-1, 4-3. 
+/// The length in bytes of a universe field within an ANSI E1.31-2018 packet as defined in ANSI E1.31-2018 Section 4, Table 4-1, 4-3.
 const E131_UNIVERSE_FIELD_LENGTH: usize = 2;
 
 /// The length in bytes of the Vector field within the DMP layer of an ANSI E1.31-2018 data packet as per ANSI E1.31-2018
 /// Section 4, Table 4-1.
 const E131_DATA_PACKET_DMP_LAYER_VECTOR_FIELD_LENGTH: usize = 1;
 
-/// The length in bytes of the "Address Type and Data Type" field within an ANSI E1.31-2018 data packet DMP layer as per 
+/// The length in bytes of the "Address Type and Data Type" field within an ANSI E1.31-2018 data packet DMP layer as per
 /// ANSI E1.31-2018 Section 4, Table 4-1.
 const E131_DATA_PACKET_DMP_LAYER_ADDRESS_DATA_FIELD_LENGTH: usize = 1;
 
-/// The length in bytes of the "First Property Address" field within an ANSI E1.31-2018 data packet DMP layer as per 
+/// The length in bytes of the "First Property Address" field within an ANSI E1.31-2018 data packet DMP layer as per
 /// ANSI E1.31-2018 Section 4, Table 4-1.
 const E131_DATA_PACKET_DMP_LAYER_FIRST_PROPERTY_ADDRESS_FIELD_LENGTH: usize = 2;
 
-/// The length in bytes of the "Address Increment" field within an ANSI E1.31-2018 data packet DMP layer as per 
+/// The length in bytes of the "Address Increment" field within an ANSI E1.31-2018 data packet DMP layer as per
 /// ANSI E1.31-2018 Section 4, Table 4-1.
 const E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT_FIELD_LENGTH: usize = 2;
 
-/// The length in bytes of the "Property value count" field within an ANSI E1.31-2018 data packet DMP layer as per 
+/// The length in bytes of the "Property value count" field within an ANSI E1.31-2018 data packet DMP layer as per
 /// ANSI E1.31-2018 Section 4, Table 4-1.
 const E131_DATA_PACKET_DMP_LAYER_PROPERTY_VALUE_COUNT_FIELD_LENGTH: usize = 2;
 
@@ -212,15 +212,15 @@ const E131_DISCOVERY_LAYER_PAGE_FIELD_LENGTH: usize = 1;
 /// 1 bytes as per ANSI E1.31-2018 Section 4, Table 4-3.
 const E131_DISCOVERY_LAYER_LAST_PAGE_FIELD_LENGTH: usize = 1;
 
-/// The value of the "Address Type and Data Type" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018 
+/// The value of the "Address Type and Data Type" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018
 /// Section 4, Table 4-1.
 const E131_DMP_LAYER_ADDRESS_DATA_FIELD: u8 = 0xa1;
 
-/// The value of the "First Property Address" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018 
+/// The value of the "First Property Address" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018
 /// Section 4, Table 4-1.
 const E131_DATA_PACKET_DMP_LAYER_FIRST_PROPERTY_FIELD: u16 = 0x0000;
 
-/// The value of the "Address Increment" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018 
+/// The value of the "Address Increment" field within an ANSI E1.31-2018 data packet DMP layer as per ANSI E1.31-2018
 /// Section 4, Table 4-1.
 const E131_DATA_PACKET_DMP_LAYER_ADDRESS_INCREMENT: u16 = 0x0001;
 
@@ -329,7 +329,7 @@ pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_T
 /// # Errors
 /// IllegalUniverse: Returned if the given universe is outwith the allowed range of universes,
 ///     see (is_universe_in_range)[fn.is_universe_in_range.packet].
-/// 
+///
 pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SockAddr> {
     is_universe_in_range(universe)?;
 
@@ -354,7 +354,7 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SockAddr> {
 /// # Errors
 /// IllegalUniverse: Returned if the given universe is outwith the allowed range of universes,
 ///     see (is_universe_in_range)[fn.is_universe_in_range.packet].
-/// 
+///
 pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SockAddr> {
     is_universe_in_range(universe)?;
 
@@ -396,13 +396,13 @@ fn zeros(buf: &mut [u8], n: usize) {
 }
 
 /// Takes the given byte buffer (e.g. a c char array) and parses it into a rust &str.
-/// 
+///
 /// # Arguments
 /// buf: The byte buffer to parse into a str.
-/// 
+///
 /// # Errors
 /// SourceNameInvalid: Returned if the source name is not null terminated as required by ANSI E1.31-2018 Section 6.2.2
-/// 
+///
 #[inline]
 fn parse_source_name_str(buf: &[u8]) -> Result<&str> {
     let mut source_name_length = buf.len();
@@ -525,17 +525,17 @@ struct PduInfo {
 }
 
 /// Takes the given byte buffer and parses the flags, length and vector fields into a PduInfo struct.
-/// 
+///
 /// # Arguments
 /// buf: The raw byte buffer.
-/// 
+///
 /// vector_length: The length of the vectorfield in bytes.
-/// 
+///
 /// # Errors
 /// ParseInsufficientData: If the length of the buffer is less than the flag, length and vector fields (E131_PDU_LENGTH_FLAGS_LENGTH + vector_length).
-/// 
+///
 /// ParsePduInvalidFlags: If the flags parsed don't match the flags expected for an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
-/// 
+///
 fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo> {
     if buf.len() < E131_PDU_LENGTH_FLAGS_LENGTH + vector_length {
         bail!(ErrorKind::SacnParsePackError(
@@ -553,7 +553,7 @@ fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo> {
         ));
     }
     // Length
-    let length = (NetworkEndian::read_u16(&buf[0 .. E131_PDU_LENGTH_FLAGS_LENGTH]) & 0x0fff) as usize;
+    let length = (NetworkEndian::read_u16(&buf[0..E131_PDU_LENGTH_FLAGS_LENGTH]) & 0x0fff) as usize;
 
     // Vector
     let vector =
@@ -605,7 +605,7 @@ macro_rules! impl_e131_root_layer {
                 if vector != VECTOR_ROOT_E131_DATA && vector != VECTOR_ROOT_E131_EXTENDED {
                     bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(vector)));
                 }
-                
+
                 // CID
                 let cid = Uuid::from_slice(&buf[E131_PDU_LENGTH_FLAGS_LENGTH + E131_ROOT_LAYER_VECTOR_LENGTH .. E131_CID_END_INDEX])?;
 
@@ -1119,7 +1119,7 @@ impl Pdu for SynchronizationPacketFramingLayer {
         let synchronization_address = NetworkEndian::read_u16(
             &buf[E131_SYNC_FRAMING_LAYER_SYNC_ADDRESS_FIELD_INDEX
                 ..E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_INDEX],
-            );
+        );
 
         if synchronization_address > E131_MAX_MULTICAST_UNIVERSE
             || synchronization_address < E131_MIN_MULTICAST_UNIVERSE
@@ -1135,7 +1135,7 @@ impl Pdu for SynchronizationPacketFramingLayer {
             ));
         }
 
-        // Reserved fields (2 bytes right immediately after the synchronisation address) should be ignored by receivers as per 
+        // Reserved fields (2 bytes right immediately after the synchronisation address) should be ignored by receivers as per
         // ANSI E1.31-2018 Section 6.3.4.
 
         Ok(SynchronizationPacketFramingLayer {
@@ -1156,7 +1156,7 @@ impl Pdu for SynchronizationPacketFramingLayer {
         // Flags and Length
         let flags_and_length =
             NetworkEndian::read_u16(&[E131_PDU_FLAGS, 0x0]) | (self.len() as u16) & 0x0fff;
-        NetworkEndian::write_u16(&mut buf[0.. E131_PDU_LENGTH_FLAGS_LENGTH], flags_and_length);
+        NetworkEndian::write_u16(&mut buf[0..E131_PDU_LENGTH_FLAGS_LENGTH], flags_and_length);
 
         // Vector
         NetworkEndian::write_u32(
@@ -1446,26 +1446,26 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
 }
 
 /// Takes the given buffer representing the "List of Universe" field in an ANSI E1.31-2018 discovery packet and parses it into the universe values.
-/// 
+///
 /// This enforces the requirement from ANSI E1.31-2018 Section 8.5 that the universes must be numerically sorted.
-/// 
+///
 /// # Arguments
 /// buf: The byte buffer to parse into the universe.
 /// length: The number of universes to attempt to parse from the buffer.
-/// 
+///
 /// # Errors
 /// ParseInvalidUniverseOrder: If the universes are not sorted in ascending order with no duplicates.
-/// 
+///
 /// ParseInsufficientData: If the buffer doesn't contain sufficient bytes and so cannot be parsed into the specified number of u16 universes.
-/// 
+///
 fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> {
     let mut universes: Vec<u16> = Vec::with_capacity(length);
     let mut i = 0;
 
     // Last_universe starts as a placeholder value that is guaranteed to be less than the lowest possible advertised universe.
-    // Cannot use 0 even though under ANSI E1.31-2018 it cannot be used for data or as a sync_address as it is reserved for future use 
+    // Cannot use 0 even though under ANSI E1.31-2018 it cannot be used for data or as a sync_address as it is reserved for future use
     // so may be used in future.
-    let mut last_universe: i32 = -1; 
+    let mut last_universe: i32 = -1;
 
     if buf.len() < length * E131_UNIVERSE_FIELD_LENGTH {
         bail!(ErrorKind::SacnParsePackError(
@@ -1473,8 +1473,8 @@ fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> 
                 format!("The given buffer of length {} bytes cannot be parsed into the given number of universes {}", buf.len(), length).to_string())));
     }
 
-    while i < (length * E131_UNIVERSE_FIELD_LENGTH)  {
-        let u = NetworkEndian::read_u16(&buf[i .. i + E131_UNIVERSE_FIELD_LENGTH]);
+    while i < (length * E131_UNIVERSE_FIELD_LENGTH) {
+        let u = NetworkEndian::read_u16(&buf[i..i + E131_UNIVERSE_FIELD_LENGTH]);
 
         if (u as i32) > last_universe {
             // Enforce assending ordering of universes as per ANSI E1.31-2018 Section 8.5.
@@ -1706,7 +1706,7 @@ mod test {
     }
 
     /// Verifies that the parameters are set correctly as per ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
-    /// This test is particularly useful at the maintenance stage as it will flag up if any protocol defined constant is changed. 
+    /// This test is particularly useful at the maintenance stage as it will flag up if any protocol defined constant is changed.
     #[test]
     fn check_ansi_e131_2018_parameter_values() {
         assert_eq!(VECTOR_ROOT_E131_DATA, 0x0000_0004);
