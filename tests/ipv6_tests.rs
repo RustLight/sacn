@@ -21,6 +21,7 @@ const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 3] = ["2a02:c7f:d20a:c600:a502
 #[cfg(target_os = "linux")]
 mod sacn_ipv6_multicast_test {
 
+use std::io::Read;
 use std::{thread};
 use std::thread::sleep;
 use std::sync::mpsc;
@@ -1016,7 +1017,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
                 }
             }
             Err(e) => {
-                assert!(false, format!("Unexpected error returned: {:?}", e));
+                assert!(false, "{}", format!("Unexpected error returned: {:?}", e));
             }
         }
     }
@@ -1333,8 +1334,8 @@ use std::time::Duration;
 
 use sacn::error::errors::*;
 
-use ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE, TEST_DATA_MULTIPLE_UNIVERSE};
-use TEST_NETWORK_INTERFACE_IPV6;
+use crate::ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE, TEST_DATA_MULTIPLE_UNIVERSE};
+use crate::TEST_NETWORK_INTERFACE_IPV6;
 
 #[test]
 #[ignore]

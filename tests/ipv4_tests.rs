@@ -763,7 +763,7 @@ fn test_send_recv_sync_then_nosync_packet_same_universe_multicast_ipv4() {
     match second_received_result {
         Err(e) => {
             match e.kind() {
-                ErrorKind::Io(ref s) => {
+                ErrorKind::Io(s) => {
                     match s.kind() {
                         std::io::ErrorKind::WouldBlock => {
                             // Expected to timeout.
@@ -2501,7 +2501,7 @@ fn test_source_1_universe_timeout(){
                     assert_eq!(*timedout_uni, universe, "Timed out universe doesn't match expected");
                     assert!(true, "Universe timed out as expected");
                 }
-                ErrorKind::Io(ref s) => {
+                ErrorKind::Io(s) => {
                     match s.kind() {
                         std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
                             assert!(false, "Timeout took too long to come through");
@@ -2644,7 +2644,7 @@ fn test_source_2_universe_1_timeout(){
                         match dmx_recv.recv(Some(Duration::from_millis(0))) {
                             Err(e) => {
                                 match e.kind() {
-                                    ErrorKind::Io(ref s) => {
+                                    ErrorKind::Io(s) => {
                                         match s.kind() {
                                             std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
                                                 assert!(true, "Other universe hasn't timedout as expected");
@@ -2665,7 +2665,7 @@ fn test_source_2_universe_1_timeout(){
                         }
                         break;
                     }
-                    ErrorKind::Io(ref s) => {
+                    ErrorKind::Io(s) => {
                         match s.kind() {
                             std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
                                 assert!(false, "Timeout took too long to come through: {:?}", start_time.elapsed());
@@ -2866,7 +2866,7 @@ fn test_send_sync_timeout(){
     match dmx_recv.recv(TIMEOUT) {
         Err(e) => {
             match e.kind() {
-                ErrorKind::Io(ref s) => {
+                ErrorKind::Io(s) => {
                     match s.kind() {
                         std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
                             // Timeout as expected because the data packet that is awaiting a sync packet has timed out.
