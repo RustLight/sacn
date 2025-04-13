@@ -25,7 +25,7 @@
 /// Uses the error-chain crate to allow errors to allow more informative backtraces through error chaining.
 /// https://docs.rs/error-chain/0.12.2/error_chain/
 pub mod errors {
-    use sacn_parse_pack_error::sacn_parse_pack_error;
+    use crate::sacn_parse_pack_error::sacn_parse_pack_error;
 
     /// UUID library used to handle the UUID's used in the CID fields, used here so that error can include the cid in messages.
     use uuid::Uuid;

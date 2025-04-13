@@ -14,8 +14,8 @@
 // of each public item without relying on referring to private items.
 //
 
-use error::errors::*;
-use packet::*;
+use crate::error::errors::*;
+use crate::packet::*;
 
 use std::cell::RefCell;
 use std::cmp;
@@ -859,7 +859,10 @@ impl SacnSourceInternal {
         sync_address: u16,
     ) -> Result<()> {
         if priority > E131_MAX_PRIORITY {
-            bail!(ErrorKind::InvalidPriority(format!("Priority must be within allowed range of [0-E131_MAX_PRIORITY], priority provided: {}", priority)));
+            bail!(ErrorKind::InvalidPriority(format!(
+                "Priority must be within allowed range of [0-E131_MAX_PRIORITY], priority provided: {}",
+                priority
+            )));
         }
 
         if data.len() > UNIVERSE_CHANNEL_CAPACITY {
