@@ -34,7 +34,7 @@ pub mod errors {
         foreign_links {
             Io(::std::io::Error);       // Allow IO errors to be used with the error-chain system.
             Str(::std::str::Utf8Error); // Allow standard string library errors to be used with the error-chain system.
-            Uuid(uuid::ParseError);     // Allow UUID library to be used with error-chain system. 
+            Uuid(uuid::Error);     // Allow UUID library to be used with error-chain system.
         }
 
         links {
