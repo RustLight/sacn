@@ -55,6 +55,9 @@ const AF_INET: i32 = 2;
 #[cfg(target_os = "windows")]
 const AF_INET6: i32 = 23;
 
+#[cfg(target_os = "windows")]
+use std::net::IpAddr;
+
 /// The default size of the buffer used to receive E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
 pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
@@ -1122,7 +1125,7 @@ impl SacnNetworkReceiver {
                 .chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
         }
 
-        Ok(join_win_multicast(&self.socket, multicast_addr)?)
+        Ok(join_win_multicast(&self.socket, multicast_addr, self.addr.ip())?)
     }
 
     /// Removes this SacnNetworkReceiver from the multicast group which corresponds to the given universe.
@@ -1618,13 +1621,13 @@ fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr)
 #[cfg(target_os = "windows")]
 fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
     if addr.is_ipv4() {
-        let socket = Socket::new(Domain::ipv4(), Type::dgram(), Some(Protocol::udp()))?;
+        let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
 
         socket.set_reuse_address(true)?;
         socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
     } else {
-        let socket = Socket::new(Domain::ipv6(), Type::dgram(), Some(Protocol::udp()))?;
+        let socket = Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?;
 
         socket.set_reuse_address(true)?;
         socket.bind(&SockAddr::from(addr))?;
@@ -1647,24 +1650,31 @@ fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
 /// Will return OsOperationUnsupported error if attempt to leave an Ipv6 multicast group as all Ipv6 multicast operations are currently unsupported in Rust on Windows.
 ///
 #[cfg(target_os = "windows")]
-fn join_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
+fn join_win_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.family() as i32 {
         // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
-        AF_INET => match addr.as_inet() {
-            Some(a) => {
-                socket
-                    .join_multicast_v4(a.ip(), &Ipv4Addr::new(0, 0, 0, 0))
-                    .chain_err(|| "Failed to join IPv4 multicast")?;
-            }
+        AF_INET => match addr.as_socket_ipv4() {
+            Some(a) => match interface_addr {
+                IpAddr::V4(ref interface_v4) => {
+                    socket
+                        .join_multicast_v4(a.ip(), &interface_v4)
+                        .chain_err(|| "Failed to join IPv4 multicast")?;
+                }
+                IpAddr::V6(ref _interface_v6) => {
+                    bail!(ErrorKind::IpVersionError(
+                        "Multicast address and interface_addr not same IP version".to_string()
+                    ));
+                }
+            },
             None => {
                 bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
             }
         },
-        AF_INET6 => match addr.as_inet6() {
-            Some(_) => {
-                bail!(ErrorKind::OsOperationUnsupported(
-                    "IPv6 multicast is currently unsupported on Windows".to_string()
-                ));
+        AF_INET6 => match addr.as_socket_ipv6() {
+            Some(a) => {
+                socket
+                    .join_multicast_v6(a.ip(), 0)
+                    .chain_err(|| "Failed to join IPv6 multicast")?;
             }
             None => {
                 bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
@@ -1696,7 +1706,7 @@ fn join_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
 fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
     match addr.family() as i32 {
         // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
-        AF_INET => match addr.as_inet() {
+        AF_INET => match addr.as_socket_ipv4() {
             Some(a) => {
                 socket
                     .leave_multicast_v4(a.ip(), &Ipv4Addr::new(0, 0, 0, 0))
@@ -1706,7 +1716,7 @@ fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
                 bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
             }
         },
-        AF_INET6 => match addr.as_inet6() {
+        AF_INET6 => match addr.as_socket_ipv6() {
             Some(_) => {
                 bail!(ErrorKind::OsOperationUnsupported(
                     "IPv6 multicast is currently unsupported on Windows".to_string()
