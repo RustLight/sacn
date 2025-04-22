@@ -55,7 +55,6 @@
 /// Uses the sACN error-chain errors.
 use crate::error::errors::*;
 use crate::sacn_parse_pack_error::sacn_parse_pack_error;
-use crate::sacn_parse_pack_error::sacn_parse_pack_error::ParsePackError;
 
 /// The core crate is used for string processing during packet parsing/packing as well as to provide access to the Hash trait.
 use core::hash::{self, Hash};
@@ -1578,8 +1577,8 @@ mod test {
                 false,
                 "Universe to ipv4 multicast allowed below minimum allowed universe"
             ),
-            Err(e) => match e.kind() {
-                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
+            Err(e) => match e {
+                SacnError::IllegalUniverse(ref _s) => assert!(true),
                 _ => assert!(false, "Unexpected error type returned"),
             },
         }
@@ -1592,8 +1591,8 @@ mod test {
                 false,
                 "Universe to ipv4 multicast allowed above maximum allowed universe"
             ),
-            Err(e) => match e.kind() {
-                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
+            Err(e) => match e {
+                SacnError::IllegalUniverse(ref _s) => assert!(true),
                 _ => assert!(false, "Unexpected error type returned"),
             },
         }
@@ -1686,8 +1685,8 @@ mod test {
                 false,
                 "Universe to ipv4 multicast allowed below minimum allowed universe"
             ),
-            Err(e) => match e.kind() {
-                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
+            Err(e) => match e {
+                SacnError::IllegalUniverse(ref _s) => assert!(true),
                 _ => assert!(false, "Unexpected error type returned"),
             },
         }
@@ -1700,8 +1699,8 @@ mod test {
                 false,
                 "Universe to ipv4 multicast allowed above maximum allowed universe"
             ),
-            Err(e) => match e.kind() {
-                &ErrorKind::IllegalUniverse(ref _s) => assert!(true),
+            Err(e) => match e {
+                SacnError::IllegalUniverse(ref _s) => assert!(true),
                 _ => assert!(false, "Unexpected error type returned"),
             },
         }

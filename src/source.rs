@@ -717,9 +717,10 @@ impl SacnSourceInternal {
         is_universe_in_range(*u)?;
 
         if !self.universes.contains(u) {
-            bail!(ErrorKind::UniverseNotRegistered(
-                format!("Attempted to send on unregistered universe : {}", u).to_string()
-            ));
+            return Err(SacnError::UniverseNotRegistered(format!(
+                "Attempted to send on unregistered universe : {}",
+                u
+            )));
         }
 
         Ok(())
@@ -793,6 +794,7 @@ impl SacnSourceInternal {
         // Check that the synchronisation universe is also valid.
         if synchronisation_addr.is_some() {
             self.universe_allowed(&synchronisation_addr.unwrap())
+                // .map_err(|e| SacnError::)
                 .chain_err(|| "Synchronisation universe not allowed")?;
         }
 
