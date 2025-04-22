@@ -9,39 +9,37 @@
 
 /// The errors used within the SacnLibrary specifically those related to parsing and packeting packets received/sent on the network.
 ///
+
+
 pub mod sacn_parse_pack_error {
-    error_chain! {
-        errors {
-            /// When parsing packet invalid data encountered.
+    use thiserror::Error;
+
+    #[derive(Error, Debug)]
+    pub enum ParsePackError {
+        /// When parsing packet invalid data encountered.
             ///
             /// # Arguments
             /// msg: A message providing further details (if any) as to what data was invalid.
             ///
-            ParseInvalidData(msg: String) {
-                description("Data provided to parse into a packet is invalid"),
-                display("Error when parsing data into packet, msg: {}", msg)
-            }
+        #[error("Error when parsing data into packet, msg: {}", msg)]
+        ParseInvalidData{msg: String},
 
-            /// Attempted to parse a priority value that is outwith the allowed range of [0, E131_MAX_PRIORITY].
+        /// Attempted to parse a priority value that is outwith the allowed range of [0, E131_MAX_PRIORITY].
             /// As per ANSI E1.31-2018 Section 6.2.3
             ///
             /// # Arguments
             /// msg: A message providing further details (if any) as to why the priority valid was invalid.
             ///
-            ParseInvalidPriority(msg: String) {
-                description("Attempted to parse a priority value that is outwith the allowed range of [0, 200]"),
-                display("Attempted to parse a priority value that is outwith the allowed range of [0, 200], msg: {}", msg)
-            }
+            #[error("Attempted to parse a priority value that is outwith the allowed range of [0, 200], msg: {}", msg)]
+            ParseInvalidPriority{msg: String},
 
             /// Attempted to parse a page value that is invalid - e.g. the page value is higher than the last_page value.
             ///
             /// # Arguments
             /// msg: A message providing further details (if any) as to why the page was invalid.
             ///
-            ParseInvalidPage(msg: String) {
-                description("Attempted to parse a page value that is invalid"),
-                display("Error when parsing page value, msg: {}", msg)
-            }
+            #[error("Error when parsing page value, msg: {}", msg)]
+            ParseInvalidPage{msg: String},
 
             /// Attempted to parse a sync address value that is outwith the allowed range of [0, E131_MAX_MULTICAST_UNIVERSE].
             /// As per ANSI E1.31-2018 Section 9.1.1.
@@ -49,21 +47,17 @@ pub mod sacn_parse_pack_error {
             /// # Arguments
             /// msg: A message providing further details (if any) as to why the synchronisation address was invalid.
             ///
-            ParseInvalidSyncAddr(msg: String) {
-                description("Attempted to parse a sync_addr value that is outwith the allowed range of [0, 63999]"),
-                display("Attempted to parse a sync_addr value that is outwith the allowed range of [0, 63999], msg: {}", msg)
-            }
-
+            #[error("Attempted to parse a sync_addr value that is outwith the allowed range of [0, 63999], msg: {}", msg)]
+            ParseInvalidSyncAddr{msg: String},
+                
             /// Attempted to parse a universe value that is outwith the allowed range of [1, E131_MAX_MULTICAST_UNIVERSE].
             /// As per ANSI E1.31-2018 Section 9.1.1.
             ///
             /// # Arguments
             /// msg: A message providing further details (if any) as to why the universe field was invalid.
             ///
-            ParseInvalidUniverse(msg: String) {
-                description("Attempted to parse a universe value that is outwith the allowed range of [1, 63999]"),
-                display("Attempted to parse a universe value that is outwith the allowed range of [1, 63999], msg: {}", msg)
-            }
+            #[error("Attempted to parse a universe value that is outwith the allowed range of [1, 63999], msg: {}", msg)]
+            ParseInvalidUniverse{msg: String},
 
             /// Attempted to parse a packet with an invalid ordering of universes.
             /// For example a discovery packet where the universes aren't correctly ordered in assending order.
@@ -71,21 +65,19 @@ pub mod sacn_parse_pack_error {
             /// # Arguments
             /// msg: A message providing further details (if any) as to why the universe ordering was invalid.
             ///
-            ParseInvalidUniverseOrder(msg: String) {
-                description("Attempted to parse a packet with an invalid ordering of universes"),
-                display("Attempted to parse a packet with an invalid ordering of universes, msg: {}", msg)
-            }
+            #[error("Attempted to parse a packet with an invalid ordering of universes, msg: {}", msg)]
+            ParseInvalidUniverseOrder{msg: String},
 
             /// When packing a packet into a buffer invalid data encountered.
             ///
             /// # Arguments
             /// msg: A message providing further details (if any) as to why the data couldn't be packed.
             ///
-            PackInvalidData(msg: String) {
-                description("When packing a packet into a buffer invalid data encountered"),
-                display("When packing a packet into a buffer invalid data encountered, msg: {}", msg)
-            }
-
+            #[error("When packing a packet into a buffer invalid data encountered, msg: {}", msg)]
+            PackInvalidData{msg: String},   
+    }
+    error_chain! {
+        errors {
             /// Supplied buffer is not large enough to pack packet into.
             ///
             /// # Arguments

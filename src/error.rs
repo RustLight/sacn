@@ -26,9 +26,97 @@
 /// https://docs.rs/error-chain/0.12.2/error_chain/
 pub mod errors {
     use crate::sacn_parse_pack_error::sacn_parse_pack_error;
+    use thiserror::Error;
 
     /// UUID library used to handle the UUID's used in the CID fields, used here so that error can include the cid in messages.
     use uuid::Uuid;
+
+    #[derive(Error, Debug)]
+    pub enum ParsePackError {
+        #[error(transparent)]
+        Io(#[from] ::std::io::Error),
+
+        #[error(transparent)]
+        Str(::std::str::Utf8Error),
+        
+        #[error(transparent)]
+        Uuid(uuid::Error),
+
+        /// When parsing packet invalid data encountered.
+        ///
+        /// # Arguments
+        /// msg: A message providing further details (if any) as to what data was invalid.
+        ///
+        #[error("Error when parsing data into packet, msg: {}", msg)]
+        ParseInvalidData { msg: String },
+
+        /// Attempted to parse a priority value that is outwith the allowed range of [0, E131_MAX_PRIORITY].
+        /// As per ANSI E1.31-2018 Section 6.2.3
+        ///
+        /// # Arguments
+        /// msg: A message providing further details (if any) as to why the priority valid was invalid.
+        ///
+        #[error(
+            "Attempted to parse a priority value that is outwith the allowed range of [0, 200], msg: {}",
+            msg
+        )]
+        ParseInvalidPriority { msg: String },
+
+        /// Attempted to parse a page value that is invalid - e.g. the page value is higher than the last_page value.
+        ///
+        /// # Arguments
+        /// msg: A message providing further details (if any) as to why the page was invalid.
+        ///
+        #[error("Error when parsing page value, msg: {}", msg)]
+        ParseInvalidPage { msg: String },
+
+        /// Attempted to parse a sync address value that is outwith the allowed range of [0, E131_MAX_MULTICAST_UNIVERSE].
+        /// As per ANSI E1.31-2018 Section 9.1.1.
+        ///
+        /// # Arguments
+        /// msg: A message providing further details (if any) as to why the synchronisation address was invalid.
+        ///
+        #[error(
+            "Attempted to parse a sync_addr value that is outwith the allowed range of [0, 63999], msg: {}",
+            msg
+        )]
+        ParseInvalidSyncAddr { msg: String },
+
+        /// Attempted to parse a universe value that is outwith the allowed range of [1, E131_MAX_MULTICAST_UNIVERSE].
+        /// As per ANSI E1.31-2018 Section 9.1.1.
+        ///
+        /// # Arguments
+        /// msg: A message providing further details (if any) as to why the universe field was invalid.
+        ///
+        #[error(
+            "Attempted to parse a universe value that is outwith the allowed range of [1, 63999], msg: {}",
+            msg
+        )]
+        ParseInvalidUniverse { msg: String },
+
+        /// Attempted to parse a packet with an invalid ordering of universes.
+        /// For example a discovery packet where the universes aren't correctly ordered in assending order.
+        ///
+        /// # Arguments
+        /// msg: A message providing further details (if any) as to why the universe ordering was invalid.
+        ///
+        #[error(
+            "Attempted to parse a packet with an invalid ordering of universes, msg: {}",
+            msg
+        )]
+        ParseInvalidUniverseOrder { msg: String },
+
+        /// When packing a packet into a buffer invalid data encountered.
+        ///
+        /// # Arguments
+        /// msg: A message providing further details (if any) as to why the data couldn't be packed.
+        ///
+        #[error(
+            "When packing a packet into a buffer invalid data encountered, msg: {}",
+            msg
+        )]
+        PackInvalidData { msg: String },
+    }
 
     error_chain! {
         foreign_links {

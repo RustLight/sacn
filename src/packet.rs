@@ -55,6 +55,7 @@
 /// Uses the sACN error-chain errors.
 use crate::error::errors::*;
 use crate::sacn_parse_pack_error::sacn_parse_pack_error;
+use crate::sacn_parse_pack_error::sacn_parse_pack_error::ParsePackError;
 
 /// The core crate is used for string processing during packet parsing/packing as well as to provide access to the Hash trait.
 use core::hash::{self, Hash};
@@ -442,7 +443,8 @@ macro_rules! impl_acn_root_layer_protocol {
 
                 // Preamble Size
                 if NetworkEndian::read_u16(&buf[0..2]) != E131_PREAMBLE_SIZE {
-                    bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Preamble Size".to_string())));
+                    return Err(ParsePackError::ParseInvalidData{msg: "invalid Preamble Size".to_string()});
+                    // bail!(ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData("invalid Preamble Size".to_string())));
                 }
 
                 // Post-amble Size
