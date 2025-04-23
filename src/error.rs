@@ -7,6 +7,9 @@
 //
 // This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
+use crate::sacn_parse_pack_error::sacn_parse_pack_error::SacnParsePackError;
+use std::io;
+use std::str::Utf8Error;
 /// The errors used within the SacnLibrary. The ErrorKind subsection of this within the documentation contains details of all the errors.
 ///
 /// Errors from external sources are wrapped within this error-chain.
@@ -25,15 +28,65 @@
 /// Uses the error-chain crate to allow errors to allow more informative backtraces through error chaining.
 /// https://docs.rs/error-chain/0.12.2/error_chain/
 use thiserror::Error;
-use crate::sacn_parse_pack_error::sacn_parse_pack_error::SacnParsePackError;
 use uuid::Uuid;
-use std::io;
-use std::str::Utf8Error;
 
 pub mod errors {
     use super::*;
-    
+
     pub type Result<T> = std::result::Result<T, SacnError>;
+
+    pub trait IntoSacnError {
+        fn into_sacn_error(self, context: String) -> SacnError;
+    }
+
+    impl IntoSacnError for std::str::Utf8Error {
+        fn into_sacn_error(self, context: String) -> SacnError {
+            SacnError::Utf8Error(format!("{}: {}", context, self))
+        }
+    }
+
+    impl IntoSacnError for uuid::Error {
+        fn into_sacn_error(self, context: String) -> SacnError {
+            SacnError::UuidError(format!("{}: {}", context, self))
+        }
+    }
+
+    impl IntoSacnError for std::io::Error {
+        fn into_sacn_error(self, context: String) -> SacnError {
+            SacnError::IoError(format!("{}: {}", context, self))
+        }
+    }
+
+    pub trait WithContext<T, E> {
+        fn with_context<F>(self, f: F) -> std::result::Result<T, SacnError>
+        where
+            F: FnOnce() -> String;
+    }
+
+    impl<T, E> WithContext<T, E> for std::result::Result<T, E>
+    where
+        E: IntoSacnError,
+    {
+        fn with_context<F>(self, f: F) -> std::result::Result<T, SacnError>
+        where
+            F: FnOnce() -> String,
+        {
+            self.map_err(|e| e.into_sacn_error(f()))
+        }
+    }
+
+    impl<T> WithContext<T, SacnError> for std::result::Result<T, SacnError> {
+        fn with_context<F>(self, f: F) -> std::result::Result<T, SacnError>
+        where
+            F: FnOnce() -> String,
+        {
+            self.map_err(|e| SacnError::Context {
+                context: f(),
+                source: Box::new(e),
+            })
+        }
+    }
+    
 
     #[derive(Debug, Error)]
     pub enum SacnError {
@@ -45,6 +98,15 @@ pub mod errors {
 
         #[error("UUID parse error")]
         Uuid(#[from] uuid::Error),
+
+        #[error("UTF8 error: {0}")]
+        Utf8Error(String),
+
+        #[error("UUID error: {0}")]
+        UuidError(String),
+
+        #[error("IO error: {0}")]
+        IoError(String),
 
         #[error(transparent)]
         SacnParsePackError(#[from] SacnParsePackError),
@@ -58,7 +120,9 @@ pub mod errors {
         #[error("Limit for the number of supported sources has been reached, msg: {0}")]
         SourcesExceededError(String),
 
-        #[error("A source was discovered by a receiver with the announce_discovery_flag set to true, source name: {0}")]
+        #[error(
+            "A source was discovered by a receiver with the announce_discovery_flag set to true, source name: {0}"
+        )]
         SourceDiscovered(String),
 
         #[error("Attempted to exceed the capacity of a single universe, msg: {0}")]
@@ -100,7 +164,16 @@ pub mod errors {
         #[error("Operation attempted is unsupported on the current OS, msg: {0}")]
         OsOperationUnsupported(String),
 
-        #[error("The sACN source has corrupted due to an internal panic and should no longer be used, {0}")]
+        #[error(
+            "The sACN source has corrupted due to an internal panic and should no longer be used, {0}"
+        )]
         SourceCorrupt(String),
+
+        #[error("{context}: {source}")]
+        Context{
+            context: String,
+            #[source]
+            source: Box<SacnError>,
+        }
     }
 }

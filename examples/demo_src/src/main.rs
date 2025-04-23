@@ -283,7 +283,7 @@ fn display_help(){
 /// 
 fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 4 {
-        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
     }
 
     let universe: u16 = split_input[1].parse().unwrap();
@@ -320,7 +320,7 @@ fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Resu
 /// 
 fn handle_all_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 3 {
-        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
     }
     
     let universe: u16 = split_input[1].parse().unwrap();
@@ -355,7 +355,7 @@ fn handle_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bo
     let universe: u16 = split_input[1].parse().unwrap();
 
     if split_input.len() < 4 {
-        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
     }
 
     let sync_uni: u16 = split_input[2].parse().unwrap();
@@ -399,7 +399,7 @@ fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result
     let universe: u16 = split_input[1].parse().unwrap();
 
     if split_input.len() < 5 {
-        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 5 )"));
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 5 )"));
     }
 
     let sync_uni: u16 = split_input[2].parse().unwrap();
@@ -439,7 +439,7 @@ fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result
 /// 
 fn handle_data_over_time_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 4 {
-        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
     }
 
     let universe: u16 = split_input[1].parse().unwrap();
@@ -481,7 +481,7 @@ fn handle_data_over_time_option(src: &mut SacnSource, split_input: Vec<&str>) ->
 /// 
 fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 3 {
-        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for test preset option ( < 3 )"));
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for test preset option ( < 3 )"));
     }
 
     let preset: usize = split_input[1].parse().unwrap();
@@ -499,7 +499,7 @@ fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Re
         },
         TEST_PRESET_TWO_UNIVERSE => {
             if split_input.len() < 4 {
-                bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for test preset 2 universes option ( < 4 )"));
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for test preset 2 universes option ( < 4 )"));
             }
 
             let universe_2: u16 = split_input[3].parse().unwrap();
@@ -508,7 +508,7 @@ fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Re
         },
         TEST_PRESET_TWO_UNIVERSE_UNICAST => {
             if split_input.len() < 5 {
-                bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for test preset 2 universes option ( < 4 )"));
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for test preset 2 universes option ( < 4 )"));
             }
 
             let universe_2: u16 = split_input[3].parse().unwrap();
@@ -520,7 +520,7 @@ fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Re
             run_acceptance_test_demo(src)?;
         }
         _ => {
-            bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unrecognised test preset option"));
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unrecognised test preset option"));
         }
     }
 
@@ -940,7 +940,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
             let split_input: Vec<&str> = input.split_whitespace().collect();
             if split_input.len() < 2 {
                 display_help();
-                bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
             }
 
             match split_input[0] {
@@ -967,7 +967,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                 }
                 ACTION_UNICAST_SYNC_OPTION => {
                     if split_input.len() < 3 {
-                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
+                        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 3 )"));
                     }
 
                     let universe: u16 = split_input[1].parse().unwrap();
@@ -988,7 +988,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                             src.set_preview_mode(v)?;
                         },
                         Err(_e) => {
-                            bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Preview flag option not 'true'/'false' or otherwise parsable as boolean"));
+                            return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Preview flag option not 'true'/'false' or otherwise parsable as boolean"));
                         }
                     }
                     Ok(true)
@@ -1005,7 +1005,7 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                 ACTION_SLEEP_OPTION => {
                     if split_input.len() < 2 {
                         display_help();
-                        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
+                        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts ( < 2 )"));
                     }
                     let millis: u64 = split_input[1].parse().unwrap();
                     sleep(Duration::from_millis(millis));
@@ -1018,12 +1018,12 @@ fn handle_input(src: &mut SacnSource) -> Result <bool>{
                     handle_test_preset_option(src, split_input)
                 }
                 x => {
-                    bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
+                    return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Unknown input type: {}", x)));
                 }
             }
         }
         Err(e) => {
-            bail!(e);
+            return Err(e);
         }
     }
 }

@@ -24,7 +24,7 @@ use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use crate::packet::{E131RootLayerData::*, *};
 
 /// Same reasoning as for packet meaning all sacn errors are imported.
-use crate::error::errors::{ErrorKind::*, *};
+use crate::error::errors::*;
 
 /// The uuid crate is used for working with/generating UUIDs which sACN uses as part of the cid field in the protocol.
 /// This is used for uniquely identifying sources when counting sequence numbers.
@@ -297,10 +297,10 @@ impl SacnReceiver {
         match source_limit {
             Some(x) => {
                 if x == 0 {
-                    bail!(std::io::Error::new(
+                    return Err(std::io::Error::new(
                         std::io::ErrorKind::InvalidInput,
                         "Source_limit has a value of Some(0) which would indicate this receiver can never receive from any source"
-                    ));
+                    ).into());
                 }
             }
             None => {}
@@ -454,9 +454,9 @@ impl SacnReceiver {
         match self.universes.binary_search(&universe) {
             Err(_) => {
                 // Universe isn't found.
-                bail!(ErrorKind::UniverseNotFound(
+                return Err(SacnError::UniverseNotFound(
                     "Attempted to mute a universe that wasn't already being listened to"
-                        .to_string()
+                        .to_string(),
                 ));
             }
             Ok(i) => {
@@ -528,7 +528,10 @@ impl SacnReceiver {
             // This indicates that the only universe that can be received is the discovery universe.
             // This means that having no timeout may lead to no data ever being received and so this method blocking forever
             // to prevent this likely unintended behaviour throw a universe not registered error.
-            bail!(ErrorKind::UniverseNotRegistered("Attempting to receive data with no data universes registered, an infinite timeout and no discovery announcements".to_string()));
+            return Err(SacnError::UniverseNotRegistered(
+                "Attempting to receive data with no data universes registered, an infinite timeout and no discovery announcements"
+                    .to_string(),
+            ));
         }
 
         self.sequences.check_timeouts(self.announce_timeout)?;
@@ -537,15 +540,17 @@ impl SacnReceiver {
         if timeout == Some(Duration::from_secs(0)) {
             if cfg!(target_os = "windows") {
                 // Use the right expected error for the operating system.
-                bail!(std::io::Error::new(
+                return Err(std::io::Error::new(
                     std::io::ErrorKind::TimedOut,
-                    "No data available in given timeout"
-                ));
+                    "No data available in given timeout",
+                )
+                .into());
             } else {
-                bail!(std::io::Error::new(
+                return Err(std::io::Error::new(
                     std::io::ErrorKind::WouldBlock,
-                    "No data available in given timeout"
-                ));
+                    "No data available in given timeout",
+                )
+                .into());
             }
         }
 
@@ -561,7 +566,7 @@ impl SacnReceiver {
 
         self.receiver
             .set_timeout(actual_timeout)
-            .chain_err(|| "Failed to sent a timeout value for the receiver")?;
+            .with_context(|| "Failed to sent a timeout value for the receiver".to_string())?;
         let start_time = Instant::now();
 
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
@@ -576,7 +581,7 @@ impl SacnReceiver {
                         let discovered_src: Option<String> =
                             self.handle_universe_discovery_packet(u);
                         if discovered_src.is_some() && self.announce_source_discovery {
-                            bail!(ErrorKind::SourceDiscovered(discovered_src.unwrap()));
+                            return Err(SacnError::SourceDiscovered(discovered_src.unwrap()));
                         } else {
                             None
                         }
@@ -595,10 +600,10 @@ impl SacnReceiver {
                             match timeout.unwrap().checked_sub(elapsed) {
                                 None => {
                                     // Indicates that elapsed is bigger than timeout so its time to return.
-                                    bail!(std::io::Error::new(
+                                    return Err(std::io::Error::new(
                                         std::io::ErrorKind::WouldBlock,
                                         "No data available in given timeout"
-                                    ));
+                                    ).into());
                                 }
                                 Some(new_timeout) => return self.recv(Some(new_timeout)),
                             }
@@ -610,8 +615,8 @@ impl SacnReceiver {
                 }
             }
             Err(err) => {
-                match err.kind() {
-                    &ErrorKind::Io(ref s) => {
+                match err {
+                    SacnError::Io(ref s) => {
                         match s.kind() {
                             // Windows and Unix use different error types (WouldBlock/TimedOut) for the same error.
                             std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
@@ -622,15 +627,15 @@ impl SacnReceiver {
                                             // Indicates that elapsed is bigger than timeout so its time to return.
                                             if cfg!(target_os = "windows") {
                                                 // Use the right expected error for the operating system.
-                                                bail!(std::io::Error::new(
+                                                return Err(std::io::Error::new(
                                                     std::io::ErrorKind::TimedOut,
                                                     "No data available in given timeout"
-                                                ));
+                                                ).into());
                                             } else {
-                                                bail!(std::io::Error::new(
+                                                return Err(std::io::Error::new(
                                                     std::io::ErrorKind::WouldBlock,
                                                     "No data available in given timeout"
-                                                ));
+                                                ).into());
                                             }
                                         }
                                         Some(new_timeout) => return self.recv(Some(new_timeout)),
@@ -756,7 +761,7 @@ impl SacnReceiver {
         if data_pkt.stream_terminated {
             self.terminate_stream(cid, data_pkt.source_name, data_pkt.universe);
             if self.announce_stream_termination {
-                bail!(ErrorKind::UniverseTerminated(cid, data_pkt.universe));
+                return Err(SacnError::UniverseTerminated(cid, data_pkt.universe));
             }
             return Ok(None);
         }
@@ -1119,13 +1124,17 @@ impl SacnNetworkReceiver {
 
         if self.addr.is_ipv4() {
             multicast_addr = universe_to_ipv4_multicast_addr(universe)
-                .chain_err(|| "Failed to convert universe to IPv4 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv4 multicast addr".to_string())?;
         } else {
             multicast_addr = universe_to_ipv6_multicast_addr(universe)
-                .chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv6 multicast addr".to_string())?;
         }
 
-        Ok(join_win_multicast(&self.socket, multicast_addr, self.addr.ip())?)
+        Ok(join_win_multicast(
+            &self.socket,
+            multicast_addr,
+            self.addr.ip(),
+        )?)
     }
 
     /// Removes this SacnNetworkReceiver from the multicast group which corresponds to the given universe.
@@ -1139,10 +1148,10 @@ impl SacnNetworkReceiver {
 
         if self.addr.is_ipv4() {
             multicast_addr = universe_to_ipv4_multicast_addr(universe)
-                .chain_err(|| "Failed to convert universe to IPv4 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv4 multicast addr".to_string())?;
         } else {
             multicast_addr = universe_to_ipv6_multicast_addr(universe)
-                .chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv6 multicast addr".to_string())?;
         }
 
         Ok(leave_win_multicast(&self.socket, multicast_addr)?)
@@ -1162,7 +1171,7 @@ impl SacnNetworkReceiver {
     /// isn't supported i.e. Ipv6 on Windows.
     fn set_is_multicast_enabled(&mut self, val: bool) -> Result<()> {
         if val && self.is_ipv6() {
-            bail!(ErrorKind::OsOperationUnsupported(
+            return Err(SacnError::OsOperationUnsupported(
                 "IPv6 multicast is currently unsupported on Windows".to_string()
             ));
         }
@@ -1181,7 +1190,7 @@ impl SacnNetworkReceiver {
     /// This will return an error if the SacnReceiver wasn't created using an IPv6 address to bind to.
     fn set_only_v6(&mut self, val: bool) -> Result<()> {
         if self.addr.is_ipv4() {
-            bail!(IpVersionError(
+            return Err(SacnError::IpVersionError(
                 "No data available in given timeout".to_string()
             ))
         } else {
@@ -1270,10 +1279,10 @@ impl SacnNetworkReceiver {
 
         if self.addr.is_ipv4() {
             multicast_addr = universe_to_ipv4_multicast_addr(universe)
-                .chain_err(|| "Failed to convert universe to IPv4 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv4 multicast addr")?;
         } else {
             multicast_addr = universe_to_ipv6_multicast_addr(universe)
-                .chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv6 multicast addr")?;
         }
 
         Ok(join_unix_multicast(
@@ -1294,10 +1303,10 @@ impl SacnNetworkReceiver {
 
         if self.addr.is_ipv4() {
             multicast_addr = universe_to_ipv4_multicast_addr(universe)
-                .chain_err(|| "Failed to convert universe to IPv4 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv4 multicast addr")?;
         } else {
             multicast_addr = universe_to_ipv6_multicast_addr(universe)
-                .chain_err(|| "Failed to convert universe to IPv6 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv6 multicast addr")?;
         }
 
         Ok(leave_unix_multicast(
@@ -1335,7 +1344,7 @@ impl SacnNetworkReceiver {
     /// This will return an error if the SacnReceiver wasn't created using an IPv6 address to bind to.
     fn set_only_v6(&mut self, val: bool) -> Result<()> {
         if self.addr.is_ipv4() {
-            bail!(IpVersionError(
+            return Err(SacnError::IpVersionError(
                 "No data available in given timeout".to_string()
             ))
         } else {
@@ -1526,30 +1535,30 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
                 IpAddr::V4(ref interface_v4) => {
                     socket
                         .join_multicast_v4(a.ip(), &interface_v4)
-                        .chain_err(|| "Failed to join IPv4 multicast")?;
+                        .with_context(|| "Failed to join IPv4 multicast")?;
                 }
                 IpAddr::V6(ref _interface_v6) => {
-                    bail!(ErrorKind::IpVersionError(
+                    return Err(SacnError::IpVersionError(
                         "Multicast address and interface_addr not same IP version".to_string()
                     ));
                 }
             },
             None => {
-                bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
+                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
             }
         },
         AF_INET6 => match addr.as_socket_ipv6() {
             Some(a) => {
                 socket
                     .join_multicast_v6(a.ip(), 0)
-                    .chain_err(|| "Failed to join IPv6 multicast")?;
+                    .with_context(|| "Failed to join IPv6 multicast")?;
             }
             None => {
-                bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
+                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
             }
         },
         x => {
-            bail!(ErrorKind::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
+            return Err(SacnError::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
         }
     };
 
@@ -1577,30 +1586,30 @@ fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr)
                 IpAddr::V4(ref interface_v4) => {
                     socket
                         .leave_multicast_v4(a.ip(), &interface_v4)
-                        .chain_err(|| "Failed to leave IPv4 multicast")?;
+                        .with_context(|| "Failed to leave IPv4 multicast")?;
                 }
                 IpAddr::V6(ref _interface_v6) => {
-                    bail!(ErrorKind::IpVersionError(
+                    return Err(SacnError::IpVersionError(
                         "Multicast address and interface_addr not same IP version".to_string()
                     ));
                 }
             },
             None => {
-                bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
+                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
             }
         },
         AF_INET6 => match addr.as_socket_ipv6() {
             Some(a) => {
                 socket
                     .leave_multicast_v6(a.ip(), 0)
-                    .chain_err(|| "Failed to leave IPv6 multicast")?;
+                    .with_context(|| "Failed to leave IPv6 multicast")?;
             }
             None => {
-                bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
+                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
             }
         },
         x => {
-            bail!(ErrorKind::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
+            return Err(SacnError::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
         }
     };
 
@@ -1658,30 +1667,30 @@ fn join_win_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -
                 IpAddr::V4(ref interface_v4) => {
                     socket
                         .join_multicast_v4(a.ip(), &interface_v4)
-                        .chain_err(|| "Failed to join IPv4 multicast")?;
+                        .with_context(|| "Failed to join IPv4 multicast".to_string())?;
                 }
                 IpAddr::V6(ref _interface_v6) => {
-                    bail!(ErrorKind::IpVersionError(
+                    return Err(SacnError::IpVersionError(
                         "Multicast address and interface_addr not same IP version".to_string()
                     ));
                 }
             },
             None => {
-                bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
+                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
             }
         },
         AF_INET6 => match addr.as_socket_ipv6() {
             Some(a) => {
                 socket
                     .join_multicast_v6(a.ip(), 0)
-                    .chain_err(|| "Failed to join IPv6 multicast")?;
+                    .with_context(|| "Failed to join IPv6 multicast".to_string())?;
             }
             None => {
-                bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
+                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
             }
         },
         x => {
-            bail!(ErrorKind::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
+            return Err(SacnError::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
         }
     };
 
@@ -1710,24 +1719,24 @@ fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
             Some(a) => {
                 socket
                     .leave_multicast_v4(a.ip(), &Ipv4Addr::new(0, 0, 0, 0))
-                    .chain_err(|| "Failed to leave IPv4 multicast")?;
+                    .with_context(|| "Failed to leave IPv4 multicast".to_string())?;
             }
             None => {
-                bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
+                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
             }
         },
         AF_INET6 => match addr.as_socket_ipv6() {
             Some(_) => {
-                bail!(ErrorKind::OsOperationUnsupported(
+                return Err(SacnError::OsOperationUnsupported(
                     "IPv6 multicast is currently unsupported on Windows".to_string()
                 ));
             }
             None => {
-                bail!(ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
+                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
             }
         },
         x => {
-            bail!(ErrorKind::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
+            return Err(SacnError::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
         }
     };
 
@@ -1948,7 +1957,7 @@ fn check_seq_number(
             if source_limit.is_none() || src_sequences.len() < source_limit.unwrap() {
                 src_sequences.insert(cid, HashMap::new());
             } else {
-                bail!(ErrorKind::SourcesExceededError(
+                return Err(SacnError::SourcesExceededError(
                     format!("Already at max sources: {}", src_sequences.len()).to_string()
                 ));
             }
@@ -1992,7 +2001,7 @@ fn check_seq_number(
     if seq_diff <= E131_SEQ_DIFF_DISCARD_UPPER_BOUND && seq_diff > E131_SEQ_DIFF_DISCARD_LOWER_BOUND
     {
         // Reject the out of order packet as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
-        bail!(ErrorKind::OutOfSequence(
+        return Err(SacnError::OutOfSequence(
             format!(
                 "Packet received with sequence number {} is out of sequence, last {}, seq-diff {}",
                 sequence_number, expected_seq.sequence_number, seq_diff
@@ -2060,7 +2069,7 @@ fn check_timeouts(
                     // Remove source if all its universes have timed out
                     src_sequences.remove(&timedout_src_id.unwrap());
                 }
-                bail!(ErrorKind::UniverseTimeout(
+                return Err(SacnError::UniverseTimeout(
                     timedout_src_id.unwrap(),
                     timedout_uni.unwrap()
                 ));
@@ -2108,7 +2117,7 @@ fn remove_source_universe_seq(
                         match src_sequences.remove(&src_cid) {
                             Some(_x) => Ok(()),
                             None => {
-                                bail!(ErrorKind::SourceNotFound(
+                                return Err(SacnError::SourceNotFound(
                                     "Could not find the source so could not remove it".to_string()
                                 ));
                             }
@@ -2118,12 +2127,12 @@ fn remove_source_universe_seq(
                     }
                 }
                 None => {
-                    bail!(ErrorKind::UniverseNotFound("Could not find universe within source in sequence numbers so could not remove it".to_string()));
+                    return Err(SacnError::UniverseNotFound("Could not find universe within source in sequence numbers so could not remove it".to_string()));
                 }
             }
         }
         None => {
-            bail!(ErrorKind::SourceNotFound(
+            return Err(SacnError::SourceNotFound(
                 "Could not find the source in the sequence numbers so could not remove it"
                     .to_string()
             ));
@@ -2167,7 +2176,7 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData> {
         || i.values[0] != n.values[0]
         || i.sync_uni != n.sync_uni
     {
-        bail!(DmxMergeError("Attempted DMX merge on dmx data with different universes, synchronisation universes or data with no values".to_string()));
+        return Err(SacnError::DmxMergeError("Attempted DMX merge on dmx data with different universes, synchronisation universes or data with no values".to_string()));
     }
 
     if i.priority > n.priority {
@@ -2214,6 +2223,7 @@ mod test {
     use super::*;
 
     use std::borrow::Cow;
+    use std::error::Error;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::time::Instant;
 
@@ -2255,14 +2265,14 @@ mod test {
             UniverseDiscoveryPacketFramingLayer {
                 source_name: name.into(),
 
-                /// Universe discovery layer.
+                // Universe discovery layer.
                 data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
                     page: page,
 
-                    /// The number of the final page.
+                    // The number of the final page.
                     last_page: last_page,
 
-                    /// List of universes.
+                    // List of universes.
                     universes: universes.clone().into(),
                 },
             };
@@ -2303,14 +2313,14 @@ mod test {
             UniverseDiscoveryPacketFramingLayer {
                 source_name: name.into(),
 
-                /// Universe discovery layer.
+                // Universe discovery layer.
                 data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
                     page: 0,
 
-                    /// The number of the final page.
+                    // The number of the final page.
                     last_page: last_page,
 
-                    /// List of universes.
+                    // List of universes.
                     universes: universes_page_1.clone().into(),
                 },
             };
@@ -2319,14 +2329,14 @@ mod test {
             UniverseDiscoveryPacketFramingLayer {
                 source_name: name.into(),
 
-                /// Universe discovery layer.
+                // Universe discovery layer.
                 data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
                     page: 1,
 
-                    /// The number of the final page.
+                    // The number of the final page.
                     last_page: last_page,
 
-                    /// List of universes.
+                    // List of universes.
                     universes: universes_page_2.clone().into(),
                 },
             };
@@ -2662,7 +2672,7 @@ mod test {
 
         // Check that the third data packet with the low sequence number is rejected correctly with the expected OutOfSequence error.
         match dmx_rcv.handle_data_packet(src_cid, data_packet3) {
-            Err(Error(OutOfSequence(_), _)) => {
+            Err(SacnError::OutOfSequence(_)) => {
                 assert!(
                     true,
                     "Receiver correctly rejected third data packet with correct error"
@@ -2751,7 +2761,7 @@ mod test {
             let diff: i16 = ((i as i16) - (LAST_SEQ_NUM as i16)) as i16;
 
             match res {
-                Err(Error(OutOfSequence(_), _)) => {
+                Err(SacnError::OutOfSequence(_)) => {
                     // Data packet was rejected due to sequence number.
                     if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
                         assert!(
@@ -2862,7 +2872,7 @@ mod test {
             let diff: i16 = ((i as i16) - (LAST_SEQ_NUM as i16)) as i16;
 
             match res {
-                Err(Error(OutOfSequence(_), _)) => {
+                Err(SacnError::OutOfSequence(_)) => {
                     // Sync packet was rejected due to sequence number.
                     if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
                         assert!(
@@ -2941,7 +2951,7 @@ mod test {
 
         // Check that the third sync packet with the low sequence number is rejected correctly with the expected OutOfSequence error.
         match dmx_rcv.handle_sync_packet(src_cid, sync_packet3) {
-            Err(Error(OutOfSequence(_), _)) => {
+            Err(SacnError::OutOfSequence(_)) => {
                 assert!(
                     true,
                     "Receiver correctly rejected third sync packet with correct error"
@@ -3231,8 +3241,8 @@ mod test {
         let source_limit: Option<usize> = Some(0);
 
         match SacnReceiver::with_ip(addr, source_limit) {
-            Err(e) => match e.kind() {
-                ErrorKind::Io(x) => match x.kind() {
+            Err(e) => match e {
+                SacnError::Io(x) => match x.kind() {
                     std::io::ErrorKind::InvalidInput => {
                         assert!(true, "Correct error returned");
                     }

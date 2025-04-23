@@ -3268,8 +3268,8 @@ fn test_data_packet_parse_pack() {
 fn test_malformed_data_packet_wrong_preample_lower_byte_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_LOWER_BYTE) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+            match e {
+                SacnError::SacnParsePackError(sacn_parse_pack_error::SacnParsePackError::ParseInvalidData(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -3291,8 +3291,8 @@ fn test_malformed_data_packet_wrong_preample_lower_byte_parse() {
 fn test_malformed_data_packet_wrong_preample_upper_byte_parse() {
     match AcnRootLayerProtocol::parse(&TEST_DATA_PACKET_ROOT_LAYER_WRONG_PREAMBLE_SIZE_UPPER_BYTE) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidData(_)) => {
+            match e {
+                SacnError::SacnParsePackError(sacn_parse_pack_error::SacnParsePackError::ParseInvalidData(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
