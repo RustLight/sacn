@@ -1279,10 +1279,10 @@ impl SacnNetworkReceiver {
 
         if self.addr.is_ipv4() {
             multicast_addr = universe_to_ipv4_multicast_addr(universe)
-                .with_context(|| "Failed to convert universe to IPv4 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv4 multicast addr".to_string())?;
         } else {
             multicast_addr = universe_to_ipv6_multicast_addr(universe)
-                .with_context(|| "Failed to convert universe to IPv6 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv6 multicast addr".to_string())?;
         }
 
         Ok(join_unix_multicast(
@@ -1303,10 +1303,10 @@ impl SacnNetworkReceiver {
 
         if self.addr.is_ipv4() {
             multicast_addr = universe_to_ipv4_multicast_addr(universe)
-                .with_context(|| "Failed to convert universe to IPv4 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv4 multicast addr".to_string())?;
         } else {
             multicast_addr = universe_to_ipv6_multicast_addr(universe)
-                .with_context(|| "Failed to convert universe to IPv6 multicast addr")?;
+                .with_context(|| "Failed to convert universe to IPv6 multicast addr".to_string())?;
         }
 
         Ok(leave_unix_multicast(
@@ -1535,7 +1535,7 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
                 IpAddr::V4(ref interface_v4) => {
                     socket
                         .join_multicast_v4(a.ip(), &interface_v4)
-                        .with_context(|| "Failed to join IPv4 multicast")?;
+                        .with_context(|| "Failed to join IPv4 multicast".to_string())?;
                 }
                 IpAddr::V6(ref _interface_v6) => {
                     return Err(SacnError::IpVersionError(
@@ -1551,7 +1551,7 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
             Some(a) => {
                 socket
                     .join_multicast_v6(a.ip(), 0)
-                    .with_context(|| "Failed to join IPv6 multicast")?;
+                    .with_context(|| "Failed to join IPv6 multicast".to_string())?;
             }
             None => {
                 return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
@@ -1586,7 +1586,7 @@ fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr)
                 IpAddr::V4(ref interface_v4) => {
                     socket
                         .leave_multicast_v4(a.ip(), &interface_v4)
-                        .with_context(|| "Failed to leave IPv4 multicast")?;
+                        .with_context(|| "Failed to leave IPv4 multicast".to_string())?;
                 }
                 IpAddr::V6(ref _interface_v6) => {
                     return Err(SacnError::IpVersionError(
@@ -1602,7 +1602,7 @@ fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr)
             Some(a) => {
                 socket
                     .leave_multicast_v6(a.ip(), 0)
-                    .with_context(|| "Failed to leave IPv6 multicast")?;
+                    .with_context(|| "Failed to leave IPv6 multicast".to_string())?;
             }
             None => {
                 return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
