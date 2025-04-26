@@ -27,8 +27,8 @@ fn test_new_ipv4_one_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::new_v4(SRC_NAME) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::MalformedSourceName(_) => {
+            match e {
+                SacnError::MalformedSourceName(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -47,8 +47,8 @@ fn test_new_ipv6_one_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::new_v6(SRC_NAME) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::MalformedSourceName(_) => {
+            match e {
+                SacnError::MalformedSourceName(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -67,8 +67,8 @@ fn test_new_with_cid_ip_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::with_cid_ip(SRC_NAME, Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::MalformedSourceName(_) => {
+            match e {
+                SacnError::MalformedSourceName(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -87,8 +87,8 @@ fn test_new_with_cid_ip_v4_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::with_cid_v4(SRC_NAME, Uuid::new_v4()) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::MalformedSourceName(_) => {
+            match e {
+                SacnError::MalformedSourceName(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -107,8 +107,8 @@ fn test_new_with_cid_ip_v6_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::with_cid_v6(SRC_NAME, Uuid::new_v4()) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::MalformedSourceName(_) => {
+            match e {
+                SacnError::MalformedSourceName(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -127,8 +127,8 @@ fn test_new_with_ip_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::with_ip(SRC_NAME, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::MalformedSourceName(_) => {
+            match e {
+                SacnError::MalformedSourceName(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -149,8 +149,8 @@ fn test_set_name_too_long_source_name() {
 
     match src.set_name(SRC_NAME) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::MalformedSourceName(_) => {
+            match e {
+                SacnError::MalformedSourceName(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -266,10 +266,10 @@ fn test_send_without_registering(){
 
     match src.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
         Ok(_) => {assert!(false, "Source didn't prevent sending without registering")},
-        Err(e) =>
-            match e.kind() {
-                &ErrorKind::UniverseNotRegistered(ref _s) => assert!(true),
-                _ => assert!(false, "Unexpected error type returned, {}", e.kind())
+        Err(ref e) =>
+            match e {
+                &SacnError::UniverseNotRegistered(ref _s) => assert!(true),
+                _ => assert!(false, "Unexpected error type returned, {}", e)
             }
     }
 }
@@ -285,8 +285,8 @@ fn test_send_above_priority(){
 
     match src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::InvalidPriority(_) => {
+            match e {
+                SacnError::InvalidPriority(_) => {
                     assert!(true, "Expected error returned");
                 }
                 x => {
@@ -342,8 +342,8 @@ fn test_register_below_min_universe() {
 
     match src.register_universes(&[UNIVERSE]) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::IllegalUniverse(_) => {
+            match e {
+                SacnError::IllegalUniverse(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -366,8 +366,8 @@ fn test_register_above_max_universe() {
 
     match src.register_universes(&[UNIVERSE]) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::IllegalUniverse(_) => {
+            match e {
+                SacnError::IllegalUniverse(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -434,8 +434,8 @@ fn test_sync_addr_0() {
 
     match src.send_sync_packet(SYNC_UNI, None) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::IllegalUniverse(_) => {
+            match e {
+                SacnError::IllegalUniverse(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {

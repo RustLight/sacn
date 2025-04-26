@@ -20,7 +20,7 @@ exclude = [
 
 [dependencies]
 byteorder = { version = "1.5.0", features = [] }
-error-chain = "0.12.4"
+# error-chain = "0.12.4"
 libc = { version = "0.2.171" }
 socket2 = { version = "0.5.9", features = ["all"] }
 uuid = { version = "1.12", features = ["v4"] }
@@ -36,6 +36,6 @@ std = []
 [badges]
 travis-ci = { repository = "Lan2u/RustSacn" }
 
-[[examples]]
-path = 'examples/sine-wave-sender.rs'
-edition = '2024'
+# [[examples]]
+# path = 'examples/sine-wave-sender.rs'
+# edition = '2024'

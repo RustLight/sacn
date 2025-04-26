@@ -413,7 +413,7 @@ fn create_values_str(values: Vec<u8>) -> Result<String> {
 fn print_recv(res: Result<Vec<DMXData>>) {
     match res {
         Err(e) => {
-            match e.kind() {
+            match e {
                 ErrorKind::Sacn(x) => {
                     match x.kind() {
                         sacn::error::errors::ErrorKind::UniverseTerminated(_src_cid, uni) => {
