@@ -15,15 +15,22 @@
 /// Std io errors are wrapped in Io(::std::io::Error).
 /// 
 /// Boolean parse errors from Std str ParseBoolError are wrapped in BoolStr(::std::str::ParseBoolError).
+
 pub mod errors {
-    error_chain! {
-        foreign_links {
-            Sacn(::sacn::error::errors::Error);
-            Io(::std::io::Error);
-            BoolStr(::std::str::ParseBoolError);
-        }
-        
-        errors {}
+    use thiserror::Error;
+
+    #[derive(Error, Debug)]
+    pub enum DemoError {
+        #[error(transparent)]
+        Sacn(#[from] ::sacn::error::errors::SacnError),
+
+        #[error(transparent)]
+        Io(#[from] ::std::io::Error),
+
+        #[error(transparent)]
+        BoolStr(#[from] ::std::str::ParseBoolError),
     }
+
+    pub type Result<T> = std::result::Result<T, DemoError>;
 }
 
