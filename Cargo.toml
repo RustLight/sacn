@@ -35,6 +35,6 @@ std = []
 [badges]
 travis-ci = { repository = "Lan2u/RustSacn" }
 
-[[examples]]
+[[example]]
 path = 'examples/sine-wave-sender.rs'
 edition = '2024'
