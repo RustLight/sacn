@@ -77,8 +77,8 @@
 //! // This example will always timeout if run in isolation as there are no sources running on the network.
 //! match dmx_rcv.recv(TIMEOUT) {
 //!     Err(e) => {
-//!         match e.kind() {
-//!             sacn::error::errors::ErrorKind::SourceDiscovered(source_name) => {
+//!         match e {
+//!             sacn::error::errors::SacnError::SourceDiscovered(source_name) => {
 //!                 println!("Source name: {} discovered!", source_name);    
 //!             }
 //!             other => {
@@ -187,9 +187,6 @@
 // #![warn(missing_docs)]
 // Recursion limit for error_chain.
 #![recursion_limit = "1024"]
-
-#[macro_use]
-extern crate error_chain;
 
 /// The errors within the sACN crate related to parse/pack errors.
 /// Error-chain is used for errors within the library to allow chaining errors together to provide more informative backtraces.

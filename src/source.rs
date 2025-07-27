@@ -196,8 +196,8 @@ impl SacnSource {
     ///
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
         if name.len() > E131_SOURCE_NAME_FIELD_LENGTH {
-            bail!(ErrorKind::MalformedSourceName(
-                "Source name provided is longer than maximum allowed".to_string()
+            return Err(SacnError::MalformedSourceName(
+                "Source name provided is longer than maximum allowed".to_string(),
             ));
         }
 
@@ -595,8 +595,8 @@ impl SacnSourceInternal {
         } else if ip.is_ipv6() {
             Socket::new(Domain::IPV6, Type::DGRAM, None).unwrap()
         } else {
-            bail!(ErrorKind::UnsupportedIpVersion(
-                "Address to create SacnSource is not IPv4 or IPv6".to_string()
+            return Err(SacnError::UnsupportedIpVersion(
+                "Address to create SacnSource is not IPv4 or IPv6".to_string(),
             ));
         };
 
@@ -694,9 +694,7 @@ impl SacnSourceInternal {
         match self.universes.binary_search(&universe) {
             Err(_i) => {
                 // Value not found
-                bail!(ErrorKind::UniverseNotFound(
-                    "Attempted to de-register a universe that was never registered".to_string()
-                ))
+                return Err(SacnError::UniverseNotFound(universe));
             }
             Ok(i) => {
                 // Value found, i is index.
@@ -717,9 +715,7 @@ impl SacnSourceInternal {
         is_universe_in_range(*u)?;
 
         if !self.universes.contains(u) {
-            bail!(ErrorKind::UniverseNotRegistered(
-                format!("Attempted to send on unregistered universe : {}", u).to_string()
-            ));
+            return Err(SacnError::UniverseNotRegistered(*u));
         }
 
         Ok(())
@@ -772,16 +768,13 @@ impl SacnSourceInternal {
     ) -> Result<()> {
         if self.running == false {
             // Indicates that this sender has been terminated.
-            bail!(ErrorKind::SenderAlreadyTerminated(
-                "Attempted to send".to_string()
+            return Err(SacnError::SenderAlreadyTerminated(
+                "Attempted to send".to_string(),
             ));
         }
 
         if data.len() == 0 {
-            bail!(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "Must provide data to send, data.len() == 0"
-            ));
+            return Err(SacnError::DataArrayEmpty());
         }
 
         // Check all the given universes are valid before doing any action.
@@ -793,7 +786,7 @@ impl SacnSourceInternal {
         // Check that the synchronisation universe is also valid.
         if synchronisation_addr.is_some() {
             self.universe_allowed(&synchronisation_addr.unwrap())
-                .chain_err(|| "Synchronisation universe not allowed")?;
+                .map_err(|_| SacnError::IllegalSyncUniverse(synchronisation_addr.unwrap()))?;
         }
 
         // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
@@ -801,13 +794,7 @@ impl SacnSourceInternal {
             (data.len() as f64 / UNIVERSE_CHANNEL_CAPACITY as f64).ceil() as usize;
 
         if universes.len() < required_universes {
-            bail!(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                format!(
-                    "Must provide enough universes to send on, universes provided: {}",
-                    universes.len()
-                )
-            ));
+            return Err(SacnError::UniverseListEmpty());
         }
 
         for i in 0..required_universes {
@@ -859,17 +846,11 @@ impl SacnSourceInternal {
         sync_address: u16,
     ) -> Result<()> {
         if priority > E131_MAX_PRIORITY {
-            bail!(ErrorKind::InvalidPriority(format!(
-                "Priority must be within allowed range of [0-E131_MAX_PRIORITY], priority provided: {}",
-                priority
-            )));
+            return Err(SacnError::InvalidPriority(priority));
         }
 
         if data.len() > UNIVERSE_CHANNEL_CAPACITY {
-            bail!(ErrorKind::ExceedUniverseCapacity(format!(
-                "Data provided must fit in a single universe, data len: {}",
-                data.len()
-            )));
+            return Err(SacnError::ExceedUniverseCapacity(data.len()));
         }
 
         let mut sequence = match self.data_sequences.borrow().get(&universe) {
@@ -903,21 +884,23 @@ impl SacnSourceInternal {
         if dst_ip.is_some() {
             self.socket
                 .send_to(&packet.pack_alloc().unwrap(), &dst_ip.unwrap().into())
-                .chain_err(|| "Failed to send data unicast on socket")?;
+                .map_err(|e| {
+                    std::io::Error::new(e.kind(), "Failed to send data unicast on socket")
+                })?;
         } else {
             let dst;
 
             if self.addr.is_ipv6() {
-                dst = universe_to_ipv6_multicast_addr(universe)
-                    .chain_err(|| "Failed to convert universe to Ipv6 multicast address")?;
+                dst = universe_to_ipv6_multicast_addr(universe)?;
             } else {
-                dst = universe_to_ipv4_multicast_addr(universe)
-                    .chain_err(|| "Failed to convert universe to Ipv4 multicast address")?;
+                dst = universe_to_ipv4_multicast_addr(universe)?;
             }
 
             self.socket
                 .send_to(&packet.pack_alloc().unwrap(), &dst)
-                .chain_err(|| "Failed to send data multicast on socket")?;
+                .map_err(|e| {
+                    std::io::Error::new(e.kind(), "Failed to send data multicast on socket")
+                })?;
         }
 
         if sequence == 255 {
@@ -979,7 +962,7 @@ impl SacnSourceInternal {
         };
         self.socket
             .send_to(&packet.pack_alloc()?, &ip)
-            .chain_err(|| "Failed to send sync packet on socket")?;
+            .map_err(|e| std::io::Error::new(e.kind(), "Failed to send sync packet on socket"))?;
 
         if sequence == 255 {
             sequence = 0;
@@ -1213,7 +1196,7 @@ impl SacnSourceInternal {
     ///
     fn set_name(&mut self, name: &str) -> Result<()> {
         if name.len() > E131_SOURCE_NAME_FIELD_LENGTH {
-            bail!(ErrorKind::MalformedSourceName(
+            return Err(SacnError::MalformedSourceName(
                 "Source name provided is longer than maximum allowed".to_string()
             ));
         }
@@ -1321,7 +1304,7 @@ fn unlock_internal(
             // shouldn't be exposed to the user (as its internal and would have no use).
             // Cannot directly return the PoisonError due to PoisonError using a different error system to other std modules which doesn't work with
             // error_chain.
-            bail!(ErrorKind::SourceCorrupt("Mutex poisoned".to_string()));
+            return Err(SacnError::SourceCorrupt("Mutex poisoned".to_string()));
         }
         Ok(lock) => Ok(lock),
     }
@@ -1349,7 +1332,7 @@ fn unlock_internal_mut(
             // shouldn't be exposed to the user (as its internal and would have no use).
             // Cannot directly return the PoisonError due to PoisonError using a different error system to other std modules which doesn't work with
             // error_chain.
-            bail!(ErrorKind::SourceCorrupt("Mutex poisoned".to_string()));
+            return Err(SacnError::SourceCorrupt("Mutex poisoned".to_string()));
         }
         Ok(lock) => Ok(lock),
     }
