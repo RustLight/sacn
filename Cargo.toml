@@ -36,8 +36,8 @@ std = []
 travis-ci = { repository = "Lan2u/RustSacn" }
 
 [[example]]
-name = 'sine-wave-receiver'
-path = 'examples/sine-wave-receiver.rs'
+name = 'simple-receiver'
+path = 'examples/simple-receiver.rs'
 
 [[example]]
 name = 'sine-wave-sender'
