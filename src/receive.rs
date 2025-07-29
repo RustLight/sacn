@@ -409,7 +409,7 @@ impl SacnReceiver {
     /// If 1 or more universes in the list are already being listened to this method will have no effect for those universes only.
     ///
     /// # Errors
-    /// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
+    /// Returns an SacnError::IllegalUniverse error if the given universe is outwith the allowed range of universes,
     /// see (is_universe_in_range)[fn.is_universe_in_range.packet].
     ///
     ///
@@ -440,7 +440,7 @@ impl SacnReceiver {
     /// Stops listening to the given universe.
     ///
     /// # Errors
-    /// Returns an ErrorKind::IllegalUniverse error if the given universe is outwith the allowed range of universes,
+    /// Returns an SacnError::IllegalUniverse error if the given universe is outwith the allowed range of universes,
     /// see (is_universe_in_range)[fn.is_universe_in_range.packet].
     ///
     /// Returns UniverseNotFound if the given universe wasn't already being listened to.
@@ -494,7 +494,7 @@ impl SacnReceiver {
     /// This method will return a WouldBlock (unix) or TimedOut (windows) error if there is no data ready within the given timeout.
     /// A timeout of duration 0 will do timeout checks but otherwise will return a WouldBlock/TimedOut error without checking for data.
     ///
-    /// Will return ErrorKind::SourceDiscovered error if the announce_source_discovery flag is set and a universe discovery
+    /// Will return SacnError::SourceDiscovered error if the announce_source_discovery flag is set and a universe discovery
     /// packet is received and a source fully discovered.
     ///
     /// Will return a UniverseNotRegistered error if this method is called with an infinite timeout, no
@@ -1530,7 +1530,7 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
                 }
             },
             None => {
-                return Err(SacnError::ErrorKind::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
+                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
             }
         },
         AF_INET6 => match addr.as_socket_ipv6() {
