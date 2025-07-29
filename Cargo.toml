@@ -48,5 +48,5 @@ name = 'demo_rcv'
 path = 'examples/demo_rcv/src/main.rs'  
 
 [[example]]
-name = 'demo_snd'
-path = 'examples/demo_snd/src/main.rs'
+name = 'demo_src'
+path = 'examples/demo_src/src/main.rs'
