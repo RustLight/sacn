@@ -615,8 +615,8 @@ fn test_universe_discovery_one_universe_one_source_ipv6(){
         let result = dmx_recv.recv(Some(Duration::from_secs(2)));
         match result { 
             Err(e) => {
-                match e.kind() {
-                    &ErrorKind::Io(ref s) => {
+                match e {
+                    SacnError::Io(ref s) => {
                         match s.kind() {
                             std::io::ErrorKind::WouldBlock => {
                                 // Expected to timeout / would block.
@@ -696,8 +696,8 @@ fn test_universe_discovery_multiple_universe_one_source_ipv6(){
         let result = dmx_recv.recv(Some(Duration::from_secs(2)));
         match result { 
             Err(e) => {
-                match e.kind() {
-                    &ErrorKind::Io(ref s) => {
+                match e {
+                    SacnError::Io(ref s) => {
                         match s.kind() {
                             std::io::ErrorKind::WouldBlock => {
                                 // Expected to timeout / would block.
@@ -783,8 +783,8 @@ fn test_universe_discovery_multiple_pages_one_source_ipv6(){
 
         match result { 
             Err(e) => {
-                match e.kind() {
-                    &ErrorKind::Io(ref s) => {
+                match e {
+                    SacnError::Io(ref s) => {
                         match s.kind() {
                             std::io::ErrorKind::WouldBlock => {
                                 // Expected to timeout / would block.
@@ -1129,8 +1129,8 @@ fn test_discover_recv_sync_runthrough_ipv6() {
 
     let universes: Vec<u16> = match dmx_recv.recv(None) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::SourceDiscovered(_name) => {
+            match e {
+                SacnError::SourceDiscovered(_name) => {
                     let discovered_sources = dmx_recv.get_discovered_sources();
                     assert_eq!(discovered_sources.len(), 1);
 
@@ -1159,8 +1159,8 @@ fn test_discover_recv_sync_runthrough_ipv6() {
     loop {
         match dmx_recv.recv(None) {
             Err(e) => {
-                match e.kind() {
-                    ErrorKind::UniverseTerminated(_src_cid, _universe) => {
+                match e {
+                    SacnError::UniverseTerminated(_src_cid, _universe) => {
                         // A real use-case may also want to not terminate when the source does and instead remain waiting but in this
                         // case the for the test the receiver terminates with the source.
                         break;
