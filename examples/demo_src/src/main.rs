@@ -280,7 +280,7 @@ fn display_help(){
 /// 
 fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 4 {
-        bail!(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Insufficient parts for data line ( < 4 )"));
     }
 
     let universe: u16 = split_input[1].parse().unwrap();
