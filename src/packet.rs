@@ -473,10 +473,7 @@ macro_rules! impl_acn_root_layer_protocol {
             /// Grows the vector `buf` if necessary.
             pub fn pack_vec(&self, buf: &mut Vec<u8>) -> Result<()> {
                 buf.clear();
-                buf.reserve_exact(self.len());
-                unsafe {
-                    buf.set_len(self.len());
-                }
+                buf.resize(self.len(), 0);
                 self.pack(buf)
             }
 
