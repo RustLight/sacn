@@ -3910,15 +3910,8 @@ fn test_send_empty() {
     match src.send(&[UNIVERSE], &[], None, None, None) {
         Err(e) => {
             match e {
-                SacnError::Io(x) => {
-                    match x.kind() {
-                        std::io::ErrorKind::InvalidInput => {
-                            assert!(true, "Unexpected error returned");
-                        },
-                        _ => {
-                            assert!(false, "Unexpected error returned");
-                        }
-                    }
+                SacnError::DataArrayEmpty() => {
+                            assert!(true, "Expected error returned");
                 },
                 _ => {
                     assert!(false, "Unexpected error returned");
