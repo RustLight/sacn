@@ -50,6 +50,7 @@ pub mod errors {
         ///
         /// # Arguments
         /// usize: number of bytes read.
+        /// 
         /// usize: size of buffer.
         ///
         #[error("The given buffer fits {0} bytes, but {1} bytes were read.")]
