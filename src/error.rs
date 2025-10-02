@@ -43,6 +43,17 @@ pub mod errors {
         }
 
         errors {
+            /// Returned to indicate that too many bytes were read to fit into supplied buffer.
+            ///
+            /// # Arguments
+            /// n: number of bytes read.
+            /// buf_size: size of buffer.
+            ///
+            TooManyBytesRead(n: usize, buf_size: usize) {
+                description("Too many bytes were read from the socket to fit in the supplied buffer."),
+                display("The given buffer fits {} bytes, but {} bytes were read.", buf_size, n)
+            }
+
             /// Returned to indicate that an invalid or malformed source name was used.
             ///
             /// # Arguments
