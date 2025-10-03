@@ -1374,7 +1374,6 @@ impl SacnNetworkReceiver {
         if n > RCV_BUF_DEFAULT_SIZE {
             bail!(TooManyBytesRead(n, RCV_BUF_DEFAULT_SIZE));
         }
-
         Ok(AcnRootLayerProtocol::parse(buf)?)
     }
 
