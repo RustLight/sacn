@@ -7,23 +7,22 @@
 //
 // This file is based on an earlier error.rs created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
-/// The errors used within the SacnLibrary. The ErrorKind subsection of this within the documentation contains details of all the errors.
-///
-/// Errors from external sources are wrapped within thiserror.
-///
-/// Io errors from std::io::Error are wrapped within Io(::std::io::Error)
-///
-/// String errors from std::str::Utf8Error are wrapped within Str(::std::str::Utf8Error)
-///
-/// Uuid errors from uuid::ParseError are wrapped within Uuid(uuid::ParseError)
-///
-/// ParsePack related errors come within their own family wrapped inside this error to allow easy matching (can just match for SacnParsePackError rather than a specific).
-///
-/// SacnParsePackError(sacn_parse_pack_error::Error, sacn_parse_pack_error::ErrorKind)
-///
+//! The errors used within the SacnLibrary. The ErrorKind subsection of this within the documentation contains details of all the errors.
+//!
+//! Errors from external sources are wrapped within thiserror.
+//!
+//! Io errors from std::io::Error are wrapped within Io(::std::io::Error)
+//!
+//! String errors from std::str::Utf8Error are wrapped within Str(::std::str::Utf8Error)
+//!
+//! Uuid errors from uuid::ParseError are wrapped within Uuid(uuid::ParseError)
+//!
+//! ParsePack related errors come within their own family wrapped inside this error to allow easy matching (can just match for SacnParsePackError rather than a specific).
+//!
+//! SacnParsePackError(sacn_parse_pack_error::Error, sacn_parse_pack_error::ErrorKind)
 
 pub mod errors {
-    use crate::sacn_parse_pack_error::sacn_parse_pack_error::ParsePacketError;
+    use crate::sacn_parse_pack_error::ParsePacketError;
     use thiserror::Error;
     use uuid::Uuid;
 

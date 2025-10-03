@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 /// Uses the sACN error-chain errors.
 use sacn::error::errors::*;
-use sacn::sacn_parse_pack_error::sacn_parse_pack_error;
+use sacn::sacn_parse_pack_error;
 
 /// A full test data packet as specified as an example in
 /// ANSI E1.31-2018 Appendix B Table B-13: Universe Synchronization Example E1.31 Data Packet.

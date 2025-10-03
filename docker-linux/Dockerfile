@@ -9,13 +9,14 @@ RUN apt-get update && apt-get install iproute2 -y
 WORKDIR /work
 COPY Cargo.toml Cargo.lock ./
 # (if workspace, copy all manifest files here instead)
+COPY examples/ examples/
 COPY tests/ tests/
 COPY src/ src/
 
 # build tests to warm cache
 RUN cargo test --no-run --locked
 
-COPY local/run_tests.sh run_tests.sh
+COPY docker-linux/run_tests.sh run_tests.sh
 RUN chmod +x run_tests.sh
 
 # RUN cargo test

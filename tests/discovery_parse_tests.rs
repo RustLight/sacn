@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 /// Uses the sACN error-chain errors.
 use sacn::error::errors::*;
-use sacn::sacn_parse_pack_error::sacn_parse_pack_error;
+use sacn::sacn_parse_pack_error;
 
 /// The expected minimum size of a universe discovery packet as per ANSI E1.31-2018 Section 6.1.
 const UNIVERSE_DISCOVERY_PACKET_EXPECTED_MIN_SIZE: usize = 120;

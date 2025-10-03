@@ -54,7 +54,7 @@
 
 /// Uses the sACN errors.
 use crate::error::errors::{Result, SacnError};
-use crate::sacn_parse_pack_error::sacn_parse_pack_error::ParsePacketError;
+use crate::sacn_parse_pack_error::ParsePacketError;
 
 /// The core crate is used for string processing during packet parsing/packing as well as to provide access to the Hash trait.
 use core::hash::{self, Hash};
@@ -374,7 +374,7 @@ pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SockAddr> {
 ///
 pub fn is_universe_in_range(universe: u16) -> Result<()> {
     if (universe != E131_DISCOVERY_UNIVERSE)
-        && (universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE)
+        && !(E131_MIN_MULTICAST_UNIVERSE..=E131_MAX_MULTICAST_UNIVERSE).contains(&universe)
     {
         return Err(SacnError::IllegalUniverse(universe));
     }
@@ -427,7 +427,7 @@ macro_rules! impl_acn_root_layer_protocol {
 
         impl$( $lt )* AcnRootLayerProtocol$( $lt )* {
             /// Parse the packet from the given buffer.
-            pub fn parse(buf: &[u8]) -> Result<AcnRootLayerProtocol> {
+            pub fn parse(buf: &[u8]) -> Result<AcnRootLayerProtocol<'_>> {
                 if buf.len() <  (E131_PREAMBLE_SIZE as usize) {
                     return Err(SacnError::SacnParsePackError(
                         ParsePacketError::ParseInsufficientData(
@@ -497,9 +497,10 @@ macro_rules! impl_acn_root_layer_protocol {
                 buf[4..16].copy_from_slice(b"ASC-E1.17\x00\x00\x00");
 
                 // PDU block
-                Ok(self.pdu.pack(&mut buf[16..])?)
+                self.pdu.pack(&mut buf[16..])
             }
 
+            #[allow(clippy::len_without_is_empty)]
             /// The length of the packet when packed.
             pub fn len(&self) -> usize {
                 // Preamble Field Size (Bytes)
@@ -802,11 +803,10 @@ macro_rules! impl_data_packet_framing_layer {
                 // Universe
                 let universe = NetworkEndian::read_u16(&buf[UNIVERSE_INDEX .. DATA_INDEX]);
 
-                if universe < E131_MIN_MULTICAST_UNIVERSE || universe > E131_MAX_MULTICAST_UNIVERSE {
+                if !(E131_MIN_MULTICAST_UNIVERSE..=E131_MAX_MULTICAST_UNIVERSE).contains(&universe) {
                     return Err(SacnError::SacnParsePackError(
                         ParsePacketError::ParseInvalidUniverse(universe),
                     ));
-
                 }
 
                 // Data layer.
@@ -872,7 +872,7 @@ macro_rules! impl_data_packet_framing_layer {
                 NetworkEndian::write_u16(&mut buf[UNIVERSE_INDEX .. DATA_INDEX], self.universe);
 
                 // Data
-                Ok(self.data.pack(&mut buf[DATA_INDEX .. ])?)
+                self.data.pack(&mut buf[DATA_INDEX .. ])
             }
 
             fn len(&self) -> usize {
@@ -1108,7 +1108,7 @@ const E131_SYNC_FRAMING_LAYER_END_INDEX: usize =
 impl Pdu for SynchronizationPacketFramingLayer {
     fn parse(buf: &[u8]) -> Result<SynchronizationPacketFramingLayer> {
         // Length and Vector
-        let PduInfo { length, vector } = pdu_info(&buf, E131_FRAMING_LAYER_VECTOR_LENGTH)?;
+        let PduInfo { length, vector } = pdu_info(buf, E131_FRAMING_LAYER_VECTOR_LENGTH)?;
         if buf.len() < length {
             return Err(SacnError::SacnParsePackError(ParsePacketError::ParseInsufficientData("Buffer contains insufficient data based on synchronisation packet framing layer pdu length field".to_string())));
         }
@@ -1134,8 +1134,8 @@ impl Pdu for SynchronizationPacketFramingLayer {
                 ..E131_SYNC_FRAMING_LAYER_RESERVE_FIELD_INDEX],
         );
 
-        if synchronization_address > E131_MAX_MULTICAST_UNIVERSE
-            || synchronization_address < E131_MIN_MULTICAST_UNIVERSE
+        if !(E131_MIN_MULTICAST_UNIVERSE..=E131_MAX_MULTICAST_UNIVERSE)
+            .contains(&synchronization_address)
         {
             return Err(SacnError::SacnParsePackError(
                 ParsePacketError::ParseInvalidSyncAddr(synchronization_address),
@@ -1155,8 +1155,8 @@ impl Pdu for SynchronizationPacketFramingLayer {
         if buf.len() < self.len() {
             return Err(SacnError::SacnParsePackError(
                 ParsePacketError::PackBufferInsufficient(
-                    "SynchronizationPacketFramingLayer pack buffer length insufficient".to_string()
-                )
+                    "SynchronizationPacketFramingLayer pack buffer length insufficient".to_string(),
+                ),
             ));
         }
 
@@ -1276,7 +1276,7 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                 zeros(&mut buf[E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_INDEX .. E131_DISCOVERY_FRAMING_LAYER_DATA_INDEX], E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_LENGTH);
 
                 // Data
-                Ok(self.data.pack(&mut buf[E131_DISCOVERY_FRAMING_LAYER_DATA_INDEX .. ])?)
+                self.data.pack(&mut buf[E131_DISCOVERY_FRAMING_LAYER_DATA_INDEX .. ])
             }
 
             fn len(&self) -> usize {
@@ -1351,7 +1351,7 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                     return Err(SacnError::SacnParsePackError(ParsePacketError::PduInvalidVector(vector)));
                 }
 
-                if length < E131_UNIVERSE_DISCOVERY_LAYER_MIN_LENGTH || length > E131_UNIVERSE_DISCOVERY_LAYER_MAX_LENGTH {
+                if !(E131_UNIVERSE_DISCOVERY_LAYER_MIN_LENGTH..=E131_UNIVERSE_DISCOVERY_LAYER_MAX_LENGTH).contains(&length) {
                     return Err(SacnError::SacnParsePackError(ParsePacketError::PduInvalidLength(length)));
                 }
 
@@ -1372,7 +1372,7 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
                 Ok(UniverseDiscoveryPacketUniverseDiscoveryLayer {
                     page,
                     last_page,
-                    universes: universes,
+                    universes,
                 })
             }
 
@@ -1488,11 +1488,11 @@ fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> 
             // Enforce assending ordering of universes as per ANSI E1.31-2018 Section 8.5.
             universes.push(u);
             last_universe = u as i32;
-            i = i + E131_UNIVERSE_FIELD_LENGTH; // Jump to the next universe.
+            i += E131_UNIVERSE_FIELD_LENGTH; // Jump to the next universe.
         } else {
             return Err(SacnError::SacnParsePackError(
                 ParsePacketError::ParseInvalidUniverseOrder(
-                    format!("Universe {} is out of order, discovery packet universe list must be in accending order!", u).to_string())));
+                    format!("Universe {u} is out of order, discovery packet universe list must be in accending order!").to_string())));
         }
     }
 

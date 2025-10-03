@@ -28,7 +28,7 @@
 
 /// The demo itself utilises a small error-chain which wraps the errors from the sACN crate and a few standard crates.
 pub mod error;
-use error::errors::{DemoError, Result};
+use error::errors::Result;
 
 extern crate sacn;
 
