@@ -1361,7 +1361,7 @@ impl SacnNetworkReceiver {
         // use read() since read_exact() was not passing the tests.
         let n = self.socket.read(buf)?;
         if n > RCV_BUF_DEFAULT_SIZE {
-            bail!(TooManyBytesRead(n, RCV_BUF_DEFAULT_SIZE));
+            return Err(SacnError::TooManyBytesRead(n, buf.len()))
         }
         Ok(AcnRootLayerProtocol::parse(buf)?)
     }
