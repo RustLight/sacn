@@ -44,7 +44,6 @@ pub mod errors {
         // Allow UUID library to be used with error system.
         #[error("Uuid error occurred: {0}")]
         Uuid(#[from] uuid::Error),
-
         
         /// Returned to indicate that too many bytes were read to fit into supplied buffer.
         ///
