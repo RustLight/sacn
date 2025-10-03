@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 sacn = { path = "../../"}
-error-chain = "0.12.2"
+thiserror = "2.0.*"

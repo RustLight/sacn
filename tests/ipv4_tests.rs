@@ -764,8 +764,8 @@ fn test_send_recv_sync_then_nosync_packet_same_universe_multicast_ipv4() {
 
     match second_received_result {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::Io(s) => {
+            match e {
+                SacnError::Io(s) => {
                     match s.kind() {
                         std::io::ErrorKind::WouldBlock => {
                             // Expected to timeout.
@@ -1666,8 +1666,8 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
         let result = dmx_recv.recv(Some(Duration::from_secs(2)));
         match result { 
             Err(e) => {
-                match e.kind() {
-                    &ErrorKind::Io(ref s) => {
+                match e {
+                    SacnError::Io(ref s) => {
                         match s.kind() {
                             std::io::ErrorKind::WouldBlock => {
                                 // Expected to timeout / would block.
@@ -1749,8 +1749,8 @@ fn test_universe_discovery_interval_ipv4(){
 
     match dmx_recv.recv(None) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::SourceDiscovered(_) => {
+            match e {
+                SacnError::SourceDiscovered(_) => {
                     // Measure the time between the first and second discovery packets, this removes the uncertainty in the time taken for the sender to start.
                     interval_start = Instant::now();
                 }
@@ -1766,8 +1766,8 @@ fn test_universe_discovery_interval_ipv4(){
 
     match dmx_recv.recv(None) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::SourceDiscovered(_) => {
+            match e {
+                SacnError::SourceDiscovered(_) => {
                     let interval = interval_start.elapsed();
                     let interval_millis = interval.as_millis();
                     assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), "Discovery interval is shorter than expected, {} ms", interval_millis);
@@ -1833,8 +1833,8 @@ fn test_universe_discovery_interval_with_updates_ipv4(){
 
     match dmx_recv.recv(None) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::SourceDiscovered(_) => {
+            match e {
+                SacnError::SourceDiscovered(_) => {
                     // Measure the time between the first and second discovery packets, this removes the uncertainty in the time taken for the sender to start.
                     interval_start = Instant::now();
                 }
@@ -1850,8 +1850,8 @@ fn test_universe_discovery_interval_with_updates_ipv4(){
 
     match dmx_recv.recv(None) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::SourceDiscovered(_) => {
+            match e {
+                SacnError::SourceDiscovered(_) => {
                     let interval = interval_start.elapsed();
                     let interval_millis = interval.as_millis();
                     assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), "Discovery interval is shorter than expected, {} ms", interval_millis);
@@ -1907,8 +1907,8 @@ fn test_universe_discovery_multiple_universe_one_source_ipv4(){
         let result = dmx_recv.recv(Some(Duration::from_secs(2)));
         match result { 
             Err(e) => {
-                match e.kind() {
-                    &ErrorKind::Io(ref s) => {
+                match e {
+                    SacnError::Io(ref s) => {
                         match s.kind() {
                             std::io::ErrorKind::WouldBlock => {
                                 // Expected to timeout / would block.
@@ -1994,8 +1994,8 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
 
         match result { 
             Err(e) => {
-                match e.kind() {
-                    &ErrorKind::Io(ref s) => {
+                match e {
+                    SacnError::Io(ref s) => {
                         match s.kind() {
                             std::io::ErrorKind::WouldBlock => {
                                 // Expected to timeout / would block.
@@ -2076,8 +2076,8 @@ fn test_universe_discovery_no_universes_ipv4(){
 
     match dmx_recv.recv(None) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::SourceDiscovered(src_name) => {
+            match e {
+                SacnError::SourceDiscovered(src_name) => {
                     assert_eq!(src_name, SOURCE_NAMES[0], "Name of source discovered doesn't match expected");
                     let sources = dmx_recv.get_discovered_sources();
                     assert_eq!(sources.len(), 1, "Number of sources discovered doesn't match expected (1)");
@@ -2159,8 +2159,8 @@ fn test_receiver_sources_exceeded_3() {
     // On receiving the third time from the third source the sources exceeded error should be thrown.
     match dmx_recv.recv(TIMEOUT) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SourcesExceededError(_) => {
+            match e {
+                SacnError::SourcesExceededError(_) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -2392,8 +2392,8 @@ fn test_preview_data_2_receiver_1_sender() {
                 // The other receiver should not.
                 match dmx_recv.recv(TIMEOUT) { 
                     Err(e) => {
-                        match e.kind() {
-                            &ErrorKind::Io(ref s) => {
+                        match e {
+                            SacnError::Io(ref s) => {
                                 match s.kind() {
                                     std::io::ErrorKind::WouldBlock => {
                                         // Expected to timeout / would block.
@@ -2495,15 +2495,15 @@ fn test_source_1_universe_timeout(){
     let start_time: Instant = Instant::now();
     match dmx_recv.recv(Some(acceptable_upper_bound)) { // This will return a WouldBlock/Timedout error if the timeout takes too long.
         Err(e) => {
-            match e.kind() {
-                ErrorKind::UniverseTimeout(_src_cid, timedout_uni) => {
+            match e {
+                SacnError::UniverseTimeout(_src_cid, timedout_uni) => {
                     if start_time.elapsed() < acceptable_lower_bound{
                         assert!(false, "Timeout came quicker than expected");
                     }
-                    assert_eq!(*timedout_uni, universe, "Timed out universe doesn't match expected");
+                    assert_eq!(timedout_uni, universe, "Timed out universe doesn't match expected");
                     assert!(true, "Universe timed out as expected");
                 }
-                ErrorKind::Io(s) => {
+                SacnError::Io(s) => {
                     match s.kind() {
                         std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
                             assert!(false, "Timeout took too long to come through");
@@ -2633,20 +2633,20 @@ fn test_source_2_universe_1_timeout(){
     loop { // Loop till a timeout happens, ignoring the data packets send to the non-timeout uni.
         match dmx_recv.recv(Some(acceptable_upper_bound)) { // This will return a WouldBlock/Timedout error if the timeout takes too long.
             Err(e) => {
-                match e.kind() {
-                    ErrorKind::UniverseTimeout(_src_cid, universe) => {
+                match e {
+                    SacnError::UniverseTimeout(_src_cid, universe) => {
                         if start_time.elapsed() < acceptable_lower_bound{
                             assert!(false, "Timeout came quicker than expected");
                         }
-                        assert_eq!(*universe, universe_timeout, "Unexpected universe timed out");
+                        assert_eq!(universe, universe_timeout, "Unexpected universe timed out");
                         assert!(true, "Universe timed out as expected");
 
                         // Know that the timeout universe timed out as expected so check that the other universe hasn't timed out.
                         // Makes use of a timeout of 0 which should check the source timeouts without actually receiving any data as it times out instantly.
                         match dmx_recv.recv(Some(Duration::from_millis(0))) {
                             Err(e) => {
-                                match e.kind() {
-                                    ErrorKind::Io(s) => {
+                                match e {
+                                    SacnError::Io(s) => {
                                         match s.kind() {
                                             std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
                                                 assert!(true, "Other universe hasn't timedout as expected");
@@ -2667,7 +2667,7 @@ fn test_source_2_universe_1_timeout(){
                         }
                         break;
                     }
-                    ErrorKind::Io(s) => {
+                    SacnError::Io(s) => {
                         match s.kind() {
                             std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
                                 assert!(false, "Timeout took too long to come through: {:?}", start_time.elapsed());
@@ -2867,8 +2867,8 @@ fn test_send_sync_timeout(){
     // Data should never be passed up because the data packet should have timed-out before the sync packet is processed.
     match dmx_recv.recv(TIMEOUT) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::Io(s) => {
+            match e {
+                SacnError::Io(s) => {
                     match s.kind() {
                         std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {
                             // Timeout as expected because the data packet that is awaiting a sync packet has timed out.
@@ -3083,8 +3083,8 @@ fn test_discover_recv_sync_runthrough_ipv4() {
 
     let universes: Vec<u16> = match dmx_recv.recv(None) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::SourceDiscovered(_name) => {
+            match e {
+                SacnError::SourceDiscovered(_name) => {
                     let discovered_sources = dmx_recv.get_discovered_sources();
                     assert_eq!(discovered_sources.len(), 1);
 
@@ -3113,8 +3113,8 @@ fn test_discover_recv_sync_runthrough_ipv4() {
     loop {
         match dmx_recv.recv(None) {
             Err(e) => {
-                match e.kind() {
-                    ErrorKind::UniverseTerminated(_src_cid, _universe) => {
+                match e {
+                    SacnError::UniverseTerminated(_src_cid, _universe) => {
                         // A real use-case may also want to not terminate when the source does and instead remain waiting but in this
                         // case the for the test the receiver terminates with the source.
                         break;
@@ -3883,8 +3883,8 @@ fn test_terminate_universe_no_register() {
 
     match src.terminate_stream(universe, 0) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::UniverseNotRegistered(_) => {
+            match e {
+                SacnError::UniverseNotRegistered(_) => {
                     assert!(true, "Expected error returned");
                 },
                 _ => {
@@ -3909,16 +3909,9 @@ fn test_send_empty() {
 
     match src.send(&[UNIVERSE], &[], None, None, None) {
         Err(e) => {
-            match e.kind() {
-                ErrorKind::Io(x) => {
-                    match x.kind() {
-                        std::io::ErrorKind::InvalidInput => {
-                            assert!(true, "Unexpected error returned");
-                        },
-                        _ => {
-                            assert!(false, "Unexpected error returned");
-                        }
-                    }
+            match e {
+                SacnError::DataArrayEmpty() => {
+                            assert!(true, "Expected error returned");
                 },
                 _ => {
                     assert!(false, "Unexpected error returned");
