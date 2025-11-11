@@ -10,11 +10,13 @@ ip link set dev lo multicast on
 
 ip a show dev lo
 
-echo "net.ipv4.conf.all.rp_filter = 0" > /etc/sysctl.conf
-echo "net.ipv4.conf.default.rp_filter = 0" >> /etc/sysctl.conf
-echo "net.ipv4.conf.default.rp_filter = 0" >> /etc/sysctl.conf
-echo "net.ipv4.conf.all.accept_local = 1" >> /etc/sysctl.conf
-echo "net.ipv4.conf.all.mc_forwarding=1" >> /etc/sysctl.conf
+cat << EOF >> /etc/sysctl.conf
+net.ipv4.conf.all.rp_filter = 0
+net.ipv4.conf.default.rp_filter = 0
+net.ipv4.conf.default.rp_filter = 0
+net.ipv4.conf.all.accept_local = 1
+net.ipv4.conf.all.mc_forwarding = 1
+EOF
 
 cargo test
 cargo test ipv4 -- --ignored --test-threads=1 --nocapture

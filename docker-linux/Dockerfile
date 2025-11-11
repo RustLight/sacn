@@ -4,7 +4,7 @@ FROM rust:1-bullseye
 SHELL ["/bin/bash", "-c"]
 
 # optional: tools for quick network debug
-RUN apt-get update && apt-get install iproute2 -y
+RUN apt-get update && apt-get install iproute2 -y && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /work
 COPY Cargo.toml Cargo.lock ./
