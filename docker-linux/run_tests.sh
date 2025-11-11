@@ -10,13 +10,16 @@ ip link set dev lo multicast on
 
 ip a show dev lo
 
-cat << EOF >> /etc/sysctl.conf
-net.ipv4.conf.all.rp_filter = 0
-net.ipv4.conf.default.rp_filter = 0
-net.ipv4.conf.default.rp_filter = 0
-net.ipv4.conf.all.accept_local = 1
-net.ipv4.conf.all.mc_forwarding = 1
-EOF
+# requires elevated permissions to adjust these configs.
+# tests pass on the default debain container without setting these.
+# cat << EOF >> /etc/sysctl.conf
+# net.ipv4.conf.all.rp_filter = 0
+# net.ipv4.conf.default.rp_filter = 0
+# net.ipv4.conf.default.rp_filter = 0
+# net.ipv4.conf.all.accept_local = 1
+# net.ipv4.conf.all.mc_forwarding = 1
+# EOF
+# sysctl -p
 
 cargo test
 cargo test ipv4 -- --ignored --test-threads=1 --nocapture
