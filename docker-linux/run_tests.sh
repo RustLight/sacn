@@ -4,7 +4,7 @@ ip addr add 192.168.0.6/24 dev lo || true
 ip addr add 192.168.0.7/24 dev lo || true
 ip addr add 192.168.0.8/24 dev lo || true
 ip route add 224.0.0.0/4 dev lo || true
-ip route add 239.255.0.0/8 dev lo || true
+ip route add 239.255.0.0/16 dev lo || true
 
 ip link set dev lo multicast on
 
