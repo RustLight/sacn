@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 /// Uses the sACN error-chain errors.
 use sacn::error::errors::*;
-use sacn::sacn_parse_pack_error::sacn_parse_pack_error;
+use sacn::sacn_parse_pack_error;
 
 /// A test synchronisation packet as specified as an example in
 /// ANSI E1.31-2018 Appendix B Table B-14: Universe Synchronization Example E1.31 Synchronization Packet.
@@ -415,8 +415,8 @@ fn test_synchronization_packet_parse_pack() {
 fn test_sync_packet_root_layer_data_vector_parse() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_ROOT_LAYER_DATA_VECTOR) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(_) => {
+            match e {
+                SacnError::SacnParsePackError(_) => {
                     // As the packet will be treated as a data packet it is unclear where the parse will fail so only assert that it must fail
                     // with a parse type error rather than a specific error.
                     assert!(true, "Expected error family returned");
@@ -440,8 +440,8 @@ fn test_sync_packet_root_layer_data_vector_parse() {
 fn test_sync_packet_root_layer_unknown_vector_parse() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_ROOT_LAYER_UNKNOWN_VECTOR) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) => {
+            match e {
+                SacnError::SacnParsePackError(sacn_parse_pack_error::ParsePacketError::PduInvalidVector(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -463,8 +463,8 @@ fn test_sync_packet_root_layer_unknown_vector_parse() {
 fn test_sync_packet_too_short_cid_parse() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_TOO_SHORT_CID) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(_) => {
+            match e {
+                SacnError::SacnParsePackError(_) => {
                     // As packet is too short it is unclear exactly what error will occur, just need to assert
                     // that the packet is successfully rejected as malformed.
                     assert!(true, "Expected error family returned");
@@ -488,8 +488,8 @@ fn test_sync_packet_too_short_cid_parse() {
 fn test_sync_packet_too_long_cid_parse() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_TOO_LONG_CID) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(_) => {
+            match e {
+                SacnError::SacnParsePackError(_) => {
                     // As packet is too long it is unclear exactly what error will occur, just need to assert
                     // that the packet is successfully rejected as malformed.
                     assert!(true, "Expected error family returned");
@@ -513,8 +513,8 @@ fn test_sync_packet_too_long_cid_parse() {
 fn test_sync_packet_framing_layer_wrong_flags_parse() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_WRONG_FLAGS) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParsePduInvalidFlags(_)) => {
+            match e {
+                SacnError::SacnParsePackError(sacn_parse_pack_error::ParsePacketError::ParsePduInvalidFlags(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -536,8 +536,8 @@ fn test_sync_packet_framing_layer_wrong_flags_parse() {
 fn test_sync_packet_framing_layer_length_too_long_parse() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_LENGTH_TOO_LONG) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInsufficientData(_)) => {
+            match e {
+                SacnError::SacnParsePackError(sacn_parse_pack_error::ParsePacketError::ParseInsufficientData(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -559,8 +559,8 @@ fn test_sync_packet_framing_layer_length_too_long_parse() {
 fn test_sync_packet_framing_layer_length_too_short_parse() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_LENGTH_TOO_SHORT) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidLength(_)) => {
+            match e {
+                SacnError::SacnParsePackError(sacn_parse_pack_error::ParsePacketError::PduInvalidLength(_)) => {
                     assert!(true, "Expected error returned");
                 }
                 _ => {
@@ -582,8 +582,8 @@ fn test_sync_packet_framing_layer_length_too_short_parse() {
 fn test_sync_packet_framing_layer_discovery_vector() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_DISCOVERY_VECTOR) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(_) => {
+            match e {
+                SacnError::SacnParsePackError(_) => {
                     // The packet will be parsed as if it was a discovery packet which means that the parsing might fail
                     // for a number of reasons with it being hard to assert which one ahead of time.
                     // Therefore just assert that the parsing fails / the packet is rejected.
@@ -608,8 +608,8 @@ fn test_sync_packet_framing_layer_discovery_vector() {
 fn test_sync_packet_framing_layer_unknown_vector() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_FRAMING_LAYER_UNKNOWN_VECTOR) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::PduInvalidVector(_)) => {
+            match e {
+                SacnError::SacnParsePackError(sacn_parse_pack_error::ParsePacketError::PduInvalidVector(_)) => {
                     assert!(true, "Expected error family returned");
                 }
                 _ => {
@@ -631,15 +631,14 @@ fn test_sync_packet_framing_layer_unknown_vector() {
 fn test_sync_packet_too_high_sync_addr() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_TOO_HIGH_SYNC_ADDRESS) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidUniverse(_)) => {
+            match e {
+                SacnError::SacnParsePackError(sacn_parse_pack_error::ParsePacketError::ParseInvalidSyncAddr(_)) => {
                     assert!(true, "Expected error family returned");
                 }
                 _ => {
                     assert!(false, "Unexpected error type returned");
                 }
             }
-
         }
         Ok(_) => {
             assert!(
@@ -654,8 +653,8 @@ fn test_sync_packet_too_high_sync_addr() {
 fn test_sync_packet_too_low_sync_addr() {
     match AcnRootLayerProtocol::parse(&TEST_SYNCHRONIZATION_PACKET_TOO_LOW_SYNC_ADDRESS) {
         Err(e) => {
-            match *e.kind() {
-                ErrorKind::SacnParsePackError(sacn_parse_pack_error::ErrorKind::ParseInvalidUniverse(_)) => {
+            match e {
+                SacnError::SacnParsePackError(sacn_parse_pack_error::ParsePacketError::ParseInvalidSyncAddr(_)) => {
                     assert!(true, "Expected error family returned");
                 }
                 _ => {

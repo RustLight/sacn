@@ -20,9 +20,9 @@ exclude = [
 
 [dependencies]
 byteorder = { version = "1.5.0", features = [] }
-error-chain = "0.12.4"
 libc = { version = "0.2.171" }
 socket2 = { version = "0.5.9", features = ["all"] }
+thiserror = "2.0.*"
 uuid = { version = "1.12", features = ["v4"] }
 
 [dev-dependencies]
@@ -35,6 +35,18 @@ std = []
 [badges]
 travis-ci = { repository = "Lan2u/RustSacn" }
 
-[[examples]]
+[[example]]
+name = 'simple-receiver'
+path = 'examples/simple-receiver.rs'
+
+[[example]]
+name = 'sine-wave-sender'
 path = 'examples/sine-wave-sender.rs'
-edition = '2024'
+
+[[example]]
+name = 'demo_rcv'
+path = 'examples/demo_rcv/src/main.rs'  
+
+[[example]]
+name = 'demo_src'
+path = 'examples/demo_src/src/main.rs'
