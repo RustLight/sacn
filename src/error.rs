@@ -43,14 +43,13 @@ pub mod errors {
         // Allow UUID library to be used with error system.
         #[error("Uuid error occurred: {0}")]
         Uuid(#[from] uuid::Error),
-        
+
         /// Returned to indicate that too many bytes were read to fit into supplied buffer.
         ///
         /// # Arguments
         /// usize: number of bytes read.
-        /// 
-        /// usize: size of buffer.
         ///
+        /// usize: size of buffer.
         #[error("The given buffer fits {0} bytes, but {1} bytes were read.")]
         TooManyBytesRead(usize, usize),
 
@@ -62,7 +61,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// String: A string describing why the source name is malformed.
-        ///
         #[error("The given source name was malformed and couldn't be used, msg: {0}")]
         MalformedSourceName(String),
 
@@ -72,7 +70,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// The provided priority
-        ///
         #[error(
             "Priority must be within allowed range of [0-E131_MAX_PRIORITY], priority provided: {0}"
         )]
@@ -84,7 +81,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// Number of sources
-        ///
         #[error("Limit for the number of supported sources has been reached: {0}")]
         SourcesExceededError(usize),
 
@@ -92,7 +88,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// The name of the source discovered.
-        ///
         #[error("Source discovered with announce_discovery_flag set to true: {0}")]
         SourceDiscovered(String),
 
@@ -100,7 +95,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// Length of data provided.
-        ///
         #[error("Attempted to exceed the capacity of a single universe, data len: {0}")]
         ExceedUniverseCapacity(usize),
 
@@ -109,7 +103,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// u16: The provided universe.
-        ///
         #[error("Attempted to use an illegal universe: {0}")]
         IllegalUniverse(u16),
 
@@ -118,7 +111,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// u16: The provided synchronization universe.
-        ///
         #[error("Attempted to use an illegal synchronization universe: {0}")]
         IllegalSyncUniverse(u16),
 
@@ -127,12 +119,10 @@ pub mod errors {
         ///
         /// # Arguments
         /// u16: The universe that was not registered.
-        ///
         #[error("Attempted to use a universe that wasn't registered: {0}")]
         UniverseNotRegistered(u16),
 
         /// Ip version (ipv4 or ipv6) used when the other is expected.
-        ///
         #[error("Multicast address and interface_addr not same IP version.")]
         IpVersionError(),
 
@@ -140,7 +130,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// A string describing the situation where an unsupported IP version is used.
-        ///
         #[error("Unsupported IP version used: {0}")]
         UnsupportedIpVersion(String),
 
@@ -148,12 +137,10 @@ pub mod errors {
         ///
         /// # Arguments
         /// Name of terminated sender.
-        ///
         #[error("Attempted to use a sender which has already been terminated: {0}")]
         SenderAlreadyTerminated(String),
 
         /// An error was encountered when attempting to merge DMX data together.
-        ///
         #[error(
             "Error when merging DMX data. Attempted DMX merge on dmx data with different universes, synchronisation universes or data with no values"
         )]
@@ -163,12 +150,13 @@ pub mod errors {
         ///
         /// # Arguments
         /// u8: The sequence number of the packet received.
-        /// 
-        /// u8: The last sequence number received.
-        /// 
-        /// isize: The difference between the last and current sequence numbers.
         ///
-        #[error("Packet received with sequence number {0} is out of sequence, last {1}, seq-diff {2}")]
+        /// u8: The last sequence number received.
+        ///
+        /// isize: The difference between the last and current sequence numbers.
+        #[error(
+            "Packet received with sequence number {0} is out of sequence, last {1}, seq-diff {2}"
+        )]
         OutOfSequence(u8, u8, isize),
 
         /// A source terminated a universe and this was detected when trying to receive data.
@@ -176,9 +164,8 @@ pub mod errors {
         ///
         /// # Arguments
         /// Uuid: The CID of the source which sent the termination packet.
-        /// 
-        /// u16: The universe that the termination packet is for.
         ///
+        /// u16: The universe that the termination packet is for.
         #[error("Source terminated universe, source cid: {0}, universe: {1}")]
         UniverseTerminated(Uuid, u16),
 
@@ -188,7 +175,6 @@ pub mod errors {
         /// uuid: The CID of the source which timed out.
         ///
         /// u16: The universe that timed out.
-        ///
         #[error("Source universe timed out, source cid: {0}, universe: {1}")]
         UniverseTimeout(Uuid, u16),
 
@@ -197,7 +183,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// u16: The universe that was not found.
-        ///
         #[error("When looking for a specific universe it wasn't found, universe: {0}")]
         UniverseNotFound(u16),
 
@@ -206,7 +191,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// Uuid: The uuid of the source that was not found.
-        ///
         #[error("Source not found: {0}")]
         SourceNotFound(Uuid),
 
@@ -215,7 +199,6 @@ pub mod errors {
         ///
         /// # Arguments
         /// String: A message describing why this error was returned / the operation that was not supported.
-        ///
         #[error("Operation attempted is unsupported on the current OS: {0}")]
         OsOperationUnsupported(String),
 
@@ -226,24 +209,20 @@ pub mod errors {
         ///
         /// # Arguments
         /// String: A message providing further details (if any) as to why the SourceCorrupt error was returned.
-        ///
         #[error(
             "The sACN source has corrupted due to an internal panic! and should no longer be used, {0}"
         )]
         SourceCorrupt(String),
 
         /// Returned if the data array has length 0
-        ///
         #[error("Data array has length 0, must provide data to send")]
         DataArrayEmpty(),
 
         /// Returned if the universe list has length 0
-        ///
         #[error("Universe list has length 0, must provide at least one universe")]
         UniverseListEmpty(),
 
         /// Returned if the receiver has a source limit of 0
-        ///
         #[error(
             "Source_limit has a value of Some(0) which would indicate this receiver can never receive from any source"
         )]
@@ -252,7 +231,6 @@ pub mod errors {
         /// This indicates that the only universe that can be received is the discovery universe.
         /// This means that having no timeout may lead to no data ever being received and so this method blocking forever
         /// to prevent this likely unintended behaviour throw a universe not registered error.
-        ///
         #[error(
             "Attempting to receive data with no data universes registered, an infinite timeout and no discovery announcements"
         )]

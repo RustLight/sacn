@@ -9,11 +9,11 @@
 
 /// Use the error-chain system to allow handling IO and sACN errors chained together.
 /// error_chain! macro automatically creates the Error / ErrorKind / Result required to use the Errors/external errors below with error-chain.
-/// 
+///
 /// Sacn create errors are wrapped in Sacn(::sacn::error::errors::Error).
-/// 
+///
 /// Std io errors are wrapped in Io(::std::io::Error).
-/// 
+///
 /// Boolean parse errors from Std str ParseBoolError are wrapped in BoolStr(::std::str::ParseBoolError).
 
 pub mod errors {
@@ -33,4 +33,3 @@ pub mod errors {
 
     pub type Result<T> = std::result::Result<T, DemoError>;
 }
-

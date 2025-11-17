@@ -329,7 +329,6 @@ pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_T
 /// # Errors
 /// IllegalUniverse: Returned if the given universe is outwith the allowed range of universes,
 ///     see (is_universe_in_range)[fn.is_universe_in_range.packet].
-///
 pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SockAddr> {
     is_universe_in_range(universe)?;
 
@@ -354,7 +353,6 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SockAddr> {
 /// # Errors
 /// IllegalUniverse: Returned if the given universe is outwith the allowed range of universes,
 ///     see (is_universe_in_range)[fn.is_universe_in_range.packet].
-///
 pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SockAddr> {
     is_universe_in_range(universe)?;
 
@@ -371,7 +369,6 @@ pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SockAddr> {
 /// # Errors
 /// IllegalUniverse: Returned if the universe is outwith the allowed range of universes
 ///     [E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE] + E131_DISCOVERY_UNIVERSE.
-///
 pub fn is_universe_in_range(universe: u16) -> Result<()> {
     if (universe != E131_DISCOVERY_UNIVERSE)
         && !(E131_MIN_MULTICAST_UNIVERSE..=E131_MAX_MULTICAST_UNIVERSE).contains(&universe)
@@ -396,7 +393,6 @@ fn zeros(buf: &mut [u8], n: usize) {
 ///
 /// # Errors
 /// SourceNameNotNullTerminated: Returned if the source name is not null terminated as required by ANSI E1.31-2018 Section 6.2.2
-///
 #[inline]
 fn parse_source_name_str(buf: &[u8]) -> Result<&str> {
     let mut source_name_length = buf.len();
@@ -537,7 +533,6 @@ struct PduInfo {
 /// ParseInsufficientData: If the length of the buffer is less than the flag, length and vector fields (E131_PDU_LENGTH_FLAGS_LENGTH + vector_length).
 ///
 /// ParsePduInvalidFlags: If the flags parsed don't match the flags expected for an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
-///
 fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo> {
     if buf.len() < E131_PDU_LENGTH_FLAGS_LENGTH + vector_length {
         return Err(SacnError::SacnParsePackError(
@@ -1465,7 +1460,6 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
 /// ParseInvalidUniverseOrder: If the universes are not sorted in ascending order with no duplicates.
 ///
 /// ParseInsufficientData: If the buffer doesn't contain sufficient bytes and so cannot be parsed into the specified number of u16 universes.
-///
 fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> {
     let mut universes: Vec<u16> = Vec::with_capacity(length);
     let mut i = 0;

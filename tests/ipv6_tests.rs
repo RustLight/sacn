@@ -17,7 +17,7 @@ pub mod ipv4_tests;
 const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 3] = ["2a02:c7f:d20a:c600:a502:2dae:7716:601b", "2a02:c7f:d20a:c600:a502:2dae:7716:601c", "2a02:c7f:d20a:c600:a502:2dae:7716:601d"];
 
 // Split the IPv6 tests into 2 modules.
-// This allows only running the IPv6 Multicast tests on Linux as they are unsupported on Windows. 
+// This allows only running the IPv6 Multicast tests on Linux as they are unsupported on Windows.
 #[cfg(test)]
 #[cfg(target_os = "linux")]
 mod sacn_ipv6_multicast_test {
@@ -35,15 +35,15 @@ use socket2::{Socket, Domain, Type};
 
 use sacn::source::SacnSource;
 use sacn::receive::{SacnReceiver, DMXData};
-use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT, universe_to_ipv4_multicast_addr, 
+use sacn::packet::{UNIVERSE_CHANNEL_CAPACITY, ACN_SDT_MULTICAST_PORT, universe_to_ipv4_multicast_addr,
     universe_to_ipv6_multicast_addr, E131_DISCOVERY_UNIVERSE, E131_TERMINATE_STREAM_PACKET_COUNT};
 use sacn::error::errors::*;
 
 /// UUID library used to handle the UUID's used in the CID fields.
 use uuid::Uuid;
 
-use crate::ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE, 
-    TEST_DATA_MULTIPLE_UNIVERSE, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE, 
+use crate::ipv4_tests::{TEST_DATA_SINGLE_UNIVERSE,
+    TEST_DATA_MULTIPLE_UNIVERSE, TEST_DATA_PARTIAL_CAPACITY_UNIVERSE,
     TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE,
     TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE};
 
@@ -68,7 +68,7 @@ fn test_send_recv_partial_capacity_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv(None)).unwrap();
     });
 
-    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready.
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
@@ -118,7 +118,7 @@ fn test_send_recv_single_universe_alternative_startcode_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv(None)).unwrap();
     });
 
-    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready.
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
@@ -169,7 +169,7 @@ fn test_across_alternative_startcode_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv(None)).unwrap(); // Receive the sync packet, the data packets shouldn't have caused .recv to return as forced to wait for sync.
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready.
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
@@ -228,7 +228,7 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv(None)).unwrap(); // Receive the sync packet, the data packets shouldn't have caused .recv to return as forced to wait for sync.
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready.
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
@@ -285,7 +285,7 @@ fn test_send_recv_single_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv(None)).unwrap();
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready.
 
     // Note: Localhost / loopback doesn't always support IPv6 multicast. Therefore this may have to be modified to select a specific network using the line below
     // where PUT_IPV6_ADDR_HERE is replaced with the ipv6 address of the interface to use. https://stackoverflow.com/questions/55308730/java-multicasting-how-to-test-on-localhost (04/01/2020)
@@ -337,7 +337,7 @@ fn test_send_recv_across_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv(None)).unwrap(); // Receive the sync packet, the data packets shouldn't have caused .recv to return as forced to wait for sync.
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready.
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
@@ -427,9 +427,9 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv6(){
     src.send(&[universe2], &TEST_DATA_MULTIPLE_UNIVERSE[513..], Some(priority), None, Some(sync_uni)).unwrap();
 
     // Waiting to receive, if anything is received it indicates one of the receivers progressed without waiting for synchronisation.
-    // This has the issue that is is possible that even though they could have progressed the receive threads may not have leading them to pass this part 
-    // when they shouldn't. This is difficult to avoid using this method of testing. It is also possible for the delay on the network to be so high that it 
-    // causes the timeout, this is also difficult to avoid. Both of these reasons should be considered if this test passes occasionally but not consistently. 
+    // This has the issue that is is possible that even though they could have progressed the receive threads may not have leading them to pass this part
+    // when they shouldn't. This is difficult to avoid using this method of testing. It is also possible for the delay on the network to be so high that it
+    // causes the timeout, this is also difficult to avoid. Both of these reasons should be considered if this test passes occasionally but not consistently.
     // The timeout should be large enough to make this unlikely although must be lower than the protocol's in-built timeout.
     const WAIT_RECV_TIMEOUT: u64 = 2;
     let attempt_recv = rx.recv_timeout(Duration::from_secs(WAIT_RECV_TIMEOUT));
@@ -501,15 +501,15 @@ fn test_three_senders_three_recv_multicast_ipv6(){
             let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1 + (i as u16));
             // https://www.programming-idioms.org/idiom/153/concatenate-string-with-integer/1975/rust (11/01/2020)
             let mut src = SacnSource::with_ip(&format!("Source {}", i), ip).unwrap();
-    
+
             let priority = 100;
 
-            let universe: u16 = (i as u16) + BASE_UNIVERSE; 
-    
+            let universe: u16 = (i as u16) + BASE_UNIVERSE;
+
             src.register_universe(universe).unwrap(); // Senders all send on different universes.
 
             tx.send(()).unwrap(); // Forces each sender thread to wait till the controlling thread receives which stops sending before the receivers are ready.
-    
+
             src.send(&[universe], &data, Some(priority), None, None).unwrap();
         }));
     }
@@ -535,7 +535,7 @@ fn test_three_senders_three_recv_multicast_ipv6(){
             }
 
             // Results of each receive are sent back, this allows checking that each receiver was an expected universe, all universes were received and there were no errors.
-            tx.send(res).unwrap(); 
+            tx.send(res).unwrap();
         }));
 
         assert_eq!(rcv_rx.recv().unwrap().len(), 0); // Wait till the receiver has notified controlling thread it is ready.
@@ -611,9 +611,9 @@ fn test_universe_discovery_one_universe_one_source_ipv6(){
 
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
 
-    loop { 
+    loop {
         let result = dmx_recv.recv(Some(Duration::from_secs(2)));
-        match result { 
+        match result {
             Err(e) => {
                 match e {
                     SacnError::Io(ref s) => {
@@ -637,8 +637,8 @@ fn test_universe_discovery_one_universe_one_source_ipv6(){
                 assert!(false, "No data should have been passed up!");
             }
         }
-        
-        let discovered = dmx_recv.get_discovered_sources(); 
+
+        let discovered = dmx_recv.get_discovered_sources();
 
         if discovered.len() > 0 {
             assert_eq!(discovered.len(), 1);
@@ -692,9 +692,9 @@ fn test_universe_discovery_multiple_universe_one_source_ipv6(){
 
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
 
-    loop { 
+    loop {
         let result = dmx_recv.recv(Some(Duration::from_secs(2)));
-        match result { 
+        match result {
             Err(e) => {
                 match e {
                     SacnError::Io(ref s) => {
@@ -718,8 +718,8 @@ fn test_universe_discovery_multiple_universe_one_source_ipv6(){
                 assert!(false, "No data should have been passed up!");
             }
         }
-        
-        let discovered = dmx_recv.get_discovered_sources(); 
+
+        let discovered = dmx_recv.get_discovered_sources();
 
         if discovered.len() > 0 {
             assert_eq!(discovered.len(), 1);
@@ -778,10 +778,10 @@ fn test_universe_discovery_multiple_pages_one_source_ipv6(){
 
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT), None).unwrap();
 
-    loop { 
+    loop {
         let result = dmx_recv.recv(Some(Duration::from_secs(2)));
 
-        match result { 
+        match result {
             Err(e) => {
                 match e {
                     SacnError::Io(ref s) => {
@@ -805,8 +805,8 @@ fn test_universe_discovery_multiple_pages_one_source_ipv6(){
                 assert!(false, "No data should have been passed up!");
             }
         }
-        
-        let discovered = dmx_recv.get_discovered_sources(); 
+
+        let discovered = dmx_recv.get_discovered_sources();
 
         if discovered.len() > 0 {
             assert_eq!(discovered.len(), 1);
@@ -847,7 +847,7 @@ fn test_send_recv_two_universe_multicast_ipv6(){
         thread_tx.send(dmx_recv.recv(None)).unwrap();
     });
 
-    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready. 
+    rx.recv().unwrap().unwrap(); // Blocks until the receiver says it is ready.
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
@@ -935,11 +935,11 @@ fn test_two_senders_one_recv_same_universe_no_sync_multicast_ipv6(){
 
 /// Setups and runs through the scenario as described in ANSI E1.31-2018 Appendix B.
 /// This asserts that the behaviour of this implementation is exactly as outlined within that section.
-/// This shows that the implementation handles universe synchronisation in the way specified by the protocol document. 
+/// This shows that the implementation handles universe synchronisation in the way specified by the protocol document.
 /// As the force synchronisation option is not implemented as part of this library that section is ignored.
-/// 
+///
 /// This is exactly the same as the IPv4 variant test of the same name but done over IPv6 to show equivalence.
-/// 
+///
 #[test]
 #[ignore]
 fn test_ansi_e131_appendix_b_runthrough_ipv6() {
@@ -953,7 +953,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
     const PAUSE_PERIOD: Duration = Duration::from_millis(100);
 
     let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
-    
+
     let thread_tx = tx.clone();
 
     let data_universes = [1, 2];
@@ -990,7 +990,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
         src.send(&[data_universes[0]], &data, Some(priority), None, None).unwrap();
         src.send(&[data_universes[1]], &data2, Some(priority), None, None).unwrap();
     });
-    
+
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPV6[1].parse().unwrap(), ACN_SDT_MULTICAST_PORT), None).unwrap();
 
     // Receiver only listening to the data universe, the sync universe should be joined automatically when a data packet that requires it arrives.
@@ -1002,7 +1002,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
     for _ in 0 .. SYNC_PACKET_COUNT {
         // "When the E1.31 Synchronization Packet arrives from Source A, Receiver B acts on the data."
         match dmx_recv.recv(None) {
-            Ok(p) => { 
+            Ok(p) => {
                 assert_eq!(p.len(), DATA_PACKETS_PER_SYNC_PACKET);
                 if p[0].universe == data_universes[0] {
                     assert_eq!(p[0].values, data, "Unexpected data within first data packet of a set of synchronised packets");
@@ -1045,7 +1045,7 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
     // this assumption is based on the wording "Universe synchronization is required for applications where receivers require more than one universe to
     // be controlled, multiple receivers produce synchronized output, or unsynchronized control of receivers may
     // result in undesired visual effects." from ANSI E1.31-2018 Section 11. This wording indicates that one use case of synchronisation is to allow
-    // receivers with more than one universe to be controlled however this would be impossible if the statement above (from ANSI E1.31-2018 Appendix B) 
+    // receivers with more than one universe to be controlled however this would be impossible if the statement above (from ANSI E1.31-2018 Appendix B)
     // indicated that data packets for all but one universe should be discarded.
 
     // "Since the the Force_Synchronization bit in the Options field of the E1.31 Data Packet has been set to 0,
@@ -1056,16 +1056,16 @@ fn test_ansi_e131_appendix_b_runthrough_ipv6() {
     snd_thread.join().unwrap();
 }
 
-/// Sets up a single source and receiver. Like in a real-world scenario the source sends data continuously on 2 universes synchronised 
+/// Sets up a single source and receiver. Like in a real-world scenario the source sends data continuously on 2 universes synchronised
 /// on a third universe with a small interval between data sends.
 /// The receiver starts with no knowledge of what universe the source is sending on so starts by using Universe Discovery to discover the universes
 /// it then joins these universes and receives the data. The sender eventually stops sending data and terminates by sending stream termination packets.
 /// The receiver receives these packets and also terminates.
 /// This shows that the implementation works in a simulated scenario that makes use of multiple features / parts.
 /// It also shows the receiver 'jumping into' a stream of data that has already started (meaning sequence numbers are already > 0).
-/// 
+///
 /// This is exactly the same as the IPv4 variant test of the same name but done over IPv6 to show equivalence.
-/// 
+///
 #[test]
 #[ignore]
 fn test_discover_recv_sync_runthrough_ipv6() {
@@ -1077,7 +1077,7 @@ fn test_discover_recv_sync_runthrough_ipv6() {
 
     // The 'slight pause' as specified by ANSI E1.31-2018 Section 11.2.2 between data and sync packets.
     const PAUSE_PERIOD: Duration = Duration::from_millis(50);
-    
+
     // The interval between sets of sync/data packets.
     const INTERVAL: Duration = Duration::from_millis(100);
 
@@ -1120,11 +1120,11 @@ fn test_discover_recv_sync_runthrough_ipv6() {
 
         // Sender goes out of scope so will automatically send termination packets.
     });
-    
+
     let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(TEST_NETWORK_INTERFACE_IPV6[1].parse().unwrap(), ACN_SDT_MULTICAST_PORT), None).unwrap();
 
     // Receiver starts by not listening to any data universes (automatically listens to discovery universe).
-    
+
     dmx_recv.set_announce_source_discovery(true);
 
     let universes: Vec<u16> = match dmx_recv.recv(None) {
@@ -1143,7 +1143,7 @@ fn test_discover_recv_sync_runthrough_ipv6() {
                     discovered_sources[0].get_all_universes()
                 }
                 _ => {
-                    // A real-user would want to look at using more detailed error handling as appropriate to their use case but for this test panic 
+                    // A real-user would want to look at using more detailed error handling as appropriate to their use case but for this test panic
                     // (which will fail the test) is suitable.
                     panic!("Unexpected error");
                 }
@@ -1185,7 +1185,7 @@ fn test_discover_recv_sync_runthrough_ipv6() {
                 } else {
                     assert!(false, "Unrecognised universe within data packet");
                 }
-            } 
+            }
         }
     }
 
@@ -1194,10 +1194,10 @@ fn test_discover_recv_sync_runthrough_ipv6() {
 }
 
 /// Creates an IPv4 sender and an IPv6 sender as well as 2 receiver sockets (one for each IP version).
-/// 
-/// Both senders then send a data packet, sync packet, discovery packet and termination packet to their respective receiver socket and the test asserts 
+///
+/// Both senders then send a data packet, sync packet, discovery packet and termination packet to their respective receiver socket and the test asserts
 /// that all packets received are identical regardless of IP version used as per ANSI E1.31-2018 Section 9.1
-/// 
+///
 #[test]
 #[ignore]
 fn test_ip_equivalence() {
@@ -1241,7 +1241,7 @@ fn test_ip_equivalence() {
     ipv4_recv.bind(&SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT).into()).unwrap();
     ipv4_recv.join_multicast_v4(&ipv4_multicast_addr.as_socket_ipv4().unwrap().ip(), &Ipv4Addr::UNSPECIFIED).unwrap();
     ipv4_recv.join_multicast_v4(&ipv4_discovery_multicast_addr.as_socket_ipv4().unwrap().ip(), &Ipv4Addr::UNSPECIFIED).unwrap();
-    
+
     // Create and setup the ipv6 source.
     let ipv6: SocketAddr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
     let mut ipv6_source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ipv6).unwrap();
@@ -1261,7 +1261,7 @@ fn test_ip_equivalence() {
     ipv6_recv.bind(&SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT).into()).unwrap();
     ipv6_recv.join_multicast_v6(&ipv6_multicast_addr.as_socket_ipv6().unwrap().ip(), 0).unwrap();
     ipv6_recv.join_multicast_v6(&ipv6_discovery_multicast_addr.as_socket_ipv6().unwrap().ip(), 0).unwrap();
-    
+
     // Send and receive the data packet over IPv4.
     let mut ipv4_recv_buf = [0; 1024];
     ipv4_source.send(&[universe], &dmx_data, Some(PRIORITY), None, None).unwrap();
@@ -1358,7 +1358,7 @@ fn test_send_recv_single_universe_unicast_ipv6(){
         thread_tx.send(dmx_recv.recv(None)).unwrap();
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready.
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
@@ -1409,7 +1409,7 @@ fn test_send_recv_across_universe_unicast_ipv6(){
         thread_tx.send(dmx_recv.recv(None)).unwrap(); // Receive the sync packet, the data packets shouldn't have caused .recv to return as forced to wait for sync.
     });
 
-    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready. 
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready.
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
     let mut src = SacnSource::with_ip("Source", ip).unwrap();

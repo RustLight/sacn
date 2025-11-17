@@ -23,7 +23,6 @@
 //!
 //! Note the lack of top level constant strings used in the place of output format strings is due to a limitation in rust where the format string cannot be a
 //! const.
-//!
 
 /// The demo itself utilises a small error-chain which wraps the errors from the sACN crate and a few standard crates.
 pub mod error;
@@ -135,7 +134,7 @@ fn get_usage_str() -> String {
     {} <file-path> <recv-count> <timeout in sec>\n
 
     All input is ignored on lines starting with '{} '.
-    ", ACTION_RECV, ACTION_RECV_CONTINUOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT, 
+    ", ACTION_RECV, ACTION_RECV_CONTINUOUS, ACTION_PRINT_DISCOVERED_SOURCES, ACTION_PRINT_DISCOVERED_SOURCES_NO_TIMEOUT,
     ACTION_QUIT, ACTION_HELP, ACTION_LISTEN_UNIVERSE, ACTION_STOP_LISTEN_UNIVERSE, ACTION_SLEEP, ACTION_PREVIEW, ACTION_ANNOUNCE_DISCOVERED,
     ACTION_ANNOUNCE_TERMINATION, ACTION_FILE_OUT, ACTION_IGNORE)
 }
@@ -398,7 +397,6 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
 /// data: The data to write to the file.
 ///
 /// data_id: The id used as the first column within the file for the data.
-///
 fn write_to_file(file: &mut Box<File>, data: Vec<DMXData>, data_id: u64) -> Result<()> {
     for d in data {
         let values_str = create_values_str(d.values)?;
@@ -418,7 +416,6 @@ fn write_to_file(file: &mut Box<File>, data: Vec<DMXData>, data_id: u64) -> Resu
 ///
 /// # Arguments
 /// values: The unsigned 8 bit number values to turn into a string.
-///
 fn create_values_str(values: Vec<u8>) -> Result<String> {
     let mut res: String = "".to_string();
 
@@ -445,7 +442,6 @@ fn create_values_str(values: Vec<u8>) -> Result<String> {
 ///
 /// # Arguments
 /// res: The data to display.
-///
 fn print_recv(res: Result<Vec<DMXData>>) {
     match res {
         Err(DemoError::Sacn(sacn::error::errors::SacnError::UniverseTerminated(_src, uni))) => {
@@ -465,7 +461,6 @@ fn print_recv(res: Result<Vec<DMXData>>) {
 ///
 /// # Arguments
 /// data: The data to be printed to stdout.
-///
 fn print_data(mut data: Vec<DMXData>) {
     print!("[");
     // Sort the data with lower universes first, this means that even though the data returned from the waiting data can be in any order this means
@@ -485,7 +480,6 @@ fn print_data(mut data: Vec<DMXData>) {
 ///
 /// # Arguments
 /// src: The sources to print to standard out.
-///
 fn print_discovered_sources(srcs: &Vec<DiscoveredSacnSource>) {
     for s in srcs {
         println!("Name: {}, Universes: {:?}", s.name, s.get_all_universes());
@@ -493,7 +487,6 @@ fn print_discovered_sources(srcs: &Vec<DiscoveredSacnSource>) {
 }
 
 /// Displays the usage/help string to stdout.
-///
 fn display_help() {
     println!("{}", get_usage_str());
 }

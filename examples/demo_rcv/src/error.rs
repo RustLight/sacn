@@ -13,7 +13,6 @@
 /// Sacn create errors are wrapped in Sacn(::sacn::error::errors::Error).
 ///
 /// Std io errors are wrapped in Io(::std::io::Error).
-///
 
 pub mod errors {
     use thiserror::Error;

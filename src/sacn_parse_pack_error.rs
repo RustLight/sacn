@@ -18,7 +18,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// msg: A message providing further details (if any) as to what data was invalid.
-    ///
     #[error("Error when parsing data into packet, msg: {0}")]
     ParseInvalidData(String),
 
@@ -27,7 +26,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// u8: the priority value that was invalid.
-    ///
     #[error(
         "Attempted to parse a priority value that is outwith the allowed range of [0, 200]: {0}"
     )]
@@ -37,7 +35,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// msg: A message providing further details (if any) as to why the page was invalid.
-    ///
     #[error("Error when parsing page value, msg: {0}")]
     ParseInvalidPage(String),
 
@@ -46,7 +43,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// u16: the synchronisation address that was invalid.
-    ///
     #[error(
         "Attempted to parse a sync_addr value that is outwith the allowed range of [0, 63999]: {0}"
     )]
@@ -57,7 +53,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// u16: the universe value that was invalid.
-    ///
     #[error(
         "Attempted to parse a universe value that is outwith the allowed range of [1, 63999]: {0}"
     )]
@@ -68,7 +63,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// msg: A message providing further details (if any) as to why the universe ordering was invalid.
-    ///
     #[error("Attempted to parse a packet with an invalid ordering of universes, msg: {0}")]
     ParseInvalidUniverseOrder(String),
 
@@ -76,7 +70,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// msg: A message providing further details (if any) as to why the data couldn't be packed.
-    ///
     #[error("When packing a packet into a buffer invalid data encountered, msg: {0}")]
     PackInvalidData(String),
 
@@ -84,7 +77,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// msg: A message providing further details (if any) as to why the pack buffer is insufficient.
-    ///
     #[error("Supplied buffer is not large enough to pack packet into, msg: {0}")]
     PackBufferInsufficient(String),
 
@@ -92,7 +84,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// msg: A message providing further details (if any) as to why there was insufficient data for parsing.
-    ///
     #[error("Supplied buffer does not contain enough data, msg: {0}")]
     ParseInsufficientData(String),
 
@@ -100,7 +91,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// flags: The flags that were found which are invalid.
-    ///
     #[error("PDU Flags {0:#b} are invalid for parsing")]
     ParsePduInvalidFlags(u8),
 
@@ -108,7 +98,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// len: The length provided in the Pdu which is invalid.
-    ///
     #[error("PDU Length {0} is invalid")]
     PduInvalidLength(usize),
 
@@ -116,7 +105,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// vec: The vector parsed which is invalid / cannot be used.
-    ///
     #[error("Vector {0:#x} not supported")]
     PduInvalidVector(u32),
 
@@ -124,7 +112,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// msg: A message providing further details (if any) as to why the uuid (used for CID) couldn't be parsed.
-    ///
     #[error("Error parsing the received UUID: {0}")]
     UuidError(Uuid),
 
@@ -132,7 +119,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// msg: A message providing further details (if any) as to why the string couldn't be parsed.
-    ///
     #[error("Error parsing received UTF8 string, msg: {0}")]
     Utf8Error(String),
 
@@ -140,7 +126,6 @@ pub enum ParsePacketError {
     ///
     /// # Arguments
     /// msg: A message providing further details (if any) as to why the source name was invalid.
-    ///
     #[error("Source name in packet was not null terminated.")]
     SourceNameNotNullTerminated(),
 }
