@@ -1188,7 +1188,7 @@ impl SacnSourceInternal {
     /// # Errors
     /// Io: Returned if the TTL cannot be retrieved from the underlying socket.
     fn ttl(&self) -> Result<u32> {
-        Ok(self.socket.ttl()?)
+        Ok(self.socket.ttl_v4()?)
     }
 
     /// Sets the Time To Live for unicast packets sent by this source.
@@ -1199,7 +1199,7 @@ impl SacnSourceInternal {
     /// # Errors
     /// Io: Returned if the TTL fails to be set on the underlying socket.
     fn set_ttl(&mut self, ttl: u32) -> Result<()> {
-        Ok(self.socket.set_ttl(ttl)?)
+        Ok(self.socket.set_ttl_v4(ttl)?)
     }
 
     /// Returns the multicast time to live of the socket.

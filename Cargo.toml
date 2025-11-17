@@ -21,8 +21,8 @@ exclude = [
 [dependencies]
 byteorder = { version = "1.5.0", features = [] }
 libc = { version = "0.2.171" }
-socket2 = { version = "0.5.9", features = ["all"] }
-thiserror = "2.0.*"
+socket2 = { version = "0.6.1", features = ["all"] }
+thiserror = "2.0.0"
 uuid = { version = "1.12", features = ["v4"] }
 
 [dev-dependencies]
@@ -45,7 +45,7 @@ path = 'examples/sine-wave-sender.rs'
 
 [[example]]
 name = 'demo_rcv'
-path = 'examples/demo_rcv/src/main.rs'  
+path = 'examples/demo_rcv/src/main.rs'
 
 [[example]]
 name = 'demo_src'
