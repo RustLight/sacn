@@ -33,6 +33,9 @@ serial_test = { version = "3.2.0", features = ["file_locks"] }
 default = ["std"]
 std = []
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }
+
 [badges]
 travis-ci = { repository = "Lan2u/RustSacn" }
 

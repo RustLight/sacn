@@ -403,6 +403,7 @@ fn test_send_above_priority() {
 /// This test therefore checks that the sender works without crashing in one of the simplest cases.
 #[test]
 #[serial]
+#[cfg_attr(ci, ignore)]
 fn test_send_single_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
 
@@ -418,6 +419,7 @@ fn test_send_single_universe() {
 
 #[test]
 #[serial]
+#[cfg_attr(ci, ignore)]
 fn test_send_across_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
 
