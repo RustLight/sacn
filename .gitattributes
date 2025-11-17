@@ -1,1 +1,10 @@
-docker-linux/run_tests.sh eol=lf
+# Windows scripts - must be CRLF
+*.ps text eol=crlf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Linux scripts - must be LF
+*.sh text eol=lf
+*.Dockerfile text eol=lf
+Dockerfile text eol=lf
