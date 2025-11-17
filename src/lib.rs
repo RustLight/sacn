@@ -23,7 +23,7 @@
 //!
 //! Creating an sACN receiver and receiving data. This automatically handles receiving synchronised data at the right time with the array of received data
 //! containing all the data which should be acted upon at the same time (so if there are 2 synchronised data packets the array will have length 2).
-//! ```
+//! ```file_serial
 //! use sacn::receive::SacnReceiver;
 //! use sacn::packet::ACN_SDT_MULTICAST_PORT;
 //!
@@ -53,7 +53,7 @@
 //! ```
 //!
 //! Creating an sACN receiver and checking for discovered sources through universe discovery.
-//! ```
+//! ```file_serial
 //! use sacn::receive::SacnReceiver;
 //! use sacn::packet::ACN_SDT_MULTICAST_PORT;
 //!
@@ -96,7 +96,7 @@
 //!
 //! Creating a sACN sender and sending some unsychronised data. An sACNSender automatically sends universe discovery packets.
 //!
-//! ```
+//! ```file_serial
 //! use sacn::source::SacnSource;
 //! use sacn::packet::ACN_SDT_MULTICAST_PORT;
 //! use std::net::{IpAddr, SocketAddr};
@@ -119,7 +119,7 @@
 //!
 //! Creating a sACN sender and sending some synchronised data.
 //!
-//! ```
+//! ```file_serial
 //! use sacn::source::SacnSource;
 //! use sacn::packet::ACN_SDT_MULTICAST_PORT;
 //!
@@ -152,7 +152,7 @@
 //!
 //! Creating a sACN sender and sending data using unicast.
 //!
-//! ```
+//! ```file_serial
 //! use sacn::source::SacnSource;
 //! use sacn::packet::ACN_SDT_MULTICAST_PORT;
 //!

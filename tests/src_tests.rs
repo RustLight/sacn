@@ -15,6 +15,7 @@ use sacn::error::errors::*;
 
 use sacn::source::SacnSource;
 use sacn::packet::*;
+use serial_test::serial;
 
 use std::net::{SocketAddr, Ipv4Addr, IpAddr};
 
@@ -23,6 +24,7 @@ use uuid::Uuid;
 
 /// Attempts to create an ipv4 source with the source name longer than expected.
 #[test]
+#[serial]
 fn test_new_ipv4_one_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::new_v4(SRC_NAME) {
@@ -43,6 +45,7 @@ fn test_new_ipv4_one_too_long_source_name() {
 }
 
 #[test]
+#[serial]
 fn test_new_ipv6_one_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::new_v6(SRC_NAME) {
@@ -63,6 +66,7 @@ fn test_new_ipv6_one_too_long_source_name() {
 }
 
 #[test]
+#[serial]
 fn test_new_with_cid_ip_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::with_cid_ip(SRC_NAME, Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)) {
@@ -83,6 +87,7 @@ fn test_new_with_cid_ip_too_long_source_name() {
 }
 
 #[test]
+#[serial]
 fn test_new_with_cid_ip_v4_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::with_cid_v4(SRC_NAME, Uuid::new_v4()) {
@@ -103,6 +108,7 @@ fn test_new_with_cid_ip_v4_too_long_source_name() {
 }
 
 #[test]
+#[serial]
 fn test_new_with_cid_ip_v6_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::with_cid_v6(SRC_NAME, Uuid::new_v4()) {
@@ -123,6 +129,7 @@ fn test_new_with_cid_ip_v6_too_long_source_name() {
 }
 
 #[test]
+#[serial]
 fn test_new_with_ip_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     match SacnSource::with_ip(SRC_NAME, SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)) {
@@ -143,6 +150,7 @@ fn test_new_with_ip_too_long_source_name() {
 }
 
 #[test]
+#[serial]
 fn test_set_name_too_long_source_name() {
     const SRC_NAME: &str = "01234567890123456789012345678901234567890123456789012345678901234";
     let mut src = SacnSource::new_v4("Initial name").unwrap();
@@ -165,6 +173,7 @@ fn test_set_name_too_long_source_name() {
 }
 
 #[test]
+#[serial]
 fn test_get_name() {
     let name = "Test_Name";
     let src = SacnSource::new_v4(name).unwrap();
@@ -173,6 +182,7 @@ fn test_get_name() {
 }
 
 #[test]
+#[serial]
 fn test_set_name_get_name() {
     let name = "Test_Name";
     let mut src = SacnSource::new_v4("Initial Name").unwrap();
@@ -183,6 +193,7 @@ fn test_set_name_get_name() {
 }
 
 #[test]
+#[serial]
 fn test_get_cid() {
     let cid = Uuid::new_v4();
 
@@ -192,6 +203,7 @@ fn test_get_cid() {
 }
 
 #[test]
+#[serial]
 fn test_set_get_cid() {
     let cid = Uuid::new_v4();
 
@@ -205,6 +217,7 @@ fn test_set_get_cid() {
 }
 
 #[test]
+#[serial]
 fn test_get_preview() {
     let src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
@@ -212,6 +225,7 @@ fn test_get_preview() {
 }
 
 #[test]
+#[serial]
 fn test_set_get_preview() {
     let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
@@ -221,6 +235,7 @@ fn test_set_get_preview() {
 }
 
 #[test]
+#[serial]
 fn test_set_get_multicast_ttl() {
     let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
@@ -232,6 +247,7 @@ fn test_set_get_multicast_ttl() {
 }
 
 #[test]
+#[serial]
 fn test_set_get_ttl() {
     let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
@@ -243,6 +259,7 @@ fn test_set_get_ttl() {
 }
 
 #[test]
+#[serial]
 fn test_get_multicast_loop() {
     let src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
@@ -250,6 +267,7 @@ fn test_get_multicast_loop() {
 }
 
 #[test]
+#[serial]
 fn test_set_get_multicast_loop() {
     let mut src = SacnSource::with_cid_ip("Test name", Uuid::new_v4(), SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT)).unwrap();
 
@@ -259,6 +277,7 @@ fn test_set_get_multicast_loop() {
 }
 
 #[test]
+#[serial]
 fn test_send_without_registering(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
 
@@ -276,6 +295,7 @@ fn test_send_without_registering(){
 
 /// Attempts to send a packet with a priority higher (> 200) than the maximum allowed as per ANSI E1.31-2018 Section 6.2.3.
 #[test]
+#[serial]
 fn test_send_above_priority(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
     let universe = 1;
@@ -308,6 +328,7 @@ fn test_send_above_priority(){
 /// if a function returns an error.
 /// This test therefore checks that the sender works without crashing in one of the simplest cases.
 #[test]
+#[serial]
 fn test_send_single_universe(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
 
@@ -321,6 +342,7 @@ fn test_send_single_universe(){
 }
 
 #[test]
+#[serial]
 fn test_send_across_universe(){
     let mut src = SacnSource::new_v4("Controller").unwrap();
 
@@ -336,6 +358,7 @@ fn test_send_across_universe(){
 /// Attempt to register a universe below the minimum allowed universe. This should fail with an IllegalUniverse error.
 /// Exceptional test.
 #[test]
+#[serial]
 fn test_register_below_min_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
     const UNIVERSE: u16 = E131_MIN_MULTICAST_UNIVERSE - 1;
@@ -360,6 +383,7 @@ fn test_register_below_min_universe() {
 /// Attempt to register a universe above the maximum allowed universe. This should fail with an IllegalUniverse error.
 /// Exceptional test.
 #[test]
+#[serial]
 fn test_register_above_max_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
     const UNIVERSE: u16 = E131_MAX_MULTICAST_UNIVERSE + 1;
@@ -384,6 +408,7 @@ fn test_register_above_max_universe() {
 /// Attempt to register the discovery universe. Even though this is higher than the maximum allowed universe this should succeed as per ANSI E1.31-2018 Section 6.2.7.
 /// Extreme test.
 #[test]
+#[serial]
 fn test_register_discovery_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
     match src.register_universes(&[E131_DISCOVERY_UNIVERSE]) {
@@ -399,6 +424,7 @@ fn test_register_discovery_universe() {
 /// Attempt to register the maximum allowed universe, this should succeed as the allowed range is inclusive of this universe.
 /// Extreme test.
 #[test]
+#[serial]
 fn test_register_max_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
     match src.register_universes(&[E131_MAX_MULTICAST_UNIVERSE]) {
@@ -414,6 +440,7 @@ fn test_register_max_universe() {
 /// Attempt to register the minimum allowed universe, this should succeed as the allowed range is inclusive of this universe.
 /// Extreme test.
 #[test]
+#[serial]
 fn test_register_min_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
     match src.register_universes(&[E131_MIN_MULTICAST_UNIVERSE]) {
@@ -428,6 +455,7 @@ fn test_register_min_universe() {
 
 /// Attempts to send a synchronisation packet with the synchronisation address/universe set to 0 which should be rejected as per ANSI E1.31-2018 Section 6.3.3.1.
 #[test]
+#[serial]
 fn test_sync_addr_0() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
     const SYNC_UNI: u16 = 0;
