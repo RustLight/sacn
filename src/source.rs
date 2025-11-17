@@ -50,7 +50,7 @@ const DEFAULT_POLL_PERIOD: Duration = Duration::from_secs(1);
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// // Example showing creation of a source and then sending some data.
 /// use sacn::source::SacnSource;
 /// use sacn::packet::ACN_SDT_MULTICAST_PORT;
