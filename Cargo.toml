@@ -1,7 +1,7 @@
 [package]
 name = "sacn"
 description = "A Rust implementation of the ANSI E1.31 Streaming ACN protocol, tested against protocol version ANSI E1.31-2018."
-version = "0.10.0"
+version = "0.11.0"
 edition = "2024"
 readme = "README.md"
 keywords = ["acn", "sacn", "dmx", "e131", "ansi"]
