@@ -23,4 +23,3 @@ RUN chmod +x run_tests.sh
 
 # default command runs your multicast suite; tweak if needed
 CMD ["./run_tests.sh"]
- 

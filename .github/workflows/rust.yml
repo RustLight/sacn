@@ -20,6 +20,15 @@ jobs:
 
     - name: Run tests
       run: cargo test --verbose
+  
+  test-linux-ipv4:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: docker build -t sacn-tests -f docker-linux/Dockerfile .
+    - name: Run tests
+      run: docker run --cap-add=NET_ADMIN sacn-tests
 
   test-windows:
     runs-on: windows-latest
