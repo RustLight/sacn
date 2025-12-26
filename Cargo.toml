@@ -5,33 +5,40 @@ version = "0.11.0"
 edition = "2024"
 readme = "README.md"
 keywords = ["acn", "sacn", "dmx", "e131", "ansi"]
-authors = ["Lukas Schmierer <lukas.schmierer@lschmierer.de>", "Paul Lancaster <paul@lancasterzone.com>"]
+authors = [
+  "Lukas Schmierer <lukas.schmierer@lschmierer.de>",
+  "Paul Lancaster <paul@lancasterzone.com>",
+]
 documentation = "https://github.com/RustLight/sacn"
 repository = "https://github.com/RustLight/sacn"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/RustLight/sacn"
 exclude = [
-    "documentation/*",
-    "further testing/*",
-    ".github/*",
-    ".travis.yml",
-    ".gitignore",
+  "documentation/*",
+  "further testing/*",
+  ".github/*",
+  ".travis.yml",
+  ".gitignore",
 ]
 
 [dependencies]
-byteorder = { version = "1.5.0", features = [] }
+byteorder = { version = "1.5.0", default-features = false }
 libc = { version = "0.2.171" }
-socket2 = { version = "0.6.1", features = ["all"] }
-thiserror = "2.0.0"
-uuid = { version = "1.12", features = ["v4"] }
+socket2 = { version = "0.6.1", features = ["all"], optional = true }
+thiserror = { version = "2.0.0", default-features = false }
+uuid = { version = "1.12", features = ["v4"], default-features = false }
 
 [dev-dependencies]
 crossterm = "0.29.0"
+embassy-stm32 = { version = "0.4.0", features = ["stm32f746ng"] }
 serial_test = { version = "3.2.0", features = ["file_locks"] }
+defmt = "1.0.1"
+defmt-rtt = "1.0.0"
+embassy-executor = "0.9.1"
 
 [features]
 default = ["std"]
-std = []
+std = ["dep:socket2", "uuid/std"]
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }
@@ -54,3 +61,9 @@ path = 'examples/demo_rcv/src/main.rs'
 [[example]]
 name = 'demo_src'
 path = 'examples/demo_src/src/main.rs'
+
+
+[[example]]
+name = 'stm32f7'
+path = 'examples/stm32f7/src/main.rs'
+required-features = []

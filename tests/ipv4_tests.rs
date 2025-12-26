@@ -18,7 +18,7 @@ use std::thread::sleep;
 use std::sync::mpsc;
 use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use core::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::iter;
 use std::convert::TryInto; // Used for converting between u8 and u16 representations.
 use std::str; // Used for converting between bytes and strings.
@@ -3521,10 +3521,10 @@ fn test_discovery_packet_transmit_format() {
     recv_socket.bind(&addr.into()).unwrap();
 
     // Receiving on the discovery universe shows that the discovery universe is correctly used for discovery packets as per ANSI E1.31-2018 Section 6.2.7.
-    let address = universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap().as_socket_ipv4();
+    let address = universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap();
 
     recv_socket
-        .join_multicast_v4(&address.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
+        .join_multicast_v4(&address.ip(), &Ipv4Addr::new(0, 0, 0, 0))
         .unwrap();
 
     let mut recv_buf = [0; DISCOVERY_PACKET_LENGTH_EXPECTED];
@@ -3682,10 +3682,10 @@ fn test_track_data_packet_seq_numbers() {
 
     // Join the multicast groups for each of the universes.
     for u in UNIVERSES.iter() {
-        let address = universe_to_ipv4_multicast_addr(*u).unwrap().as_socket_ipv4();
+        let address = universe_to_ipv4_multicast_addr(*u).unwrap();
 
         recv_socket
-            .join_multicast_v4(&address.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
+            .join_multicast_v4(&address.ip(), &Ipv4Addr::new(0, 0, 0, 0))
             .unwrap();
     }
 
@@ -3751,10 +3751,10 @@ fn test_track_sync_packet_seq_numbers() {
 
     // Join the multicast groups for each of the synchronisation addresses.
     for u in SYNC_ADDRESSES.iter() {
-        let address = universe_to_ipv4_multicast_addr(*u).unwrap().as_socket_ipv4();
+        let address = universe_to_ipv4_multicast_addr(*u).unwrap();
 
         recv_socket
-            .join_multicast_v4(&address.unwrap().ip(), &Ipv4Addr::new(0, 0, 0, 0))
+            .join_multicast_v4(&address.ip(), &Ipv4Addr::new(0, 0, 0, 0))
             .unwrap();
     }
 
@@ -3828,9 +3828,9 @@ fn test_sync_packet_multicast_address() {
 
         // Join only the multicast address corresponding to the synchronisation address.
         let multicast_addr = universe_to_ipv4_multicast_addr(*sync_addr).unwrap();
-        recv_sockets[i].bind(&multicast_addr).unwrap();
+        recv_sockets[i].bind(&multicast_addr.into()).unwrap();
         recv_sockets[i]
-            .join_multicast_v4(&multicast_addr.as_socket_ipv4().unwrap().ip(), &TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap())
+            .join_multicast_v4(multicast_addr.ip(), &TEST_NETWORK_INTERFACE_IPV4[i].parse().unwrap())
             .unwrap();
 
         i = i + 1;

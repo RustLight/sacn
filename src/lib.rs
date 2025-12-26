@@ -182,25 +182,50 @@
 //! src.send(&[universe], &data, priority, dst_ip, sync_uni).unwrap();
 //! ```
 
+#![no_std]
 #![doc(html_root_url = "https://docs.rs/sacn/")]
 // #![warn(missing_docs)]
 // Recursion limit for error_chain.
 #![recursion_limit = "1024"]
 
+extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
+
+//use core::{fmt, fmt::Display};
+#[cfg(not(feature = "std"))]
+use alloc::{
+    borrow::Cow,
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
+#[cfg(feature = "std")]
+use std::{
+    borrow::Cow,
+    format, println,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
+
+/// The core crate is used for string processing during packet parsing/packing as well as to provide access to the Hash trait.
+extern crate core;
+
 /// The errors within the sACN crate related to parse/pack errors.
 /// Error-chain is used for errors within the library to allow chaining errors together to provide more informative backtraces.
 /// This completely replaces the old error system (sACN crate version 0.4.4) which relied on a simple Enum model without proper backtraces.
+//#[cfg(feature = "std")]
 pub mod sacn_parse_pack_error;
 
 /// The errors used within the sACN crate, parse/pack errors are seperated out into sacn_parse_pack_error.
+//#[cfg(feature = "std")]
 pub mod error;
 
 extern crate libc;
 /// The library is built on top of socket2 to provide the underlying UDP networking interface.
+#[cfg(feature = "std")]
 extern crate socket2;
-
-/// The core crate is used for string processing during packet parsing/packing as well as to provide access to the Hash trait.
-extern crate core;
 
 /// The byteorder crate is used for marshalling data on/off the network in Network Byte Order.
 extern crate byteorder;
@@ -212,7 +237,9 @@ extern crate uuid;
 pub mod packet;
 
 /// The source module handles generation of sACN on the network.
+#[cfg(feature = "std")]
 pub mod source;
 
 /// The receive module handles the receiving of sACN on the network.
+#[cfg(feature = "std")]
 pub mod receive;

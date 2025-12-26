@@ -22,6 +22,11 @@
 //! SacnParsePackError(sacn_parse_pack_error::Error, sacn_parse_pack_error::ErrorKind)
 
 pub mod errors {
+
+    // Import these at the crate level for no_std switching
+    extern crate alloc;
+    use alloc::string::String;
+
     use crate::sacn_parse_pack_error::ParsePacketError;
     use thiserror::Error;
     use uuid::Uuid;
@@ -30,19 +35,25 @@ pub mod errors {
     ///
     /// This type is used throughout the sACN crate for any operation which
     /// can produce an error.
-    pub type Result<T> = std::result::Result<T, SacnError>;
+    pub type Result<T> = core::result::Result<T, SacnError>;
 
+    impl From<uuid::Error> for SacnError {
+        fn from(source: uuid::Error) -> Self {
+            SacnError::Uuid(source)
+        }
+    }
     #[derive(Debug, Error)]
     pub enum SacnError {
         // Allow IO errors to be used with the error system.
+        #[cfg(feature = "std")]
         #[error("Io error occurred: {0}")]
         Io(#[from] std::io::Error),
         // Allow standard string library errors to be used with the error system.
         #[error("String error occurred: {0}")]
-        Str(#[from] std::str::Utf8Error),
+        Str(#[from] alloc::str::Utf8Error),
         // Allow UUID library to be used with error system.
         #[error("Uuid error occurred: {0}")]
-        Uuid(#[from] uuid::Error),
+        Uuid(uuid::Error),
 
         /// Returned to indicate that too many bytes were read to fit into supplied buffer.
         ///
