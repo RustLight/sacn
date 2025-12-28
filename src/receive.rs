@@ -3310,9 +3310,6 @@ mod test {
         // - First packet from a source/universe should establish the baseline
         //   (regardless of its value; the standard does not require starting at 0).
         // - After receiving 250..255, receiving 0 should be accepted as a wrap.
-        //
-        // Current implementation likely FAILS because it computes diff using normal
-        // integer subtraction rather than signed 8-bit arithmetic.
 
         const UNIVERSE: u16 = 1;
         let src_cid: Uuid = Uuid::from_bytes([
