@@ -1371,7 +1371,6 @@ impl DiscoveredSacnSource {
             {
                 return false;
             }
-            
         }
 
         true
