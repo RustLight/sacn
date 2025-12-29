@@ -1913,15 +1913,16 @@ fn check_seq_number(
         }
     };
 
-    let seq_diff: isize = (sequence_number as isize) - (expected_seq.sequence_number as isize);
+    let seq_diff = sequence_number.wrapping_sub(expected_seq.sequence_number) as i8;
 
-    if seq_diff <= E131_SEQ_DIFF_DISCARD_UPPER_BOUND && seq_diff > E131_SEQ_DIFF_DISCARD_LOWER_BOUND
+    if seq_diff as isize <= E131_SEQ_DIFF_DISCARD_UPPER_BOUND
+        && seq_diff as isize > E131_SEQ_DIFF_DISCARD_LOWER_BOUND
     {
         // Reject the out of order packet as per ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
         return Err(SacnError::OutOfSequence(
             sequence_number,
             expected_seq.sequence_number,
-            seq_diff,
+            seq_diff as isize,
         ));
     }
 
@@ -2658,7 +2659,9 @@ mod test {
                 generate_data_packet_framing_layer_seq_num(UNIVERSE1, i),
             );
 
-            let diff: i16 = ((i as i16) - (LAST_SEQ_NUM as i16)) as i16;
+            // Cannot do straight 8 bit arithmetic that relies on underflows/overflows as this is undefined behaviour in rust forbidden by the compiler.
+            // use same logic as check seq number fn and the e1.31 spec
+            let diff: i16 = (i.wrapping_sub(LAST_SEQ_NUM) as i8) as i16;
 
             match res {
                 Err(SacnError::OutOfSequence(..)) => {
@@ -2768,7 +2771,8 @@ mod test {
             );
 
             // Cannot do straight 8 bit arithmetic that relies on underflows/overflows as this is undefined behaviour in rust forbidden by the compiler.
-            let diff: i16 = ((i as i16) - (LAST_SEQ_NUM as i16)) as i16;
+            // use same logic as check seq number fn and the e1.31 spec
+            let diff: i16 = (i.wrapping_sub(LAST_SEQ_NUM) as i8) as i16;
 
             match res {
                 Err(SacnError::OutOfSequence(..)) => {
@@ -3294,6 +3298,61 @@ mod test {
         assert_eq!(
             data1, data2,
             "DMX data not seen as equivalent when should be"
+        );
+    }
+
+    #[test]
+    fn test_data_sequence_number_wraparound_255_to_0() {
+        // This test is intended to validate ANSI E1.31-2018 sequence handling
+        // using signed 8-bit arithmetic (wraparound at 255->0).
+        //
+        // Expected behavior:
+        // - First packet from a source/universe should establish the baseline
+        //   (regardless of its value; the standard does not require starting at 0).
+        // - After receiving 250..255, receiving 0 should be accepted as a wrap.
+
+        const UNIVERSE: u16 = 1;
+        let src_cid: Uuid = Uuid::from_bytes([
+            0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
+            0x14, 0x3e,
+        ]);
+
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        rcv.listen_universes(&[UNIVERSE]).unwrap();
+
+        // Initial sequence number of new universe is 255 so send a valid new sequnce number to start.
+        let pkt = generate_data_packet_framing_layer_seq_num(UNIVERSE, 21u8);
+        let _ = rcv.handle_data_packet(src_cid, pkt);
+
+        // Send a run up to wrap.
+        for seq in 250u8..=255u8 {
+            let pkt = generate_data_packet_framing_layer_seq_num(UNIVERSE, seq);
+            let res = rcv.handle_data_packet(src_cid, pkt);
+            assert!(
+                res.is_ok(),
+                "sequence {} should be accepted (got {:?})",
+                seq,
+                res
+            );
+        }
+
+        // Now wrap to 0. This should be accepted as the next in-sequence packet.
+        let pkt0 = generate_data_packet_framing_layer_seq_num(UNIVERSE, 0);
+        let res0 = rcv.handle_data_packet(src_cid, pkt0);
+        assert!(
+            res0.is_ok(),
+            "sequence wrap 255->0 should be accepted (got {:?})",
+            res0
+        );
+
+        // And 1 should also be accepted.
+        let pkt1 = generate_data_packet_framing_layer_seq_num(UNIVERSE, 1);
+        let res1 = rcv.handle_data_packet(src_cid, pkt1);
+        assert!(
+            res1.is_ok(),
+            "sequence 1 after wrap should be accepted (got {:?})",
+            res1
         );
     }
 }
