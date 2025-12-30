@@ -1,0 +1,72 @@
+[package]
+name = "stm32f7"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "stm32f7"
+path = "src/main.rs"
+test = false
+bench = false
+
+[dependencies]
+sacn = { path = "../../", default-features = false, features = ["defmt"] }
+embassy-stm32 = { version = "0.4.0", features = [
+  "defmt",
+  "stm32f746ng",
+  "memory-x",
+  "unstable-pac",
+  "time-driver-tim5",
+  "exti",
+  "time",
+] }
+smoltcp = { version = "0.12.0", default-features = false, features = [
+  "iface-max-multicast-group-count-32",
+] }
+embassy-executor = { version = "0.9.1", features = [
+  "arch-cortex-m",
+  "executor-thread",
+  "defmt",
+] }
+embassy-time = { version = "0.5.0", features = [
+  "defmt",
+  "defmt-timestamp-uptime",
+  "tick-hz-32_768",
+] }
+embassy-net = { version = "0.7.1", features = [
+  "defmt",
+  "tcp",
+  "raw",
+  "udp",
+  "dhcpv4",
+  "medium-ethernet",
+  "multicast",
+
+] }
+defmt-rtt = "1.0.0"
+defmt = "1.0.1"
+
+cortex-m = { version = "0.7.6", features = [
+  "inline-asm",
+  "critical-section-single-core",
+] }
+cortex-m-rt = "0.7.0"
+panic-probe = { version = "1.0.0", features = ["print-defmt"] }
+critical-section = "1.1.2"
+stm32-fmc = "0.4.0"
+embedded-alloc = { version = "0.6.0" }
+static_cell = "2.1.1"
+
+[patch.crates-io]
+embassy-sync = { git = "https://github.com/embassy-rs/embassy/", rev = "96483e86b8c7b99748dd5f3b9b6b6852ccf61f35" }
+embassy-executor = { git = "https://github.com/embassy-rs/embassy/", rev = "96483e86b8c7b99748dd5f3b9b6b6852ccf61f35" }
+embassy-net = { git = "https://github.com/embassy-rs/embassy/", rev = "96483e86b8c7b99748dd5f3b9b6b6852ccf61f35" }
+embassy-time = { git = "https://github.com/embassy-rs/embassy/", rev = "96483e86b8c7b99748dd5f3b9b6b6852ccf61f35" }
+embassy-stm32 = { git = "https://github.com/embassy-rs/embassy/", rev = "96483e86b8c7b99748dd5f3b9b6b6852ccf61f35" }
+embassy-usb = { git = "https://github.com/embassy-rs/embassy/", rev = "96483e86b8c7b99748dd5f3b9b6b6852ccf61f35" }
+embassy-futures = { git = "https://github.com/embassy-rs/embassy/", rev = "96483e86b8c7b99748dd5f3b9b6b6852ccf61f35" }
+embassy-embedded-hal = { git = "https://github.com/embassy-rs/embassy/", rev = "96483e86b8c7b99748dd5f3b9b6b6852ccf61f35" }
+
+[profile.release]
+debug = 2
+lto = "fat"
