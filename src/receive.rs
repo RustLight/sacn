@@ -806,8 +806,6 @@ impl SacnReceiver {
     ///
     /// src_cid: The CID of the source which is terminating a universe.
     ///
-    /// source_name: The human readable name of the sACN source to remove the universe from.
-    ///
     /// universe:    The sACN universe to remove.
     fn terminate_stream(&mut self, src_cid: Uuid, universe: u16) {
         // Will only return an error if the source/universe wasn't found which is acceptable because as it
@@ -937,6 +935,9 @@ impl SacnReceiver {
     /// Returns the source name if a source was fully discovered or None if the source was only partially discovered.
     ///
     /// Arguments:
+    /// 
+    /// cid: the source CID.
+    /// 
     /// discovery_pkt: The universe discovery part of the universe discovery packet to handle.
     fn handle_universe_discovery_packet(
         &mut self,
@@ -1038,8 +1039,10 @@ impl Drop for SacnReceiver {
 /// returns the index of the src in the Vec or None if not found.
 ///
 /// Arguments:
+/// 
 /// srcs: The Vec of DiscoveredSacnSources to search.
-/// name: The human readable name of the source to find.
+/// 
+/// cid: The CID (uuid) of the source to find.
 fn find_discovered_src(srcs: &[DiscoveredSacnSource], cid: &Uuid) -> Option<usize> {
     (0..srcs.len()).find(|&i| srcs[i].cid == *cid)
 }
