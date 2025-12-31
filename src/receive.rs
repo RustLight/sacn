@@ -1364,8 +1364,13 @@ impl DiscoveredSacnSource {
     pub fn has_all_pages(&mut self) -> bool {
         // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/sorting.html (31/12/2019)
         self.pages.sort_by(|a, b| a.page.cmp(&b.page));
-        for i in 0..(self.last_page + 1) {
-            if self.pages[i as usize].page != i {
+        for i in 0..=self.last_page {
+            if self
+                .pages
+                .get(i as usize)
+                .map(|p| p.page != i)
+                .unwrap_or(true)
+            {
                 return false;
             }
         }
