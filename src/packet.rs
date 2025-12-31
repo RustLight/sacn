@@ -1497,7 +1497,6 @@ impl_universe_discovery_packet_universe_discovery_layer!(<'a>);
 mod test {
     use super::*;
     use core::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
-    use socket2::SockAddr;
 
     /// The universe_to tests below check that the conversion from a universe to an IPv6 or IPv4 multicast address is done as
     /// per ANSI E1.31-2018 Section 9.3.1 Table 9-10 (IPv4) and ANSI E1.31-2018 Section 9.3.2 Table 9-11 + Table 9-12.
@@ -1552,14 +1551,12 @@ mod test {
 
     #[test]
     fn test_universe_to_ip_ipv4_limit_low() {
-        let res: SockAddr = universe_to_ipv4_multicast_addr(E131_MIN_MULTICAST_UNIVERSE)
-            .unwrap()
-            .into();
+        let res = universe_to_ipv4_multicast_addr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
 
-        assert!(res.as_socket_ipv4().unwrap().ip().is_multicast());
+        assert!(res.ip().is_multicast());
 
         assert_eq!(
-            res.as_socket_ipv4().unwrap(),
+            res,
             SocketAddrV4::new(
                 Ipv4Addr::new(
                     239,
@@ -1603,14 +1600,14 @@ mod test {
     #[test]
     fn test_universe_to_ipv6_lowest_byte_normal() {
         let val: u16 = 119;
-        let res: SockAddr = universe_to_ipv6_multicast_addr(val).unwrap().into();
+        let res = universe_to_ipv6_multicast_addr(val).unwrap();
 
-        assert!(res.as_socket_ipv6().unwrap().ip().is_multicast());
+        assert!(res.ip().is_multicast());
 
         let low_16: u16 = (((val / 256) as u16) << 8) | ((val % 256) as u16);
 
         assert_eq!(
-            res.as_socket_ipv6().unwrap(),
+            res,
             SocketAddrV6::new(
                 Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16),
                 ACN_SDT_MULTICAST_PORT,
@@ -1623,14 +1620,14 @@ mod test {
     #[test]
     fn test_universe_to_ip_ipv6_both_bytes_normal() {
         let val: u16 = 300;
-        let res: SockAddr = universe_to_ipv6_multicast_addr(val).unwrap().into();
+        let res = universe_to_ipv6_multicast_addr(val).unwrap();
 
-        assert!(res.as_socket_ipv6().unwrap().ip().is_multicast());
+        assert!(res.ip().is_multicast());
 
         let low_16: u16 = (((val / 256) as u16) << 8) | ((val % 256) as u16);
 
         assert_eq!(
-            res.as_socket_ipv6().unwrap(),
+            res,
             SocketAddrV6::new(
                 Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16),
                 ACN_SDT_MULTICAST_PORT,
@@ -1642,17 +1639,15 @@ mod test {
 
     #[test]
     fn test_universe_to_ip_ipv6_limit_high() {
-        let res: SockAddr = universe_to_ipv6_multicast_addr(E131_MAX_MULTICAST_UNIVERSE)
-            .unwrap()
-            .into();
+        let res = universe_to_ipv6_multicast_addr(E131_MAX_MULTICAST_UNIVERSE).unwrap();
 
-        assert!(res.as_socket_ipv6().unwrap().ip().is_multicast());
+        assert!(res.ip().is_multicast());
 
         let low_16: u16 = (((E131_MAX_MULTICAST_UNIVERSE / 256) as u16) << 8)
             | ((E131_MAX_MULTICAST_UNIVERSE % 256) as u16);
 
         assert_eq!(
-            res.as_socket_ipv6().unwrap(),
+            res,
             SocketAddrV6::new(
                 Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16),
                 ACN_SDT_MULTICAST_PORT,
@@ -1664,17 +1659,15 @@ mod test {
 
     #[test]
     fn test_universe_to_ip_ipv6_limit_low() {
-        let res: SockAddr = universe_to_ipv6_multicast_addr(E131_MIN_MULTICAST_UNIVERSE)
-            .unwrap()
-            .into();
+        let res = universe_to_ipv6_multicast_addr(E131_MIN_MULTICAST_UNIVERSE).unwrap();
 
-        assert!(res.as_socket_ipv6().unwrap().ip().is_multicast());
+        assert!(res.ip().is_multicast());
 
         let low_16: u16 = (((E131_MIN_MULTICAST_UNIVERSE / 256) as u16) << 8)
             | ((E131_MIN_MULTICAST_UNIVERSE % 256) as u16);
 
         assert_eq!(
-            res.as_socket_ipv6().unwrap(),
+            res,
             SocketAddrV6::new(
                 Ipv6Addr::new(0xFF18, 0, 0, 0, 0, 0, 0x8300, low_16),
                 ACN_SDT_MULTICAST_PORT,
