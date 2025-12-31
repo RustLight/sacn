@@ -80,11 +80,6 @@ const ANNOUNCE_STREAM_TERMINATION_DEFAULT: bool = false;
 /// The default value of the announce_timeout flag.
 const ANNOUNCE_TIMEOUT_DEFAULT: bool = false;
 
-/// The sequence number assigned by the receiver to a new source before it has processed the sequence numbers of any data from that source.
-///
-/// This should be set to the value before the initial expected sequence number from a source. Can't do this using underflow as forbidden in Rust.
-const INITIAL_SEQUENCE_NUMBER: u8 = 255;
-
 /// If a packet for a universe is waiting to be synchronised and then another packet is received with the same universe and synchronisation address
 /// this situation must be handled. By default the implementation discards the lowest priority packet and if equal priority it discards the oldest
 /// packet as per ANSI E1.31-2018 Section 6.2.3.
@@ -1900,7 +1895,8 @@ fn check_seq_number(
                 }
                 None => {
                     // Indicates that this is the first time (or the first time since it timed out) the universe has been received from this source.
-                    TimedStampedSeqNo::new(INITIAL_SEQUENCE_NUMBER, Instant::now())
+                    let initial_seq_num = sequence_number.wrapping_sub(1);
+                    TimedStampedSeqNo::new(initial_seq_num, Instant::now())
                 }
             }
         }
