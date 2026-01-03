@@ -46,11 +46,11 @@ use std::net::{IpAddr, Ipv6Addr};
 use libc::{AF_INET, AF_INET6};
 
 /// The libc constants required are not available on many windows environments and therefore are hard-coded.
-/// Defined as per https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket
+/// Defined as per <https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket>
 #[cfg(target_os = "windows")]
 const AF_INET: i32 = 2;
 
-/// Defined as per https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket
+/// Defined as per <https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket>
 #[cfg(target_os = "windows")]
 const AF_INET6: i32 = 23;
 
@@ -64,20 +64,20 @@ pub const RCV_BUF_DEFAULT_SIZE: usize = 1144;
 /// DMX payload size in bytes (512 bytes of data + 1 byte start code).
 pub const DMX_PAYLOAD_SIZE: usize = 513;
 
-/// The default value of the process_preview_data flag.
+/// The default value of the `process_preview_data` flag.
 const PROCESS_PREVIEW_DATA_DEFAULT: bool = false;
 
-/// The default value of the announce_source_discovery flag.
+/// The default value of the `announce_source_discovery` flag.
 /// Defaults to false based on the assumption that often receivers won't have any immediate response/checks to do on a source
-/// announcing itself (every source does this approximately every 10 seconds as per the E131_DISCOVERY_INTERVAL).
+/// announcing itself (every source does this approximately every 10 seconds as per the `E131_DISCOVERY_INTERVAL`).
 const ANNOUNCE_SOURCE_DISCOVERY_DEFAULT: bool = false;
 
-/// The default value of the announce_stream_termination flag.
+/// The default value of the `announce_stream_termination` flag.
 /// Defaults to false based on the assumption that often receivers will want to ignore termination from a source based on there
 /// being multiple possible sources.
 const ANNOUNCE_STREAM_TERMINATION_DEFAULT: bool = false;
 
-/// The default value of the announce_timeout flag.
+/// The default value of the `announce_timeout` flag.
 const ANNOUNCE_TIMEOUT_DEFAULT: bool = false;
 
 /// If a packet for a universe is waiting to be synchronised and then another packet is received with the same universe and synchronisation address
@@ -103,7 +103,7 @@ pub struct DMXData {
     pub sync_uni: u16,
 
     /// The priority of the data, this may be useful for receivers which want to implement their own implementing merge algorithms.
-    /// Must be less than packet::E131_MAX_PRIORITY.
+    /// Must be less than `packet::E131_MAX_PRIORITY`.
     pub priority: u8,
 
     /// The unique id of the source of the data, this may be useful for receivers which want to implement their own merge algorithms
@@ -151,12 +151,12 @@ pub struct DMXData {
 /// }
 /// ```
 pub struct SacnReceiver {
-    /// The SacnNetworkReceiver used for handling communication with UDP / Network / Transport layer.
+    /// The `SacnNetworkReceiver` used for handling communication with UDP / Network / Transport layer.
     receiver: SacnNetworkReceiver,
 
     /// Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
-    /// Key is the universe. A receiver may not have more than one packet waiting per data_universe.
-    /// Data_universe used as key as oppose to sync universe because multiple packets might be waiting on the same sync universe
+    /// Key is the universe. A receiver may not have more than one packet waiting per `data_universe`.
+    /// `Data_universe` used as key as oppose to sync universe because multiple packets might be waiting on the same sync universe
     /// and adding data by data universe is at least as common as retrieving data by sync address because in a normal setup
     /// 1 or more bits of data wait for 1 sync.
     waiting_data: HashMap<u16, DMXData>,
@@ -167,15 +167,15 @@ pub struct SacnReceiver {
     /// Sacn sources that have been discovered by this receiver through universe discovery packets.
     discovered_sources: Vec<DiscoveredSacnSource>,
 
-    /// The merge function used by this receiver if DMXData for the same universe and synchronisation universe is received while there
-    /// is already DMXData waiting for that universe and synchronisation address.
+    /// The merge function used by this receiver if `DMXData` for the same universe and synchronisation universe is received while there
+    /// is already `DMXData` waiting for that universe and synchronisation address.
     merge_func: fn(&DMXData, &DMXData) -> Result<DMXData>,
 
     /// Sacn sources that have been partially discovered by only some of their universes being discovered so far with more pages to go.
     partially_discovered_sources: Vec<DiscoveredSacnSource>,
 
     /// The limit to the number of sources for which to track sequence numbers.
-    /// A new source after this limit will cause a SourcesExceededError as per ANSI E1.31-2018 Section 6.2.3.3.
+    /// A new source after this limit will cause a `SourcesExceededError` as per ANSI E1.31-2018 Section 6.2.3.3.
     source_limit: Option<usize>,
 
     /// The sequence numbers being tracked by this receiver for each packet type, source and universe.
@@ -183,16 +183,16 @@ pub struct SacnReceiver {
 
     /// Flag that indicates if this receiver should process packets marked as preview data.
     /// If true then the receiver will process theses packets.
-    /// Returned data contains a flag to indicate if it is preview_data which can be used by the implementer to use/discard as required.
+    /// Returned data contains a flag to indicate if it is `preview_data` which can be used by the implementer to use/discard as required.
     process_preview_data: bool,
 
-    /// Flag which indicates if a SourceDiscovered error should be thrown when receiving data and a source is discovered.
+    /// Flag which indicates if a `SourceDiscovered` error should be thrown when receiving data and a source is discovered.
     announce_source_discovery: bool,
 
-    /// Flag which indicates if a StreamTerminated error should be thrown if a receiver receives a stream terminated packet.
+    /// Flag which indicates if a `StreamTerminated` error should be thrown if a receiver receives a stream terminated packet.
     announce_stream_termination: bool,
 
-    /// Flag which indicates if an UniverseTimeout error should be thrown if it is detected that a source has timed out.
+    /// Flag which indicates if an `UniverseTimeout` error should be thrown if it is detected that a source has timed out.
     announce_timeout: bool,
 }
 
@@ -221,7 +221,7 @@ struct SacnNetworkReceiver {
     /// The underlying UDP network socket used.
     socket: Socket,
 
-    /// The address that this SacnNetworkReceiver is bound to.
+    /// The address that this `SacnNetworkReceiver` is bound to.
     addr: SocketAddr,
 
     /// If true then this receiver supports multicast, is false then it does not.
@@ -245,7 +245,7 @@ struct UniversePage {
     universes: Vec<u16>,
 }
 
-/// Allows debug ({:?}) printing of the SacnReceiver, used during debugging.
+/// Allows debug ({:?}) printing of the `SacnReceiver`, used during debugging.
 impl fmt::Debug for SacnReceiver {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.receiver)?;
@@ -257,33 +257,33 @@ impl fmt::Debug for SacnReceiver {
 }
 
 impl SacnReceiver {
-    /// Creates a new SacnReceiver.
+    /// Creates a new `SacnReceiver`.
     ///
-    /// SacnReceiverInternal is used for actually receiving the sACN data but is wrapped in SacnReceiver to allow the update thread to handle
+    /// `SacnReceiverInternal` is used for actually receiving the sACN data but is wrapped in `SacnReceiver` to allow the update thread to handle
     /// timeout etc.
     ///
-    /// By default for an IPv6 address this will only receive IPv6 data but IPv4 can also be enabled by calling set_ipv6_only(false).
+    /// By default for an IPv6 address this will only receive IPv6 data but IPv4 can also be enabled by calling `set_ipv6_only(false)`.
     /// A receiver with an IPv4 address will only receive IPv4 data.
     ///
     /// IPv6 multicast is unsupported on Windows in Rust. This is due to the underlying library (Socket2) not providing support.
-    /// Since UniverseDiscovery is primarily based around multicast to receive the UniverseDiscovery packets this mechanism is expected
-    /// to have limited usage when running in an Ipv6 Windows environment. The is_multicast_enabled method can be used to see if multicast
+    /// Since `UniverseDiscovery` is primarily based around multicast to receive the `UniverseDiscovery` packets this mechanism is expected
+    /// to have limited usage when running in an Ipv6 Windows environment. The `is_multicast_enabled` method can be used to see if multicast
     /// is enabled or not.
     ///
     /// Arguments:
-    ///     ip: The address of the interface for this receiver to join, by default this address should use the ACN_SDT_MULTICAST_PORT as defined in
+    ///     ip: The address of the interface for this receiver to join, by default this address should use the `ACN_SDT_MULTICAST_PORT` as defined in
     ///         ANSI E1.31-2018 Appendix A: Defined Parameters (Normative) however another address might be used in some situations.
-    ///     source_limit: The limit to the number of sources, past this limit a new source will cause a SourcesExceededError as per ANSI E1.31-2018 Section 6.2.3.3.
+    ///     `source_limit`: The limit to the number of sources, past this limit a new source will cause a `SourcesExceededError` as per ANSI E1.31-2018 Section 6.2.3.3.
     ///                     A source limit of None means no limit to the number of sources.
     ///
     /// # Errors
-    /// Will return an InvalidInput error if the source_limit has a value of Some(0) which would indicate this receiver can never receive from any source.
+    /// Will return an `InvalidInput` error if the `source_limit` has a value of Some(0) which would indicate this receiver can never receive from any source.
     ///
-    /// Will return an error if the SacnReceiver fails to bind to a socket with the given ip.
-    /// For more details see socket2::Socket::new().
+    /// Will return an error if the `SacnReceiver` fails to bind to a socket with the given ip.
+    /// For more details see `socket2::Socket::new()`.
     ///
-    /// Will return an error if the created SacnReceiver fails to listen to the E1.31_DISCOVERY_UNIVERSE.
-    /// For more details see SacnReceiver::listen_universes().
+    /// Will return an error if the created `SacnReceiver` fails to listen to the `E1.31_DISCOVERY_UNIVERSE`.
+    /// For more details see `SacnReceiver::listen_universes()`.
     pub fn with_ip(ip: SocketAddr, source_limit: Option<usize>) -> Result<SacnReceiver> {
         if let Some(x) = source_limit
             && x == 0
@@ -310,17 +310,17 @@ impl SacnReceiver {
         Ok(sri)
     }
 
-    /// Sets the value of the is_multicast_enabled flag to the given value.
+    /// Sets the value of the `is_multicast_enabled` flag to the given value.
     ///
     /// If set to false then the receiver won't attempt to join any more multicast groups.
     ///
-    /// This method does not attempt to leave multicast groups already joined through previous listen_universe calls.
+    /// This method does not attempt to leave multicast groups already joined through previous `listen_universe` calls.
     ///
     /// # Arguments
-    /// val: The new value for the is_multicast_enabled flag.
+    /// val: The new value for the `is_multicast_enabled` flag.
     ///
     /// # Errors
-    /// Will return an OsOperationUnsupported error if attempting to set the flag to true in an environment that multicast
+    /// Will return an `OsOperationUnsupported` error if attempting to set the flag to true in an environment that multicast
     /// isn't supported i.e. Ipv6 on Windows.
     pub fn set_is_multicast_enabled(&mut self, val: bool) -> Result<()> {
         self.receiver.set_is_multicast_enabled(val)
@@ -336,7 +336,7 @@ impl SacnReceiver {
     /// Wipes the record of discovered and sequence number tracked sources.
     /// This is one way to handle a sources exceeded condition.
     ///
-    /// If you want to wipe data awaiting synchronisation then see (clear_all_waiting_data)[clear_all_waiting_data].
+    /// If you want to wipe data awaiting synchronisation then see (`clear_all_waiting_data`)[`clear_all_waiting_data`].
     pub fn reset_sources(&mut self) {
         self.sequences.clear();
         self.partially_discovered_sources.clear();
@@ -346,9 +346,9 @@ impl SacnReceiver {
     /// Deletes all data currently waiting to be passed up - e.g. waiting for a synchronisation packet.
     ///
     /// This allows clearing all data awaiting synchronisation but without forgetting sequence numbers. To wipe sequence numbers
-    /// and discovered sources see (reset_sources)[reset_sources].
+    /// and discovered sources see (`reset_sources`)[`reset_sources`].
     ///
-    /// To clear only a specific universe of waiting data see (clear_waiting_data)[clear_waiting_data].
+    /// To clear only a specific universe of waiting data see (`clear_waiting_data`)[`clear_waiting_data`].
     pub fn clear_all_waiting_data(&mut self) {
         self.waiting_data.clear();
     }
@@ -368,11 +368,11 @@ impl SacnReceiver {
     /// This merge function is called if data is waiting for a universe e.g. for synchronisation and then further data for that universe with the same
     /// synchronisation address arrives.
     ///
-    /// This merge function MUST return a DmxMergeError if there is a problem merging. This error can optionally encapsulate further errors using the Error-chain system
+    /// This merge function MUST return a `DmxMergeError` if there is a problem merging. This error can optionally encapsulate further errors using the Error-chain system
     ///     to provide a more informative backtrace.
     ///
     /// Arguments:
-    /// func: The merge function to use. Should take 2 DMXData references as arguments and return a Result<DMXData>.
+    /// func: The merge function to use. Should take 2 `DMXData` references as arguments and return a Result<DMXData>.
     pub fn set_merge_fn(&mut self, func: fn(&DMXData, &DMXData) -> Result<DMXData>) -> Result<()> {
         self.merge_func = func;
         Ok(())
@@ -385,14 +385,14 @@ impl SacnReceiver {
 
     /// Allows receiving from the given universe and starts listening to the multicast addresses which corresponds to the given universe.
     ///
-    /// Note that if the is_multicast_enabled flag is set to false then this method will only register the universe to listen to and won't
+    /// Note that if the `is_multicast_enabled` flag is set to false then this method will only register the universe to listen to and won't
     /// attempt to join any multicast groups.
     ///
     /// If 1 or more universes in the list are already being listened to this method will have no effect for those universes only.
     ///
     /// # Errors
-    /// Returns an SacnError::IllegalUniverse error if the given universe is outwith the allowed range of universes,
-    /// see (is_universe_in_range)[fn.is_universe_in_range.packet].
+    /// Returns an `SacnError::IllegalUniverse` error if the given universe is outwith the allowed range of universes,
+    /// see (`is_universe_in_range`)[`fn.is_universe_in_range.packet`].
     ///
     ///
     pub fn listen_universes(&mut self, universes: &[u16]) -> Result<()> {
@@ -421,10 +421,10 @@ impl SacnReceiver {
     /// Stops listening to the given universe.
     ///
     /// # Errors
-    /// Returns an SacnError::IllegalUniverse error if the given universe is outwith the allowed range of universes,
-    /// see (is_universe_in_range)[fn.is_universe_in_range.packet].
+    /// Returns an `SacnError::IllegalUniverse` error if the given universe is outwith the allowed range of universes,
+    /// see (`is_universe_in_range`)[`fn.is_universe_in_range.packet`].
     ///
-    /// Returns UniverseNotFound if the given universe wasn't already being listened to.
+    /// Returns `UniverseNotFound` if the given universe wasn't already being listened to.
     pub fn mute_universe(&mut self, universe: u16) -> Result<()> {
         is_universe_in_range(universe)?;
 
@@ -441,12 +441,12 @@ impl SacnReceiver {
         }
     }
 
-    /// Set the process_preview_data flag to the given value.
+    /// Set the `process_preview_data` flag to the given value.
     ///
-    /// This flag indicates if this receiver should process packets marked as preview_data or should ignore them.
+    /// This flag indicates if this receiver should process packets marked as `preview_data` or should ignore them.
     ///
     /// Argument:
-    /// val: The new value of process_preview_data flag.
+    /// val: The new value of `process_preview_data` flag.
     pub fn set_process_preview_data(&mut self, val: bool) {
         self.process_preview_data = val;
     }
@@ -471,26 +471,26 @@ impl SacnReceiver {
     /// is already handled.
     ///
     /// # Errors
-    /// This method will return a WouldBlock (unix) or TimedOut (windows) error if there is no data ready within the given timeout.
+    /// This method will return a `WouldBlock` (unix) or `TimedOut` (windows) error if there is no data ready within the given timeout.
     /// A timeout of duration 0 will do timeout checks but otherwise will return a WouldBlock/TimedOut error without checking for data.
     ///
-    /// Will return SacnError::SourceDiscovered error if the announce_source_discovery flag is set and a universe discovery
+    /// Will return `SacnError::SourceDiscovered` error if the `announce_source_discovery` flag is set and a universe discovery
     /// packet is received and a source fully discovered.
     ///
-    /// Will return a UniverseNotRegistered error if this method is called with an infinite timeout, no
-    /// registered data universes and the announce_discovered_sources flag set to off. This is to protect the user from
+    /// Will return a `UniverseNotRegistered` error if this method is called with an infinite timeout, no
+    /// registered data universes and the `announce_discovered_sources` flag set to off. This is to protect the user from
     /// making this mistake leading to the method never being able to return.
     ///
     /// The method may also return an error if there is an issue setting a timeout on the receiver. See
-    /// SacnNetworkReceiver::set_timeout for details.
+    /// `SacnNetworkReceiver::set_timeout` for details.
     ///
     /// The method may also return an error if there is an issue handling the data as either a Data, Synchronisation or Discovery packet.
-    /// See the SacnReceiver::handle_data_packet, SacnReceiver::handle_sync_packet and SacnReceiver::handle_universe_discovery_packet methods
+    /// See the `SacnReceiver::handle_data_packet`, `SacnReceiver::handle_sync_packet` and `SacnReceiver::handle_universe_discovery_packet` methods
     /// for details.
     ///
-    /// If the announce_timeout flag is set then the recv will return a UniverseTimeout error if a source fails to send on a universe within the timeout
-    /// specified by E131_NETWORK_DATA_LOSS_TIMEOUT (ANSI E1.31-2018 Appendix A).  This may not be detected immediately unless data is received for the timed-out
-    /// universe from the source. If it isn't detected immediately it will be detected within an interval of E131_NETWORK_DATA_LOSS_TIMEOUT (assuming code
+    /// If the `announce_timeout` flag is set then the recv will return a `UniverseTimeout` error if a source fails to send on a universe within the timeout
+    /// specified by `E131_NETWORK_DATA_LOSS_TIMEOUT` (ANSI E1.31-2018 Appendix A).  This may not be detected immediately unless data is received for the timed-out
+    /// universe from the source. If it isn't detected immediately it will be detected within an interval of `E131_NETWORK_DATA_LOSS_TIMEOUT` (assuming code
     /// executes in zero time).
     pub fn recv(&mut self, timeout: Option<Duration>) -> Result<Vec<DMXData>> {
         if self.universes.len() == 1
@@ -632,14 +632,14 @@ impl SacnReceiver {
         }
     }
 
-    /// Returns the current value of the announce_source_discovery flag.
-    /// See (set_announce_source_discovery)[receive::set_announce_source_discovery] for an explanation of the flag.
+    /// Returns the current value of the `announce_source_discovery` flag.
+    /// See (`set_announce_source_discovery`)[`receive::set_announce_source_discovery`] for an explanation of the flag.
     pub fn get_announce_source_discovery(&self) -> bool {
         self.announce_source_discovery
     }
 
     /// Gets all discovered sources without checking if any are timed out.
-    /// As the sources may be timed out get_discovered_sources is the preferred method but this is included
+    /// As the sources may be timed out `get_discovered_sources` is the preferred method but this is included
     /// to allow receivers to disable universe discovery source timeouts which may be useful in very high latency networks.
     pub fn get_discovered_sources_no_check(&mut self) -> Vec<DiscoveredSacnSource> {
         self.discovered_sources.clone()
@@ -651,48 +651,48 @@ impl SacnReceiver {
         self.discovered_sources.clone()
     }
 
-    /// Sets the value of the announce_source_discovery flag to the given value.
+    /// Sets the value of the `announce_source_discovery` flag to the given value.
     ///
     /// By default this flag is false which indicates that when receiving data discovered sources through universe discovery
     ///  won't be announced by the recv method and the receivers list of discovered universes will be updated silently.
-    /// If set to true then it means that a SourceDiscovered error will be thrown whenever a source is discovered through a
+    /// If set to true then it means that a `SourceDiscovered` error will be thrown whenever a source is discovered through a
     ///  complete universe discovery packet.
     ///
     /// # Arguments:
-    /// new_val: The new value for the announce_source_discovery flag.
+    /// `new_val`: The new value for the `announce_source_discovery` flag.
     pub fn set_announce_source_discovery(&mut self, new_val: bool) {
         self.announce_source_discovery = new_val;
     }
 
-    /// Returns the current value of the announce_timeout flag.
-    /// See (set_announce_timeout)[set_announce_timeout] for an explanation of the flag.
+    /// Returns the current value of the `announce_timeout` flag.
+    /// See (`set_announce_timeout`)[`set_announce_timeout`] for an explanation of the flag.
     pub fn get_announce_timeout(&self) -> bool {
         self.announce_timeout
     }
 
-    /// Sets the value of the announce_timeout flag to the given value.
+    /// Sets the value of the `announce_timeout` flag to the given value.
     ///
     /// By default this flag is false which means that if a universe for a source times out due to data not being sent then
     /// this will be updated on the receiver silently.
-    /// If set to true then a UniverseTimeout error will be thrown when attempting to receive if it is detected that a source universe has
+    /// If set to true then a `UniverseTimeout` error will be thrown when attempting to receive if it is detected that a source universe has
     /// timed out as per ANSI E1.31-2018 Section 6.7.1.
     ///
     /// # Arguments:
-    /// new_val: The new value for the announce_timeout flag.
+    /// `new_val`: The new value for the `announce_timeout` flag.
     pub fn set_announce_timeout(&mut self, new_val: bool) {
         self.announce_timeout = new_val;
     }
 
-    /// Returns the current value of the announce_stream_termination flag.
-    /// See (set_announce_stream_termination)[set_announce_stream_termination] for an explanation of the flag.
+    /// Returns the current value of the `announce_stream_termination` flag.
+    /// See (`set_announce_stream_termination`)[`set_announce_stream_termination`] for an explanation of the flag.
     pub fn get_announce_stream_termination(&self) -> bool {
         self.announce_stream_termination
     }
 
-    /// Sets the value of the announce_stream_termination flag to the given value.
+    /// Sets the value of the `announce_stream_termination` flag to the given value.
     ///
     /// By default this flag is false. This indicates that if a source sends a stream termination packet it will be handled silently by the receiver.
-    /// If set to true then a UniverseTermination error will be thrown when attempting to receive if a termination packet is received as per
+    /// If set to true then a `UniverseTermination` error will be thrown when attempting to receive if a termination packet is received as per
     /// ANSI E1.31-2018 Section 6.2.6.
     pub fn set_announce_stream_termination(&mut self, new_val: bool) {
         self.announce_stream_termination = new_val;
@@ -706,16 +706,16 @@ impl SacnReceiver {
     /// Synchronised data packets handled as per ANSI E1.31-2018 Section 6.2.4.1.
     ///
     /// Arguments:
-    /// data_pkt: The sACN data packet to handle.
+    /// `data_pkt`: The sACN data packet to handle.
     ///
     /// # Errors
-    /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between
+    /// Returns an `OutOfSequence` error if a packet is received out of order as detected by the different between
     /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     ///
-    /// Returns a UniversesTerminated error if a packet is received with the stream_terminated flag set indicating that the source is no longer
-    /// sending on that universe and the announce_stream_termination_flag is set to true.
+    /// Returns a `UniversesTerminated` error if a packet is received with the `stream_terminated` flag set indicating that the source is no longer
+    /// sending on that universe and the `announce_stream_termination_flag` is set to true.
     ///
-    /// Will return an DmxMergeError if there is an issue merging or replacing new and existing waiting data.
+    /// Will return an `DmxMergeError` if there is an issue merging or replacing new and existing waiting data.
     fn handle_data_packet(
         &mut self,
         cid: Uuid,
@@ -792,14 +792,14 @@ impl SacnReceiver {
     /// Note this is just a record keeping operation, it doesn't actually effect the real sACN sender it
     /// just updates the record of what universes are expected on this receiver.
     ///
-    /// If the src_cid/source_name/universe isn't currently registered then this method has no effect.
+    /// If the `src_cid/source_name/universe` isn't currently registered then this method has no effect.
     /// This is intentional as it allows calling this function multiple times without worrying about failure because
     /// it comes to the same result.
     ///     E.g. when a source terminates it sends 3 termination packets but a receiver should only terminate once.
     ///
     /// # Arguments:
     ///
-    /// src_cid: The CID of the source which is terminating a universe.
+    /// `src_cid`: The CID of the source which is terminating a universe.
     ///
     /// universe:    The sACN universe to remove.
     fn terminate_stream(&mut self, src_cid: Uuid, universe: u16) {
@@ -816,14 +816,14 @@ impl SacnReceiver {
 
     /// Takes the given data and tries to add it to the waiting data.
     ///
-    /// Note that a receiver will only store a single packet of data per data_universe at once.
+    /// Note that a receiver will only store a single packet of data per `data_universe` at once.
     ///
     /// If there is waiting data for the same universe as the data then it will be merged as per the
-    /// merge_func which by default keeps the highest priority data, if the data has the same priority
+    /// `merge_func` which by default keeps the highest priority data, if the data has the same priority
     /// then the newest data is kept.
     ///
     /// # Errors
-    /// Will return an DmxMergeError if there is an issue merging or replacing new and existing waiting data.
+    /// Will return an `DmxMergeError` if there is an issue merging or replacing new and existing waiting data.
     fn store_waiting_data(&mut self, data: DMXData) -> Result<()> {
         match self.waiting_data.remove(&data.universe) {
             Some(existing) => {
@@ -852,10 +852,10 @@ impl SacnReceiver {
     /// it shall hold that E1.31 Data Packet until the arrival of the appropriate E1.31 Synchronization Packet before acting on it.
     ///
     /// Arguments:
-    /// sync_pkt: The E1.31 synchronisation part of the synchronisation packet to handle.
+    /// `sync_pkt`: The E1.31 synchronisation part of the synchronisation packet to handle.
     ///
     /// # Errors
-    /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between
+    /// Returns an `OutOfSequence` error if a packet is received out of order as detected by the different between
     /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     fn handle_sync_packet(
         &mut self,
@@ -886,7 +886,7 @@ impl SacnReceiver {
     /// Returns an empty Vec if there is no data waiting.
     ///
     /// Arguments:
-    /// sync_uni: The synchronisation universe of the data that should be retrieved.
+    /// `sync_uni`: The synchronisation universe of the data that should be retrieved.
     fn rtrv_waiting_data(&mut self, sync_uni: u16) -> Vec<DMXData> {
         // Get the universes (used as keys) to remove and then move the corresponding data out of the waiting data and into the result.
         // This prevents having to copy DMXData.
@@ -909,12 +909,12 @@ impl SacnReceiver {
         res
     }
 
-    /// Takes the given DiscoveredSacnSource and updates the record of discovered sacn sources.
+    /// Takes the given `DiscoveredSacnSource` and updates the record of discovered sacn sources.
     ///
     /// This adds the new source deleting any previous source with the same name.
     ///
     /// Arguments:
-    /// src: The DiscoveredSacnSource to update the record of discovered sacn sources with.
+    /// src: The `DiscoveredSacnSource` to update the record of discovered sacn sources with.
     fn update_discovered_srcs(&mut self, src: DiscoveredSacnSource) {
         if let Some(index) = find_discovered_src(&self.discovered_sources, &src.cid) {
             self.discovered_sources.remove(index);
@@ -925,7 +925,7 @@ impl SacnReceiver {
     /// Handles the given universe discovery packet.
     ///
     /// This universe discovery packet might be the whole thing or may be just one page of a discovery packet.
-    /// This method puts the pages to produce the DiscoveredSacnSource which is stored in the receiver.
+    /// This method puts the pages to produce the `DiscoveredSacnSource` which is stored in the receiver.
     ///
     /// Returns the source name if a source was fully discovered or None if the source was only partially discovered.
     ///
@@ -933,7 +933,7 @@ impl SacnReceiver {
     /// 
     /// cid: the source CID.
     /// 
-    /// discovery_pkt: The universe discovery part of the universe discovery packet to handle.
+    /// `discovery_pkt`: The universe discovery part of the universe discovery packet to handle.
     fn handle_universe_discovery_packet(
         &mut self,
         cid: Uuid,
@@ -993,7 +993,7 @@ impl SacnReceiver {
         None // No source fully discovered.
     }
 
-    /// Goes through all the waiting data and removes any which has timed out as a sync-packet for it hasn't been received within the E131_NETWORK_DATA_LOSS_TIMEOUT
+    /// Goes through all the waiting data and removes any which has timed out as a sync-packet for it hasn't been received within the `E131_NETWORK_DATA_LOSS_TIMEOUT`
     /// period as specified by ANSI E1.31-2018 Section 11.1.2.
     fn check_waiting_data_timeouts(&mut self) {
         self.waiting_data
@@ -1009,7 +1009,7 @@ impl SacnReceiver {
     }
 }
 
-/// By implementing the Drop trait for SacnNetworkReceiver it means that the user doesn't have to explicitly clean up the receiver
+/// By implementing the Drop trait for `SacnNetworkReceiver` it means that the user doesn't have to explicitly clean up the receiver
 /// and if it goes out of reference it will clean itself up.
 impl Drop for SacnReceiver {
     fn drop(&mut self) {
@@ -1035,14 +1035,14 @@ impl Drop for SacnReceiver {
 ///
 /// Arguments:
 /// 
-/// srcs: The Vec of DiscoveredSacnSources to search.
+/// srcs: The Vec of `DiscoveredSacnSources` to search.
 /// 
 /// cid: The CID (uuid) of the source to find.
 fn find_discovered_src(srcs: &[DiscoveredSacnSource], cid: &Uuid) -> Option<usize> {
     (0..srcs.len()).find(|&i| srcs[i].cid == *cid)
 }
 
-/// In general the lower level transport layer is handled by SacnNetworkReceiver (which itself wraps a Socket).
+/// In general the lower level transport layer is handled by `SacnNetworkReceiver` (which itself wraps a Socket).
 /// Windows and linux handle multicast sockets differently.
 /// This is built for / tested with Windows 10 1909.
 #[cfg(target_os = "windows")]
@@ -1050,11 +1050,11 @@ impl SacnNetworkReceiver {
     /// Creates a new DMX receiver on the interface specified by the given address.
     ///
     /// If the given address is an IPv4 address then communication will only work between IPv4 devices, if the given address is IPv6 then communication
-    /// will only work between IPv6 devices by default but IPv4 receiving can be enabled using set_ipv6_only(false).
+    /// will only work between IPv6 devices by default but IPv4 receiving can be enabled using `set_ipv6_only(false)`.
     ///
     /// # Errors
-    /// Will return an error if the SacnReceiver fails to bind to a socket with the given ip.
-    /// For more details see socket2::Socket::new().
+    /// Will return an error if the `SacnReceiver` fails to bind to a socket with the given ip.
+    /// For more details see `socket2::Socket::new()`.
     fn new(ip: SocketAddr) -> Result<SacnNetworkReceiver> {
         Ok(SacnNetworkReceiver {
             socket: create_win_socket(ip)?,
@@ -1063,11 +1063,11 @@ impl SacnNetworkReceiver {
         })
     }
 
-    /// Connects this SacnNetworkReceiver to the multicast address which corresponds to the given universe to allow receiving packets for that universe.
+    /// Connects this `SacnNetworkReceiver` to the multicast address which corresponds to the given universe to allow receiving packets for that universe.
     ///
     /// # Errors
-    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an
-    /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
+    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 `multicast_addr` depending on if the Receiver is bound to an
+    /// IPv4 or IPv6 address. See `packet::universe_to_ipv4_multicast_addr` and `packet::universe_to_ipv6_multicast_addr`.
     ///
     /// Will return an Io error if cannot join the universes corresponding multicast group address.
     fn listen_multicast_universe(&self, universe: u16) -> Result<()> {
@@ -1080,11 +1080,11 @@ impl SacnNetworkReceiver {
         join_win_multicast(&self.socket, multicast_addr, self.addr.ip())
     }
 
-    /// Removes this SacnNetworkReceiver from the multicast group which corresponds to the given universe.
+    /// Removes this `SacnNetworkReceiver` from the multicast group which corresponds to the given universe.
     ///
     /// # Errors
-    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an
-    /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
+    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 `multicast_addr` depending on if the Receiver is bound to an
+    /// IPv4 or IPv6 address. See `packet::universe_to_ipv4_multicast_addr` and `packet::universe_to_ipv6_multicast_addr`.
     fn mute_multicast_universe(&mut self, universe: u16) -> Result<()> {
         let multicast_addr = if self.addr.is_ipv4() {
             universe_to_ipv4_multicast_addr(universe)? // "Failed to convert universe to IPv4 multicast addr"
@@ -1095,17 +1095,17 @@ impl SacnNetworkReceiver {
         leave_win_multicast(&self.socket, multicast_addr)
     }
 
-    /// Sets the value of the is_multicast_enabled flag to the given value.
+    /// Sets the value of the `is_multicast_enabled` flag to the given value.
     ///
     /// If set to false then the receiver won't attempt to join any more multicast groups.
     ///
-    /// This method does not attempt to leave multicast groups already joined through previous listen_universe calls.
+    /// This method does not attempt to leave multicast groups already joined through previous `listen_universe` calls.
     ///
     /// # Arguments
-    /// val: The new value for the is_multicast_enabled flag.
+    /// val: The new value for the `is_multicast_enabled` flag.
     ///
     /// # Errors
-    /// Will return an OsOperationUnsupported error if attempting to set the flag to true in an environment that multicast
+    /// Will return an `OsOperationUnsupported` error if attempting to set the flag to true in an environment that multicast
     /// isn't supported i.e. Ipv6 on Windows.
     fn set_is_multicast_enabled(&mut self, val: bool) -> Result<()> {
         if val && self.is_ipv6() {
@@ -1125,7 +1125,7 @@ impl SacnNetworkReceiver {
     }
 
     /// If set to true then only receive over IPv6. If false then receiving will be over both IPv4 and IPv6.
-    /// This will return an error if the SacnReceiver wasn't created using an IPv6 address to bind to.
+    /// This will return an error if the `SacnReceiver` wasn't created using an IPv6 address to bind to.
     fn set_only_v6(&mut self, val: bool) -> Result<()> {
         if self.addr.is_ipv4() {
             Err(SacnError::IpVersionError())
@@ -1137,22 +1137,22 @@ impl SacnNetworkReceiver {
     /// Returns a packet if there is one available.
     ///
     /// The packet may not be ready to transmit if it is awaiting synchronisation.
-    /// Will only block if set_timeout was called with a timeout of None so otherwise (and by default) it won't
+    /// Will only block if `set_timeout` was called with a timeout of None so otherwise (and by default) it won't
     /// block so may return a WouldBlock/TimedOut error to indicate that there was no data ready.
     ///
     /// IMPORTANT NOTE:
-    /// An explicit lifetime is given to the AcnRootLayerProtocol which comes from the lifetime of the given buffer.
-    /// The compiler will prevent usage of the returned AcnRootLayerProtocol after the buffer is dropped normally but may not in the case
+    /// An explicit lifetime is given to the `AcnRootLayerProtocol` which comes from the lifetime of the given buffer.
+    /// The compiler will prevent usage of the returned `AcnRootLayerProtocol` after the buffer is dropped normally but may not in the case
     /// of unsafe code .
     ///
     /// Arguments:
     /// buf: The buffer to use for storing the received data into. This buffer shouldn't be accessed or used directly as the data
-    /// is returned formatted properly in the AcnRootLayerProtocol. This buffer is used as memory space for the returned AcnRootLayerProtocol.
+    /// is returned formatted properly in the `AcnRootLayerProtocol`. This buffer is used as memory space for the returned `AcnRootLayerProtocol`.
     ///
     /// # Errors
     /// May return an error if there is an issue receiving data from the underlying socket, see (recv)[fn.recv.Socket].
     ///
-    /// May return an error if there is an issue parsing the data from the underlying socket, see (parse)[fn.AcnRootLayerProtocol::parse.packet].
+    /// May return an error if there is an issue parsing the data from the underlying socket, see (parse)[`fn.AcnRootLayerProtocol::parse.packet`].
     fn recv<'a>(
         &mut self,
         buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE],
@@ -1171,12 +1171,12 @@ impl SacnNetworkReceiver {
     /// timeout: The new timeout for the receive operation, a value of None means the recv operation will become blocking.
     ///
     /// Errors:
-    /// A timeout with Duration 0 will cause an error. See (set_read_timeout)[fn.set_read_timeout.Socket].
+    /// A timeout with Duration 0 will cause an error. See (`set_read_timeout`)[`fn.set_read_timeout.Socket`].
     fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
         Ok(self.socket.set_read_timeout(timeout)?)
     }
 
-    /// Returns true if this SacnNetworkReceiver is bound to an Ipv6 address.
+    /// Returns true if this `SacnNetworkReceiver` is bound to an Ipv6 address.
     fn is_ipv6(&self) -> bool {
         self.addr.is_ipv6()
     }
@@ -1325,7 +1325,7 @@ impl Clone for DMXData {
     }
 }
 
-/// DMXData has a total ordering based on the universe, then sync-universe and finally values.
+/// `DMXData` has a total ordering based on the universe, then sync-universe and finally values.
 impl Ord for DMXData {
     fn cmp(&self, other: &Self) -> Ordering {
         self.universe
@@ -1335,14 +1335,14 @@ impl Ord for DMXData {
     }
 }
 
-/// See Ord trait implementation for DMXData.
+/// See Ord trait implementation for `DMXData`.
 impl PartialOrd for DMXData {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-/// DMXData is taken to be equivalent iff:
+/// `DMXData` is taken to be equivalent iff:
 ///     - The universes are the same
 ///     - The synchronisation universes are the same
 ///     - The values are all the same
@@ -1354,11 +1354,11 @@ impl PartialEq for DMXData {
     }
 }
 
-/// See PartialEq trait implementation for DMXData.
+/// See `PartialEq` trait implementation for `DMXData`.
 impl Eq for DMXData {}
 
 impl DiscoveredSacnSource {
-    /// Returns true if all the pages sent by this DiscoveredSacnSource have been received.
+    /// Returns true if all the pages sent by this `DiscoveredSacnSource` have been received.
     ///
     /// This is based on each page containing a last-page value which indicates the number of the last page expected.
     pub fn has_all_pages(&mut self) -> bool {
@@ -1378,7 +1378,7 @@ impl DiscoveredSacnSource {
         true
     }
 
-    /// Returns all the universes being send by this SacnSource as discovered through the universe discovery mechanism.
+    /// Returns all the universes being send by this `SacnSource` as discovered through the universe discovery mechanism.
     ///
     /// Intentionally abstracts over the underlying concept of pages as this is purely an E1.31 Universe Discovery concept and is otherwise transparent.
     pub fn get_all_universes(&self) -> Vec<u16> {
@@ -1555,7 +1555,7 @@ fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr)
 /// addr: The address that the newly created socket should bind to.
 ///
 /// # Errors
-/// Will return an error if the socket cannot be created, see (Socket::new)[fn.new.Socket].
+/// Will return an error if the socket cannot be created, see (`Socket::new`)[fn.new.Socket].
 ///
 /// Will return an error if the socket cannot be bound to the given address, see (bind)[fn.bind.Socket].
 #[cfg(target_os = "windows")]
@@ -1585,9 +1585,9 @@ fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
 ///
 /// # Errors
 /// Will return an error if the given socket cannot be joined to the given multicast group address.
-///     See join_multicast_v4[fn.join_multicast_v4.Socket] and join_multicast_v6[fn.join_multicast_v6.Socket]
+///     See `join_multicast_v4`[`fn.join_multicast_v4.Socket`] and `join_multicast_v6`[`fn.join_multicast_v6.Socket`]
 ///
-/// Will return OsOperationUnsupported error if attempt to leave an Ipv6 multicast group as all Ipv6 multicast operations are currently unsupported in Rust on Windows.
+/// Will return `OsOperationUnsupported` error if attempt to leave an Ipv6 multicast group as all Ipv6 multicast operations are currently unsupported in Rust on Windows.
 #[cfg(target_os = "windows")]
 fn join_win_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.family() as i32 {
@@ -1643,9 +1643,9 @@ fn join_win_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -
 ///
 /// # Errors
 /// Will return an error if the given socket cannot leave the given multicast group address.
-///     See leave_multicast_v4[fn.leave_multicast_v4.Socket] and leave_multicast_v6[fn.leave_multicast_v6.Socket]
+///     See `leave_multicast_v4`[`fn.leave_multicast_v4.Socket`] and `leave_multicast_v6`[`fn.leave_multicast_v6.Socket`]
 ///
-/// Will return OsOperationUnsupported error if attempt to leave an Ipv6 multicast group as all Ipv6 multicast operations are currently unsupported in Rust on Windows.
+/// Will return `OsOperationUnsupported` error if attempt to leave an Ipv6 multicast group as all Ipv6 multicast operations are currently unsupported in Rust on Windows.
 #[cfg(target_os = "windows")]
 fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
     match addr.family() as i32 {
@@ -1685,7 +1685,7 @@ fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
 
 /// Stores a sequence number and a timestamp.
 ///
-/// Used internally within SequenceNumbering for tracking the last received timestamps of each packet-type, source, universe combination.
+/// Used internally within `SequenceNumbering` for tracking the last received timestamps of each packet-type, source, universe combination.
 ///
 /// This is then used to workout timeouts to trigger network data loss as per ANSI E1.31-2018 Section 6.7.1.
 #[derive(Copy, Clone)]
@@ -1723,9 +1723,9 @@ struct SequenceNumbering {
 }
 
 impl SequenceNumbering {
-    /// Creates a new SequenceNumbering for tracking sequence numbers for the various types of packets.
+    /// Creates a new `SequenceNumbering` for tracking sequence numbers for the various types of packets.
     ///
-    /// This implementation uses HashMaps internally to allow O(1) checking and updating of sequence numbers.
+    /// This implementation uses `HashMaps` internally to allow O(1) checking and updating of sequence numbers.
     fn new() -> SequenceNumbering {
         SequenceNumbering {
             data_sequences: HashMap::new(),
@@ -1740,12 +1740,12 @@ impl SequenceNumbering {
     }
 
     /// Checks the timeouts for all packet types, sources and universes with sequence numbers registed.
-    /// Removes any universes for which the last_recv time was at least the given timeout amount of time ago.
+    /// Removes any universes for which the `last_recv` time was at least the given timeout amount of time ago.
     /// Any sources which have no universes after this operation are also removed.
     ///
     /// #Arguments
     ///
-    /// announce_timeout: A flag, if true it indicates than a UniverseTimeout error should be thrown if a universe times out on a source.
+    /// `announce_timeout`: A flag, if true it indicates than a `UniverseTimeout` error should be thrown if a universe times out on a source.
     fn check_timeouts(&mut self, announce_timeout: bool) -> Result<()> {
         check_timeouts(
             &mut self.data_sequences,
@@ -1759,25 +1759,25 @@ impl SequenceNumbering {
         )
     }
 
-    /// Checks the sequence number is correct for a data packet with the given sequence_number and universe from the given source with given cid.
-    /// Uses the given source_limit to check that it isn't exceeded.
+    /// Checks the sequence number is correct for a data packet with the given `sequence_number` and universe from the given source with given cid.
+    /// Uses the given `source_limit` to check that it isn't exceeded.
     ///
     /// Returns Ok(()) if the packet is detected in-order.
     ///
     /// # Arguments
-    /// source_limit: The limit on the number of sources which are allowed, None indicates no limit, if there is a limit then a SourcesExceededError may be returned.
+    /// `source_limit`: The limit on the number of sources which are allowed, None indicates no limit, if there is a limit then a `SourcesExceededError` may be returned.
     ///
     /// cid:    The Uuid of the source that send the packet.
     ///
-    /// sequence_number: The sequence number of the packet to check.
+    /// `sequence_number`: The sequence number of the packet to check.
     ///
     /// universe: The data universe of the packet.
     ///
     /// # Errors
-    /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between
+    /// Returns an `OutOfSequence` error if a packet is received out of order as detected by the different between
     /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     ///
-    /// Return a SourcesExceededError if the cid of the source is new and would cause the number of sources to exceed the given source_limit.
+    /// Return a `SourcesExceededError` if the cid of the source is new and would cause the number of sources to exceed the given `source_limit`.
     fn check_data_seq_number(
         &mut self,
         source_limit: Option<usize>,
@@ -1796,25 +1796,25 @@ impl SequenceNumbering {
         )
     }
 
-    /// Checks the sequence number is correct for a sync packet with the given sequence_number and universe from the given source with given cid.
-    /// Uses the given source_limit to check that it isn't exceeded.
+    /// Checks the sequence number is correct for a sync packet with the given `sequence_number` and universe from the given source with given cid.
+    /// Uses the given `source_limit` to check that it isn't exceeded.
     ///
     /// Returns Ok(()) if the packet is detected in-order.
     ///
     /// # Arguments
-    /// source_limit: The limit on the number of sources which are allowed, None indicates no limit, if there is a limit then a SourcesExceededError may be returned.
+    /// `source_limit`: The limit on the number of sources which are allowed, None indicates no limit, if there is a limit then a `SourcesExceededError` may be returned.
     ///
     /// cid:    The Uuid of the source that send the packet.
     ///
-    /// sequence_number: The sequence number of the packet to check.
+    /// `sequence_number`: The sequence number of the packet to check.
     ///
     /// universe: The sync universe of the packet
     ///
     /// # Errors
-    /// Returns an OutOfSequence error if a packet is received out of order as detected by the different between
+    /// Returns an `OutOfSequence` error if a packet is received out of order as detected by the different between
     /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
     ///
-    /// Return a SourcesExceededError if the cid of the source is new and would cause the number of sources to exceed the given source_limit.
+    /// Return a `SourcesExceededError` if the cid of the source is new and would cause the number of sources to exceed the given `source_limit`.
     fn check_sync_seq_number(
         &mut self,
         source_limit: Option<usize>,
@@ -1838,7 +1838,7 @@ impl SequenceNumbering {
     ///
     /// # Arguments:
     ///
-    /// src_cid: The CID of the source to remove the sequence numbers of.
+    /// `src_cid`: The CID of the source to remove the sequence numbers of.
     ///
     /// universe: The universe being sent by the source from which to remove the sequence numbers.
     fn remove_seq_numbers(&mut self, src_cid: Uuid, universe: u16) -> Result<()> {
@@ -1852,18 +1852,18 @@ impl SequenceNumbering {
 /// Returns Ok(()) if the packet is detected in-order.
 ///
 /// # Arguments
-/// src_sequences: A mutable hashmap which relates sources identified by Uuid to another hashmap which itself relates universes to sequence numbers. The given hashmap of
+/// `src_sequences`: A mutable hashmap which relates sources identified by Uuid to another hashmap which itself relates universes to sequence numbers. The given hashmap of
 ///                 sequences should be for the specific packet-type being checked as different packet-types have their own sequence numbers even from the same source.
-/// source_limit: The limit on the number of sources which are allowed, None indicates no limit, if there is a limit then a SourcesExceededError may be returned.
+/// `source_limit`: The limit on the number of sources which are allowed, None indicates no limit, if there is a limit then a `SourcesExceededError` may be returned.
 /// cid:    The Uuid of the source that send the packet.
-/// sequence_number: The sequence number of the packet to check.
+/// `sequence_number`: The sequence number of the packet to check.
 /// universe: The universe of the packet (this is the data universe for data packets and the sync universe for synchronisation packets).
 ///
 /// # Errors
-/// Returns an OutOfSequence error if a packet is received out of order as detected by the different between
+/// Returns an `OutOfSequence` error if a packet is received out of order as detected by the different between
 /// the packets sequence number and the expected sequence number as specified in ANSI E1.31-2018 Section 6.7.2 Sequence Numbering.
 ///
-/// Return a SourcesExceededError if the cid of the source is new and would cause the number of sources to exceed the given source_limit.
+/// Return a `SourcesExceededError` if the cid of the source is new and would cause the number of sources to exceed the given `source_limit`.
 fn check_seq_number(
     src_sequences: &mut HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>>,
     source_limit: Option<usize>,
@@ -1952,12 +1952,12 @@ fn check_seq_number(
 }
 
 /// Checks the timeouts for all sources and universes for the given sequences.
-/// Removes any universes for which the last_recv time was at least the given timeout amount of time ago.
+/// Removes any universes for which the `last_recv` time was at least the given timeout amount of time ago.
 /// Any sources which have no universes after this operation are also removed.
 ///
 /// #Arguments
 ///
-/// src_sequences: The source sequence numbers to check the timeout of.
+/// `src_sequences`: The source sequence numbers to check the timeout of.
 ///
 /// timeout: The exclusive length of time permitted since a source last sent on a universe.
 ///     If the time elapsed since the last received data that is equal to or great than the timeout then the source is said to have timed out.
@@ -2014,16 +2014,16 @@ fn check_timeouts(
 /// This removes the source entirely if there are no universes left.
 ///
 /// # Arguments
-/// src_sequences: The sequence numbers for each source and universe.
+/// `src_sequences`: The sequence numbers for each source and universe.
 ///
-/// src_cid:       The CID for the source to remove the universe from.
+/// `src_cid`:       The CID for the source to remove the universe from.
 ///
 /// universe:      The universe to remove from the source.
 ///
 /// # Errors
-/// Returns a SourceNotFound error if the given src_cid isn't in the given collection of sources/sequence-numbers.
+/// Returns a `SourceNotFound` error if the given `src_cid` isn't in the given collection of sources/sequence-numbers.
 ///
-/// Returns a UniverseNotFound error if the given universe isn't registered to the given source and so cannot be removed.
+/// Returns a `UniverseNotFound` error if the given universe isn't registered to the given source and so cannot be removed.
 fn remove_source_universe_seq(
     src_sequences: &mut HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>>,
     src_cid: Uuid,
@@ -2057,7 +2057,7 @@ fn remove_source_universe_seq(
 /// This can be changed if required as part of the mechanism described in ANSI E1.31-2018, Section 6.2.3.4 Requirements for Merging and Arbitrating.
 ///
 /// The first argument (i) is the existing data, n is the new data.
-/// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
+/// This function is only valid if both inputs have the same universe, sync addr, `start_code` and the data contains at least the first value (the start code).
 /// If this doesn't hold an error will be returned.
 /// Other merge functions may allow merging different start codes or not check for them.
 pub fn discard_lowest_priority_then_previous(i: &DMXData, n: &DMXData) -> Result<DMXData> {
@@ -2076,7 +2076,7 @@ pub fn discard_lowest_priority_then_previous(i: &DMXData, n: &DMXData) -> Result
 ///
 /// The first argument (i) is the existing data, n is the new data.
 ///
-/// This function is only valid if both inputs have the same universe, sync addr, start_code and the data contains at least the first value (the start code).
+/// This function is only valid if both inputs have the same universe, sync addr, `start_code` and the data contains at least the first value (the start code).
 /// If this doesn't hold an error will be returned.
 /// Other merge functions may allow merging different start codes or not check for them.
 pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData> {
