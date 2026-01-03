@@ -1651,16 +1651,10 @@ mod sacn_ipv6_multicast_test {
             )
             .unwrap();
         ipv4_recv
-            .join_multicast_v4(
-                &ipv4_multicast_addr.as_socket_ipv4().unwrap().ip(),
-                &Ipv4Addr::UNSPECIFIED,
-            )
+            .join_multicast_v4(ipv4_multicast_addr.ip(), &Ipv4Addr::UNSPECIFIED)
             .unwrap();
         ipv4_recv
-            .join_multicast_v4(
-                &ipv4_discovery_multicast_addr.as_socket_ipv4().unwrap().ip(),
-                &Ipv4Addr::UNSPECIFIED,
-            )
+            .join_multicast_v4(ipv4_discovery_multicast_addr.ip(), &Ipv4Addr::UNSPECIFIED)
             .unwrap();
 
         // Create and setup the ipv6 source.
@@ -1690,13 +1684,10 @@ mod sacn_ipv6_multicast_test {
             )
             .unwrap();
         ipv6_recv
-            .join_multicast_v6(&ipv6_multicast_addr.as_socket_ipv6().unwrap().ip(), 0)
+            .join_multicast_v6(ipv6_multicast_addr.ip(), 0)
             .unwrap();
         ipv6_recv
-            .join_multicast_v6(
-                &ipv6_discovery_multicast_addr.as_socket_ipv6().unwrap().ip(),
-                0,
-            )
+            .join_multicast_v6(ipv6_discovery_multicast_addr.ip(), 0)
             .unwrap();
 
         // Send and receive the data packet over IPv4.

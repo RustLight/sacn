@@ -17,11 +17,14 @@
 use crate::error::errors::*;
 use crate::packet::*;
 
+// Import these at the crate level for no_std switching
+use crate::{String, ToString, Vec, println, vec};
+
+use core::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::cell::RefCell;
 use std::cmp;
 use std::cmp::min;
 use std::collections::HashMap;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::thread::JoinHandle;
@@ -856,14 +859,14 @@ impl SacnSourceInternal {
                     std::io::Error::new(e.kind(), "Failed to send data unicast on socket")
                 })?;
         } else {
-            let dst = if self.addr.is_ipv6() {
-                universe_to_ipv6_multicast_addr(universe)?
+            let dst: SocketAddr = if self.addr.is_ipv6() {
+                SocketAddr::V6(universe_to_ipv6_multicast_addr(universe)?)
             } else {
-                universe_to_ipv4_multicast_addr(universe)?
+                SocketAddr::V4(universe_to_ipv4_multicast_addr(universe)?)
             };
 
             self.socket
-                .send_to(&packet.pack_alloc().unwrap(), &dst)
+                .send_to(&packet.pack_alloc().unwrap(), &dst.into())
                 .map_err(|e| {
                     std::io::Error::new(e.kind(), "Failed to send data multicast on socket")
                 })?;
@@ -900,11 +903,11 @@ impl SacnSourceInternal {
         self.universe_allowed(&universe)?;
 
         let ip = if let Some(dst) = dst_ip {
-            dst.into()
+            dst
         } else if self.addr.is_ipv6() {
-            universe_to_ipv6_multicast_addr(universe)?
+            SocketAddr::V6(universe_to_ipv6_multicast_addr(universe)?)
         } else {
-            universe_to_ipv4_multicast_addr(universe)?
+            SocketAddr::V4(universe_to_ipv4_multicast_addr(universe)?)
         };
 
         let mut sequence = match self.sync_sequences.borrow().get(&universe) {
@@ -922,7 +925,7 @@ impl SacnSourceInternal {
             },
         };
         self.socket
-            .send_to(&packet.pack_alloc()?, &ip)
+            .send_to(&packet.pack_alloc()?, &ip.into())
             .map_err(|e| std::io::Error::new(e.kind(), "Failed to send sync packet on socket"))?;
 
         if sequence == 255 {
@@ -958,12 +961,12 @@ impl SacnSourceInternal {
         self.universe_allowed(&universe)?;
 
         let ip = match dst_ip {
-            Some(x) => x.into(),
+            Some(x) => x,
             None => {
                 if self.addr.is_ipv6() {
-                    universe_to_ipv6_multicast_addr(universe)?
+                    SocketAddr::V6(universe_to_ipv6_multicast_addr(universe)?)
                 } else {
-                    universe_to_ipv4_multicast_addr(universe)?
+                    SocketAddr::V4(universe_to_ipv4_multicast_addr(universe)?)
                 }
             }
         };
@@ -993,7 +996,7 @@ impl SacnSourceInternal {
         };
         let res = &packet.pack_alloc().unwrap();
 
-        self.socket.send_to(res, &ip)?;
+        self.socket.send_to(res, &ip.into())?;
 
         if sequence == 255 {
             sequence = 0;
@@ -1112,12 +1115,12 @@ impl SacnSourceInternal {
         };
 
         let ip = if self.addr.is_ipv6() {
-            universe_to_ipv6_multicast_addr(E131_DISCOVERY_UNIVERSE)?
+            SocketAddr::V6(universe_to_ipv6_multicast_addr(E131_DISCOVERY_UNIVERSE)?)
         } else {
-            universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE)?
+            SocketAddr::V4(universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE)?)
         };
 
-        self.socket.send_to(&packet.pack_alloc()?, &ip)?;
+        self.socket.send_to(&packet.pack_alloc()?, &ip.into())?;
 
         Ok(())
     }

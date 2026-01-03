@@ -9,6 +9,7 @@
 
 //! The errors used within the SacnLibrary specifically those related to parsing and packeting packets received/sent on the network.
 
+use crate::String;
 use thiserror::Error;
 use uuid::Uuid;
 
