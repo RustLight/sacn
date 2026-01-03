@@ -22,4 +22,4 @@ ip a show dev lo
 # sysctl -p
 
 cargo test
-cargo test --test ipv4_tests -- --ignored --nocapture --test-threads=1
+cargo test --test ipv4_tests -- --ignored --test-threads=1
