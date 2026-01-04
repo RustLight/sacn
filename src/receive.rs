@@ -2178,7 +2178,7 @@ mod test {
         let last_page: u8 = 0;
         let universes: Vec<u16> = vec![0, 1, 2, 3, 4, 5];
 
-        let discovery_pkt: UniverseDiscoveryPacketFramingLayer =
+        let discovery_pkt: UniverseDiscoveryPacketFramingLayer<'_> =
             UniverseDiscoveryPacketFramingLayer {
                 source_name: name.into(),
 
@@ -2231,7 +2231,7 @@ mod test {
             universes_page_2.push(i);
         }
 
-        let discovery_pkt_1: UniverseDiscoveryPacketFramingLayer =
+        let discovery_pkt_1: UniverseDiscoveryPacketFramingLayer<'_> =
             UniverseDiscoveryPacketFramingLayer {
                 source_name: name.into(),
 
@@ -2247,7 +2247,7 @@ mod test {
                 },
             };
 
-        let discovery_pkt_2: UniverseDiscoveryPacketFramingLayer =
+        let discovery_pkt_2: UniverseDiscoveryPacketFramingLayer<'_> =
             UniverseDiscoveryPacketFramingLayer {
                 source_name: name.into(),
 

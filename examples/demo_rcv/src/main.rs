@@ -28,8 +28,6 @@
 pub mod error;
 use error::errors::{DemoError, Result};
 
-extern crate sacn;
-
 use sacn::packet::ACN_SDT_MULTICAST_PORT;
 use sacn::receive::{DMXData, DiscoveredSacnSource, SacnReceiver};
 

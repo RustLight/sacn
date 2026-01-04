@@ -8,10 +8,6 @@
 //
 // This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
-extern crate sacn;
-extern crate uuid;
-extern crate socket2;
-
 use std::io::Read;
 use std::{array, thread};
 use std::thread::sleep;
