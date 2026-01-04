@@ -195,19 +195,6 @@ pub mod sacn_parse_pack_error;
 /// The errors used within the sACN crate, parse/pack errors are seperated out into sacn_parse_pack_error.
 pub mod error;
 
-extern crate libc;
-/// The library is built on top of socket2 to provide the underlying UDP networking interface.
-extern crate socket2;
-
-/// The core crate is used for string processing during packet parsing/packing as well as to provide access to the Hash trait.
-extern crate core;
-
-/// The byteorder crate is used for marshalling data on/off the network in Network Byte Order.
-extern crate byteorder;
-
-/// The uuid crate is used for working with/generating UUIDs which sACN uses as part of the cid field in the protocol.
-extern crate uuid;
-
 /// The packet module handles the sACN packets including parsing/packing and sACN related constants.
 pub mod packet;
 
