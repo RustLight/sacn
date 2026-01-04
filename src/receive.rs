@@ -202,7 +202,7 @@ pub struct DiscoveredSacnSource {
     /// The name of the source, no protocol guarantee this will be unique but if it isn't then universe discovery may not work correctly.
     pub name: String,
 
-    /// The unique CID of the source. This should be unique across all devices on the network. 
+    /// The unique CID of the source. This should be unique across all devices on the network.
     pub cid: Uuid,
 
     /// The time at which the discovered source was last updated / a discovery packet was received by the source.
@@ -808,8 +808,7 @@ impl SacnReceiver {
         let _ = self.sequences.remove_seq_numbers(src_cid, universe);
 
         // As with sequence numbers the source might not be found which is acceptable.
-        if let Some(index) = find_discovered_src(&self.discovered_sources, &src_cid)
-        {
+        if let Some(index) = find_discovered_src(&self.discovered_sources, &src_cid) {
             self.discovered_sources[index].terminate_universe(universe);
         }
     }
@@ -930,9 +929,9 @@ impl SacnReceiver {
     /// Returns the source name if a source was fully discovered or None if the source was only partially discovered.
     ///
     /// Arguments:
-    /// 
+    ///
     /// cid: the source CID.
-    /// 
+    ///
     /// `discovery_pkt`: The universe discovery part of the universe discovery packet to handle.
     fn handle_universe_discovery_packet(
         &mut self,
@@ -952,10 +951,7 @@ impl SacnReceiver {
         };
 
         // See if some pages that belong to the source that this page belongs to have already been received.
-        match find_discovered_src(
-            &self.partially_discovered_sources,
-            &cid
-        ) {
+        match find_discovered_src(&self.partially_discovered_sources, &cid) {
             Some(index) => {
                 // Some pages have already been received from this source.
                 self.partially_discovered_sources[index]
@@ -1034,9 +1030,9 @@ impl Drop for SacnReceiver {
 /// returns the index of the src in the Vec or None if not found.
 ///
 /// Arguments:
-/// 
+///
 /// srcs: The Vec of `DiscoveredSacnSources` to search.
-/// 
+///
 /// cid: The CID (uuid) of the source to find.
 fn find_discovered_src(srcs: &[DiscoveredSacnSource], cid: &Uuid) -> Option<usize> {
     (0..srcs.len()).find(|&i| srcs[i].cid == *cid)
@@ -2262,11 +2258,13 @@ mod test {
                     universes: universes_page_2.clone().into(),
                 },
             };
-        let res: Option<String> = dmx_rcv.handle_universe_discovery_packet(src_cid, discovery_pkt_1);
+        let res: Option<String> =
+            dmx_rcv.handle_universe_discovery_packet(src_cid, discovery_pkt_1);
 
         assert!(res.is_none()); // Should be none because first packet isn't complete as its only the first page.
 
-        let res2: Option<String> = dmx_rcv.handle_universe_discovery_packet(src_cid, discovery_pkt_2);
+        let res2: Option<String> =
+            dmx_rcv.handle_universe_discovery_packet(src_cid, discovery_pkt_2);
 
         assert!(res2.is_some()); // Source should be discovered because the second and last page is now received.
         assert_eq!(res2.unwrap(), name);
