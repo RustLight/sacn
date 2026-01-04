@@ -20,10 +20,10 @@ Compliance with the ANSI E1.31-2018 protocol was tested (April 2020) and the res
 ## Testing
 Quick library logic and parse testing: `cargo test`
 
-Ipv4 testing requires that the computer have (a) network interface(s) with the IPs of `192.168.0.6`, `192.168.0.7`, and `192.168.0.8`. These IPs are set in the testing file. Ip tests are ignored by default. Run the ip tests in a single thread to avoid socket conflicts within the OS. To run ipv4 tests, use
-`cargo test ipv4 -- --ignored --test-threads=1 --nocapture`
+Ipv4 testing requires that the computer have (a) network interface(s) with the IPs of `192.168.0.6`, `192.168.0.7`, and `192.168.0.8`. These IPs are set in the testing file. Ip tests are ignored by default. Run the ip tests in a single thread to avoid socket conflicts within the OS. To run ipv4 tests, use `cargo test_ip`, which is an alias for
+`cargo test --test ipv4_tests -- --ignored --test-threads=1`.
 
-There is a Dockerfile to run the ipv4 tests on linux. In the project root, run `docker build -t sacn-test -f docker-linux/Dockerfile .` to build the image. Then, run `docker run --cap-add=NET_ADMIN sacn-test` to run the ipv4 tests within the image.
+There is a Dockerfile to run the tests, inluding ipv4 tests, on linux. In the project root, run `docker build -t sacn-test -f docker-linux/Dockerfile .` to build the image. Then, run `docker run --cap-add=NET_ADMIN sacn-test` to run the ipv4 tests within the image. The docker engine must be running in linux container mode.
 
 ## Demo Implementation
 
