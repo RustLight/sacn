@@ -21,7 +21,10 @@
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 /// Mass import as a very large amount of packet is used here (upwards of 20 items) and this is much cleaner.
-use crate::packet::{E131RootLayerData::*, *};
+use crate::packet::{
+    E131RootLayerData::{DataPacket, SynchronizationPacket, UniverseDiscoveryPacket},
+    *,
+};
 
 /// Same reasoning as for packet meaning all sacn errors are imported.
 use crate::error::errors::*;
@@ -401,17 +404,15 @@ impl SacnReceiver {
         }
 
         for u in universes {
-            match self.universes.binary_search(u) {
-                Err(i) => {
-                    // Value not found, i is the position it should be inserted
-                    self.universes.insert(i, *u);
+            if let Err(i) = self.universes.binary_search(u) {
+                // Value not found, i is the position it should be inserted
+                self.universes.insert(i, *u);
 
-                    if self.is_multicast_enabled() {
-                        self.receiver.listen_multicast_universe(*u)?;
-                    }
+                if self.is_multicast_enabled() {
+                    self.receiver.listen_multicast_universe(*u)?;
                 }
-                Ok(_) => { // If value found then don't insert to avoid duplicates.
-                }
+            } else {
+                // If value found then don't insert to avoid duplicates.
             }
         }
 
@@ -756,7 +757,7 @@ impl SacnReceiver {
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
             let dmx_data: DMXData = DMXData {
                 universe: data_pkt.universe,
-                values: vals.to_vec(),
+                values: vals.clone(),
                 sync_uni: data_pkt.synchronization_address,
                 priority: data_pkt.priority,
                 src_cid: Some(cid),
@@ -773,7 +774,7 @@ impl SacnReceiver {
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
             let dmx_data: DMXData = DMXData {
                 universe: data_pkt.universe,
-                values: vals.to_vec(),
+                values: vals.clone(),
                 sync_uni: data_pkt.synchronization_address,
                 priority: data_pkt.priority,
                 src_cid: Some(cid),
@@ -951,38 +952,35 @@ impl SacnReceiver {
         };
 
         // See if some pages that belong to the source that this page belongs to have already been received.
-        match find_discovered_src(&self.partially_discovered_sources, &cid) {
-            Some(index) => {
-                // Some pages have already been received from this source.
-                self.partially_discovered_sources[index]
-                    .pages
-                    .push(uni_page);
-                self.partially_discovered_sources[index].last_updated = Instant::now();
-                if self.partially_discovered_sources[index].has_all_pages() {
-                    let discovered_src: DiscoveredSacnSource =
-                        self.partially_discovered_sources.remove(index);
-                    self.update_discovered_srcs(discovered_src);
-                    return Some(discovery_pkt.source_name.to_string());
-                }
+        if let Some(index) = find_discovered_src(&self.partially_discovered_sources, &cid) {
+            // Some pages have already been received from this source.
+            self.partially_discovered_sources[index]
+                .pages
+                .push(uni_page);
+            self.partially_discovered_sources[index].last_updated = Instant::now();
+            if self.partially_discovered_sources[index].has_all_pages() {
+                let discovered_src: DiscoveredSacnSource =
+                    self.partially_discovered_sources.remove(index);
+                self.update_discovered_srcs(discovered_src);
+                return Some(discovery_pkt.source_name.to_string());
             }
-            None => {
-                // This is the first page received from this source.
-                let discovered_src: DiscoveredSacnSource = DiscoveredSacnSource {
-                    name: discovery_pkt.source_name.to_string(),
-                    cid,
-                    last_page,
-                    pages: vec![uni_page],
-                    last_updated: Instant::now(),
-                };
+        } else {
+            // This is the first page received from this source.
+            let discovered_src: DiscoveredSacnSource = DiscoveredSacnSource {
+                name: discovery_pkt.source_name.to_string(),
+                cid,
+                last_page,
+                pages: vec![uni_page],
+                last_updated: Instant::now(),
+            };
 
-                if page == 0 && page == last_page {
-                    // Indicates that this is a single page universe discovery packet.
-                    self.update_discovered_srcs(discovered_src);
-                    return Some(discovery_pkt.source_name.to_string());
-                } else {
-                    // Indicates that this is a page in a set of pages as part of a sources universe discovery.
-                    self.partially_discovered_sources.push(discovered_src);
-                }
+            if page == 0 && page == last_page {
+                // Indicates that this is a single page universe discovery packet.
+                self.update_discovered_srcs(discovered_src);
+                return Some(discovery_pkt.source_name.to_string());
+            } else {
+                // Indicates that this is a page in a set of pages as part of a sources universe discovery.
+                self.partially_discovered_sources.push(discovered_src);
             }
         }
 
@@ -1308,7 +1306,7 @@ impl SacnNetworkReceiver {
 
 impl Clone for DMXData {
     fn clone(&self) -> DMXData {
-        let new_vals = self.values.to_vec(); // https://stackoverflow.com/questions/21369876/what-is-the-idiomatic-rust-way-to-copy-clone-a-vector-in-a-parameterized-functio (26/12/2019)
+        let new_vals = self.values.clone(); // https://stackoverflow.com/questions/21369876/what-is-the-idiomatic-rust-way-to-copy-clone-a-vector-in-a-parameterized-functio (26/12/2019)
         DMXData {
             universe: self.universe,
             values: new_vals,
@@ -1361,16 +1359,10 @@ impl DiscoveredSacnSource {
         // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/sorting.html (31/12/2019)
         self.pages.sort_by(|a, b| a.page.cmp(&b.page));
         for i in 0..=self.last_page {
-            if self
-                .pages
-                .get(i as usize)
-                .map(|p| p.page != i)
-                .unwrap_or(true)
-            {
+            if self.pages.get(i as usize).is_none_or(|p| p.page != i) {
                 return false;
             }
         }
-
         true
     }
 
@@ -1388,7 +1380,7 @@ impl DiscoveredSacnSource {
     /// Removes the given universe from the list of universes being sent by this discovered source.
     pub fn terminate_universe(&mut self, universe: u16) {
         for p in &mut self.pages {
-            p.universes.retain(|x| *x != universe)
+            p.universes.retain(|x| *x != universe);
         }
     }
 }
@@ -1622,7 +1614,9 @@ fn join_win_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -
             }
         },
         x => {
-            return Err(SacnError::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {x}").to_string()));
+            return Err(SacnError::UnsupportedIpVersion(format!(
+                "IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {x}"
+            )));
         }
     };
 
@@ -1672,7 +1666,9 @@ fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
             }
         },
         x => {
-            return Err(SacnError::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {x}").to_string()));
+            return Err(SacnError::UnsupportedIpVersion(format!(
+                "IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {x}"
+            )));
         }
     };
 
@@ -1888,17 +1884,14 @@ fn check_seq_number(
 
     let expected_seq = match src_sequences.get(&cid) {
         Some(src) => {
-            match src.get(&universe) {
+            if let Some(s) = src.get(&universe) {
                 // Get the sequence number within the source for the specific universe.
-                Some(s) => {
-                    // Indicates that the source / universe combination is known.
-                    *s
-                }
-                None => {
-                    // Indicates that this is the first time (or the first time since it timed out) the universe has been received from this source.
-                    let initial_seq_num = sequence_number.wrapping_sub(1);
-                    TimedStampedSeqNo::new(initial_seq_num, Instant::now())
-                }
+                // Indicates that the source / universe combination is known.
+                *s
+            } else {
+                // Indicates that this is the first time (or the first time since it timed out) the universe has been received from this source.
+                let initial_seq_num = sequence_number.wrapping_sub(1);
+                TimedStampedSeqNo::new(initial_seq_num, Instant::now())
             }
         }
         None => {

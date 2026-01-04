@@ -211,15 +211,11 @@ impl SacnSource {
             update_thread: Some(trd_builder.spawn(move || {
                 while trd_src.lock().unwrap().running {
                     thread::sleep(DEFAULT_POLL_PERIOD);
-                    match perform_periodic_update(&mut trd_src) {
-                        Err(e) => {
-                            println!("Periodic error: {e:?}");
-                        }
-
-                        _ => {
-                            // In-case of an error on the discovery thread the source continues to operate and tries again.
-                            // As no unsafe code blocks are used the rust compiler guarantees this is memory safe.
-                        }
+                    if let Err(e) = perform_periodic_update(&mut trd_src) {
+                        println!("Periodic error: {e:?}");
+                    } else {
+                        // In-case of an error on the discovery thread the source continues to operate and tries again.
+                        // As no unsafe code blocks are used the rust compiler guarantees this is memory safe.
                     }
                 }
             })?),
@@ -639,17 +635,13 @@ impl SacnSourceInternal {
 
         if self.universes.is_empty() {
             self.universes.push(universe);
+        } else if let Err(i) = self.universes.binary_search(&universe) {
+            // Value not found, i is the position it should be inserted
+            self.universes.insert(i, universe);
         } else {
-            match self.universes.binary_search(&universe) {
-                Err(i) => {
-                    // Value not found, i is the position it should be inserted
-                    self.universes.insert(i, universe);
-                }
-                Ok(_) => {
-                    // If value found then don't insert to avoid duplicates.
-                }
-            }
+            // If value found then don't insert to avoid duplicates.
         }
+
         Ok(())
     }
 

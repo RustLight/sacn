@@ -1471,8 +1471,12 @@ fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> 
 
     if buf.len() < length * E131_UNIVERSE_FIELD_LENGTH {
         return Err(SacnError::SacnParsePackError(
-            ParsePacketError::ParseInsufficientData(
-                format!("The given buffer of length {} bytes cannot be parsed into the given number of universes {}", buf.len(), length).to_string())));
+            ParsePacketError::ParseInsufficientData(format!(
+                "The given buffer of length {} bytes cannot be parsed into the given number of universes {}",
+                buf.len(),
+                length
+            )),
+        ));
     }
 
     while i < (length * E131_UNIVERSE_FIELD_LENGTH) {
@@ -1485,8 +1489,10 @@ fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> 
             i += E131_UNIVERSE_FIELD_LENGTH; // Jump to the next universe.
         } else {
             return Err(SacnError::SacnParsePackError(
-                ParsePacketError::ParseInvalidUniverseOrder(
-                    format!("Universe {u} is out of order, discovery packet universe list must be in accending order!").to_string())));
+                ParsePacketError::ParseInvalidUniverseOrder(format!(
+                    "Universe {u} is out of order, discovery packet universe list must be in accending order!"
+                )),
+            ));
         }
     }
 
