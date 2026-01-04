@@ -29,6 +29,8 @@ rustflags = [
     "-Wclippy::if_let_mutex",
     "-Wclippy::implicit_clone",
     "-Wclippy::imprecise_flops",
+    # to be enabled at a later date
+    # "-Wclippy::indexing_slicing", 
     "-Wclippy::inefficient_to_string",
     "-Wclippy::invalid_upcast_comparisons",
     "-Wclippy::large_digit_groups",
@@ -42,12 +44,10 @@ rustflags = [
     "-Wclippy::map_err_ignore",
     "-Wclippy::map_flatten",
     "-Wclippy::map_unwrap_or",
-    "-Wclippy::match_on_vec_items",
     "-Wclippy::match_same_arms",
     "-Wclippy::match_wild_err_arm",
     "-Wclippy::match_wildcard_for_single_variants",
     "-Wclippy::mem_forget",
-    "-Wclippy::mismatched_target_os",
     "-Wclippy::missing_enforced_import_renames",
     "-Wclippy::mut_mut",
     "-Wclippy::mutex_integer",
@@ -78,5 +78,6 @@ rustflags = [
     "-Wfuture_incompatible",
     "-Wnonstandard_style",
     "-Wrust_2018_idioms",
+    "-Wunexpected_cfgs",
     # END - Embark standard lints v6 for Rust 1.55+
 ]
