@@ -18,6 +18,9 @@ jobs:
     - name: Build
       run: cargo build --verbose
 
+    - name: Clippy
+      run: cargo clippy
+
     - name: Run tests
       run: cargo test --verbose
   
@@ -38,6 +41,9 @@ jobs:
     - name: Build
       run: cargo build --verbose
 
+    - name: Clippy
+      run: cargo clippy
+
     - name: Run tests
       run: cargo test --verbose
 
@@ -48,6 +54,9 @@ jobs:
 
     - name: Build
       run: cargo build --verbose
+
+    - name: Clippy
+      run: cargo clippy
 
     - name: Run tests
       run: cargo test --verbose
