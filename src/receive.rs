@@ -247,7 +247,7 @@ struct UniversePage {
 
 /// Allows debug ({:?}) printing of the `SacnReceiver`, used during debugging.
 impl fmt::Debug for SacnReceiver {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self.receiver)?;
         write!(f, "{:?}", self.waiting_data)?;
         write!(f, "{:?}", self.universes)?;
@@ -540,8 +540,8 @@ impl SacnReceiver {
         let mut buf: [u8; RCV_BUF_DEFAULT_SIZE] = [0; RCV_BUF_DEFAULT_SIZE];
         match self.receiver.recv(&mut buf) {
             Ok(pkt) => {
-                let pdu: E131RootLayer = pkt.pdu;
-                let data: E131RootLayerData = pdu.data;
+                let pdu = pkt.pdu;
+                let data = pdu.data;
                 let res = match data {
                     DataPacket(d) => self.handle_data_packet(pdu.cid, d)?,
                     SynchronizationPacket(s) => self.handle_sync_packet(pdu.cid, s)?,
@@ -719,7 +719,7 @@ impl SacnReceiver {
     fn handle_data_packet(
         &mut self,
         cid: Uuid,
-        data_pkt: DataPacketFramingLayer,
+        data_pkt: DataPacketFramingLayer<'_>,
     ) -> Result<Option<Vec<DMXData>>> {
         if data_pkt.preview_data && !self.process_preview_data {
             // Don't process preview data unless receiver has process_preview_data flag set.
@@ -937,9 +937,9 @@ impl SacnReceiver {
     fn handle_universe_discovery_packet(
         &mut self,
         cid: Uuid,
-        discovery_pkt: UniverseDiscoveryPacketFramingLayer,
+        discovery_pkt: UniverseDiscoveryPacketFramingLayer<'_>,
     ) -> Option<String> {
-        let data: UniverseDiscoveryPacketUniverseDiscoveryLayer = discovery_pkt.data;
+        let data = discovery_pkt.data;
 
         let page: u8 = data.page;
         let last_page: u8 = data.last_page;
