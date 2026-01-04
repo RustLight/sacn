@@ -1,0 +1,2 @@
+[alias]
+test_ip = "test --test ipv4_tests -- --ignored --test-threads=1"
