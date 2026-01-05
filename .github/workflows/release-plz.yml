@@ -1,4 +1,4 @@
-name: Release_plz
+name: release-plz
 
 on:
   push:
