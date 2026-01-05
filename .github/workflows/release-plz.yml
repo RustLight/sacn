@@ -7,30 +7,6 @@ on:
 
 jobs:
 
-  # Release unpublished packages.
-  # release-plz-release:
-  #   name: Release-plz release
-  #   runs-on: ubuntu-latest
-  #   if: ${{ github.repository_owner == 'RustLight' }}
-  #   permissions:
-  #     contents: write
-  #   steps:
-  #     - &checkout
-  #       name: Checkout repository
-  #       uses: actions/checkout@v6
-  #       with:
-  #         fetch-depth: 0
-  #         persist-credentials: false
-  #     - &install-rust
-  #       name: Install Rust toolchain
-  #       uses: dtolnay/rust-toolchain@stable
-  #     - name: Run release-plz
-  #       uses: release-plz/action@df14d0b05eb0c2b5070d5f8c375e9a8b06f7ae5b #v0.3.150
-  #       with:
-  #         command: release
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   # Create a PR with the new versions and changelog, preparing the next release.
   release-plz-pr:
     name: Release-plz PR
@@ -43,11 +19,33 @@ jobs:
       group: release-plz-${{ github.ref }}
       cancel-in-progress: false
     steps:
-      - *checkout
-      - *install-rust
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
       - name: Run release-plz
         uses: release-plz/action@df14d0b05eb0c2b5070d5f8c375e9a8b06f7ae5b #v0.3.150
         with:
           command: release-pr
         # env:
         #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Release unpublished packages.
+  release-plz-release:
+    name: Release-plz release
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'RustLight' }}
+    permissions:
+      contents: write
+    steps:
+      - *checkout
+      - *install-rust
+      - name: Run release-plz
+        uses: release-plz/action@df14d0b05eb0c2b5070d5f8c375e9a8b06f7ae5b #v0.3.150
+        with:
+          command: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
