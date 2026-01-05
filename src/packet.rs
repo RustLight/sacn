@@ -105,7 +105,7 @@ pub const E131_NO_SYNC_ADDR: u16 = 0;
 pub const E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from_secs(10);
 
 /// The exclusive lower bound on the different between the received and expected sequence numbers within which a
-/// packet will be discarded. Outside of the range specified by (E131_SEQ_DIFF_DISCARD_LOWER_BOUND, E131_SEQ_DIFF_DISCARD_UPPER_BOUND]
+/// packet will be discarded. Outside of the range specified by (`E131_SEQ_DIFF_DISCARD_LOWER_BOUND`, `E131_SEQ_DIFF_DISCARD_UPPER_BOUND`]
 /// the packet won't be discarded.
 ///
 /// Having a range allows receivers to catch up if packets are lost.
@@ -113,7 +113,7 @@ pub const E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from_secs
 pub const E131_SEQ_DIFF_DISCARD_LOWER_BOUND: isize = -20;
 
 /// The inclusive upper bound on the different between the received and expected sequence numbers within which a
-/// packet will be discarded. Outside of the range specified by (E131_SEQ_DIFF_DISCARD_LOWER_BOUND, E131_SEQ_DIFF_DISCARD_UPPER_BOUND]
+/// packet will be discarded. Outside of the range specified by (`E131_SEQ_DIFF_DISCARD_LOWER_BOUND`, `E131_SEQ_DIFF_DISCARD_UPPER_BOUND`]
 /// the packet won't be discarded.
 ///
 /// Having a range allows receivers to catch up if packets are lost.
@@ -153,7 +153,7 @@ pub const E131_UNIVERSE_SYNC_PACKET_FRAMING_LAYER_LENGTH: usize = 11;
 pub const E131_UNIVERSE_DISCOVERY_FRAMING_LAYER_MIN_LENGTH: usize = 82;
 
 /// The number of stream termination packets sent when a source terminates a stream.
-/// Set to 3 as per section 6.2.6 , Stream_Terminated: Bit 6 of ANSI E1.31-2018.
+/// Set to 3 as per section 6.2.6 , `Stream_Terminated`: Bit 6 of ANSI E1.31-2018.
 pub const E131_TERMINATE_STREAM_PACKET_COUNT: usize = 3;
 
 /// The length of the pdu flags and length field in bytes.
@@ -277,19 +277,19 @@ pub const VECTOR_ROOT_E131_DATA: u32 = 0x0000_0004;
 pub const VECTOR_ROOT_E131_EXTENDED: u32 = 0x0000_0008;
 
 /// The E1.31 packet vector field value used to identify the E1.31 packet as a synchronisation packet.
-/// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. VECTOR_ROOT_E131_DATA and VECTOR_ROOT_E131_EXTENDED).
+/// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. `VECTOR_ROOT_E131_DATA` and `VECTOR_ROOT_E131_EXTENDED`).
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
 pub const VECTOR_E131_EXTENDED_SYNCHRONIZATION: u32 = 0x0000_0001;
 
 /// The E1.31 packet vector field value used to identify the E1.31 packet as a universe discovery packet.
-/// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. VECTOR_ROOT_E131_DATA and VECTOR_ROOT_E131_EXTENDED).
-/// This VECTOR value is shared by E1.31 data packets, distinguished by the value of the ACN ROOT_VECTOR.
+/// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. `VECTOR_ROOT_E131_DATA` and `VECTOR_ROOT_E131_EXTENDED`).
+/// This VECTOR value is shared by E1.31 data packets, distinguished by the value of the ACN `ROOT_VECTOR`.
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
 pub const VECTOR_E131_EXTENDED_DISCOVERY: u32 = 0x0000_0002;
 
 /// The E1.31 packet vector field value used to identify the E1.31 packet as a data packet.
-/// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. VECTOR_ROOT_E131_DATA and VECTOR_ROOT_E131_EXTENDED).
-/// This VECTOR value is shared by E1.31 universe discovery packets, distinguished by the value of the ACN ROOT_VECTOR.
+/// This is used at the E1.31 layer and shouldn't be confused with the VECTOR values used for the ACN layer (i.e. `VECTOR_ROOT_E131_DATA` and `VECTOR_ROOT_E131_EXTENDED`).
+/// This VECTOR value is shared by E1.31 universe discovery packets, distinguished by the value of the ACN `ROOT_VECTOR`.
 /// Value as defined in ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
 pub const VECTOR_E131_DATA_PACKET: u32 = 0x0000_0002;
 
@@ -320,15 +320,15 @@ pub const E131_NETWORK_DATA_LOSS_TIMEOUT: Duration = Duration::from_millis(2500)
 pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_TIMEOUT;
 
 /// Converts the given ANSI E1.31-2018 universe into an Ipv4 multicast address with the port set to the acn multicast port as defined
-/// in packet::ACN_SDT_MULTICAST_PORT.
+/// in `packet::ACN_SDT_MULTICAST_PORT`.
 ///
 /// Conversion done as specified in section 9.3.1 of ANSI E1.31-2018
 ///
 /// Returns the multicast address.
 ///
 /// # Errors
-/// IllegalUniverse: Returned if the given universe is outwith the allowed range of universes,
-///     see (is_universe_in_range)[fn.is_universe_in_range.packet].
+/// `IllegalUniverse`: Returned if the given universe is outwith the allowed range of universes,
+///     see (`is_universe_in_range`)[`fn.is_universe_in_range.packet`].
 pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SockAddr> {
     is_universe_in_range(universe)?;
 
@@ -344,15 +344,15 @@ pub fn universe_to_ipv4_multicast_addr(universe: u16) -> Result<SockAddr> {
 }
 
 /// Converts the given ANSI E1.31-2018 universe into an Ipv6 multicast address with the port set to the acn multicast port as defined
-/// in packet::ACN_SDT_MULTICAST_PORT.
+/// in `packet::ACN_SDT_MULTICAST_PORT`.
 ///
 /// Conversion done as specified in section 9.3.2 of ANSI E1.31-2018
 ///
 /// Returns the multicast address.
 ///
 /// # Errors
-/// IllegalUniverse: Returned if the given universe is outwith the allowed range of universes,
-///     see (is_universe_in_range)[fn.is_universe_in_range.packet].
+/// `IllegalUniverse`: Returned if the given universe is outwith the allowed range of universes,
+///     see (`is_universe_in_range`)[`fn.is_universe_in_range.packet`].
 pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SockAddr> {
     is_universe_in_range(universe)?;
 
@@ -367,8 +367,8 @@ pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SockAddr> {
 /// Checks if the given universe is a valid universe to send on (within allowed range).
 ///
 /// # Errors
-/// IllegalUniverse: Returned if the universe is outwith the allowed range of universes
-///     [E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE] + E131_DISCOVERY_UNIVERSE.
+/// `IllegalUniverse`: Returned if the universe is outwith the allowed range of universes
+///     [`E131_MIN_MULTICAST_UNIVERSE`, `E131_MAX_MULTICAST_UNIVERSE`] + `E131_DISCOVERY_UNIVERSE`.
 pub fn is_universe_in_range(universe: u16) -> Result<()> {
     if (universe != E131_DISCOVERY_UNIVERSE)
         && !(E131_MIN_MULTICAST_UNIVERSE..=E131_MAX_MULTICAST_UNIVERSE).contains(&universe)
@@ -392,7 +392,7 @@ fn zeros(buf: &mut [u8], n: usize) {
 /// buf: The byte buffer to parse into a str.
 ///
 /// # Errors
-/// SourceNameNotNullTerminated: Returned if the source name is not null terminated as required by ANSI E1.31-2018 Section 6.2.2
+/// `SourceNameNotNullTerminated`: Returned if the source name is not null terminated as required by ANSI E1.31-2018 Section 6.2.2
 #[inline]
 fn parse_source_name_str(buf: &[u8]) -> Result<&str> {
     let mut source_name_length = buf.len();
@@ -514,25 +514,25 @@ macro_rules! impl_acn_root_layer_protocol {
 
 impl_acn_root_layer_protocol!(<'a>);
 
-/// Represents the data contained with the PduInfo section that appears at the start of a layer in an sACN packet.
+/// Represents the data contained with the `PduInfo` section that appears at the start of a layer in an sACN packet.
 struct PduInfo {
-    /// The length in bytes of this layer inclusive of the PduInfo.
+    /// The length in bytes of this layer inclusive of the `PduInfo`.
     length: usize,
     /// The vector which indicates what the layer is, context dependent.
     vector: u32,
 }
 
-/// Takes the given byte buffer and parses the flags, length and vector fields into a PduInfo struct.
+/// Takes the given byte buffer and parses the flags, length and vector fields into a `PduInfo` struct.
 ///
 /// # Arguments
 /// buf: The raw byte buffer.
 ///
-/// vector_length: The length of the vectorfield in bytes.
+/// `vector_length`: The length of the vectorfield in bytes.
 ///
 /// # Errors
-/// ParseInsufficientData: If the length of the buffer is less than the flag, length and vector fields (E131_PDU_LENGTH_FLAGS_LENGTH + vector_length).
+/// `ParseInsufficientData`: If the length of the buffer is less than the flag, length and vector fields (`E131_PDU_LENGTH_FLAGS_LENGTH` + `vector_length`).
 ///
-/// ParsePduInvalidFlags: If the flags parsed don't match the flags expected for an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
+/// `ParsePduInvalidFlags`: If the flags parsed don't match the flags expected for an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4 Table 4-1, 4-2, 4-3.
 fn pdu_info(buf: &[u8], vector_length: usize) -> Result<PduInfo> {
     if buf.len() < E131_PDU_LENGTH_FLAGS_LENGTH + vector_length {
         return Err(SacnError::SacnParsePackError(
@@ -1457,9 +1457,9 @@ macro_rules! impl_universe_discovery_packet_universe_discovery_layer {
 /// length: The number of universes to attempt to parse from the buffer.
 ///
 /// # Errors
-/// ParseInvalidUniverseOrder: If the universes are not sorted in ascending order with no duplicates.
+/// `ParseInvalidUniverseOrder`: If the universes are not sorted in ascending order with no duplicates.
 ///
-/// ParseInsufficientData: If the buffer doesn't contain sufficient bytes and so cannot be parsed into the specified number of u16 universes.
+/// `ParseInsufficientData`: If the buffer doesn't contain sufficient bytes and so cannot be parsed into the specified number of u16 universes.
 fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> {
     let mut universes: Vec<u16> = Vec::with_capacity(length);
     let mut i = 0;
@@ -1471,8 +1471,12 @@ fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> 
 
     if buf.len() < length * E131_UNIVERSE_FIELD_LENGTH {
         return Err(SacnError::SacnParsePackError(
-            ParsePacketError::ParseInsufficientData(
-                format!("The given buffer of length {} bytes cannot be parsed into the given number of universes {}", buf.len(), length).to_string())));
+            ParsePacketError::ParseInsufficientData(format!(
+                "The given buffer of length {} bytes cannot be parsed into the given number of universes {}",
+                buf.len(),
+                length
+            )),
+        ));
     }
 
     while i < (length * E131_UNIVERSE_FIELD_LENGTH) {
@@ -1485,8 +1489,10 @@ fn parse_universe_list<'a>(buf: &[u8], length: usize) -> Result<Cow<'a, [u16]>> 
             i += E131_UNIVERSE_FIELD_LENGTH; // Jump to the next universe.
         } else {
             return Err(SacnError::SacnParsePackError(
-                ParsePacketError::ParseInvalidUniverseOrder(
-                    format!("Universe {u} is out of order, discovery packet universe list must be in accending order!").to_string())));
+                ParsePacketError::ParseInvalidUniverseOrder(format!(
+                    "Universe {u} is out of order, discovery packet universe list must be in accending order!"
+                )),
+            ));
         }
     }
 

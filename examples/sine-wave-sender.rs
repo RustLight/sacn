@@ -7,8 +7,6 @@
 //
 //  Uses the sACN library to send a sine wave on all channels on universe 1 to localhost.
 
-extern crate sacn;
-
 use sacn::packet::{ACN_SDT_MULTICAST_PORT, UNIVERSE_CHANNEL_CAPACITY};
 use sacn::source::SacnSource;
 
