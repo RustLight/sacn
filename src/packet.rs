@@ -619,8 +619,8 @@ macro_rules! impl_e131_root_layer {
                     }
                     VECTOR_ROOT_E131_EXTENDED => {
                         let data_buf = &buf[E131_CID_END_INDEX .. length];
-                        let PduInfo { length, vector} = pdu_info(&data_buf, E131_FRAMING_LAYER_VECTOR_LENGTH)?;
-                        if buf.len() < length {
+                        let PduInfo { length, vector} = pdu_info(data_buf, E131_FRAMING_LAYER_VECTOR_LENGTH)?;
+                        if data_buf.len() < length {
                             return Err(SacnError::SacnParsePackError(
                                 ParsePacketError::ParseInsufficientData(
                                     "Buffer contains insufficient data based on E131 framing layer pdu length field".to_string(),
