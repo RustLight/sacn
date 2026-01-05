@@ -569,8 +569,8 @@ impl SacnReceiver {
 
             match self.receiver.recv(&mut buf) {
                 Ok(pkt) => {
-                    let pdu: E131RootLayer = pkt.pdu;
-                    let data: E131RootLayerData = pdu.data;
+                    let pdu = pkt.pdu;
+                    let data = pdu.data;
                     let res = match data {
                         DataPacket(d) => self.handle_data_packet(pdu.cid, d)?,
                         SynchronizationPacket(s) => self.handle_sync_packet(pdu.cid, s)?,
@@ -589,9 +589,9 @@ impl SacnReceiver {
                     // return the data, otherwise continue if no data is ready
                     if let Some(r) = res {
                         return Ok(r);
-                    } else {
-                        continue;
                     }
+
+                    // end of loop
                 }
 
                 Err(err) =>
@@ -605,8 +605,8 @@ impl SacnReceiver {
                                 std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
                             ) =>
                         {
-                            // socket read timedout. start new loop to compute new remaining which will return if deadline has passed
-                            continue;
+                            // socket read timedout.
+                            // start new loop to compute new remaining which will return if deadline has passed
                         }
                         _ => {
                             // Not a timeout/wouldblock error meaning the recv should stop with the given error.

@@ -747,7 +747,7 @@ impl SacnSourceInternal {
         // Check that the synchronisation universe is also valid.
         if synchronisation_addr.is_some() {
             self.universe_allowed(&synchronisation_addr.unwrap())
-                .map_err(|_| SacnError::IllegalSyncUniverse(synchronisation_addr.unwrap()))?;
+                .map_err(|_e| SacnError::IllegalSyncUniverse(synchronisation_addr.unwrap()))?;
         }
 
         // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
