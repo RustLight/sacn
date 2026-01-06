@@ -1,0 +1,9 @@
+[target.'cfg(all(target_arch = "arm", target_os = "none"))']
+rustflags = ['--cfg', 'getrandom_backend="custom"']
+# replace STM32G071C8Rx with your chip as listed in `probe-rs chip list`
+runner = "probe-rs run --chip STM32F746NGHx --connect-under-reset --speed 4600"
+[build]
+target = "thumbv7em-none-eabi" # <-change for your platform
+
+[env]
+DEFMT_LOG = "debug" # <- can change to info, warn, or error

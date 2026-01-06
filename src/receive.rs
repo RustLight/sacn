@@ -17,6 +17,9 @@
 // received, if a discovery packet is received but there are more pages the source won't be discovered until all the pages are received.
 // If a page is lost this therefore means the source update / discovery in its entirety will be lost - implementation detail.
 
+// Import these at the crate level for no_std switching
+use crate::{String, ToString, Vec, format, vec};
+
 /// Socket 2 used for the underlying UDP socket that sACN is sent over.
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
@@ -1195,13 +1198,13 @@ impl SacnNetworkReceiver {
     ///
     /// Will return an Io error if cannot join the universes corresponding multicast group address.
     fn listen_multicast_universe(&self, universe: u16) -> Result<()> {
-        let multicast_addr = if self.addr.is_ipv4() {
-            universe_to_ipv4_multicast_addr(universe)? // "Failed to convert universe to IPv4 multicast addr"
+        let multicast_addr: SocketAddr = if self.addr.is_ipv4() {
+            SocketAddr::V4(universe_to_ipv4_multicast_addr(universe)?) // "Failed to convert universe to IPv4 multicast addr"
         } else {
-            universe_to_ipv6_multicast_addr(universe)? // "Failed to convert universe to IPv6 multicast addr"
+            SocketAddr::V6(universe_to_ipv6_multicast_addr(universe)?) // "Failed to convert universe to IPv6 multicast addr"
         };
 
-        join_unix_multicast(&self.socket, multicast_addr, self.addr.ip())
+        join_unix_multicast(&self.socket, multicast_addr.into(), self.addr.ip())
     }
 
     /// Removes this SacnNetworkReceiver from the multicast group which corresponds to the given universe.
@@ -1210,13 +1213,13 @@ impl SacnNetworkReceiver {
     /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an
     /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
     fn mute_multicast_universe(&mut self, universe: u16) -> Result<()> {
-        let multicast_addr = if self.addr.is_ipv4() {
-            universe_to_ipv4_multicast_addr(universe)?
+        let multicast_addr: SocketAddr = if self.addr.is_ipv4() {
+            SocketAddr::V4(universe_to_ipv4_multicast_addr(universe)?)
         } else {
-            universe_to_ipv6_multicast_addr(universe)?
+            SocketAddr::V6(universe_to_ipv6_multicast_addr(universe)?)
         };
 
-        leave_unix_multicast(&self.socket, multicast_addr, self.addr.ip())
+        leave_unix_multicast(&self.socket, multicast_addr.into(), self.addr.ip())
     }
 
     /// Sets the value of the is_multicast_enabled flag to the given value.
