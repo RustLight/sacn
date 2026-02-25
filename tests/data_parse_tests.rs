@@ -9,9 +9,6 @@
 //
 // This file was adapted as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
-extern crate sacn;
-extern crate uuid;
-
 #[cfg(test)]
 pub mod data_parse_tests {
 

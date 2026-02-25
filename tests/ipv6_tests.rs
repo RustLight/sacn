@@ -7,10 +7,6 @@
 //
 // This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
-extern crate sacn;
-extern crate socket2;
-extern crate uuid;
-
 pub mod ipv4_tests;
 
 const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 3] = [

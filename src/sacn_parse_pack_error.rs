@@ -21,7 +21,7 @@ pub enum ParsePacketError {
     #[error("Error when parsing data into packet, msg: {0}")]
     ParseInvalidData(String),
 
-    /// Attempted to parse a priority value that is outwith the allowed range of [0, E131_MAX_PRIORITY].
+    /// Attempted to parse a priority value that is outwith the allowed range of [0, `E131_MAX_PRIORITY`].
     /// As per ANSI E1.31-2018 Section 6.2.3
     ///
     /// # Arguments
@@ -31,14 +31,14 @@ pub enum ParsePacketError {
     )]
     ParseInvalidPriority(u8),
 
-    /// Attempted to parse a page value that is invalid - e.g. the page value is higher than the last_page value.
+    /// Attempted to parse a page value that is invalid - e.g. the page value is higher than the `last_page` value.
     ///
     /// # Arguments
     /// msg: A message providing further details (if any) as to why the page was invalid.
     #[error("Error when parsing page value, msg: {0}")]
     ParseInvalidPage(String),
 
-    /// Attempted to parse a sync address value that is outwith the allowed range of [0, E131_MAX_MULTICAST_UNIVERSE].
+    /// Attempted to parse a sync address value that is outwith the allowed range of [0, `E131_MAX_MULTICAST_UNIVERSE`].
     /// As per ANSI E1.31-2018 Section 9.1.1.
     ///
     /// # Arguments
@@ -48,7 +48,7 @@ pub enum ParsePacketError {
     )]
     ParseInvalidSyncAddr(u16),
 
-    /// Attempted to parse a universe value that is outwith the allowed range of [1, E131_MAX_MULTICAST_UNIVERSE].
+    /// Attempted to parse a universe value that is outwith the allowed range of [1, `E131_MAX_MULTICAST_UNIVERSE`].
     /// As per ANSI E1.31-2018 Section 9.1.1.
     ///
     /// # Arguments

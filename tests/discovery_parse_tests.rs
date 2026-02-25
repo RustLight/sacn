@@ -1,8 +1,5 @@
 #![cfg_attr(rustfmt, rustfmt_skip)]
 
-extern crate sacn;
-extern crate uuid;
-
 #[cfg(test)]
 pub mod discovery_parse_tests {
 

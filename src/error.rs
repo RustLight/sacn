@@ -84,30 +84,30 @@ pub mod errors {
         #[error("Limit for the number of supported sources has been reached: {0}")]
         SourcesExceededError(usize),
 
-        /// A source was discovered by a receiver with the announce_discovery_flag set to true.
+        /// A source was discovered by a receiver with the `announce_discovery_flag` set to true.
         ///
         /// # Arguments
         /// The name of the source discovered.
         #[error("Source discovered with announce_discovery_flag set to true: {0}")]
         SourceDiscovered(String),
 
-        /// Attempted to exceed the capacity of a single universe (packet::UNIVERSE_CHANNEL_CAPACITY).
+        /// Attempted to exceed the capacity of a single universe (`packet::UNIVERSE_CHANNEL_CAPACITY`).
         ///
         /// # Arguments
         /// Length of data provided.
         #[error("Attempted to exceed the capacity of a single universe, data len: {0}")]
         ExceedUniverseCapacity(usize),
 
-        /// Attempted to use illegal universe, outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE]
-        /// + E131_DISCOVERY_UNIVERSE inclusive
+        /// Attempted to use illegal universe, outwith allowed range of [`E131_MIN_MULTICAST_UNIVERSE`, `E131_MAX_MULTICAST_UNIVERSE`]
+        /// + `E131_DISCOVERY_UNIVERSE` inclusive
         ///
         /// # Arguments
         /// u16: The provided universe.
         #[error("Attempted to use an illegal universe: {0}")]
         IllegalUniverse(u16),
 
-        /// Attempted to use illegal universe as the sync universe, outwith allowed range of [E131_MIN_MULTICAST_UNIVERSE, E131_MAX_MULTICAST_UNIVERSE]
-        /// + E131_DISCOVERY_UNIVERSE inclusive
+        /// Attempted to use illegal universe as the sync universe, outwith allowed range of [`E131_MIN_MULTICAST_UNIVERSE`, `E131_MAX_MULTICAST_UNIVERSE`]
+        /// + `E131_DISCOVERY_UNIVERSE` inclusive
         ///
         /// # Arguments
         /// u16: The provided synchronization universe.
@@ -160,7 +160,7 @@ pub mod errors {
         OutOfSequence(u8, u8, isize),
 
         /// A source terminated a universe and this was detected when trying to receive data.
-        /// This is only returned if the announce_stream_termination flag is set to true (default false).
+        /// This is only returned if the `announce_stream_termination` flag is set to true (default false).
         ///
         /// # Arguments
         /// Uuid: The CID of the source which sent the termination packet.
@@ -169,7 +169,7 @@ pub mod errors {
         #[error("Source terminated universe, source cid: {0}, universe: {1}")]
         UniverseTerminated(Uuid, u16),
 
-        /// A source universe timed out as no data was received on that universe within E131_NETWORK_DATA_LOSS_TIMEOUT as per ANSI E1.31-2018 Section 6.7.1.
+        /// A source universe timed out as no data was received on that universe within `E131_NETWORK_DATA_LOSS_TIMEOUT` as per ANSI E1.31-2018 Section 6.7.1.
         ///
         /// # Arguments
         /// uuid: The CID of the source which timed out.
@@ -208,7 +208,7 @@ pub mod errors {
         /// such as by creating a new source.
         ///
         /// # Arguments
-        /// String: A message providing further details (if any) as to why the SourceCorrupt error was returned.
+        /// String: A message providing further details (if any) as to why the `SourceCorrupt` error was returned.
         #[error(
             "The sACN source has corrupted due to an internal panic! and should no longer be used, {0}"
         )]

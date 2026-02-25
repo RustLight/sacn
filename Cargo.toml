@@ -3,6 +3,7 @@ name = "sacn"
 description = "A Rust implementation of the ANSI E1.31 Streaming ACN protocol, tested against protocol version ANSI E1.31-2018."
 version = "0.11.1"
 edition = "2024"
+rust-version = "1.88"
 readme = "README.md"
 keywords = ["acn", "sacn", "dmx", "e131", "ansi"]
 authors = ["Lukas Schmierer <lukas.schmierer@lschmierer.de>", "Paul Lancaster <paul@lancasterzone.com>"]

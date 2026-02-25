@@ -7,9 +7,6 @@
 //
 // Simply listens on the given universe and shows the current data.
 
-extern crate crossterm;
-extern crate sacn;
-
 use crossterm::style::Print;
 use crossterm::{cursor, execute, queue, terminal};
 use std::io::{self, Stdout, Write};
