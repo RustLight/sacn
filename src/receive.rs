@@ -1387,7 +1387,13 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
 
         // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
-        socket.set_reuse_port(true)?;
+        // If the OS doesn't support SO_REUSEPORT then ignore the error and continue.
+        // FreeRTOS on ESP32 doesn't support SO_REUSEPORT and so this allows the library to be used on the platform without issue.
+        if let Err(e) = socket.set_reuse_port(true) {
+            if e.raw_os_error() != Some(libc::ENOPROTOOPT) {    
+                return Err(e.into());
+            }
+        }
         socket.set_reuse_address(true)?;
 
         let socket_addr =
@@ -1398,7 +1404,11 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
         let socket = Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?;
 
         // Multiple different processes might want to listen to the sACN stream so therefore need to allow re-using the ACN port.
-        socket.set_reuse_port(true)?;
+        if let Err(e) = socket.set_reuse_port(true) {
+            if e.raw_os_error() != Some(libc::ENOPROTOOPT) {    
+                return Err(e.into());
+            }
+        }
         socket.set_reuse_address(true)?;
 
         let socket_addr =
