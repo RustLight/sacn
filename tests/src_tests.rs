@@ -573,6 +573,54 @@ fn test_sync_addr_0() {
     }
 }
 
+/// Sends a synchronisation packet on a universe that was never registered, which should succeed because a synchronisation
+/// universe carries no data and so doesn't need to be registered (or advertised in universe discovery).
+#[test]
+#[serial]
+fn test_sync_packet_on_unregistered_universe() {
+    let mut src = SacnSource::new_v4("Controller").unwrap();
+    src.register_universes(&[1]).unwrap();
+    const SYNC_UNI: u16 = 900;
+    let dst = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+    src.send_sync_packet(SYNC_UNI, Some(dst))
+        .expect("A synchronisation packet on an unregistered universe should be sent");
+}
+
+/// Sends data that names an unregistered synchronisation universe, which should succeed because only the data universes
+/// need to be registered.
+#[test]
+#[serial]
+fn test_data_with_unregistered_sync_universe() {
+    let mut src = SacnSource::new_v4("Controller").unwrap();
+    src.register_universes(&[1]).unwrap();
+    const SYNC_UNI: u16 = 900;
+    let dst = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+    src.send(
+        &[1],
+        &TEST_DATA_SINGLE_UNIVERSE,
+        None,
+        Some(dst),
+        Some(SYNC_UNI),
+    )
+    .expect("Data naming an unregistered synchronisation universe should be sent");
+}
+
+/// Sends data that names a synchronisation universe outside the allowed range, which should still be rejected.
+#[test]
+#[serial]
+fn test_data_with_out_of_range_sync_universe() {
+    let mut src = SacnSource::new_v4("Controller").unwrap();
+    src.register_universes(&[1]).unwrap();
+    let dst = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+
+    match src.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, None, Some(dst), Some(0)) {
+        Err(SacnError::IllegalSyncUniverse(0)) => {}
+        other => panic!("Expected IllegalSyncUniverse(0), got {:?}", other),
+    }
+}
+
 #[rustfmt::skip]
 const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
