@@ -282,6 +282,8 @@ impl SacnSource {
     ///
     /// `sync_address`: The address to use for synchronisation, must be a valid universe, None indicates no synchronisation. If synchronisation is required a
     ///                 reasonable default address to use is the first universe that this data is being sent to.
+    ///                 It doesn't need to be registered, so a universe used only for synchronisation isn't advertised in
+    ///                 universe discovery.
     ///
     /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate than specified in ANSI E1.11 [DMX] unless
     ///     configured by the user to do so in an environment which doesn't contain any E1.31 to DMX512-A converters.
@@ -332,10 +334,10 @@ impl SacnSource {
     /// universe: The universe of this synchronisation packet.
     /// `dst_ip`:   The destination IP address for this packet or None if it should be sent using multicast.
     ///
+    /// The universe doesn't need to be registered: a synchronisation universe carries no data, so it is left out of universe discovery.
+    ///
     /// # Errors
     /// `IllegalUniverse`: Returned if the universe is outwith the allowed range of sACN universes as defined in ANSI E1.31-2018 Section 6.2.7.
-    ///
-    /// `UniverseNotRegistered`: Returned if the universe is not registered on the given `SacnSourceInternal`.
     ///
     /// Io: Returned if the packet fails to be sent using the underlying network socket.
     ///
@@ -699,6 +701,8 @@ impl SacnSourceInternal {
     ///
     /// `sync_address`: The address to use for synchronisation, must be a valid universe, None indicates no synchronisation. If synchronisation is required a
     ///                 reasonable default address to use is the first universe that this data is being sent to.
+    ///                 It doesn't need to be registered, so a universe used only for synchronisation isn't advertised in
+    ///                 universe discovery.
     ///
     /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate than specified in ANSI E1.11 [DMX] unless
     ///     configured by the user to do so in an environment which doesn't contain any E1.31 to DMX512-A converters.
@@ -744,10 +748,11 @@ impl SacnSourceInternal {
             self.universe_allowed(u)?;
         }
 
-        // Check that the synchronisation universe is also valid.
-        if synchronisation_addr.is_some() {
-            self.universe_allowed(&synchronisation_addr.unwrap())
-                .map_err(|_e| SacnError::IllegalSyncUniverse(synchronisation_addr.unwrap()))?;
+        // Check that the synchronisation universe is a valid universe. It doesn't need to be registered: a synchronisation
+        // universe carries no data, so it isn't advertised in universe discovery.
+        if let Some(sync_addr) = synchronisation_addr {
+            is_universe_in_range(sync_addr)
+                .map_err(|_e| SacnError::IllegalSyncUniverse(sync_addr))?;
         }
 
         // + 1 as there must be at least 1 universe required as the data isn't empty then additional universes for any more.
@@ -880,16 +885,16 @@ impl SacnSourceInternal {
     /// universe: The universe of this synchronisation packet.
     /// `dst_ip`:   The destination IP address for this packet or None if it should be sent using multicast.
     ///
+    /// The universe doesn't need to be registered: a synchronisation universe carries no data, so it is left out of universe discovery.
+    ///
     /// # Errors
     /// `IllegalUniverse`: Returned if the universe is outwith the allowed range of sACN universes as defined in ANSI E1.31-2018 Section 6.2.7.
-    ///
-    /// `UniverseNotRegistered`: Returned if the universe is not registered on the given `SacnSourceInternal`.
     ///
     /// Io: Returned if the packet fails to be sent using the underlying network socket.
     ///
     /// `SacnParsePackError`: Returned if the sync packet fails to be packed.
     fn send_sync_packet(&self, universe: u16, dst_ip: Option<SocketAddr>) -> Result<()> {
-        self.universe_allowed(&universe)?;
+        is_universe_in_range(universe)?;
 
         let ip = if let Some(dst) = dst_ip {
             dst.into()
