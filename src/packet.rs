@@ -603,6 +603,13 @@ macro_rules! impl_e131_root_layer {
                     ));
                 }
 
+                // The PDU must at least hold the flags/length, vector and CID fields.
+                if length < E131_CID_END_INDEX {
+                    return Err(SacnError::SacnParsePackError(
+                        ParsePacketError::PduInvalidLength(length),
+                    ));
+                }
+
                 if vector != VECTOR_ROOT_E131_DATA && vector != VECTOR_ROOT_E131_EXTENDED {
                     return Err(SacnError::SacnParsePackError(
                         ParsePacketError::PduInvalidVector(vector),
@@ -762,6 +769,11 @@ macro_rules! impl_data_packet_framing_layer {
 
                 if vector != VECTOR_E131_DATA_PACKET {
                     return Err(SacnError::SacnParsePackError(ParsePacketError::PduInvalidVector(vector)));
+                }
+
+                // The PDU must at least hold every fixed framing layer field before the DMP layer.
+                if length < DATA_INDEX {
+                    return Err(SacnError::SacnParsePackError(ParsePacketError::PduInvalidLength(length)));
                 }
 
                 // Source Name
@@ -959,6 +971,11 @@ macro_rules! impl_data_packet_dmp_layer {
 
                 if vector != u32::from(VECTOR_DMP_SET_PROPERTY) {
                     return Err(SacnError::SacnParsePackError(ParsePacketError::PduInvalidVector(vector)));
+                }
+
+                // The PDU must at least hold every fixed DMP layer field before the property values.
+                if length < PROPERTY_VALUES_FIELD_INDEX {
+                    return Err(SacnError::SacnParsePackError(ParsePacketError::PduInvalidLength(length)));
                 }
 
                 // Address and Data Type
