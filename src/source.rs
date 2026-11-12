@@ -443,12 +443,12 @@ impl SacnSource {
         self.internal.lock().unwrap().set_is_sending_discovery(val);
     }
 
-    /// Returns the multicast time to live of the socket.
+    /// Returns the multicast time to live of the socket (the multicast hop limit for an IPv6 source).
     pub fn multicast_ttl(&self) -> Result<u32> {
         unlock_internal(&self.internal)?.multicast_ttl()
     }
 
-    /// Sets the multicast time to live.
+    /// Sets the multicast time to live (the multicast hop limit for an IPv6 source).
     ///
     /// # Arguments
     /// `multicast_ttl`: The new time to live value for network packets sent using multicast.
@@ -462,7 +462,7 @@ impl SacnSource {
         unlock_internal_mut(&mut self.internal)?.set_multicast_ttl(multicast_ttl)
     }
 
-    /// Returns the current Time To Live for unicast packets send by this source.
+    /// Returns the current Time To Live for unicast packets send by this source (the unicast hop limit for an IPv6 source).
     ///
     /// # Errors
     /// Io: Returned if the TTL cannot be retrieved from the underlying socket.
@@ -473,7 +473,7 @@ impl SacnSource {
         unlock_internal(&self.internal)?.ttl()
     }
 
-    /// Sets the Time To Live for packets sent by this source.
+    /// Sets the Time To Live for packets sent by this source (the unicast hop limit for an IPv6 source).
     ///
     /// # Arguments
     /// ttl: The new time to live value for new packets.
@@ -487,7 +487,7 @@ impl SacnSource {
         unlock_internal_mut(&mut self.internal)?.set_ttl(ttl)
     }
 
-    /// Sets if multicast loop is enabled.
+    /// Sets if multicast loop is enabled for an IPv4 source. Returns an error on an IPv6 source; use `set_multicast_loop` instead.
     ///
     /// # Arguments:
     /// `multicast_loop`: If true then multicast loop is enabled, if false it is not.
@@ -499,6 +499,22 @@ impl SacnSource {
     /// a panic while accessing causing the source to be left in a potentially inconsistent state.
     pub fn set_multicast_loop_v4(&mut self, multicast_loop: bool) -> Result<()> {
         unlock_internal_mut(&mut self.internal)?.set_multicast_loop_v4(multicast_loop)
+    }
+
+    /// Sets if multicast loop is enabled, for either an IPv4 or an IPv6 source.
+    ///
+    /// Unlike `set_multicast_loop_v4`, this works on IPv6 sources too.
+    ///
+    /// # Arguments:
+    /// `multicast_loop`: If true then multicast loop is enabled, if false it is not.
+    ///
+    /// # Errors
+    /// Io: Returned if the multicast loop option fails to be set on the socket.
+    ///
+    /// `SourceCorrupt`: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
+    /// a panic while accessing causing the source to be left in a potentially inconsistent state.
+    pub fn set_multicast_loop(&mut self, multicast_loop: bool) -> Result<()> {
+        unlock_internal_mut(&mut self.internal)?.set_multicast_loop(multicast_loop)
     }
 
     /// Returns true if multicast loop is enabled, false if not.
@@ -1177,7 +1193,11 @@ impl SacnSourceInternal {
     /// # Errors
     /// Io: Returned if the multicast TTL fails to be set on the underlying socket.
     fn set_multicast_ttl(&self, multicast_ttl: u32) -> Result<()> {
-        Ok(self.socket.set_multicast_ttl_v4(multicast_ttl)?)
+        if self.addr.is_ipv6() {
+            Ok(self.socket.set_multicast_hops_v6(multicast_ttl)?)
+        } else {
+            Ok(self.socket.set_multicast_ttl_v4(multicast_ttl)?)
+        }
     }
 
     /// Returns the current Time To Live for unicast packets send by this source.
@@ -1185,7 +1205,11 @@ impl SacnSourceInternal {
     /// # Errors
     /// Io: Returned if the TTL cannot be retrieved from the underlying socket.
     fn ttl(&self) -> Result<u32> {
-        Ok(self.socket.ttl_v4()?)
+        if self.addr.is_ipv6() {
+            Ok(self.socket.unicast_hops_v6()?)
+        } else {
+            Ok(self.socket.ttl_v4()?)
+        }
     }
 
     /// Sets the Time To Live for unicast packets sent by this source.
@@ -1196,12 +1220,20 @@ impl SacnSourceInternal {
     /// # Errors
     /// Io: Returned if the TTL fails to be set on the underlying socket.
     fn set_ttl(&mut self, ttl: u32) -> Result<()> {
-        Ok(self.socket.set_ttl_v4(ttl)?)
+        if self.addr.is_ipv6() {
+            Ok(self.socket.set_unicast_hops_v6(ttl)?)
+        } else {
+            Ok(self.socket.set_ttl_v4(ttl)?)
+        }
     }
 
     /// Returns the multicast time to live of the socket.
     fn multicast_ttl(&self) -> Result<u32> {
-        Ok(self.socket.multicast_ttl_v4()?)
+        if self.addr.is_ipv6() {
+            Ok(self.socket.multicast_hops_v6()?)
+        } else {
+            Ok(self.socket.multicast_ttl_v4()?)
+        }
     }
 
     /// Sets if multicast loop is enabled.
@@ -1215,9 +1247,22 @@ impl SacnSourceInternal {
         Ok(self.socket.set_multicast_loop_v4(multicast_loop)?)
     }
 
+    /// Sets if multicast loop is enabled, using the option for this source's IP version.
+    fn set_multicast_loop(&self, multicast_loop: bool) -> Result<()> {
+        if self.addr.is_ipv6() {
+            Ok(self.socket.set_multicast_loop_v6(multicast_loop)?)
+        } else {
+            Ok(self.socket.set_multicast_loop_v4(multicast_loop)?)
+        }
+    }
+
     /// Returns true if multicast loop is enabled, false if not.
     fn multicast_loop(&self) -> Result<bool> {
-        Ok(self.socket.multicast_loop_v4()?)
+        if self.addr.is_ipv6() {
+            Ok(self.socket.multicast_loop_v6()?)
+        } else {
+            Ok(self.socket.multicast_loop_v4()?)
+        }
     }
 
     /// Returns the universes currently registered on this source.
