@@ -1961,7 +1961,7 @@ fn check_timeouts(
                     break;
                 }
             }
-            if timedout_uni.is_none() {
+            if timedout_uni.is_some() {
                 break;
             }
         }
@@ -2190,6 +2190,37 @@ mod test {
         assert_eq!(dmx_rcv.discovered_sources[0].pages.len(), 1);
         assert_eq!(dmx_rcv.discovered_sources[0].pages[0].page, page);
         assert_eq!(dmx_rcv.discovered_sources[0].pages[0].universes, universes);
+    }
+
+    /// With announce_timeout set, a universe that has timed out must be reported whichever source it belongs to, not only if
+    /// it belongs to the first source in the map.
+    #[test]
+    fn test_check_timeouts_announce_finds_any_source() {
+        let mut src_sequences: HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>> = HashMap::new();
+        for _ in 0..16 {
+            let mut universes = HashMap::new();
+            universes.insert(1, TimedStampedSeqNo::new(0, Instant::now()));
+            src_sequences.insert(Uuid::new_v4(), universes);
+        }
+
+        let timed_out_cid = Uuid::new_v4();
+        let stale = Instant::now() - E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(100);
+        let mut universes = HashMap::new();
+        universes.insert(7, TimedStampedSeqNo::new(0, stale));
+        src_sequences.insert(timed_out_cid, universes);
+
+        match check_timeouts(&mut src_sequences, E131_NETWORK_DATA_LOSS_TIMEOUT, true) {
+            Err(SacnError::UniverseTimeout(cid, universe)) => {
+                assert_eq!(cid, timed_out_cid);
+                assert_eq!(universe, 7);
+            }
+            other => panic!("Expected UniverseTimeout, got {other:?}"),
+        }
+
+        // The timed out source is removed and nothing else times out.
+        assert!(!src_sequences.contains_key(&timed_out_cid));
+        assert_eq!(src_sequences.len(), 16);
+        assert!(check_timeouts(&mut src_sequences, E131_NETWORK_DATA_LOSS_TIMEOUT, true).is_ok());
     }
 
     #[test]
