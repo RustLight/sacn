@@ -564,9 +564,9 @@ impl SacnSourceInternal {
     /// `UnsupportedIpVersion`: Returned if the `SockAddr` is not IPv4 or IPv6.
     fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSourceInternal> {
         let socket = if ip.is_ipv4() {
-            Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap()
+            Socket::new(Domain::IPV4, Type::DGRAM, None)?
         } else if ip.is_ipv6() {
-            Socket::new(Domain::IPV6, Type::DGRAM, None).unwrap()
+            Socket::new(Domain::IPV6, Type::DGRAM, None)?
         } else {
             return Err(SacnError::UnsupportedIpVersion(
                 "Address to create SacnSource is not IPv4 or IPv6".to_string(),
