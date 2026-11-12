@@ -939,10 +939,20 @@ impl SacnReceiver {
         // See if some pages that belong to the source that this page belongs to have already been received.
         if let Some(index) = find_discovered_src(&self.partially_discovered_sources, &cid) {
             // Some pages have already been received from this source.
-            self.partially_discovered_sources[index]
-                .pages
-                .push(uni_page);
-            self.partially_discovered_sources[index].last_updated = Instant::now();
+            let partial = &mut self.partially_discovered_sources[index];
+
+            if partial.last_page != last_page {
+                // The source's universe list has changed size since the earlier pages were sent, so they are stale.
+                partial.last_page = last_page;
+                partial.pages.clear();
+            }
+
+            // A page can arrive again in the next discovery interval, for example if another page was lost.
+            // Replace the earlier copy rather than storing it twice, which would stop has_all_pages() ever succeeding.
+            partial.pages.retain(|p| p.page != page);
+            partial.pages.push(uni_page);
+            partial.name = discovery_pkt.source_name.to_string();
+            partial.last_updated = Instant::now();
             if self.partially_discovered_sources[index].has_all_pages() {
                 let discovered_src: DiscoveredSacnSource =
                     self.partially_discovered_sources.remove(index);
@@ -2190,6 +2200,55 @@ mod test {
         assert_eq!(dmx_rcv.discovered_sources[0].pages.len(), 1);
         assert_eq!(dmx_rcv.discovered_sources[0].pages[0].page, page);
         assert_eq!(dmx_rcv.discovered_sources[0].pages[0].universes, universes);
+    }
+
+    fn discovery_page(page: u8, last_page: u8, universes: &[u16]) -> UniverseDiscoveryPacketFramingLayer<'static> {
+        UniverseDiscoveryPacketFramingLayer {
+            source_name: "Test Src".into(),
+            data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+                page,
+                last_page,
+                universes: universes.to_vec().into(),
+            },
+        }
+    }
+
+    /// If a page is lost, the next discovery interval resends the pages already received. Those repeats must not stop the
+    /// source from being discovered once the missing page arrives.
+    #[test]
+    fn test_multi_page_discovery_with_repeated_page() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        let cid = Uuid::new_v4();
+
+        // First interval: page 0 arrives, page 1 is lost.
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 1, &[1, 2])).is_none());
+        // Second interval: both pages arrive.
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 1, &[1, 2])).is_none());
+        assert_eq!(
+            dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(1, 1, &[3, 4])),
+            Some("Test Src".to_string())
+        );
+
+        assert!(dmx_rcv.partially_discovered_sources.is_empty());
+        assert_eq!(dmx_rcv.discovered_sources.len(), 1);
+        assert_eq!(dmx_rcv.discovered_sources[0].get_all_universes(), vec![1, 2, 3, 4]);
+    }
+
+    /// If the number of pages changes between intervals, pages from the older set are discarded.
+    #[test]
+    fn test_multi_page_discovery_page_count_changes() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        let cid = Uuid::new_v4();
+
+        // Page 1 of a 3 page set arrives, then the source drops to 2 pages.
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(1, 2, &[9])).is_none());
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 1, &[1, 2])).is_none());
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(1, 1, &[3, 4])).is_some());
+
+        assert_eq!(dmx_rcv.discovered_sources[0].last_page, 1);
+        assert_eq!(dmx_rcv.discovered_sources[0].get_all_universes(), vec![1, 2, 3, 4]);
     }
 
     #[test]
