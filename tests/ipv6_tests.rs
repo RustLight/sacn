@@ -1624,7 +1624,7 @@ mod sacn_ipv6_multicast_test {
             ACN_SDT_MULTICAST_PORT + 1,
         );
         let mut ipv4_source =
-            SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ipv4).unwrap();
+            SacnSource::with_cid_ip(source_name.trim_end_matches('\0'), Uuid::from_bytes(CID), ipv4).unwrap();
         ipv4_source.set_preview_mode(false).unwrap();
         ipv4_source.set_multicast_loop_v4(true).unwrap();
         ipv4_source.register_universes(&[universe as u16]).unwrap();
@@ -1665,7 +1665,7 @@ mod sacn_ipv6_multicast_test {
             ACN_SDT_MULTICAST_PORT + 1,
         );
         let mut ipv6_source =
-            SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ipv6).unwrap();
+            SacnSource::with_cid_ip(source_name.trim_end_matches('\0'), Uuid::from_bytes(CID), ipv6).unwrap();
         ipv6_source.set_preview_mode(false).unwrap();
         ipv6_source.register_universes(&[universe]).unwrap();
 
