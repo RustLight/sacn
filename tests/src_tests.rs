@@ -702,3 +702,53 @@ const TEST_DATA_MULTIPLE_UNIVERSE: [u8; 712] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
 ];
+
+/// A source created with the default constructor must not take a share of the unicast sACN sent to a receiver on the
+/// same host. Both bind with `SO_REUSEPORT`, so if the source also bound the ACN port, Linux would spread unicast
+/// datagrams between the two sockets by source port and the receiver would miss some of them.
+#[test]
+#[serial]
+fn test_default_source_does_not_steal_unicast() {
+    use sacn::receive::SacnReceiver;
+    use std::net::UdpSocket;
+    use std::time::Duration;
+
+    let rcv_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+    let mut rcv = SacnReceiver::with_ip(rcv_addr, None).unwrap();
+    rcv.listen_universes(&[1]).unwrap();
+
+    let _src = SacnSource::new_v4("Idle source").unwrap();
+
+    const PACKETS: usize = 20;
+    let mut received = 0;
+    for _ in 0..PACKETS {
+        let packet = AcnRootLayerProtocol {
+            pdu: E131RootLayer {
+                cid: Uuid::new_v4(),
+                data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
+                    source_name: "Sender".into(),
+                    priority: 100,
+                    synchronization_address: 0,
+                    sequence_number: 0,
+                    preview_data: false,
+                    stream_terminated: false,
+                    force_synchronization: false,
+                    universe: 1,
+                    data: DataPacketDmpLayer {
+                        property_values: vec![0, 1, 2].into(),
+                    },
+                }),
+            },
+        };
+        // A new socket each time gives a new ephemeral source port, and so a different SO_REUSEPORT hash.
+        let sender = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        sender
+            .send_to(&packet.pack_alloc().unwrap(), rcv_addr)
+            .unwrap();
+        if rcv.recv(Some(Duration::from_millis(500))).is_ok() {
+            received += 1;
+        }
+    }
+
+    assert_eq!(received, PACKETS, "receiver missed unicast packets");
+}

@@ -132,7 +132,7 @@ struct SacnSourceInternal {
 }
 
 impl SacnSource {
-    /// Constructs a new `SacnSource` with the given name, binding to an IPv4 address.
+    /// Constructs a new `SacnSource` with the given name, binding to an IPv4 address on an ephemeral port.
     /// This generates a new CID automatically using random values.
     ///
     /// # Errors
@@ -149,12 +149,14 @@ impl SacnSource {
     pub fn with_cid_v4(name: &str, cid: Uuid) -> Result<SacnSource> {
         let ip = SocketAddr::new(
             IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
-            ACN_SDT_MULTICAST_PORT,
+            // Use an ephemeral port. Binding the ACN port would put this socket in the receivers' `SO_REUSEPORT` group,
+            // and Linux would then hand some of the unicast sACN addressed to this host to this socket, where it is never read.
+            0,
         );
         SacnSource::with_cid_ip(name, cid, ip)
     }
 
-    /// Constructs a new `SacnSource` with the given name, binding to an IPv6 address.
+    /// Constructs a new `SacnSource` with the given name, binding to an IPv6 address on an ephemeral port.
     /// By default this will only receive IPv6 data but IPv4 can also be enabled by calling `set_ipv6_only(false)`.
     ///
     /// # Errors
@@ -171,12 +173,18 @@ impl SacnSource {
     pub fn with_cid_v6(name: &str, cid: Uuid) -> Result<SacnSource> {
         let ip = SocketAddr::new(
             IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)),
-            ACN_SDT_MULTICAST_PORT,
+            // Use an ephemeral port. Binding the ACN port would put this socket in the receivers' `SO_REUSEPORT` group,
+            // and Linux would then hand some of the unicast sACN addressed to this host to this socket, where it is never read.
+            0,
         );
         SacnSource::with_cid_ip(name, cid, ip)
     }
 
     /// Constructs a new `SacnSource` with the given name and binding to the supplied ip.
+    ///
+    /// Avoid binding to `ACN_SDT_MULTICAST_PORT` if a `SacnReceiver` may run on the same host. The socket would share the
+    /// port with the receiver, and on Linux some unicast sACN sent to this host would be delivered to the source's socket
+    /// and lost. Port 0 (an ephemeral port) is a good choice.
     ///
     /// # Errors
     /// See (`with_cid_ip`)[`with_cid_ip`]
