@@ -975,7 +975,9 @@ macro_rules! impl_data_packet_dmp_layer {
 
                 // The PDU must at least hold every fixed DMP layer field before the property values.
                 if length < PROPERTY_VALUES_FIELD_INDEX {
-                    return Err(SacnError::SacnParsePackError(ParsePacketError::PduInvalidLength(length)));
+                    return Err(SacnError::SacnParsePackError(ParsePacketError::ParseInsufficientData(
+                        format!("Data packet dmp layer pdu length {} is shorter than its {} byte header", length, PROPERTY_VALUES_FIELD_INDEX)
+                    )));
                 }
 
                 // Address and Data Type

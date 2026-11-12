@@ -26,6 +26,13 @@ fn assert_invalid_length(buf: &[u8]) {
     }
 }
 
+fn assert_insufficient_data(buf: &[u8]) {
+    match AcnRootLayerProtocol::parse(buf) {
+        Err(SacnError::SacnParsePackError(ParsePacketError::ParseInsufficientData(_))) => {}
+        other => panic!("expected ParseInsufficientData, got {other:?}"),
+    }
+}
+
 #[test]
 fn test_root_layer_length_shorter_than_cid() {
     let mut buf = acn_header();
@@ -60,7 +67,7 @@ fn test_dmp_layer_length_shorter_than_header() {
     // DMP layer of length 3: flags/length and vector only.
     buf.extend_from_slice(&[0x70, 0x03, 0x02]);
     buf.extend_from_slice(&[0u8; 20]);
-    assert_invalid_length(&buf);
+    assert_insufficient_data(&buf);
 }
 
 /// Every truncation of the PDU length fields of a valid data packet must return an error, never panic.
