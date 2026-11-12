@@ -1017,6 +1017,22 @@ impl Drop for SacnReceiver {
 /// srcs: The Vec of `DiscoveredSacnSources` to search.
 ///
 /// cid: The CID (uuid) of the source to find.
+/// Parses the `n` bytes of a received datagram held at the start of `buf`.
+///
+/// Only the bytes actually received are parsed, so a truncated datagram is rejected by the length checks
+/// in the parser rather than being padded out with whatever is left in the rest of the buffer.
+///
+/// # Errors
+/// `TooManyBytesRead`: Returned if `n` is larger than the buffer.
+///
+/// Otherwise returns any error from `AcnRootLayerProtocol::parse`.
+fn parse_datagram(buf: &[u8], n: usize) -> Result<AcnRootLayerProtocol<'_>> {
+    if n > buf.len() {
+        return Err(SacnError::TooManyBytesRead(n, buf.len()));
+    }
+    AcnRootLayerProtocol::parse(&buf[..n])
+}
+
 fn find_discovered_src(srcs: &[DiscoveredSacnSource], cid: &Uuid) -> Option<usize> {
     (0..srcs.len()).find(|&i| srcs[i].cid == *cid)
 }
@@ -1138,10 +1154,7 @@ impl SacnNetworkReceiver {
     ) -> Result<AcnRootLayerProtocol<'a>> {
         // use read() for the windows impl, since windows does not like using read_exact()
         let n = self.socket.read(buf)?;
-        if n > RCV_BUF_DEFAULT_SIZE {
-            return Err(SacnError::TooManyBytesRead(n, buf.len()));
-        }
-        AcnRootLayerProtocol::parse(buf)
+        parse_datagram(buf, n)
     }
 
     /// Set the timeout for the recv operation.
@@ -1271,10 +1284,7 @@ impl SacnNetworkReceiver {
     ) -> Result<AcnRootLayerProtocol<'a>> {
         // use read() since read_exact() was not passing the tests.
         let n = self.socket.read(buf)?;
-        if n > RCV_BUF_DEFAULT_SIZE {
-            return Err(SacnError::TooManyBytesRead(n, buf.len()));
-        }
-        AcnRootLayerProtocol::parse(buf)
+        parse_datagram(buf, n)
     }
 
     /// Set the timeout for the recv operation.
@@ -2119,6 +2129,49 @@ pub fn htp_dmx_merge(i: &DMXData, n: &DMXData) -> Result<DMXData> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    /// A valid data packet whose DMX data was cut short in transit must be rejected rather than parsed with
+    /// zeros filling in for the missing bytes.
+    #[test]
+    fn test_parse_datagram_rejects_truncated_packet() {
+        let packet = AcnRootLayerProtocol {
+            pdu: E131RootLayer {
+                cid: Uuid::new_v4(),
+                data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
+                    source_name: "Source".into(),
+                    priority: E131_DEFAULT_PRIORITY,
+                    synchronization_address: 0,
+                    sequence_number: 0,
+                    preview_data: false,
+                    stream_terminated: false,
+                    force_synchronization: false,
+                    universe: 1,
+                    data: DataPacketDmpLayer {
+                        property_values: vec![0u8; 513].into(),
+                    },
+                }),
+            },
+        };
+        let packed = packet.pack_alloc().unwrap();
+
+        // The receiver always reads into a zero-filled buffer of the maximum packet size.
+        let mut buf = [0u8; RCV_BUF_DEFAULT_SIZE];
+        buf[..packed.len()].copy_from_slice(&packed);
+
+        assert_eq!(parse_datagram(&buf, packed.len()).unwrap(), packet);
+
+        // The last 100 DMX slots never arrived.
+        assert!(parse_datagram(&buf, packed.len() - 100).is_err());
+    }
+
+    #[test]
+    fn test_parse_datagram_rejects_length_larger_than_buffer() {
+        let buf = [0u8; RCV_BUF_DEFAULT_SIZE];
+        match parse_datagram(&buf, RCV_BUF_DEFAULT_SIZE + 1) {
+            Err(SacnError::TooManyBytesRead(_, _)) => {}
+            other => panic!("Expected TooManyBytesRead, got {other:?}"),
+        }
+    }
 
     use std::borrow::Cow;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
