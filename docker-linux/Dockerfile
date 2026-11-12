@@ -1,5 +1,5 @@
 # Dockerfile
-FROM rust:1-bullseye
+FROM rust:1-trixie
 
 SHELL ["/bin/bash", "-c"]
 
