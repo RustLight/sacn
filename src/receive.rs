@@ -2192,7 +2192,7 @@ mod test {
         assert_eq!(dmx_rcv.discovered_sources[0].pages[0].universes, universes);
     }
 
-    /// With announce_timeout set, a universe that has timed out must be reported whichever source it belongs to, not only if
+    /// With `announce_timeout` set, a universe that has timed out must be reported whichever source it belongs to, not only if
     /// it belongs to the first source in the map.
     #[test]
     fn test_check_timeouts_announce_finds_any_source() {
