@@ -17,6 +17,12 @@ A Rust implementation of the ANSI E1.31 Streaming ACN protocol, tested against p
 ## Getting Started
 ## Compliance
 Compliance with the ANSI E1.31-2018 protocol was tested (April 2020) and the results are shown in 'documentation/ANSI-E1.31-2018-Compliance-Check-List.pdf'.
+
+### Left to the application
+Some parts of the standard depend on how the library is used, so the library leaves them to the application:
+
+* **Transmission rate and keep-alive (Section 6.6).** `SacnSource` only sends when you call `send`. Don't send a universe faster than the DMX512-A refresh rate (about 44 Hz for Null START Code data). When Null START Code data stops changing, send it three more times. After that, resend the last data every 800 to 1000 ms as a keep-alive. Otherwise receivers enter network data loss after `E131_NETWORK_DATA_LOSS_TIMEOUT` (2.5 s).
+* **Priority and merging between sources (Section 6.2.3).** For unsynchronised data, `SacnReceiver::recv` returns each source's data as it arrives, with its priority and source CID in `DMXData`. The application chooses which source to use (the highest priority wins) or merges same-priority sources, for example with `htp_dmx_merge`. Data held for universe synchronisation is merged with the function set by `set_merge_fn`.
 ## Testing
 Quick library logic and parse testing: `cargo test`
 
