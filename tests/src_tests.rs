@@ -702,3 +702,15 @@ const TEST_DATA_MULTIPLE_UNIVERSE: [u8; 712] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
 ];
+
+/// The `Force_Synchronization` option defaults to off and can be turned on, as per ANSI E1.31-2016 Section 6.2.6.
+#[test]
+#[serial]
+fn test_set_force_synchronization() {
+    let mut src = SacnSource::new_v4("Source").unwrap();
+    assert!(!src.force_synchronization().unwrap());
+    src.set_force_synchronization(true).unwrap();
+    assert!(src.force_synchronization().unwrap());
+    src.set_force_synchronization(false).unwrap();
+    assert!(!src.force_synchronization().unwrap());
+}

@@ -108,6 +108,11 @@ struct SacnSourceInternal {
     /// upon in an untested environment.
     preview_data: bool,
 
+    /// Flag which is included in sACN data packets that have a synchronisation address. It tells receivers what to do if
+    /// synchronisation is lost, as per ANSI E1.31-2016 Section 6.2.6 (`Force_Synchronization`). If false receivers hold the
+    /// data until synchronisation resumes, if true they may process the data without waiting for a synchronisation packet.
+    force_synchronization: bool,
+
     /// The sequence numbers used for data packets, keeps a reference of the next sequence number to use for each universe.
     /// Sequence numbers are always in the range [0, 255].
     data_sequences: RefCell<HashMap<u16, u8>>,
@@ -434,6 +439,32 @@ impl SacnSource {
         Ok(())
     }
 
+    /// Returns the value of the `Force_Synchronization` option set on data packets sent by this `SacnSource`.
+    ///
+    /// For details see (`set_force_synchronization`)[`set_force_synchronization`].
+    ///
+    /// # Errors
+    /// `SourceCorrupt`: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
+    /// a panic while accessing causing the source to be left in a potentially inconsistent state.
+    pub fn force_synchronization(&self) -> Result<bool> {
+        Ok(unlock_internal(&self.internal)?.force_synchronization)
+    }
+
+    /// Sets the `Force_Synchronization` option on data packets sent by this `SacnSource`, as per ANSI E1.31-2016 Section 6.2.6.
+    ///
+    /// The option tells receivers what to do with synchronised data (data sent with a synchronisation address) if synchronisation is lost,
+    /// meaning no synchronisation packet has been received on that address within `E131_NETWORK_DATA_LOSS_TIMEOUT`:
+    /// - false (the default): receivers hold the data until synchronisation resumes.
+    /// - true: receivers may process the data straight away without waiting for a synchronisation packet.
+    ///
+    /// # Errors
+    /// `SourceCorrupt`: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
+    /// a panic while accessing causing the source to be left in a potentially inconsistent state.
+    pub fn set_force_synchronization(&mut self, force_synchronization: bool) -> Result<()> {
+        unlock_internal_mut(&mut self.internal)?.force_synchronization = force_synchronization;
+        Ok(())
+    }
+
     /// Sets the `is_sending_discovery` flag to the given value.
     ///
     /// # Arguments
@@ -588,6 +619,7 @@ impl SacnSourceInternal {
             cid,
             name: name.to_string(),
             preview_data: false,
+            force_synchronization: false,
             data_sequences: RefCell::new(HashMap::new()),
             sync_sequences: RefCell::new(HashMap::new()),
             universes: Vec::new(),
@@ -833,7 +865,7 @@ impl SacnSourceInternal {
                     sequence_number: sequence,
                     preview_data: self.preview_data,
                     stream_terminated: false,
-                    force_synchronization: false,
+                    force_synchronization: self.force_synchronization,
                     universe,
                     data: DataPacketDmpLayer {
                         property_values: {

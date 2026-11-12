@@ -2822,8 +2822,7 @@ fn test_send_recv_multiple_sync_universes(){
 ///
 /// This shows that this timeout mechanism to stop universe synchronisation works.
 ///
-/// Note that this library does not attempt to implement the force_synchronisation bit behaviour and so therefore always stops universe synchronisation if the
-/// sync packet is not received within the timeout.
+/// The sender leaves the `Force_Synchronization` option unset, so the receiver keeps holding data rather than processing it unsynchronised.
 ///
 #[test]
 #[ignore]
