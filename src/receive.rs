@@ -1859,15 +1859,16 @@ fn check_seq_number(
     universe: u16,
     announce_timeout: bool,
 ) -> Result<()> {
-    // Check all the timeouts at the start.
+    // Remove timed out sources/universes before checking this packet.
     // This is done for all sources/universes rather than just the source that sent the packet because a completely dead (no packets being sent) universe
     // would not be removed otherwise and would continue to take up space. This comes at the cost of increased processing time complexity as each
     // source is checked every time.
-    check_timeouts(
-        src_sequences,
-        E131_NETWORK_DATA_LOSS_TIMEOUT,
-        announce_timeout,
-    )?;
+    //
+    // When timeouts are announced they are reported by `SacnReceiver::recv` before each read instead. Reporting them from here would return an error
+    // in place of this (valid) packet, so the packet would be lost because a different source had timed out.
+    if !announce_timeout {
+        check_timeouts(src_sequences, E131_NETWORK_DATA_LOSS_TIMEOUT, false)?;
+    }
     if src_sequences.get(&cid).is_none() {
         // New source not previously received from.
         if source_limit.is_none() || src_sequences.len() < source_limit.unwrap() {
@@ -1879,12 +1880,16 @@ fn check_seq_number(
 
     let expected_seq = match src_sequences.get(&cid) {
         Some(src) => {
-            if let Some(s) = src.get(&universe) {
+            if let Some(s) = src
+                .get(&universe)
+                .filter(|s| s.last_recv.elapsed() < E131_NETWORK_DATA_LOSS_TIMEOUT)
+            {
                 // Get the sequence number within the source for the specific universe.
-                // Indicates that the source / universe combination is known.
+                // Indicates that the source / universe combination is known and hasn't timed out.
                 *s
             } else {
                 // Indicates that this is the first time (or the first time since it timed out) the universe has been received from this source.
+                // A timed out entry that hasn't been removed yet (because timeouts are being announced) is treated the same way.
                 let initial_seq_num = sequence_number.wrapping_sub(1);
                 TimedStampedSeqNo::new(initial_seq_num, Instant::now())
             }
@@ -3358,5 +3363,39 @@ mod test {
             "sequence 1 after wrap should be accepted (got {:?})",
             res1
         );
+    }
+
+    /// A packet from one source must not be discarded because a different source has timed out
+    /// while `announce_timeout` is set.
+    #[test]
+    fn test_seq_check_keeps_packet_when_other_source_timed_out() {
+        let mut seqs: HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>> = HashMap::new();
+        let live = Uuid::new_v4();
+        let dead = Uuid::new_v4();
+        let expired = Instant::now() - E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(100);
+        seqs.insert(live, HashMap::from([(1, TimedStampedSeqNo::new(10, Instant::now()))]));
+        seqs.insert(dead, HashMap::from([(1, TimedStampedSeqNo::new(10, expired))]));
+
+        let res = check_seq_number(&mut seqs, None, live, 11, 1, true);
+        assert!(res.is_ok(), "in-sequence packet was rejected: {res:?}");
+        assert_eq!(seqs[&live][&1].sequence_number, 11);
+
+        // The timed out source is left in place so that the timeout check `recv` runs can still report it.
+        assert!(seqs.contains_key(&dead));
+    }
+
+    /// A source that comes back after timing out starts a new sequence, even if the timed out entry
+    /// hasn't been removed yet.
+    #[test]
+    fn test_seq_check_treats_timed_out_universe_as_new() {
+        let mut seqs: HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>> = HashMap::new();
+        let src = Uuid::new_v4();
+        let expired = Instant::now() - E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(100);
+        seqs.insert(src, HashMap::from([(1, TimedStampedSeqNo::new(10, expired))]));
+
+        // Sequence 5 is within the discard window relative to 10, but the old entry has timed out.
+        let res = check_seq_number(&mut seqs, None, src, 5, 1, true);
+        assert!(res.is_ok(), "packet after timeout was rejected: {res:?}");
+        assert_eq!(seqs[&src][&1].sequence_number, 5);
     }
 }
