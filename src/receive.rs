@@ -197,6 +197,14 @@ pub struct SacnReceiver {
 
     /// Flag which indicates if an `UniverseTimeout` error should be thrown if it is detected that a source has timed out.
     announce_timeout: bool,
+
+    /// Synchronisation universes that received data packets have named, with the time each was last named.
+    ///
+    /// The receiver joins the multicast group of each so that it receives their synchronisation packets, without adding
+    /// them to `universes`: data sent on a synchronisation universe is only passed up if the user listens to it. Entries
+    /// that haven't been named for `E131_NETWORK_DATA_LOSS_TIMEOUT` are removed and their group left, unless the user
+    /// listens to that universe.
+    sync_universes: HashMap<u16, Instant>,
 }
 
 /// Represents an sACN source/sender on the network that has been discovered by this sACN receiver by receiving universe discovery packets.
@@ -306,6 +314,7 @@ impl SacnReceiver {
             announce_source_discovery: ANNOUNCE_SOURCE_DISCOVERY_DEFAULT,
             announce_stream_termination: ANNOUNCE_STREAM_TERMINATION_DEFAULT,
             announce_timeout: ANNOUNCE_TIMEOUT_DEFAULT,
+            sync_universes: HashMap::new(),
         };
 
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])?;
@@ -408,7 +417,8 @@ impl SacnReceiver {
                 // Value not found, i is the position it should be inserted
                 self.universes.insert(i, *u);
 
-                if self.is_multicast_enabled() {
+                // The group may already have been joined to receive synchronisation packets for this universe.
+                if self.is_multicast_enabled() && !self.sync_universes.contains_key(u) {
                     self.receiver.listen_multicast_universe(*u)?;
                 }
             } else {
@@ -435,9 +445,13 @@ impl SacnReceiver {
                 Err(SacnError::UniverseNotFound(universe))
             }
             Ok(i) => {
-                // If value found then don't insert to avoid duplicates.
                 self.universes.remove(i);
-                self.receiver.mute_multicast_universe(universe)
+                if self.sync_universes.contains_key(&universe) {
+                    // Still needed for synchronisation packets; the group is left once it is no longer used for that.
+                    Ok(())
+                } else {
+                    self.receiver.mute_multicast_universe(universe)
+                }
             }
         }
     }
@@ -510,6 +524,7 @@ impl SacnReceiver {
             // always check timeouts
             self.sequences.check_timeouts(self.announce_timeout)?;
             self.check_waiting_data_timeouts();
+            self.expire_sync_universes();
             return Err(io::Error::new(
                 // Use the right expected error for the operating system.
                 if cfg!(target_os = "windows") {
@@ -531,6 +546,7 @@ impl SacnReceiver {
         loop {
             self.sequences.check_timeouts(self.announce_timeout)?;
             self.check_waiting_data_timeouts();
+            self.expire_sync_universes();
 
             // In the case of `timeout` being longer than `E131_NETWORK_DATA_LOSS_TIMEOUT`:
             // Forces the actual timeout used for receiving from the underlying network to never exceed E131_NETWORK_DATA_LOSS_TIMEOUT.
@@ -754,7 +770,7 @@ impl SacnReceiver {
         } else {
             // As per ANSI E1.31-2018 Appendix B.2 the receiver should listen at the synchronisation address when a data packet is received with a non-zero
             // synchronisation address.
-            self.listen_universes(&[data_pkt.synchronization_address])?;
+            self.track_sync_universe(data_pkt.synchronization_address)?;
 
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
             let dmx_data: DMXData = DMXData {
@@ -847,7 +863,11 @@ impl SacnReceiver {
         cid: Uuid,
         sync_pkt: SynchronizationPacketFramingLayer,
     ) -> Result<Option<Vec<DMXData>>> {
-        if !self.is_listening(&sync_pkt.synchronization_address) {
+        if !self.is_listening(&sync_pkt.synchronization_address)
+            && !self
+                .sync_universes
+                .contains_key(&sync_pkt.synchronization_address)
+        {
             return Ok(None); // If not listening for this universe then ignore the packet.
         }
 
@@ -972,6 +992,42 @@ impl SacnReceiver {
         None // No source fully discovered.
     }
 
+    /// Records that a received data packet named `sync_uni` as its synchronisation address, joining that universe's
+    /// multicast group if it isn't joined already so that the synchronisation packets are received.
+    ///
+    /// # Errors
+    /// Returns an error if the multicast group cannot be joined. The universe isn't recorded in that case, so joining is
+    /// tried again with the next data packet that names it.
+    fn track_sync_universe(&mut self, sync_uni: u16) -> Result<()> {
+        if !self.sync_universes.contains_key(&sync_uni)
+            && !self.is_listening(&sync_uni)
+            && self.is_multicast_enabled()
+        {
+            self.receiver.listen_multicast_universe(sync_uni)?;
+        }
+        self.sync_universes.insert(sync_uni, Instant::now());
+        Ok(())
+    }
+
+    /// Stops tracking synchronisation universes that no data packet has named for `E131_NETWORK_DATA_LOSS_TIMEOUT`,
+    /// leaving their multicast groups unless the user listens to that universe.
+    fn expire_sync_universes(&mut self) {
+        let expired: Vec<u16> = self
+            .sync_universes
+            .iter()
+            .filter(|(_, last)| last.elapsed() >= E131_NETWORK_DATA_LOSS_TIMEOUT)
+            .map(|(u, _)| *u)
+            .collect();
+
+        for u in expired {
+            self.sync_universes.remove(&u);
+            if !self.is_listening(&u) && self.is_multicast_enabled() {
+                // Nothing useful can be done if leaving fails; the membership ends when the socket closes.
+                let _ = self.receiver.mute_multicast_universe(u);
+            }
+        }
+    }
+
     /// Goes through all the waiting data and removes any which has timed out as a sync-packet for it hasn't been received within the `E131_NETWORK_DATA_LOSS_TIMEOUT`
     /// period as specified by ANSI E1.31-2018 Section 11.1.2.
     fn check_waiting_data_timeouts(&mut self) {
@@ -993,6 +1049,17 @@ impl SacnReceiver {
 impl Drop for SacnReceiver {
     fn drop(&mut self) {
         let universes = self.universes.clone();
+        // Leave the groups joined only for synchronisation first; mute_universe would otherwise skip them.
+        let sync_only: Vec<u16> = self
+            .sync_universes
+            .keys()
+            .filter(|u| !self.is_listening(u))
+            .copied()
+            .collect();
+        self.sync_universes.clear();
+        for u in sync_only {
+            let _ = self.receiver.mute_multicast_universe(u);
+        }
         for u in universes {
             // Cannot return an error or pass it onto the user because drop might be called during a panic.
             // Therefore if there is an error cleaning up the only options are ignore, notify or panic.
@@ -3359,4 +3426,106 @@ mod test {
             res1
         );
     }
+
+    /// Builds a data packet for `universe` that waits for a synchronisation packet on `sync_uni`.
+    fn sync_data_packet<'a>(universe: u16, sync_uni: u16, seq: u8) -> DataPacketFramingLayer<'a> {
+        let mut pkt = generate_data_packet_framing_layer_seq_num(universe, seq);
+        pkt.synchronization_address = sync_uni;
+        pkt
+    }
+
+    /// A synchronisation address named by a data packet is joined for its sync packets, but data sent on that universe
+    /// isn't passed up unless the user listens to it.
+    #[test]
+    fn test_sync_universe_not_added_to_data_universes() {
+        const DATA_UNI: u16 = 1;
+        const SYNC_UNI: u16 = 7;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        rcv.listen_universes(&[DATA_UNI]).unwrap();
+        let src = Uuid::new_v4();
+
+        assert!(
+            rcv.handle_data_packet(src, sync_data_packet(DATA_UNI, SYNC_UNI, 0))
+                .unwrap()
+                .is_none()
+        );
+        assert!(!rcv.is_listening(&SYNC_UNI));
+        assert!(rcv.sync_universes.contains_key(&SYNC_UNI));
+
+        // Data on the synchronisation universe is ignored: the user never listened to it.
+        let on_sync_uni = generate_data_packet_framing_layer_seq_num(SYNC_UNI, 0);
+        assert!(rcv.handle_data_packet(src, on_sync_uni).unwrap().is_none());
+
+        // The sync packet still releases the waiting data.
+        let released = rcv
+            .handle_sync_packet(src, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
+            .unwrap()
+            .expect("sync packet should release the waiting data");
+        assert_eq!(released.len(), 1);
+        assert_eq!(released[0].universe, DATA_UNI);
+    }
+
+    /// A synchronisation universe nobody has named for the data loss timeout is forgotten, so its sync packets are
+    /// ignored and its multicast group can be left.
+    #[test]
+    fn test_sync_universe_expires() {
+        const DATA_UNI: u16 = 1;
+        const SYNC_UNI: u16 = 7;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        rcv.listen_universes(&[DATA_UNI]).unwrap();
+        let src = Uuid::new_v4();
+
+        rcv.handle_data_packet(src, sync_data_packet(DATA_UNI, SYNC_UNI, 0))
+            .unwrap();
+        let expired = Instant::now() - E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(1);
+        rcv.sync_universes.insert(SYNC_UNI, expired);
+        rcv.expire_sync_universes();
+        assert!(!rcv.sync_universes.contains_key(&SYNC_UNI));
+
+        let res = rcv
+            .handle_sync_packet(src, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
+            .unwrap();
+        assert!(res.is_none(), "sync packet on a forgotten universe was acted on");
+
+        // Naming it again joins it again without error.
+        rcv.handle_data_packet(src, sync_data_packet(DATA_UNI, SYNC_UNI, 1))
+            .unwrap();
+        assert!(rcv.sync_universes.contains_key(&SYNC_UNI));
+    }
+
+    /// Listening to, then muting, a universe that is also in use for synchronisation must not join its group twice or
+    /// leave it while it is still needed for sync packets.
+    #[test]
+    fn test_listen_and_mute_universe_also_used_for_sync() {
+        const DATA_UNI: u16 = 1;
+        const SYNC_UNI: u16 = 7;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        rcv.listen_universes(&[DATA_UNI]).unwrap();
+        let src = Uuid::new_v4();
+
+        rcv.handle_data_packet(src, sync_data_packet(DATA_UNI, SYNC_UNI, 0))
+            .unwrap();
+
+        // Joining the same group twice fails on Linux (EADDRINUSE), so this would error if it re-joined.
+        rcv.listen_universes(&[SYNC_UNI]).unwrap();
+        assert!(rcv.is_listening(&SYNC_UNI));
+
+        rcv.mute_universe(SYNC_UNI).unwrap();
+        assert!(!rcv.is_listening(&SYNC_UNI));
+        assert!(rcv.sync_universes.contains_key(&SYNC_UNI));
+
+        // Still joined: the group can be left once, when the sync universe expires. Leaving a group that isn't joined
+        // errors, so a second leave here would fail.
+        rcv.sync_universes.insert(
+            SYNC_UNI,
+            Instant::now() - E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(1),
+        );
+        rcv.expire_sync_universes();
+        #[cfg(not(target_os = "windows"))]
+        assert!(rcv.receiver.mute_multicast_universe(SYNC_UNI).is_err());
+    }
 }
+
