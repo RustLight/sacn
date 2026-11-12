@@ -205,6 +205,10 @@ pub struct SacnReceiver {
     /// that haven't been named for `E131_NETWORK_DATA_LOSS_TIMEOUT` are removed and their group left, unless the user
     /// listens to that universe.
     sync_universes: HashMap<u16, Instant>,
+
+    /// When the last synchronisation packet was received for each synchronisation address.
+    /// Used to tell if synchronisation on an address has been lost, as per ANSI E1.31-2016 Section 11.1.2.
+    last_sync_packets: HashMap<u16, Instant>,
 }
 
 /// Represents an sACN source/sender on the network that has been discovered by this sACN receiver by receiving universe discovery packets.
@@ -315,6 +319,7 @@ impl SacnReceiver {
             announce_stream_termination: ANNOUNCE_STREAM_TERMINATION_DEFAULT,
             announce_timeout: ANNOUNCE_TIMEOUT_DEFAULT,
             sync_universes: HashMap::new(),
+            last_sync_packets: HashMap::new(),
         };
 
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])?;
@@ -752,7 +757,19 @@ impl SacnReceiver {
             self.announce_timeout,
         )?;
 
-        if data_pkt.synchronization_address == E131_NO_SYNC_ADDR {
+        // As per ANSI E1.31-2016 Section 6.2.6 and 11.1.2, if the Force_Synchronization option is set and synchronisation on this
+        // packet's synchronisation address has been lost (or has not started), the data doesn't have to wait for a synchronisation
+        // packet. Without the option the data is held until synchronisation resumes.
+        let process_unsynchronized = data_pkt.synchronization_address != E131_NO_SYNC_ADDR
+            && data_pkt.force_synchronization
+            && !self.is_synchronized(data_pkt.synchronization_address);
+
+        if process_unsynchronized {
+            // Keep listening on the synchronisation address so synchronisation can resume.
+            self.track_sync_universe(data_pkt.synchronization_address)?;
+        }
+
+        if data_pkt.synchronization_address == E131_NO_SYNC_ADDR || process_unsynchronized {
             self.clear_waiting_data(data_pkt.universe);
 
             let vals: Vec<u8> = data_pkt.data.property_values.into_owned();
@@ -878,6 +895,9 @@ impl SacnReceiver {
             sync_pkt.synchronization_address,
             self.announce_timeout,
         )?;
+
+        self.last_sync_packets
+            .insert(sync_pkt.synchronization_address, Instant::now());
 
         let res = self.rtrv_waiting_data(sync_pkt.synchronization_address);
         if res.is_empty() {
@@ -1036,6 +1056,14 @@ impl SacnReceiver {
                 let _ = self.receiver.mute_multicast_universe(u);
             }
         }
+    }
+
+    /// Returns true if a synchronisation packet has been received on the given synchronisation address within
+    /// `E131_NETWORK_DATA_LOSS_TIMEOUT`, meaning synchronisation on that address is active as per ANSI E1.31-2016 Section 11.1.
+    fn is_synchronized(&self, sync_addr: u16) -> bool {
+        self.last_sync_packets
+            .get(&sync_addr)
+            .is_some_and(|t| t.elapsed() < E131_NETWORK_DATA_LOSS_TIMEOUT)
     }
 
     /// Goes through all the waiting data and removes any which has timed out as a sync-packet for it hasn't been received within the `E131_NETWORK_DATA_LOSS_TIMEOUT`
@@ -2434,6 +2462,105 @@ mod test {
 
         assert_eq!(dmx_rcv.discovered_sources[0].last_page, 1);
         assert_eq!(dmx_rcv.discovered_sources[0].get_all_universes(), vec![1, 2, 3, 4]);
+    }
+
+    fn synchronized_data_packet<'a>(
+        universe: u16,
+        sync_address: u16,
+        sequence_number: u8,
+        force_synchronization: bool,
+    ) -> DataPacketFramingLayer<'a> {
+        DataPacketFramingLayer {
+            synchronization_address: sync_address,
+            force_synchronization,
+            ..generate_data_packet_framing_layer_seq_num(universe, sequence_number)
+        }
+    }
+
+    /// With `Force_Synchronization` set and no synchronisation packet ever received on the address, data isn't held.
+    #[test]
+    fn test_force_synchronization_before_sync_starts() {
+        const UNIVERSE: u16 = 1;
+        const SYNC_UNI: u16 = 2;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        dmx_rcv.listen_universes(&[UNIVERSE]).unwrap();
+        let cid = Uuid::new_v4();
+
+        let res = dmx_rcv
+            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 0, true))
+            .unwrap()
+            .expect("data with Force_Synchronization should be passed up when not synchronised");
+        assert_eq!(res[0].universe, UNIVERSE);
+        assert!(dmx_rcv.waiting_data.is_empty());
+        // The receiver still listens on the synchronisation address so synchronisation can start, without passing up data
+        // sent on it.
+        assert!(dmx_rcv.sync_universes.contains_key(&SYNC_UNI));
+        assert!(!dmx_rcv.is_listening(&SYNC_UNI));
+    }
+
+    /// While synchronisation is active, data is held until the synchronisation packet even with `Force_Synchronization` set.
+    #[test]
+    fn test_force_synchronization_while_synchronized() {
+        const UNIVERSE: u16 = 1;
+        const SYNC_UNI: u16 = 2;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        dmx_rcv.listen_universes(&[UNIVERSE, SYNC_UNI]).unwrap();
+        let cid = Uuid::new_v4();
+
+        // Synchronisation starts with the first synchronisation packet.
+        assert!(dmx_rcv
+            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
+            .unwrap()
+            .is_none());
+
+        assert!(dmx_rcv
+            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 0, true))
+            .unwrap()
+            .is_none());
+
+        let res = dmx_rcv
+            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 1))
+            .unwrap()
+            .expect("held data should be released by the synchronisation packet");
+        assert_eq!(res[0].universe, UNIVERSE);
+    }
+
+    /// Once synchronisation is lost, `Force_Synchronization` set means data is processed without waiting, and unset means the
+    /// data is held until synchronisation resumes.
+    #[test]
+    fn test_force_synchronization_after_sync_lost() {
+        const UNIVERSE: u16 = 1;
+        const SYNC_UNI: u16 = 2;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        dmx_rcv.listen_universes(&[UNIVERSE, SYNC_UNI]).unwrap();
+        let cid = Uuid::new_v4();
+
+        dmx_rcv
+            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
+            .unwrap();
+        // No synchronisation packet for longer than the network data loss timeout.
+        dmx_rcv.last_sync_packets.insert(
+            SYNC_UNI,
+            Instant::now() - E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(100),
+        );
+
+        // Force_Synchronization unset: hold the data.
+        assert!(dmx_rcv
+            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 0, false))
+            .unwrap()
+            .is_none());
+        assert!(dmx_rcv.waiting_data.contains_key(&UNIVERSE));
+
+        // Force_Synchronization set: process the data now, replacing the held data.
+        let res = dmx_rcv
+            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 1, true))
+            .unwrap()
+            .expect("data with Force_Synchronization should be passed up once synchronisation is lost");
+        assert_eq!(res[0].universe, UNIVERSE);
+        assert!(dmx_rcv.waiting_data.is_empty());
     }
 
     #[test]
