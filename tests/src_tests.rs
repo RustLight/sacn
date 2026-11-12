@@ -702,3 +702,34 @@ const TEST_DATA_MULTIPLE_UNIVERSE: [u8; 712] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100,
 ];
+
+/// A receiver that is sent a universe by unicast, and hasn't joined that universe's multicast group, must still be
+/// told when the source terminates the universe.
+#[test]
+#[serial]
+fn test_terminate_stream_to_reaches_unicast_receiver() {
+    use sacn::receive::SacnReceiver;
+    use std::time::Duration;
+
+    let rcv_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+    let mut rcv = SacnReceiver::with_ip(rcv_addr, None).unwrap();
+    // Unicast only: don't join the multicast group for universe 1.
+    rcv.set_is_multicast_enabled(false).unwrap();
+    rcv.listen_universes(&[1]).unwrap();
+    rcv.set_announce_stream_termination(true);
+
+    let src_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
+    let mut src = SacnSource::with_ip("Unicast source", src_addr).unwrap();
+    src.register_universe(1).unwrap();
+    src.send(&[1], &[0, 1, 2], None, Some(rcv_addr), None).unwrap();
+    assert_eq!(rcv.recv(Some(Duration::from_secs(2))).unwrap()[0].universe, 1);
+
+    src.terminate_stream_to(1, 0, &[rcv_addr]).unwrap();
+    match rcv.recv(Some(Duration::from_secs(2))) {
+        Err(SacnError::UniverseTerminated(cid, 1)) => assert_eq!(cid, src.cid().unwrap()),
+        other => panic!("expected UniverseTerminated for universe 1, got {other:?}"),
+    }
+
+    // The universe is deregistered afterwards, as with terminate_stream.
+    assert!(!src.universes().unwrap().contains(&1));
+}
