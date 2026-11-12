@@ -713,4 +713,99 @@ fn test_set_force_synchronization() {
     assert!(src.force_synchronization().unwrap());
     src.set_force_synchronization(false).unwrap();
     assert!(!src.force_synchronization().unwrap());
+/// A 64 byte source name fills the whole field and leaves no room for the null terminator required by
+/// ANSI E1.31-2016 Section 6.2.2, so it must be rejected.
+#[test]
+#[serial]
+fn test_new_ipv4_64_byte_source_name_rejected() {
+    let name = "a".repeat(E131_SOURCE_NAME_FIELD_LENGTH);
+    match SacnSource::new_v4(&name) {
+        Err(SacnError::MalformedSourceName(_)) => {}
+        Err(e) => panic!("Unexpected error returned: {e:?}"),
+        Ok(_) => panic!("SacnSource created with a 64 byte source name"),
+    }
+}
+
+#[test]
+#[serial]
+fn test_new_ipv4_63_byte_source_name_accepted() {
+    let name = "a".repeat(E131_SOURCE_NAME_MAX_LENGTH);
+    let src = SacnSource::new_v4(&name).unwrap();
+    assert_eq!(src.name().unwrap(), name);
+}
+
+#[test]
+#[serial]
+fn test_set_name_64_byte_source_name_rejected() {
+    let mut src = SacnSource::new_v4("Source").unwrap();
+    match src.set_name(&"a".repeat(E131_SOURCE_NAME_FIELD_LENGTH)) {
+        Err(SacnError::MalformedSourceName(_)) => {}
+        other => panic!("Expected MalformedSourceName, got {other:?}"),
+    }
+    assert_eq!(src.name().unwrap(), "Source");
+}
+
+/// A 63 byte source name packs into a packet that parses back to the same name.
+#[test]
+fn test_pack_parse_63_byte_source_name() {
+    let name = "a".repeat(E131_SOURCE_NAME_MAX_LENGTH);
+    let packet = data_packet_with_source_name(&name);
+    let buf = packet.pack_alloc().unwrap();
+    assert_eq!(AcnRootLayerProtocol::parse(&buf).unwrap(), packet);
+}
+
+/// Packing a source name that can't be null-terminated is an error rather than a non-compliant packet
+/// (64 bytes) or a panic (65 or more bytes).
+#[test]
+fn test_pack_too_long_source_name_rejected() {
+    for len in [E131_SOURCE_NAME_FIELD_LENGTH, E131_SOURCE_NAME_FIELD_LENGTH + 1] {
+        let name = "a".repeat(len);
+        match data_packet_with_source_name(&name).pack_alloc() {
+            Err(SacnError::SacnParsePackError(
+                sacn::sacn_parse_pack_error::ParsePacketError::PackInvalidData(_),
+            )) => {}
+            other => panic!("Expected PackInvalidData for {len} byte name, got {other:?}"),
+        }
+
+        let discovery = AcnRootLayerProtocol {
+            pdu: E131RootLayer {
+                cid: Uuid::new_v4(),
+                data: E131RootLayerData::UniverseDiscoveryPacket(UniverseDiscoveryPacketFramingLayer {
+                    source_name: name.as_str().into(),
+                    data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+                        page: 0,
+                        last_page: 0,
+                        universes: vec![1u16].into(),
+                    },
+                }),
+            },
+        };
+        match discovery.pack_alloc() {
+            Err(SacnError::SacnParsePackError(
+                sacn::sacn_parse_pack_error::ParsePacketError::PackInvalidData(_),
+            )) => {}
+            other => panic!("Expected PackInvalidData for {len} byte name, got {other:?}"),
+        }
+    }
+}
+
+fn data_packet_with_source_name(name: &str) -> AcnRootLayerProtocol<'_> {
+    AcnRootLayerProtocol {
+        pdu: E131RootLayer {
+            cid: Uuid::new_v4(),
+            data: E131RootLayerData::DataPacket(DataPacketFramingLayer {
+                source_name: name.into(),
+                priority: E131_DEFAULT_PRIORITY,
+                synchronization_address: 0,
+                sequence_number: 0,
+                preview_data: false,
+                stream_terminated: false,
+                force_synchronization: false,
+                universe: 1,
+                data: DataPacketDmpLayer {
+                    property_values: vec![0u8; 513].into(),
+                },
+            }),
+        },
+    }
 }

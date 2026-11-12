@@ -248,6 +248,11 @@ const E131_CID_END_INDEX: usize =
 /// The length of the Source Name field in bytes in an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4, Table 4-1, 4-2, 4-3.
 pub const E131_SOURCE_NAME_FIELD_LENGTH: usize = 64;
 
+/// The maximum length of a source name in bytes (UTF-8), as per ANSI E1.31-2016 Section 6.2.2.
+///
+/// The source name field is 64 bytes and must be null-terminated, which leaves 63 bytes for the name itself.
+pub const E131_SOURCE_NAME_MAX_LENGTH: usize = E131_SOURCE_NAME_FIELD_LENGTH - 1;
+
 /// The length of the Synchronisation Address field in bytes in an ANSI E1.31-2018 packet as per ANSI E1.31-2018 Section 4, Table 4-1, 4-2, 4-3.
 pub const E131_SYNC_ADDR_FIELD_LENGTH: usize = 2;
 
@@ -603,6 +608,13 @@ macro_rules! impl_e131_root_layer {
                     ));
                 }
 
+                // The PDU must at least hold the flags/length, vector and CID fields.
+                if length < E131_CID_END_INDEX {
+                    return Err(SacnError::SacnParsePackError(
+                        ParsePacketError::PduInvalidLength(length),
+                    ));
+                }
+
                 if vector != VECTOR_ROOT_E131_DATA && vector != VECTOR_ROOT_E131_EXTENDED {
                     return Err(SacnError::SacnParsePackError(
                         ParsePacketError::PduInvalidVector(vector),
@@ -764,6 +776,11 @@ macro_rules! impl_data_packet_framing_layer {
                     return Err(SacnError::SacnParsePackError(ParsePacketError::PduInvalidVector(vector)));
                 }
 
+                // The PDU must at least hold every fixed framing layer field before the DMP layer.
+                if length < DATA_INDEX {
+                    return Err(SacnError::SacnParsePackError(ParsePacketError::PduInvalidLength(length)));
+                }
+
                 // Source Name
                 let source_name = String::from(
                     parse_source_name_str(
@@ -832,7 +849,12 @@ macro_rules! impl_data_packet_framing_layer {
                 // Vector
                 NetworkEndian::write_u32(&mut buf[E131_PDU_LENGTH_FLAGS_LENGTH .. SOURCE_NAME_INDEX], VECTOR_E131_DATA_PACKET);
 
-                // Source Name, padded with 0's up to the required 64 byte length.
+                // Source Name, padded with 0's up to the required 64 byte length, always leaving room for the null terminator.
+                if self.source_name.len() > E131_SOURCE_NAME_MAX_LENGTH {
+                    return Err(SacnError::SacnParsePackError(ParsePacketError::PackInvalidData(
+                        format!("Source name must be at most {} bytes", E131_SOURCE_NAME_MAX_LENGTH)
+                    )));
+                }
                 zeros(&mut buf[SOURCE_NAME_INDEX .. PRIORITY_INDEX], E131_SOURCE_NAME_FIELD_LENGTH);
                 buf[SOURCE_NAME_INDEX .. SOURCE_NAME_INDEX + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
 
@@ -959,6 +981,13 @@ macro_rules! impl_data_packet_dmp_layer {
 
                 if vector != u32::from(VECTOR_DMP_SET_PROPERTY) {
                     return Err(SacnError::SacnParsePackError(ParsePacketError::PduInvalidVector(vector)));
+                }
+
+                // The PDU must at least hold every fixed DMP layer field before the property values.
+                if length < PROPERTY_VALUES_FIELD_INDEX {
+                    return Err(SacnError::SacnParsePackError(ParsePacketError::ParseInsufficientData(
+                        format!("Data packet dmp layer pdu length {} is shorter than its {} byte header", length, PROPERTY_VALUES_FIELD_INDEX)
+                    )));
                 }
 
                 // Address and Data Type
@@ -1263,7 +1292,12 @@ macro_rules! impl_universe_discovery_packet_framing_layer {
                 // Vector
                 NetworkEndian::write_u32(&mut buf[E131_DISCOVERY_FRAMING_LAYER_VECTOR_FIELD_INDEX .. E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX], VECTOR_E131_EXTENDED_DISCOVERY);
 
-                // Source Name
+                // Source Name, always leaving room for the null terminator.
+                if self.source_name.len() > E131_SOURCE_NAME_MAX_LENGTH {
+                    return Err(SacnError::SacnParsePackError(ParsePacketError::PackInvalidData(
+                        format!("Source name must be at most {} bytes", E131_SOURCE_NAME_MAX_LENGTH)
+                    )));
+                }
                 zeros(&mut buf[E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX .. E131_DISCOVERY_FRAMING_LAYER_RESERVE_FIELD_INDEX], E131_SOURCE_NAME_FIELD_LENGTH);
                 buf[E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX  .. E131_DISCOVERY_FRAMING_LAYER_SOURCE_NAME_FIELD_INDEX  + self.source_name.len()].copy_from_slice(self.source_name.as_bytes());
 

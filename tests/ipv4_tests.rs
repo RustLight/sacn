@@ -3310,7 +3310,7 @@ fn test_data_packet_transmit_format() {
     let packet = generate_data_packet_raw(CID, universe, source_name.clone(), PRIORITY, sequence, OPTIONS, dmx_data.clone());
 
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(source_name.trim_end_matches('\0'), Uuid::from_bytes(CID), ip).unwrap();
 
     source.set_preview_mode(false).unwrap();
     source.set_multicast_loop_v4(true).unwrap();
@@ -3508,7 +3508,7 @@ fn test_discovery_packet_transmit_format() {
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT + 1);
 
     // Creates the source.
-    let mut source = SacnSource::with_cid_ip(&str::from_utf8(&SOURCE_NAME).unwrap(), Uuid::from_bytes(CID), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(str::from_utf8(&SOURCE_NAME).unwrap().trim_end_matches('\0'), Uuid::from_bytes(CID), ip).unwrap();
 
     source.set_multicast_loop_v4(true).unwrap();
 
@@ -3667,7 +3667,7 @@ fn test_track_data_packet_seq_numbers() {
 
     // Create a source.
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(source_name.trim_end_matches('\0'), Uuid::from_bytes(CID), ip).unwrap();
     source.set_multicast_loop_v4(true).unwrap();
     source.register_universes(&UNIVERSES).unwrap();
 
@@ -3734,7 +3734,7 @@ fn test_track_sync_packet_seq_numbers() {
 
     // Create a source.
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(source_name.trim_end_matches('\0'), Uuid::from_bytes(CID), ip).unwrap();
     source.set_multicast_loop_v4(true).unwrap();
 
     // Register the synchronisation addresses.
@@ -3809,7 +3809,7 @@ fn test_sync_packet_multicast_address() {
 
     // Create a source.
     let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
-    let mut source = SacnSource::with_cid_ip(&source_name.clone(), Uuid::from_bytes(CID), ip).unwrap();
+    let mut source = SacnSource::with_cid_ip(source_name.trim_end_matches('\0'), Uuid::from_bytes(CID), ip).unwrap();
     source.set_multicast_loop_v4(true).unwrap();
 
     // Register the synchronisation addresses.

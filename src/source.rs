@@ -197,9 +197,9 @@ impl SacnSource {
     ///
     /// `UnsupportedIpVersion`: Returned if the `SocketAddr` is not IPv4 or IPv6.
     ///
-    /// `MalformedSourceName`: Returned if the given source name is longer than the maximum allowed size of `E131_SOURCE_NAME_FIELD_LENGTH`.
+    /// `MalformedSourceName`: Returned if the given source name is longer than the maximum allowed size of `E131_SOURCE_NAME_MAX_LENGTH` (63 bytes, leaving room for the null terminator).
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
-        if name.len() > E131_SOURCE_NAME_FIELD_LENGTH {
+        if name.len() > E131_SOURCE_NAME_MAX_LENGTH {
             return Err(SacnError::MalformedSourceName(
                 "Source name provided is longer than maximum allowed".to_string(),
             ));
@@ -409,7 +409,7 @@ impl SacnSource {
     /// `SourceCorrupt`: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
     /// a panic while accessing causing the source to be left in a potentially inconsistent state.
     ///
-    /// `MalformedSourceName`: Returned to indicate that the given source name is longer than the maximum allowed as per `E131_SOURCE_NAME_FIELD_LENGTH`.
+    /// `MalformedSourceName`: Returned to indicate that the given source name is longer than the maximum allowed as per `E131_SOURCE_NAME_MAX_LENGTH` (63 bytes, leaving room for the null terminator).
     pub fn set_name(&mut self, name: &str) -> Result<()> {
         unlock_internal_mut(&mut self.internal)?.set_name(name)
     }
@@ -1175,9 +1175,9 @@ impl SacnSourceInternal {
     /// name: The new name for the source, it is left to the user to ensure this is unique within the sACN network.
     ///
     /// # Errors
-    /// `MalformedSourceName`: Returned to indicate that the given source name is longer than the maximum allowed as per `E131_SOURCE_NAME_FIELD_LENGTH`.
+    /// `MalformedSourceName`: Returned to indicate that the given source name is longer than the maximum allowed as per `E131_SOURCE_NAME_MAX_LENGTH` (63 bytes, leaving room for the null terminator).
     fn set_name(&mut self, name: &str) -> Result<()> {
-        if name.len() > E131_SOURCE_NAME_FIELD_LENGTH {
+        if name.len() > E131_SOURCE_NAME_MAX_LENGTH {
             return Err(SacnError::MalformedSourceName(
                 "Source name provided is longer than maximum allowed".to_string(),
             ));
