@@ -2192,6 +2192,35 @@ mod test {
         assert_eq!(dmx_rcv.discovered_sources[0].pages[0].universes, universes);
     }
 
+    /// Sources only advertise every `E131_UNIVERSE_DISCOVERY_INTERVAL`, so a discovered source must not expire before its next advert.
+    #[test]
+    fn test_discovered_source_kept_between_adverts() {
+        assert!(UNIVERSE_DISCOVERY_SOURCE_TIMEOUT > E131_UNIVERSE_DISCOVERY_INTERVAL);
+
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        let discovery_pkt = UniverseDiscoveryPacketFramingLayer {
+            source_name: "Test Src".into(),
+            data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+                page: 0,
+                last_page: 0,
+                universes: vec![1u16, 2].into(),
+            },
+        };
+        dmx_rcv.handle_universe_discovery_packet(Uuid::new_v4(), discovery_pkt);
+
+        // Pretend the advert arrived just before the next one is due.
+        let advert_age = E131_UNIVERSE_DISCOVERY_INTERVAL - Duration::from_millis(100);
+        dmx_rcv.discovered_sources[0].last_updated = Instant::now() - advert_age;
+        assert_eq!(dmx_rcv.get_discovered_sources().len(), 1);
+
+        // Once the source has missed adverts for longer than the timeout it is removed.
+        dmx_rcv.discovered_sources[0].last_updated =
+            Instant::now() - UNIVERSE_DISCOVERY_SOURCE_TIMEOUT - Duration::from_millis(100);
+        assert!(dmx_rcv.get_discovered_sources().is_empty());
+    }
+
     #[test]
     fn test_handle_multi_page_discovery_packet() {
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
