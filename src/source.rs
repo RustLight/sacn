@@ -209,7 +209,8 @@ impl SacnSource {
         let src = SacnSource {
             internal: internal_src,
             update_thread: Some(trd_builder.spawn(move || {
-                while trd_src.lock().unwrap().running {
+                // Stop if the source has been dropped or the mutex was poisoned by a panic elsewhere.
+                while matches!(trd_src.lock().map(|s| s.running), Ok(true)) {
                     thread::sleep(DEFAULT_POLL_PERIOD);
                     if let Err(e) = perform_periodic_update(&mut trd_src) {
                         println!("Periodic error: {e:?}");
@@ -542,7 +543,9 @@ impl Drop for SacnSource {
                 {} // As drop isn't always explicitly called and cannot return an error the error is ignored. Memory safety is maintain and this prevents causing a panic!.
             };
 
-            thread.join().unwrap();
+            // The update thread only panics if the mutex was poisoned. Panicking here as well would abort the
+            // process if the source is being dropped while unwinding, so the result is ignored.
+            let _ = thread.join();
         }
     }
 }
@@ -1038,10 +1041,23 @@ impl SacnSourceInternal {
     fn terminate(&mut self, start_code: u8) -> Result<()> {
         self.running = false;
         let universes = self.universes.clone(); // About to start manipulating self.universes as universes are removed so clone original list.
+
+        // Attempt every universe even if one fails, so a single send error doesn't leave the remaining universes
+        // unterminated. The first error is returned once all universes have been attempted.
+        let mut first_err: Option<SacnError> = None;
         for u in universes {
-            self.terminate_stream(u, start_code)?;
+            if let Err(e) = self.terminate_stream(u, start_code) {
+                // terminate_stream only deregisters after its packets were sent; the source is shutting down so
+                // deregister regardless.
+                let _ = self.deregister_universe(u);
+                first_err.get_or_insert(e);
+            }
         }
-        Ok(())
+
+        match first_err {
+            Some(e) => Err(e),
+            None => Ok(()),
+        }
     }
 
     /// Sends a universe discovery packet advertising the universes that this source is registered to send.
@@ -1301,4 +1317,29 @@ fn perform_periodic_update(src: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<(
         unwrap_src.last_discovery_advert_timestamp = Instant::now();
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    /// A send failure on one universe must not stop the remaining universes from being terminated.
+    #[cfg(unix)]
+    #[test]
+    fn test_terminate_attempts_every_universe() {
+        let ip = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
+        let mut src = SacnSourceInternal::with_cid_ip("Test", Uuid::new_v4(), ip).unwrap();
+        src.register_universes(&[1, 2, 3]).unwrap();
+
+        // Swap in a Unix domain socket so every IP multicast send fails.
+        src.socket = Socket::new(Domain::UNIX, Type::DGRAM, None).unwrap();
+
+        assert!(src.terminate(DEFAULT_TERMINATE_START_CODE).is_err());
+        assert!(
+            src.universes.is_empty(),
+            "universes left registered after terminate: {:?}",
+            src.universes
+        );
+        assert!(!src.running);
+    }
 }
