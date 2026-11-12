@@ -631,9 +631,9 @@ impl SacnSourceInternal {
     /// If a universe is already registered then this method has no effect.
     ///
     /// # Errors
-    /// `IllegalUniverse`: Returned if the universe is outwith the allowed range, see (`is_universe_in_range`)[`fn.is_universe_in_range.packet`].
+    /// `IllegalUniverse`: Returned if the universe can't carry data, see (`is_data_universe_in_range`)[`fn.is_data_universe_in_range.packet`].
     fn register_universe(&mut self, universe: u16) -> Result<()> {
-        is_universe_in_range(universe)?;
+        is_data_universe_in_range(universe)?;
 
         if self.universes.is_empty() {
             self.universes.push(universe);
@@ -672,11 +672,11 @@ impl SacnSourceInternal {
     /// Checks if the given universe is a valid universe to send on (within allowed range) and that it is registered with this `SacnSourceInternal`.
     ///
     /// # Errors
-    /// `IllegalUniverse`: Returned if the universe is outwith the allowed range, see (`is_universe_in_range`)[`fn.is_universe_in_range.packet`].
+    /// `IllegalUniverse`: Returned if the universe can't carry data, see (`is_data_universe_in_range`)[`fn.is_data_universe_in_range.packet`].
     ///
     /// `UniverseNotRegistered`: Returned if the universe is not registered on the given `SacnSourceInternal`.
     fn universe_allowed(&self, u: &u16) -> Result<()> {
-        is_universe_in_range(*u)?;
+        is_data_universe_in_range(*u)?;
 
         if !self.universes.contains(u) {
             return Err(SacnError::UniverseNotRegistered(*u));
@@ -751,7 +751,7 @@ impl SacnSourceInternal {
         // Check that the synchronisation universe is a valid universe. It doesn't need to be registered: a synchronisation
         // universe carries no data, so it isn't advertised in universe discovery.
         if let Some(sync_addr) = synchronisation_addr {
-            is_universe_in_range(sync_addr)
+            is_data_universe_in_range(sync_addr)
                 .map_err(|_e| SacnError::IllegalSyncUniverse(sync_addr))?;
         }
 
@@ -894,7 +894,7 @@ impl SacnSourceInternal {
     ///
     /// `SacnParsePackError`: Returned if the sync packet fails to be packed.
     fn send_sync_packet(&self, universe: u16, dst_ip: Option<SocketAddr>) -> Result<()> {
-        is_universe_in_range(universe)?;
+        is_data_universe_in_range(universe)?;
 
         let ip = if let Some(dst) = dst_ip {
             dst.into()

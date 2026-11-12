@@ -488,24 +488,52 @@ fn test_register_above_max_universe() {
     }
 }
 
-/// Attempt to register the discovery universe. Even though this is higher than the maximum allowed universe this should succeed as per ANSI E1.31-2018 Section 6.2.7.
+/// Attempt to register the discovery universe. This should fail: as per ANSI E1.31-2016 Section 6.2.7 data universes are
+/// limited to 1 to 63999, and universe 64214 is reserved for universe discovery packets.
 /// Extreme test.
 #[test]
 #[serial]
 fn test_register_discovery_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
     match src.register_universes(&[E131_DISCOVERY_UNIVERSE]) {
-        Err(e) => {
-            assert!(
-                false,
-                "Unexpected error returned when attempting to register discovery universe, {:?}",
-                e
-            );
-        }
-        _ => {
-            assert!(true, "Registration successful");
-        }
+        Err(SacnError::IllegalUniverse(_)) => {}
+        other => panic!("Expected IllegalUniverse when registering the discovery universe, got {other:?}"),
     }
+    assert!(src.universes().unwrap().is_empty());
+}
+
+/// Data and sync packets can't be sent on the discovery universe, even without registering it.
+#[test]
+#[serial]
+fn test_send_on_discovery_universe_rejected() {
+    let mut src = SacnSource::new_v4("Controller").unwrap();
+    src.register_universe(1).unwrap();
+
+    match src.send(&[E131_DISCOVERY_UNIVERSE], &[0u8; 513], None, None, None) {
+        Err(SacnError::IllegalUniverse(_)) => {}
+        other => panic!("Expected IllegalUniverse for data on the discovery universe, got {other:?}"),
+    }
+
+    match src.send(&[1], &[0u8; 513], None, None, Some(E131_DISCOVERY_UNIVERSE)) {
+        Err(SacnError::IllegalSyncUniverse(_)) => {}
+        other => panic!("Expected IllegalSyncUniverse for the discovery universe as sync address, got {other:?}"),
+    }
+
+    match src.send_sync_packet(E131_DISCOVERY_UNIVERSE, None) {
+        Err(SacnError::IllegalUniverse(_)) => {}
+        other => panic!("Expected IllegalUniverse for a sync packet on the discovery universe, got {other:?}"),
+    }
+}
+
+#[test]
+fn test_is_data_universe_in_range() {
+    assert!(is_data_universe_in_range(E131_MIN_MULTICAST_UNIVERSE).is_ok());
+    assert!(is_data_universe_in_range(E131_MAX_MULTICAST_UNIVERSE).is_ok());
+    assert!(is_data_universe_in_range(0).is_err());
+    assert!(is_data_universe_in_range(E131_MAX_MULTICAST_UNIVERSE + 1).is_err());
+    assert!(is_data_universe_in_range(E131_DISCOVERY_UNIVERSE).is_err());
+    // The discovery universe is still a valid universe to send discovery packets on and listen to.
+    assert!(is_universe_in_range(E131_DISCOVERY_UNIVERSE).is_ok());
 }
 
 /// Attempt to register the maximum allowed universe, this should succeed as the allowed range is inclusive of this universe.

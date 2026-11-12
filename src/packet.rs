@@ -364,7 +364,10 @@ pub fn universe_to_ipv6_multicast_addr(universe: u16) -> Result<SockAddr> {
     .into())
 }
 
-/// Checks if the given universe is a valid universe to send on (within allowed range).
+/// Checks if the given universe is a valid universe to send on or listen to (within allowed range).
+///
+/// This includes `E131_DISCOVERY_UNIVERSE`, which carries universe discovery packets. Use
+/// [`is_data_universe_in_range`] for universes that carry DMX data or synchronisation packets.
 ///
 /// # Errors
 /// `IllegalUniverse`: Returned if the universe is outwith the allowed range of universes
@@ -373,6 +376,20 @@ pub fn is_universe_in_range(universe: u16) -> Result<()> {
     if (universe != E131_DISCOVERY_UNIVERSE)
         && !(E131_MIN_MULTICAST_UNIVERSE..=E131_MAX_MULTICAST_UNIVERSE).contains(&universe)
     {
+        return Err(SacnError::IllegalUniverse(universe));
+    }
+    Ok(())
+}
+
+/// Checks if the given universe can carry DMX data or synchronisation packets.
+///
+/// As per ANSI E1.31-2016 Section 6.2.7 data universes are limited to the range 1 to 63999, so unlike
+/// [`is_universe_in_range`] this excludes `E131_DISCOVERY_UNIVERSE` (64214), which is reserved for universe discovery.
+///
+/// # Errors
+/// `IllegalUniverse`: Returned if the universe is outwith [`E131_MIN_MULTICAST_UNIVERSE`, `E131_MAX_MULTICAST_UNIVERSE`].
+pub fn is_data_universe_in_range(universe: u16) -> Result<()> {
+    if !(E131_MIN_MULTICAST_UNIVERSE..=E131_MAX_MULTICAST_UNIVERSE).contains(&universe) {
         return Err(SacnError::IllegalUniverse(universe));
     }
     Ok(())
