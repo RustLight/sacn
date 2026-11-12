@@ -713,6 +713,8 @@ fn test_set_force_synchronization() {
     assert!(src.force_synchronization().unwrap());
     src.set_force_synchronization(false).unwrap();
     assert!(!src.force_synchronization().unwrap());
+}
+
 /// A 64 byte source name fills the whole field and leaves no room for the null terminator required by
 /// ANSI E1.31-2016 Section 6.2.2, so it must be rejected.
 #[test]
