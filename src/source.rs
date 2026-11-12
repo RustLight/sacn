@@ -364,6 +364,42 @@ impl SacnSource {
         unlock_internal_mut(&mut self.internal)?.terminate_stream(universe, start_code)
     }
 
+    /// Terminates sending on the given universe, sending the termination packets to the given unicast destinations.
+    ///
+    /// `terminate_stream` sends the termination packets only to the universe's multicast group, so a receiver that was
+    /// sent the universe's data by unicast and hasn't joined that group never sees them. It then only notices the
+    /// source has gone after the network data loss timeout. Pass the same destinations that were given to `send` here
+    /// so those receivers are told straight away.
+    ///
+    /// The `E131_TERMINATE_STREAM_PACKET_COUNT` termination packets are sent to each destination in turn, then the
+    /// universe is deregistered. If `dst_ips` is empty this behaves exactly like `terminate_stream` (multicast).
+    ///
+    /// # Arguments
+    /// universe: The universe that is being terminated.
+    ///
+    /// `start_code`: used for the first byte of the otherwise empty data payload to indicate the `start_code` of the data.
+    ///
+    /// `dst_ips`: The unicast destinations to send the termination packets to.
+    ///
+    /// # Errors:
+    /// `IllegalUniverse`: Returned if the universe is outwith the allowed range of sACN universes as defined in ANSI E1.31-2018 Section 6.2.7.
+    ///
+    /// `UniverseNotRegistered`: Returned if the universe is not registered on this source.
+    ///
+    /// Io: Returned if the termination packets fail to be sent on the socket. The packets are still sent to the
+    /// remaining destinations and the universe is still deregistered; the first error is returned.
+    ///
+    /// `SourceCorrupt`: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
+    /// a panic while accessing causing the source to be left in a potentially inconsistent state.
+    pub fn terminate_stream_to(
+        &mut self,
+        universe: u16,
+        start_code: u8,
+        dst_ips: &[SocketAddr],
+    ) -> Result<()> {
+        unlock_internal_mut(&mut self.internal)?.terminate_stream_to(universe, start_code, dst_ips)
+    }
+
     /// Returns the ACN CID device identifier of the `SacnSourceInternal`.
     ///
     /// # Errors
@@ -1024,6 +1060,41 @@ impl SacnSourceInternal {
 
         self.deregister_universe(universe)?;
         Ok(())
+    }
+
+    /// Terminates a universe stream, sending the termination packets to each of the given unicast destinations.
+    ///
+    /// See (`SacnSource::terminate_stream_to`)[`SacnSource::terminate_stream_to`].
+    fn terminate_stream_to(
+        &mut self,
+        universe: u16,
+        start_code: u8,
+        dst_ips: &[SocketAddr],
+    ) -> Result<()> {
+        if dst_ips.is_empty() {
+            return self.terminate_stream(universe, start_code);
+        }
+
+        // Check before sending anything so that an unregistered universe sends nothing.
+        self.universe_allowed(&universe)?;
+
+        // Keep going after a failed send so one unreachable destination doesn't stop the others being told.
+        let mut first_err: Option<SacnError> = None;
+        for dst in dst_ips {
+            for _ in 0..E131_TERMINATE_STREAM_PACKET_COUNT {
+                if let Err(e) = self.send_terminate_stream_pkt(universe, Some(*dst), start_code) {
+                    first_err.get_or_insert(e);
+                    break;
+                }
+            }
+        }
+
+        self.deregister_universe(universe)?;
+
+        match first_err {
+            Some(e) => Err(e),
+            None => Ok(()),
+        }
     }
 
     /// Terminates the DMX source.
