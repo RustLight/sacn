@@ -316,8 +316,12 @@ pub const NO_SYNC_UNIVERSE: u16 = 0;
 /// The timeout before data loss is assumed for an E131 source, as defined in Appendix A of ANSI E1.31-2018.
 pub const E131_NETWORK_DATA_LOSS_TIMEOUT: Duration = Duration::from_millis(2500);
 
-/// The timeout before a discovered source is assumed to be lost as defined in section 12.2 of ANSI E1.31-2018.
-pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = E131_NETWORK_DATA_LOSS_TIMEOUT;
+/// The timeout before a discovered source is assumed to be lost.
+///
+/// Sources send universe discovery packets every `E131_UNIVERSE_DISCOVERY_INTERVAL` (10 seconds, ANSI E1.31-2016 Appendix A),
+/// so this must be longer than that interval or discovered sources expire between adverts. The standard doesn't define a
+/// receiver timeout, so two intervals are used: a source is only treated as lost after missing a whole advert.
+pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = Duration::from_secs(2 * E131_UNIVERSE_DISCOVERY_INTERVAL.as_secs());
 
 /// Converts the given ANSI E1.31-2018 universe into an Ipv4 multicast address with the port set to the acn multicast port as defined
 /// in `packet::ACN_SDT_MULTICAST_PORT`.
