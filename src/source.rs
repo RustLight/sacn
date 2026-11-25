@@ -1489,9 +1489,8 @@ fn perform_periodic_update(src: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<(
 /// Splits the given (sorted) universe list into universe discovery pages.
 ///
 /// Returns one `(page, last_page, universes)` entry per page, each holding at most `DISCOVERY_UNI_PER_PAGE` universes.
-/// A list of n universes gives ceil(n / 512) pages, so a source with no universes sends no discovery packet at all and
-/// an exact multiple of 512 does not produce a trailing empty page. This matches the ETC sACN library, which only sends
-/// pages that contain universes and sets the last page to `(n - 1) / 512`.
+/// A list of n universes gives ceil(n / 512) pages with a last page of `(n - 1) / 512`, so a source with no universes
+/// sends no discovery packet at all and an exact multiple of 512 does not produce a trailing empty page.
 fn discovery_pages(universes: &[u16]) -> Vec<(u8, u8, &[u16])> {
     let chunks: Vec<&[u16]> = universes.chunks(DISCOVERY_UNI_PER_PAGE).collect();
     // A u16 universe field and no duplicates give at most 65536 / 512 = 128 pages, so the page numbers fit in a u8.
