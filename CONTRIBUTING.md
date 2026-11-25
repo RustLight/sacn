@@ -75,4 +75,4 @@ To run them on a Linux host instead, see `docker-linux/run_tests.sh` and `docker
 
 * `documentation/` holds the ANSI E1.31-2018 compliance checklist and design notes from the original project, as PDFs.
 * `further testing/` holds fuzzing inputs and notes, and scripts for manual tests with several sources and receivers.
-* `examples/demo_src` and `examples/demo_rcv` are interactive programs for testing against other sACN equipment. See [Demo Implementation](README.md#demo-implementation).
+* `examples/demo_src` and `examples/demo_rcv` are interactive programs for testing against other sACN equipment. See [Examples](README.md#examples).

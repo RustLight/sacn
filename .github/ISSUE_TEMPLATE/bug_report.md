@@ -17,8 +17,9 @@ Steps to reproduce the behaviour, please include the situation/environment.
 A clear and concise description of what you expected to happen - if applicable please include a reference to the specification.
 
 **Desktop (please complete the following information):**
- - OS: [e.g. Windows or Linux Version - Include the version e.g. Windows 10 1909]
- - Library Version [e.g. v0.9.1]
+
+- OS: [e.g. Windows or Linux Version - Include the version e.g. Windows 10 1909]
+- Library Version [e.g. v0.9.1]
 
 **Additional context**
 Anything else that is useful including any steps you have already taken to work-around or fix the problem.

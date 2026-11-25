@@ -1,0 +1,25 @@
+# Link checker configuration, used by CI and the prek hooks.
+# Options: https://lychee.cli.rs/config/
+
+# Only check web links. rumdl checks links to files in the repository and
+# their #anchors (MD051, MD057).
+scheme = ["https", "http"]
+
+# Check that #anchors on web pages exist.
+include_fragments = "anchor-only"
+
+# Treat "too many requests" as a pass rather than failing the build.
+accept = ["200..=299", "429"]
+
+max_retries = 3
+timeout = 30
+
+exclude_path = ["target"]
+
+exclude = [
+    # The ANSI webstore rejects automated requests.
+    '^https://webstore\.ansi\.org/',
+    # docs.rs shows the last release, which can lack anchors for sections
+    # added to the crate docs since then.
+    '^https://docs\.rs/sacn/?#',
+]

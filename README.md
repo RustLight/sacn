@@ -14,7 +14,9 @@ Key features:
 ### Prerequisites
 
 * Rust 1.93.1 or later (the crate uses the 2024 edition). Install Rust with [rustup](https://rustup.rs).
+
 * Linux, macOS or Windows. On Windows, IPv6 multicast isn't supported, so an IPv6 receiver there only receives unicast and broadcast.
+
 * A network that carries UDP on port 5568, the sACN port. Allow it through the host firewall.
 
   For multicast, the network must pass IP multicast packets; on managed switches this usually means IGMP snooping with a querier.

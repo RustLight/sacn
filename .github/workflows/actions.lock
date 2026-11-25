@@ -7,6 +7,7 @@ workflows:
         - 'actions/checkout@v4.4.0'
         - 'dorny/paths-filter@v4.0.3'
         - 'github/gh-actions-lock@verify/v0.5.1'
+        - 'lycheeverse/lychee-action@v2.9.0'
 dependencies:
     'actions/checkout@v4.4.0':
         ref: 'v4.4.0'
@@ -23,3 +24,8 @@ dependencies:
         commit: 'sha1-5fa07d19c267d19e29f4341f10fdf7f516375038'
         owner_id: 9919
         repo_id: 1217640442
+    'lycheeverse/lychee-action@v2.9.0':
+        ref: 'v2.9.0'
+        commit: 'sha1-e7477775783ea5526144ba13e8db5eec57747ce8'
+        owner_id: 74027027
+        repo_id: 320929718
