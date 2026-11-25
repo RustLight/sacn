@@ -16,9 +16,21 @@ A Rust implementation of the ANSI E1.31 Streaming ACN protocol, tested against p
 ### Prerequisites
 ## Getting Started
 ## Logging
-The library writes nothing to stdout or stderr. It reports errors from its background threads, such as a failed periodic discovery advert, at the `warn` level through the [`log`](https://crates.io/crates/log) crate, under the `sacn` target. Nothing is shown unless your application installs a logger (for example `env_logger`, or `tracing-subscriber` with `tracing-log`), and you can filter the messages like any other `log` output.
+The library writes nothing to stdout or stderr. With the `logging` feature (on by default) it reports through the [`log`](https://crates.io/crates/log) crate:
 
-The `logging` feature is on by default. To drop the `log` dependency, disable default features (`default-features = false, features = ["std"]`); these errors are then discarded.
+* `warn`: failures that can't be returned to the caller, such as a failed periodic discovery advert or a multicast group that couldn't be left when a receiver is dropped.
+* `debug`: packets and state the library drops without an error, such as data for a universe the receiver isn't listening to, preview data while preview processing is off, held synchronised data that expired, and sources that timed out.
+* `trace`: every sACN packet sent and received.
+
+Messages use the `sacn::source` and `sacn::receive` targets. Nothing is shown unless your application installs a logger, which then decides what is shown. For example, with [`env_logger`](https://crates.io/crates/env_logger):
+
+```sh
+RUST_LOG=sacn=warn ./my-app           # only failures
+RUST_LOG=sacn=debug ./my-app          # also dropped packets and timeouts
+RUST_LOG=sacn::receive=trace ./my-app # every packet the receiver sees
+```
+
+Applications using `tracing` can forward these messages with `tracing-log`'s `LogTracer` and filter them with `EnvFilter` in the same way. To remove the `debug` and `trace` calls from release builds entirely, enable a `log` feature such as `release_max_level_warn` in your application. To drop the `log` dependency, disable sacn's default features (`default-features = false, features = ["std"]`); the messages are then discarded.
 
 ## Compliance
 Compliance with the ANSI E1.31-2018 protocol was tested (April 2020) and the results are shown in 'documentation/ANSI-E1.31-2018-Compliance-Check-List.pdf'.
