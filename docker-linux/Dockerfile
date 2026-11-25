@@ -16,10 +16,10 @@ COPY src/ src/
 # build tests to warm cache
 RUN cargo test --no-run --locked
 
-COPY docker-linux/run_tests.sh run_tests.sh
-RUN chmod +x run_tests.sh
+COPY docker-linux/run_tests.sh docker-linux/run_tests_ipv6.sh ./
+RUN chmod +x run_tests.sh run_tests_ipv6.sh
 
 # RUN cargo test
 
-# default command runs your multicast suite; tweak if needed
+# default command runs the IPv4 multicast suite; run ./run_tests_ipv6.sh for the IPv6 suite
 CMD ["./run_tests.sh"]
