@@ -225,10 +225,12 @@ impl SacnSource {
                 // Stop if the source has been dropped or the mutex was poisoned by a panic elsewhere.
                 while matches!(trd_src.lock().map(|s| s.running), Ok(true)) {
                     thread::sleep(DEFAULT_POLL_PERIOD);
-                    // On error the source keeps running and tries again on the next period. The error is reported through
-                    // the `log` facade so the application decides whether and where it is shown.
+                    // On error the source keeps running and tries again on the next period. With the `tracing` feature the
+                    // error is reported through `tracing`, so the application decides whether and where it is shown.
+                    #[cfg_attr(not(feature = "tracing"), allow(unused_variables))]
                     if let Err(e) = perform_periodic_update(&mut trd_src) {
-                        log::warn!("sACN source periodic update failed: {e:?}");
+                        #[cfg(feature = "tracing")]
+                        tracing::warn!(error = ?e, "sACN source periodic update failed");
                     }
                 }
             })?),
