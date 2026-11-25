@@ -908,3 +908,41 @@ fn test_default_source_does_not_steal_unicast() {
 
     assert_eq!(received, PACKETS, "receiver missed unicast packets");
 }
+
+/// Checks that the TTL / hop limit and multicast loop options can be set and read back for the given source.
+fn check_ttl_and_loop(mut src: SacnSource) {
+    src.set_ttl(7).unwrap();
+    assert_eq!(src.ttl().unwrap(), 7);
+    src.set_multicast_ttl(3).unwrap();
+    assert_eq!(src.multicast_ttl().unwrap(), 3);
+    src.set_multicast_loop(false).unwrap();
+    assert!(!src.multicast_loop().unwrap());
+    src.set_multicast_loop(true).unwrap();
+    assert!(src.multicast_loop().unwrap());
+}
+
+#[test]
+#[serial]
+fn test_ttl_and_multicast_loop_ipv4() {
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
+    check_ttl_and_loop(SacnSource::with_ip("IPv4 source", addr).unwrap());
+}
+
+/// The TTL and loop setters used IPv4-only socket options, so they always failed on an IPv6 source.
+#[test]
+#[serial]
+fn test_ttl_and_multicast_loop_ipv6() {
+    use std::net::Ipv6Addr;
+    let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 0);
+    // Some CI and container environments have no IPv6 stack at all. The IPv6 CI job sets
+    // SACN_REQUIRE_IPV6 so that this test can't silently pass there without running.
+    if let Err(e) = std::net::UdpSocket::bind(addr) {
+        assert!(
+            std::env::var_os("SACN_REQUIRE_IPV6").is_none(),
+            "SACN_REQUIRE_IPV6 is set but IPv6 is unavailable: {e}"
+        );
+        println!("Skipping, IPv6 unavailable: {e}");
+        return;
+    }
+    check_ttl_and_loop(SacnSource::with_ip("IPv6 source", addr).unwrap());
+}

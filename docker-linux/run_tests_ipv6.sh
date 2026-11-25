@@ -25,3 +25,7 @@ ip -6 route show table all
 # Only the IPv6 modules: ipv6_tests.rs also pulls in ipv4_tests as a submodule,
 # whose ignored tests are already covered by the test-linux-ipv4 job.
 cargo test --locked --test ipv6_tests -- --ignored --test-threads=1 sacn_ipv6_
+
+# IPv6 source socket option tests in src_tests.rs; these skip themselves without IPv6
+# unless SACN_REQUIRE_IPV6 is set.
+SACN_REQUIRE_IPV6=1 cargo test --locked --test src_tests ipv6 -- --nocapture
