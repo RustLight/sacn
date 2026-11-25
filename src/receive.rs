@@ -1144,11 +1144,11 @@ impl SacnReceiver {
     /// Goes through all the waiting data and removes any which has timed out as a sync-packet for it hasn't been received within the `E131_NETWORK_DATA_LOSS_TIMEOUT`
     /// period as specified by ANSI E1.31-2018 Section 11.1.2.
     fn check_waiting_data_timeouts(&mut self) {
-        self.waiting_data.retain(|uni, data| {
+        self.waiting_data.retain(|(uni, start_code), data| {
             let keep = data.recv_timestamp.elapsed() < E131_NETWORK_DATA_LOSS_TIMEOUT;
             if !keep {
                 log_debug!(
-                    "Discarding sACN data held for universe {uni}: no sync packet arrived on sync address {}",
+                    "Discarding sACN data held for universe {uni} (start code {start_code:#04x}): no sync packet arrived on sync address {}",
                     data.sync_uni
                 );
             }
