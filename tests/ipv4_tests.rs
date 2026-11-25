@@ -952,6 +952,124 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
 #[test]
 #[ignore]
+fn test_send_recv_across_alternative_startcode_universe_multicast_ipv4(){
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
+
+    let thread_tx = tx.clone();
+
+    const UNIVERSES: [u16; 2] = [2, 3];
+
+    let rcv_thread = thread::spawn(move || {
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT), None).unwrap();
+
+        dmx_recv.listen_universes(&UNIVERSES).unwrap();
+
+        thread_tx.send(Ok(Vec::new())).unwrap(); // Signal that the receiver is ready to receive.
+
+        thread_tx.send(dmx_recv.recv(None)).unwrap(); // Receive the sync packet, the data packets shouldn't have caused .recv to return as forced to wait for sync.
+    });
+
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready.
+
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
+
+    let priority = 100;
+
+    src.register_universes(&UNIVERSES).unwrap();
+
+    src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
+    sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
+    src.send_sync_packet(UNIVERSES[0], None).unwrap();
+
+    let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
+
+    rcv_thread.join().unwrap();
+
+    assert!(!sync_pkt_res.is_err(), "Failed: Error when receiving packets");
+
+    let mut received_data: Vec<DMXData> = sync_pkt_res.unwrap();
+
+    received_data.sort(); // No guarantee on the ordering of the received data so sort it first to allow easier checking.
+
+    assert_eq!(received_data.len(), 2); // Check 2 universes received as expected.
+
+    assert_eq!(received_data[0].universe, 2); // Check that the universe received is as expected.
+
+    assert_eq!(received_data[0].sync_uni, 2); // Check that the sync universe is as expected.
+
+    assert_eq!(received_data[0].values, TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE[..UNIVERSE_CHANNEL_CAPACITY].to_vec(), "Universe 1 received payload values don't match sent!");
+
+    assert_eq!(received_data[1].universe, 3); // Check that the universe received is as expected.
+
+    assert_eq!(received_data[1].sync_uni, 2); // Check that the sync universe is as expected.
+
+    assert_eq!(received_data[1].values, TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE[UNIVERSE_CHANNEL_CAPACITY..].to_vec(), "Universe 2 received payload values don't match sent!");
+}
+
+/// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
+/// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
+#[test]
+#[ignore]
+fn test_send_recv_full_capacity_across_universe_multicast_ipv4(){
+    let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
+
+    let thread_tx = tx.clone();
+
+    const UNIVERSES: [u16; 2] = [2, 3];
+
+    let rcv_thread = thread::spawn(move || {
+        let mut dmx_recv = SacnReceiver::with_ip(SocketAddr::new(Ipv4Addr::new(0,0,0,0).into(), ACN_SDT_MULTICAST_PORT), None).unwrap();
+
+        dmx_recv.listen_universes(&UNIVERSES).unwrap();
+
+        thread_tx.send(Ok(Vec::new())).unwrap(); // Signal that the receiver is ready to receive.
+
+        thread_tx.send(dmx_recv.recv(None)).unwrap(); // Receive the sync packet, the data packets shouldn't have caused .recv to return as forced to wait for sync.
+    });
+
+    let _ = rx.recv().unwrap(); // Blocks until the receiver says it is ready.
+
+    let ip: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), ACN_SDT_MULTICAST_PORT + 1);
+    let mut src = SacnSource::with_ip("Source", ip).unwrap();
+
+    let priority = 100;
+
+    src.register_universes(&UNIVERSES).unwrap();
+
+    src.send(&UNIVERSES, &TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
+    sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
+    src.send_sync_packet(UNIVERSES[0], None).unwrap();
+
+    let sync_pkt_res: Result<Vec<DMXData>> = rx.recv().unwrap();
+
+    rcv_thread.join().unwrap();
+
+    assert!(!sync_pkt_res.is_err(), "Failed: Error when receiving packets");
+
+    let mut received_data: Vec<DMXData> = sync_pkt_res.unwrap();
+
+    received_data.sort(); // No guarantee on the ordering of the received data so sort it first to allow easier checking.
+
+    assert_eq!(received_data.len(), 2); // Check 2 universes received as expected.
+
+    assert_eq!(received_data[0].universe, 2); // Check that the universe received is as expected.
+
+    assert_eq!(received_data[0].sync_uni, 2); // Check that the sync universe is as expected.
+
+    assert_eq!(received_data[0].values, TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE[..UNIVERSE_CHANNEL_CAPACITY].to_vec(), "Universe 1 received payload values don't match sent!");
+
+    assert_eq!(received_data[1].universe, 3); // Check that the universe received is as expected.
+
+    assert_eq!(received_data[1].sync_uni, 2); // Check that the sync universe is as expected.
+
+    assert_eq!(received_data[1].values, TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE[UNIVERSE_CHANNEL_CAPACITY..].to_vec(), "Universe 2 received payload values don't match sent!");
+}
+
+/// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
+/// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
+#[test]
+#[ignore]
 fn test_send_recv_across_universe_unicast_ipv4(){
     let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) = mpsc::channel();
 
