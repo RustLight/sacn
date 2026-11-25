@@ -101,6 +101,10 @@ pub const E131_MIN_MULTICAST_UNIVERSE: u16 = 1;
 /// As defined in ANSI E1.31-2018 Section 6.2.4.1
 pub const E131_NO_SYNC_ADDR: u16 = 0;
 
+/// The DMX512-A Null START Code, the first property value of a data packet carrying ordinary dimmer levels.
+/// As defined in ANSI E1.11 Section 8.5.1 and used by ANSI E1.31-2016 Section 6.6.
+pub const E131_NULL_START_CODE: u8 = 0x00;
+
 /// The interval between universe discovery packets (adverts) as defined by ANSI E1.31-2018 Appendix A.
 pub const E131_UNIVERSE_DISCOVERY_INTERVAL: Duration = time::Duration::from_secs(10);
 
@@ -326,7 +330,8 @@ pub const E131_NETWORK_DATA_LOSS_TIMEOUT: Duration = Duration::from_millis(2500)
 /// Sources send universe discovery packets every `E131_UNIVERSE_DISCOVERY_INTERVAL` (10 seconds, ANSI E1.31-2016 Appendix A),
 /// so this must be longer than that interval or discovered sources expire between adverts. The standard doesn't define a
 /// receiver timeout, so two intervals are used: a source is only treated as lost after missing a whole advert.
-pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration = Duration::from_secs(2 * E131_UNIVERSE_DISCOVERY_INTERVAL.as_secs());
+pub const UNIVERSE_DISCOVERY_SOURCE_TIMEOUT: Duration =
+    Duration::from_secs(2 * E131_UNIVERSE_DISCOVERY_INTERVAL.as_secs());
 
 /// Converts the given ANSI E1.31-2018 universe into an Ipv4 multicast address with the port set to the acn multicast port as defined
 /// in `packet::ACN_SDT_MULTICAST_PORT`.
