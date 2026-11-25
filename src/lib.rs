@@ -97,6 +97,7 @@
 //! - Don't send a universe faster than the DMX512-A refresh rate (about 44 updates per second).
 //! - When the data stops changing, send it three more times, then resend the last data every 800 to 1000 ms.
 //!   Otherwise receivers decide the source has gone after [`packet::E131_NETWORK_DATA_LOSS_TIMEOUT`] (2.5 s).
+//!   Only Null START Code data counts: alternate START Code packets such as 0xDD don't keep a universe alive.
 //!
 //! A simple way to do this is to give the source its own thread. The rest of the application sends it each new frame
 //! over a channel, and the thread handles the timing. `SacnSource` is blocking and doesn't need an async runtime; in
@@ -329,12 +330,13 @@
 //! | --- | --- |
 //! | [`set_announce_source_discovery`](receive::SacnReceiver::set_announce_source_discovery) | [`SacnError::SourceDiscovered`](error::errors::SacnError::SourceDiscovered) when a source is first discovered (or returns after timing out), and again when its name or universe list changes. Periodic adverts that change nothing don't raise it. |
 //! | [`set_announce_stream_termination`](receive::SacnReceiver::set_announce_stream_termination) | [`SacnError::UniverseTerminated`](error::errors::SacnError::UniverseTerminated) when a source terminates a universe. |
-//! | [`set_announce_timeout`](receive::SacnReceiver::set_announce_timeout) | [`SacnError::UniverseTimeout`](error::errors::SacnError::UniverseTimeout) when a source stops sending a universe for longer than [`packet::E131_NETWORK_DATA_LOSS_TIMEOUT`]. |
+//! | [`set_announce_timeout`](receive::SacnReceiver::set_announce_timeout) | [`SacnError::UniverseTimeout`](error::errors::SacnError::UniverseTimeout) when a source stops sending Null START Code data on a universe for longer than [`packet::E131_NETWORK_DATA_LOSS_TIMEOUT`]. |
 //!
 //! These errors don't stop the receiver: keep calling `recv`.
 //!
 //! Preview data (for visualisers, not live output) is ignored unless you call
-//! [`set_process_preview_data(true)`](receive::SacnReceiver::set_process_preview_data).
+//! [`set_process_preview_data(true)`](receive::SacnReceiver::set_process_preview_data). A stream termination packet
+//! ends the universe even when it is marked as preview.
 //!
 //! ### Discovering sources
 //!

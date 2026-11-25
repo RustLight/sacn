@@ -757,15 +757,8 @@ impl SacnReceiver {
         cid: Uuid,
         data_pkt: DataPacketFramingLayer<'_>,
     ) -> Result<Option<Vec<DMXData>>> {
-        if data_pkt.preview_data && !self.process_preview_data {
-            // Don't process preview data unless receiver has process_preview_data flag set.
-            log_debug!(
-                "Ignoring sACN preview data from {cid} on universe {} because preview data processing is off",
-                data_pkt.universe
-            );
-            return Ok(None);
-        }
-
+        // Termination is handled before the preview filter: as per ANSI E1.31-2016 Section 6.2.6 a packet with Stream_Terminated set
+        // ends the stream whatever its other options are, so a terminating source that also marks its data as preview still terminates.
         if data_pkt.stream_terminated {
             log_debug!(
                 "sACN source {cid} terminated universe {}",
@@ -775,6 +768,15 @@ impl SacnReceiver {
             if self.announce_stream_termination {
                 return Err(SacnError::UniverseTerminated(cid, data_pkt.universe));
             }
+            return Ok(None);
+        }
+
+        if data_pkt.preview_data && !self.process_preview_data {
+            // Don't process preview data unless receiver has process_preview_data flag set.
+            log_debug!(
+                "Ignoring sACN preview data from {cid} on universe {} because preview data processing is off",
+                data_pkt.universe
+            );
             return Ok(None);
         }
 
@@ -791,12 +793,18 @@ impl SacnReceiver {
         // This is as per ANSI E1.31-2018 Section 6.2.6, Stream_Terminated: Bit 6, 'Any property values
         // in an E1.31 Data Packet containing this bit shall be ignored'
 
+        // Only Null START Code data keeps a source alive. Sources must send Null START Code keep-alives at least every second
+        // (ANSI E1.31-2016 Section 6.6.2) while alternate START Codes such as 0xDD per-address priority carry no levels, so a
+        // source that only sends alternate START Code data has lost its data and times out.
+        let null_start_code = data_pkt.data.property_values.first() == Some(&E131_NULL_START_CODE);
+
         self.sequences.check_data_seq_number(
             self.source_limit,
             cid,
             data_pkt.sequence_number,
             data_pkt.universe,
             self.announce_timeout,
+            null_start_code,
         )?;
 
         // As per ANSI E1.31-2016 Section 11.1.1 a receiver begins synchronising on receipt of the first synchronisation packet,
@@ -1995,6 +2003,7 @@ impl SequenceNumbering {
         sequence_number: u8,
         universe: u16,
         announce_timeout: bool,
+        null_start_code: bool,
     ) -> Result<()> {
         check_seq_number(
             &mut self.data_sequences,
@@ -2003,6 +2012,7 @@ impl SequenceNumbering {
             sequence_number,
             universe,
             announce_timeout,
+            null_start_code,
         )
     }
 
@@ -2040,6 +2050,7 @@ impl SequenceNumbering {
             sequence_number,
             sync_uni,
             announce_timeout,
+            true,
         )
     }
 
@@ -2068,6 +2079,10 @@ impl SequenceNumbering {
 /// cid:    The Uuid of the source that send the packet.
 /// `sequence_number`: The sequence number of the packet to check.
 /// universe: The universe of the packet (this is the data universe for data packets and the sync universe for synchronisation packets).
+/// `refresh_timeout`: True if the packet keeps the source / universe alive (Null START Code data and synchronisation packets). Otherwise
+///                 (alternate START Code data) the sequence number is still checked and updated, but the data loss timer of a live
+///                 source / universe isn't reset. A new or timed out source / universe is tracked as usual, so a source sending only
+///                 alternate START Code data times out E131_NETWORK_DATA_LOSS_TIMEOUT after it starts.
 ///
 /// # Errors
 /// Returns an `OutOfSequence` error if a packet is received out of order as detected by the different between
@@ -2081,6 +2096,7 @@ fn check_seq_number(
     sequence_number: u8,
     universe: u16,
     announce_timeout: bool,
+    refresh_timeout: bool,
 ) -> Result<()> {
     // Remove timed out sources/universes before checking this packet.
     // This is done for all sources/universes rather than just the source that sent the packet because a completely dead (no packets being sent) universe
@@ -2148,11 +2164,14 @@ fn check_seq_number(
 
     match src_sequences.get_mut(&cid) {
         Some(src) => {
-            // Replace the old sequence number with the new and reset the timeout.
-            src.insert(
-                universe,
-                TimedStampedSeqNo::new(sequence_number, Instant::now()),
-            );
+            // Replace the old sequence number with the new and reset the timeout, unless this packet doesn't keep the
+            // universe alive in which case a live universe keeps its timer (a new or timed out universe starts one).
+            let last_recv = if refresh_timeout {
+                Instant::now()
+            } else {
+                expected_seq.last_recv
+            };
+            src.insert(universe, TimedStampedSeqNo::new(sequence_number, last_recv));
         }
         None => {
             // See previous node regarding panic previously in this method.
@@ -2403,27 +2422,6 @@ mod test {
 
     use uuid::Uuid;
 
-    const TEST_DATA_SINGLE_UNIVERSE: [u8; 512] = [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-        16, 17, 18, 19, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 2, 3, 4,
-        5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-        19, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 1, 2, 3, 4, 5, 6, 7, 8,
-        9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 100, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-    ];
-
     #[test]
     fn test_handle_single_page_discovery_packet() {
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
@@ -2529,7 +2527,11 @@ mod test {
         assert!(dmx_rcv.get_discovered_sources().is_empty());
     }
 
-    fn discovery_page(page: u8, last_page: u8, universes: &[u16]) -> UniverseDiscoveryPacketFramingLayer<'static> {
+    fn discovery_page(
+        page: u8,
+        last_page: u8,
+        universes: &[u16],
+    ) -> UniverseDiscoveryPacketFramingLayer<'static> {
         UniverseDiscoveryPacketFramingLayer {
             source_name: "Test Src".into(),
             data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
@@ -2549,9 +2551,17 @@ mod test {
         let cid = Uuid::new_v4();
 
         // First interval: page 0 arrives, page 1 is lost.
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 1, &[1, 2])).is_none());
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(0, 1, &[1, 2]))
+                .is_none()
+        );
         // Second interval: both pages arrive.
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 1, &[1, 2])).is_none());
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(0, 1, &[1, 2]))
+                .is_none()
+        );
         assert_eq!(
             dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(1, 1, &[3, 4])),
             Some("Test Src".to_string())
@@ -2559,7 +2569,10 @@ mod test {
 
         assert!(dmx_rcv.partially_discovered_sources.is_empty());
         assert_eq!(dmx_rcv.discovered_sources.len(), 1);
-        assert_eq!(dmx_rcv.discovered_sources[0].get_all_universes(), vec![1, 2, 3, 4]);
+        assert_eq!(
+            dmx_rcv.discovered_sources[0].get_all_universes(),
+            vec![1, 2, 3, 4]
+        );
     }
 
     /// If the number of pages changes between intervals, pages from the older set are discarded.
@@ -2570,12 +2583,27 @@ mod test {
         let cid = Uuid::new_v4();
 
         // Page 1 of a 3 page set arrives, then the source drops to 2 pages.
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(1, 2, &[9])).is_none());
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 1, &[1, 2])).is_none());
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(1, 1, &[3, 4])).is_some());
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(1, 2, &[9]))
+                .is_none()
+        );
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(0, 1, &[1, 2]))
+                .is_none()
+        );
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(1, 1, &[3, 4]))
+                .is_some()
+        );
 
         assert_eq!(dmx_rcv.discovered_sources[0].last_page, 1);
-        assert_eq!(dmx_rcv.discovered_sources[0].get_all_universes(), vec![1, 2, 3, 4]);
+        assert_eq!(
+            dmx_rcv.discovered_sources[0].get_all_universes(),
+            vec![1, 2, 3, 4]
+        );
     }
 
     /// Sources re-advertise every `E131_UNIVERSE_DISCOVERY_INTERVAL`. Only the first advert, and adverts that change the
@@ -2591,13 +2619,25 @@ mod test {
             dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2])),
             Some("Test Src".to_string())
         );
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2])).is_none());
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2]))
+                .is_none()
+        );
         // The repeat still refreshes the record so the source doesn't time out.
         assert_eq!(dmx_rcv.discovered_sources.len(), 1);
 
         // A changed universe list is reported again.
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2, 3])).is_some());
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2, 3])).is_none());
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2, 3]))
+                .is_some()
+        );
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2, 3]))
+                .is_none()
+        );
 
         // A changed name is reported again.
         let mut renamed = discovery_page(0, 0, &[1, 2, 3]);
@@ -2609,15 +2649,39 @@ mod test {
 
         // Multi page source: the second full set of identical pages isn't reported.
         let cid2 = Uuid::new_v4();
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(0, 1, &[1, 2])).is_none());
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(1, 1, &[3, 4])).is_some());
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(0, 1, &[1, 2])).is_none());
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(1, 1, &[3, 4])).is_none());
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid2, discovery_page(0, 1, &[1, 2]))
+                .is_none()
+        );
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid2, discovery_page(1, 1, &[3, 4]))
+                .is_some()
+        );
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid2, discovery_page(0, 1, &[1, 2]))
+                .is_none()
+        );
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid2, discovery_page(1, 1, &[3, 4]))
+                .is_none()
+        );
         assert!(dmx_rcv.partially_discovered_sources.is_empty());
 
         // Changing a page's universes is reported once the set is complete.
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(0, 1, &[1, 2])).is_none());
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(1, 1, &[3, 5])).is_some());
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid2, discovery_page(0, 1, &[1, 2]))
+                .is_none()
+        );
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid2, discovery_page(1, 1, &[3, 5]))
+                .is_some()
+        );
         assert_eq!(dmx_rcv.discovered_sources.len(), 2);
     }
 
@@ -2628,16 +2692,28 @@ mod test {
         let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
         let cid = Uuid::new_v4();
 
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1])).is_some());
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1]))
+                .is_some()
+        );
         dmx_rcv.discovered_sources[0].last_updated =
             Instant::now() - UNIVERSE_DISCOVERY_SOURCE_TIMEOUT - Duration::from_millis(100);
         assert!(dmx_rcv.get_discovered_sources().is_empty());
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1])).is_some());
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1]))
+                .is_some()
+        );
 
         // Also when the expired record hasn't been pruned by get_discovered_sources() yet.
         dmx_rcv.discovered_sources[0].last_updated =
             Instant::now() - UNIVERSE_DISCOVERY_SOURCE_TIMEOUT - Duration::from_millis(100);
-        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1])).is_some());
+        assert!(
+            dmx_rcv
+                .handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1]))
+                .is_some()
+        );
         assert_eq!(dmx_rcv.discovered_sources.len(), 1);
     }
 
@@ -2687,15 +2763,19 @@ mod test {
         let cid = Uuid::new_v4();
 
         // Synchronisation starts with the first synchronisation packet.
-        assert!(dmx_rcv
-            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
-            .unwrap()
-            .is_none());
+        assert!(
+            dmx_rcv
+                .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
+                .unwrap()
+                .is_none()
+        );
 
-        assert!(dmx_rcv
-            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 0, true))
-            .unwrap()
-            .is_none());
+        assert!(
+            dmx_rcv
+                .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 0, true))
+                .unwrap()
+                .is_none()
+        );
 
         let res = dmx_rcv
             .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 1))
@@ -2725,19 +2805,25 @@ mod test {
         );
 
         // Force_Synchronization unset: hold the data.
-        assert!(dmx_rcv
-            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 0, false))
-            .unwrap()
-            .is_none());
-        assert!(dmx_rcv
-            .waiting_data
-            .contains_key(&(UNIVERSE, TEST_DATA_SINGLE_UNIVERSE[0])));
+        assert!(
+            dmx_rcv
+                .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 0, false))
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            dmx_rcv
+                .waiting_data
+                .contains_key(&(UNIVERSE, E131_NULL_START_CODE))
+        );
 
         // Force_Synchronization set: process the data now, replacing the held data.
         let res = dmx_rcv
             .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 1, true))
             .unwrap()
-            .expect("data with Force_Synchronization should be passed up once synchronisation is lost");
+            .expect(
+                "data with Force_Synchronization should be passed up once synchronisation is lost",
+            );
         assert_eq!(res[0].universe, UNIVERSE);
         assert!(dmx_rcv.waiting_data.is_empty());
     }
@@ -3214,10 +3300,13 @@ mod test {
             force_synchronization: false,
             universe: universe,
             data: DataPacketDmpLayer {
-                property_values: Cow::from(&TEST_DATA_SINGLE_UNIVERSE[0..]),
+                property_values: Cow::from(&TEST_NULL_START_CODE_DATA[0..]),
             },
         }
     }
+
+    /// Test data with a Null START Code, so that it keeps its source alive like ordinary DMX levels.
+    const TEST_NULL_START_CODE_DATA: [u8; 4] = [E131_NULL_START_CODE, 1, 2, 3];
 
     /// Generates a sync packet framing layer with arbitrary values except for the sequence number which is set to the given value.
     /// This is used for tests targeted at checking sequence number behaviour that don't care about other fields.
@@ -4066,10 +4155,16 @@ mod test {
         let live = Uuid::new_v4();
         let dead = Uuid::new_v4();
         let expired = Instant::now() - E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(100);
-        seqs.insert(live, HashMap::from([(1, TimedStampedSeqNo::new(10, Instant::now()))]));
-        seqs.insert(dead, HashMap::from([(1, TimedStampedSeqNo::new(10, expired))]));
+        seqs.insert(
+            live,
+            HashMap::from([(1, TimedStampedSeqNo::new(10, Instant::now()))]),
+        );
+        seqs.insert(
+            dead,
+            HashMap::from([(1, TimedStampedSeqNo::new(10, expired))]),
+        );
 
-        let res = check_seq_number(&mut seqs, None, live, 11, 1, true);
+        let res = check_seq_number(&mut seqs, None, live, 11, 1, true, true);
         assert!(res.is_ok(), "in-sequence packet was rejected: {res:?}");
         assert_eq!(seqs[&live][&1].sequence_number, 11);
 
@@ -4084,10 +4179,13 @@ mod test {
         let mut seqs: HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>> = HashMap::new();
         let src = Uuid::new_v4();
         let expired = Instant::now() - E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(100);
-        seqs.insert(src, HashMap::from([(1, TimedStampedSeqNo::new(10, expired))]));
+        seqs.insert(
+            src,
+            HashMap::from([(1, TimedStampedSeqNo::new(10, expired))]),
+        );
 
         // Sequence 5 is within the discard window relative to 10, but the old entry has timed out.
-        let res = check_seq_number(&mut seqs, None, src, 5, 1, true);
+        let res = check_seq_number(&mut seqs, None, src, 5, 1, true, true);
         assert!(res.is_ok(), "packet after timeout was rejected: {res:?}");
         assert_eq!(seqs[&src][&1].sequence_number, 5);
     }
@@ -4165,7 +4263,10 @@ mod test {
         let res = rcv
             .handle_sync_packet(src, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
             .unwrap();
-        assert!(res.is_none(), "sync packet on a forgotten universe was acted on");
+        assert!(
+            res.is_none(),
+            "sync packet on a forgotten universe was acted on"
+        );
 
         // Naming it again joins it again without error.
         rcv.handle_data_packet(src, sync_data_packet(DATA_UNI, SYNC_UNI, 1))
@@ -4205,5 +4306,169 @@ mod test {
         #[cfg(not(target_os = "windows"))]
         assert!(rcv.receiver.mute_multicast_universe(SYNC_UNI).is_err());
     }
-}
 
+    /// A data packet like `generate_data_packet_framing_layer_seq_num` but with the given START code.
+    fn start_code_data_packet<'a>(
+        universe: u16,
+        seq: u8,
+        start_code: u8,
+    ) -> DataPacketFramingLayer<'a> {
+        let mut pkt = generate_data_packet_framing_layer_seq_num(universe, seq);
+        let mut vals = TEST_NULL_START_CODE_DATA.to_vec();
+        vals[0] = start_code;
+        pkt.data.property_values = Cow::from(vals);
+        pkt
+    }
+
+    /// A termination packet that is also marked as preview data still terminates the stream when preview data is ignored.
+    #[test]
+    fn test_preview_termination_packet_terminates_when_ignoring_preview() {
+        const UNIVERSE: u16 = 1;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        rcv.listen_universes(&[UNIVERSE]).unwrap();
+        rcv.set_process_preview_data(false);
+        rcv.set_announce_stream_termination(true);
+        let src = Uuid::new_v4();
+
+        rcv.handle_data_packet(src, generate_data_packet_framing_layer_seq_num(UNIVERSE, 0))
+            .unwrap();
+        assert!(rcv.sequences.data_sequences[&src].contains_key(&UNIVERSE));
+
+        let mut term = generate_data_packet_framing_layer_seq_num(UNIVERSE, 1);
+        term.preview_data = true;
+        term.stream_terminated = true;
+        match rcv.handle_data_packet(src, term) {
+            Err(SacnError::UniverseTerminated(cid, uni)) => {
+                assert_eq!(cid, src);
+                assert_eq!(uni, UNIVERSE);
+            }
+            other => panic!("expected UniverseTerminated, got {other:?}"),
+        }
+        assert!(
+            rcv.sequences
+                .data_sequences
+                .get(&src)
+                .is_none_or(|unis| !unis.contains_key(&UNIVERSE)),
+            "terminated universe is still tracked"
+        );
+    }
+
+    /// Ordinary preview data is still ignored when the receiver doesn't process preview data.
+    #[test]
+    fn test_preview_data_ignored_when_not_processing_preview() {
+        const UNIVERSE: u16 = 1;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        rcv.listen_universes(&[UNIVERSE]).unwrap();
+        rcv.set_process_preview_data(false);
+        let src = Uuid::new_v4();
+
+        let mut pkt = generate_data_packet_framing_layer_seq_num(UNIVERSE, 0);
+        pkt.preview_data = true;
+        assert!(rcv.handle_data_packet(src, pkt).unwrap().is_none());
+        assert!(!rcv.sequences.data_sequences.contains_key(&src));
+    }
+
+    /// Alternate START Code data updates the sequence number of a live stream but doesn't reset its data loss timer.
+    #[test]
+    fn test_alternate_start_code_does_not_refresh_timeout() {
+        let mut seqs: HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>> = HashMap::new();
+        let src = Uuid::new_v4();
+        let last_null = Instant::now() - Duration::from_secs(2);
+        seqs.insert(
+            src,
+            HashMap::from([(1, TimedStampedSeqNo::new(10, last_null))]),
+        );
+
+        let res = check_seq_number(&mut seqs, None, src, 11, 1, false, false);
+        assert!(res.is_ok(), "in-sequence 0xDD packet was rejected: {res:?}");
+        assert_eq!(seqs[&src][&1].sequence_number, 11);
+        assert_eq!(
+            seqs[&src][&1].last_recv, last_null,
+            "0xDD packet reset the data loss timer"
+        );
+
+        // The sequence check still applies to alternate START Code packets on a live stream.
+        assert!(matches!(
+            check_seq_number(&mut seqs, None, src, 9, 1, false, false),
+            Err(SacnError::OutOfSequence(..))
+        ));
+
+        // Null START Code data resets the timer.
+        check_seq_number(&mut seqs, None, src, 12, 1, false, true).unwrap();
+        assert!(seqs[&src][&1].last_recv > last_null);
+    }
+
+    /// Alternate START Code data from a new or timed out source starts a data loss timer, so that it can time out.
+    #[test]
+    fn test_alternate_start_code_new_source_starts_timer() {
+        let mut seqs: HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>> = HashMap::new();
+        let new_src = Uuid::new_v4();
+        let before = Instant::now();
+        assert!(check_seq_number(&mut seqs, None, new_src, 0, 1, true, false).is_ok());
+        assert!(seqs[&new_src][&1].last_recv >= before);
+
+        let dead = Uuid::new_v4();
+        let expired = Instant::now() - E131_NETWORK_DATA_LOSS_TIMEOUT - Duration::from_millis(100);
+        seqs.insert(
+            dead,
+            HashMap::from([(1, TimedStampedSeqNo::new(10, expired))]),
+        );
+        assert!(check_seq_number(&mut seqs, None, dead, 5, 1, true, false).is_ok());
+        assert_eq!(seqs[&dead][&1].sequence_number, 5);
+        assert!(seqs[&dead][&1].last_recv > expired);
+    }
+
+    /// The source limit still applies to alternate START Code data from a new source.
+    #[test]
+    fn test_alternate_start_code_respects_source_limit() {
+        let mut seqs: HashMap<Uuid, HashMap<u16, TimedStampedSeqNo>> = HashMap::new();
+        seqs.insert(
+            Uuid::new_v4(),
+            HashMap::from([(1, TimedStampedSeqNo::new(0, Instant::now()))]),
+        );
+        assert!(matches!(
+            check_seq_number(&mut seqs, Some(1), Uuid::new_v4(), 0, 1, true, false),
+            Err(SacnError::SourcesExceededError(1))
+        ));
+    }
+
+    /// A source sending only 0xDD per-address priority data times out even though its packets keep arriving.
+    #[test]
+    fn test_receiver_alternate_start_code_only_source_times_out() {
+        const UNIVERSE: u16 = 1;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        rcv.listen_universes(&[UNIVERSE]).unwrap();
+        rcv.set_announce_timeout(true);
+        let src = Uuid::new_v4();
+
+        rcv.handle_data_packet(
+            src,
+            start_code_data_packet(UNIVERSE, 0, E131_NULL_START_CODE),
+        )
+        .unwrap();
+        // Age the Null START Code stream to just short of the data loss timeout.
+        let expired = Instant::now() - E131_NETWORK_DATA_LOSS_TIMEOUT + Duration::from_millis(50);
+        rcv.sequences
+            .data_sequences
+            .get_mut(&src)
+            .unwrap()
+            .get_mut(&UNIVERSE)
+            .unwrap()
+            .last_recv = expired;
+
+        // 0xDD data is still delivered, but doesn't keep the source alive.
+        let data = rcv
+            .handle_data_packet(src, start_code_data_packet(UNIVERSE, 1, 0xDD))
+            .unwrap()
+            .unwrap();
+        assert_eq!(data[0].values[0], 0xDD);
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(matches!(
+            rcv.sequences.check_timeouts(true),
+            Err(SacnError::UniverseTimeout(cid, UNIVERSE)) if cid == src
+        ));
+    }
+}
