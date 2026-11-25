@@ -22,6 +22,7 @@ exclude = [
 [dependencies]
 byteorder = { version = "1.5.0", features = [] }
 libc = { version = "0.2.171" }
+log = "0.4.20"
 socket2 = { version = "0.6.1", features = ["all"] }
 thiserror = "2.0.0"
 uuid = { version = "1.12", features = ["v4"] }

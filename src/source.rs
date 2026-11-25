@@ -225,11 +225,10 @@ impl SacnSource {
                 // Stop if the source has been dropped or the mutex was poisoned by a panic elsewhere.
                 while matches!(trd_src.lock().map(|s| s.running), Ok(true)) {
                     thread::sleep(DEFAULT_POLL_PERIOD);
+                    // On error the source keeps running and tries again on the next period. The error is reported through
+                    // the `log` facade so the application decides whether and where it is shown.
                     if let Err(e) = perform_periodic_update(&mut trd_src) {
-                        println!("Periodic error: {e:?}");
-                    } else {
-                        // In-case of an error on the discovery thread the source continues to operate and tries again.
-                        // As no unsafe code blocks are used the rust compiler guarantees this is memory safe.
+                        log::warn!("sACN source periodic update failed: {e:?}");
                     }
                 }
             })?),

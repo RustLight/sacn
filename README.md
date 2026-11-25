@@ -15,6 +15,9 @@ A Rust implementation of the ANSI E1.31 Streaming ACN protocol, tested against p
 ## INSTALLATION
 ### Prerequisites
 ## Getting Started
+## Logging
+The library writes nothing to stdout or stderr. It reports errors from its background threads, such as a failed periodic discovery advert, through the [`log`](https://crates.io/crates/log) facade at the `warn` level, under the `sacn` target. Nothing is emitted unless your application installs a logger (for example `env_logger`, or `tracing-subscriber` with `tracing-log`), and you can filter it like any other `log` output.
+
 ## Compliance
 Compliance with the ANSI E1.31-2018 protocol was tested (April 2020) and the results are shown in 'documentation/ANSI-E1.31-2018-Compliance-Check-List.pdf'.
 
