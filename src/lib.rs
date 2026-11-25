@@ -261,7 +261,9 @@
 //! Create a [`SacnReceiver`](receive::SacnReceiver), tell it which universes to listen to, then call
 //! [`recv`](receive::SacnReceiver::recv) in a loop. `recv` returns a `Vec` of [`DMXData`](receive::DMXData), one per
 //! universe that is ready to act on. Unsynchronised data is returned as soon as it arrives. Synchronised data is held
-//! until its synchronisation packet arrives, then all the universes waiting on it are returned together.
+//! until its synchronisation packet arrives, then all the universes waiting on it are returned together. Data is held
+//! separately for each START code, so a universe whose source also sends per-address priority (START code `0xDD`)
+//! is returned twice: once with its levels and once with its priorities.
 //!
 //! ```
 //! use sacn::error::errors::SacnError;
@@ -310,7 +312,7 @@
 //! For unsynchronised data, `recv` returns each source's data as it arrives, with its priority and source CID. Your
 //! application decides which to use: normally the highest priority wins, and sources with the same priority are
 //! merged, for example with [`htp_dmx_merge`](receive::htp_dmx_merge) (highest takes precedence). For data held for
-//! synchronisation the receiver merges it for you with the function set by
+//! synchronisation the receiver merges data for the same universe and START code for you with the function set by
 //! [`set_merge_fn`](receive::SacnReceiver::set_merge_fn), which by default keeps the highest priority and then the
 //! most recent data.
 //!
