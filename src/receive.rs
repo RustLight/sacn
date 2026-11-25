@@ -594,7 +594,7 @@ impl SacnReceiver {
                     let data = pdu.data;
                     match &data {
                         DataPacket(d) => log_trace!(
-                            "Received data packet from {}: universe {}, sequence {}, priority {}, sync address {}, {} bytes",
+                            "Received sACN data packet from {}: universe {}, sequence {}, priority {}, sync address {}, {} bytes",
                             pdu.cid,
                             d.universe,
                             d.sequence_number,
@@ -603,13 +603,13 @@ impl SacnReceiver {
                             d.data.property_values.len()
                         ),
                         SynchronizationPacket(s) => log_trace!(
-                            "Received sync packet from {}: sync address {}, sequence {}",
+                            "Received sACN sync packet from {}: sync address {}, sequence {}",
                             pdu.cid,
                             s.synchronization_address,
                             s.sequence_number
                         ),
                         UniverseDiscoveryPacket(u) => log_trace!(
-                            "Received universe discovery page {} of {} from {}",
+                            "Received sACN universe discovery page {} of {} from {}",
                             u.data.page,
                             u.data.last_page,
                             pdu.cid
@@ -754,14 +754,17 @@ impl SacnReceiver {
         if data_pkt.preview_data && !self.process_preview_data {
             // Don't process preview data unless receiver has process_preview_data flag set.
             log_debug!(
-                "Ignoring preview data from {cid} on universe {} because preview data processing is off",
+                "Ignoring sACN preview data from {cid} on universe {} because preview data processing is off",
                 data_pkt.universe
             );
             return Ok(None);
         }
 
         if data_pkt.stream_terminated {
-            log_debug!("Source {cid} terminated universe {}", data_pkt.universe);
+            log_debug!(
+                "sACN source {cid} terminated universe {}",
+                data_pkt.universe
+            );
             self.terminate_stream(cid, data_pkt.universe);
             if self.announce_stream_termination {
                 return Err(SacnError::UniverseTerminated(cid, data_pkt.universe));
@@ -772,7 +775,7 @@ impl SacnReceiver {
         if !self.is_listening(&data_pkt.universe) {
             // If not listening for this universe then ignore the packet.
             log_debug!(
-                "Ignoring data from {cid} on universe {}, which this receiver isn't listening to",
+                "Ignoring sACN data from {cid} on universe {}, which this receiver isn't listening to",
                 data_pkt.universe
             );
             return Ok(None);
@@ -920,7 +923,7 @@ impl SacnReceiver {
         {
             // If not listening for this universe then ignore the packet.
             log_debug!(
-                "Ignoring sync packet from {cid} on sync address {}, which this receiver isn't tracking",
+                "Ignoring sACN sync packet from {cid} on sync address {}, which this receiver isn't tracking",
                 sync_pkt.synchronization_address
             );
             return Ok(None);
@@ -1022,7 +1025,7 @@ impl SacnReceiver {
             if partial.last_page != last_page {
                 // The source's universe list has changed size since the earlier pages were sent, so they are stale.
                 log_debug!(
-                    "Discarding {} universe discovery pages from {cid}: its page count changed from {} to {last_page}",
+                    "Discarding {} sACN universe discovery pages from {cid}: its page count changed from {} to {last_page}",
                     partial.pages.len(),
                     partial.last_page + 1,
                     last_page = last_page + 1
@@ -1095,13 +1098,13 @@ impl SacnReceiver {
 
         for u in expired {
             self.sync_universes.remove(&u);
-            log_debug!("No data has named sync address {u} recently; no longer tracking it");
+            log_debug!("No sACN data has named sync address {u} recently; no longer tracking it");
             if !self.is_listening(&u)
                 && self.is_multicast_enabled()
                 && let Err(e) = self.receiver.mute_multicast_universe(u)
             {
                 // Nothing more can be done if leaving fails; the membership ends when the socket closes.
-                log_warn!("Failed to leave the multicast group of sync address {u}: {e:?}");
+                log_warn!("Failed to leave the sACN multicast group of sync address {u}: {e:?}");
             }
         }
     }
@@ -1121,7 +1124,7 @@ impl SacnReceiver {
             let keep = data.recv_timestamp.elapsed() < E131_NETWORK_DATA_LOSS_TIMEOUT;
             if !keep {
                 log_debug!(
-                    "Discarding data held for universe {uni}: no sync packet arrived on sync address {}",
+                    "Discarding sACN data held for universe {uni}: no sync packet arrived on sync address {}",
                     data.sync_uni
                 );
             }
@@ -1136,7 +1139,7 @@ impl SacnReceiver {
         self.discovered_sources.retain(|s| {
             let keep = s.last_updated.elapsed() < UNIVERSE_DISCOVERY_SOURCE_TIMEOUT;
             if !keep {
-                log_debug!("Discovered source {} ({}) timed out", s.name, s.cid);
+                log_debug!("Discovered sACN source {} ({}) timed out", s.name, s.cid);
             }
             keep
         });
@@ -1159,7 +1162,7 @@ impl Drop for SacnReceiver {
         for u in sync_only {
             if let Err(e) = self.receiver.mute_multicast_universe(u) {
                 log_warn!(
-                    "Failed to leave the multicast group of sync address {u} while dropping the receiver: {e:?}"
+                    "sACN receiver failed to leave the multicast group of sync address {u} while being dropped: {e:?}"
                 );
             }
         }
@@ -1173,7 +1176,7 @@ impl Drop for SacnReceiver {
             // The error is therefore ignored as it can't be fixed eitherway as the SacnReceiver has gone out of scope and won't lead to memory un-safety.
             if let Err(e) = self.mute_universe(u) {
                 log_warn!(
-                    "Failed to leave the multicast group of universe {u} while dropping the receiver: {e:?}"
+                    "sACN receiver failed to leave the multicast group of universe {u} while being dropped: {e:?}"
                 );
             }
         }
@@ -1574,7 +1577,9 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
             if e.raw_os_error() != Some(libc::ENOPROTOOPT) {
                 return Err(e.into());
             }
-            log_debug!("SO_REUSEPORT isn't supported on this platform; continuing without it");
+            log_debug!(
+                "SO_REUSEPORT isn't supported on this platform; the sACN receiver is continuing without it"
+            );
         }
         socket.set_reuse_address(true)?;
 
@@ -1590,7 +1595,9 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
             if e.raw_os_error() != Some(libc::ENOPROTOOPT) {
                 return Err(e.into());
             }
-            log_debug!("SO_REUSEPORT isn't supported on this platform; continuing without it");
+            log_debug!(
+                "SO_REUSEPORT isn't supported on this platform; the sACN receiver is continuing without it"
+            );
         }
         socket.set_reuse_address(true)?;
 
@@ -2176,7 +2183,7 @@ fn check_timeouts(
             universes.retain(|uni, seq_num| {
                 let keep = seq_num.last_recv.elapsed() < timeout;
                 if !keep {
-                    log_debug!("Source {src_id} timed out on universe {uni}");
+                    log_debug!("sACN source {src_id} timed out on universe {uni}");
                 }
                 keep
             });

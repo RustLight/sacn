@@ -953,7 +953,7 @@ impl SacnSourceInternal {
         };
 
         log_trace!(
-            "Sending data packet: universe {universe}, sequence {sequence}, priority {priority}, sync address {sync_address}, {} bytes, destination {}",
+            "Sending sACN data packet: universe {universe}, sequence {sequence}, priority {priority}, sync address {sync_address}, {} bytes, destination {}",
             data.len(),
             dst_ip.map_or_else(|| "multicast".to_string(), |ip| ip.to_string())
         );
@@ -1030,7 +1030,7 @@ impl SacnSourceInternal {
                 }),
             },
         };
-        log_trace!("Sending sync packet: sync address {universe}, sequence {sequence}");
+        log_trace!("Sending sACN sync packet: sync address {universe}, sequence {sequence}");
         self.socket
             .send_to(&packet.pack_alloc()?, &ip)
             .map_err(|e| std::io::Error::new(e.kind(), "Failed to send sync packet on socket"))?;
@@ -1103,7 +1103,9 @@ impl SacnSourceInternal {
         };
         let res = &packet.pack_alloc().unwrap();
 
-        log_trace!("Sending stream termination packet: universe {universe}, sequence {sequence}");
+        log_trace!(
+            "Sending sACN stream termination packet: universe {universe}, sequence {sequence}"
+        );
         self.socket.send_to(res, &ip)?;
 
         if sequence == 255 {
@@ -1277,7 +1279,7 @@ impl SacnSourceInternal {
         };
 
         log_trace!(
-            "Sending universe discovery page {page} of {last_page} with {} universes",
+            "Sending sACN universe discovery page {page} of {last_page} with {} universes",
             universes.len()
         );
         self.socket.send_to(&packet.pack_alloc()?, &ip)?;
