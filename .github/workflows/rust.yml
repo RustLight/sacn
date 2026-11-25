@@ -3,14 +3,55 @@ name: Rust
 on:
   push:
     branches: [ "main" ]
+  # No branch filter, so stacked pull requests (based on another PR's branch) get CI too.
   pull_request:
-    branches: [ "main" ]
+
+permissions:
+  contents: read
+  # dorny/paths-filter lists a pull request's changed files through the API.
+  pull-requests: read
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Decides which of the jobs below a change needs. Pushes to main always run everything.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ github.event_name != 'pull_request' || steps.filter.outputs.code == 'true' }}
+      docs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
+    steps:
+    - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+      if: github.event_name == 'pull_request'
+      id: filter
+      with:
+        # Anything that can change what gets built or tested, including doc
+        # comments in .rs files, which rustdoc and doctests read.
+        filters: |
+          code:
+            - 'src/**'
+            - 'tests/**'
+            - 'examples/**'
+            - 'benches/**'
+            - 'build.rs'
+            - 'Cargo.toml'
+            - 'Cargo.lock'
+            - '.cargo/**'
+            - 'rust-toolchain'
+            - 'rust-toolchain.toml'
+            - 'clippy.toml'
+            - '.clippy.toml'
+            - 'docker-linux/**'
+            - '.github/workflows/**'
+          docs:
+            - '**/*.md'
+            - 'documentation/**'
+            - 'LICENSE-*'
+
   test-linux:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -23,8 +64,10 @@ jobs:
 
     - name: Run tests
       run: cargo test --verbose
-  
+
   test-linux-ipv4:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -34,6 +77,8 @@ jobs:
       run: docker run --cap-add=NET_ADMIN sacn-tests
 
   test-linux-ipv6:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -45,6 +90,8 @@ jobs:
       run: docker run --cap-add=NET_ADMIN --network sacn-ipv6 sacn-tests ./run_tests_ipv6.sh
 
   test-windows:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
@@ -59,6 +106,8 @@ jobs:
       run: cargo test --verbose
 
   test-macos:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4
@@ -72,3 +121,36 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
 
+  # Runs for code and docs changes alike: Markdown files can be pulled into the
+  # crate docs with include_str!, so their examples run as doctests.
+  docs:
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build documentation
+      run: cargo doc --no-deps
+
+    - name: Run doctests
+      run: cargo test --doc
+
+  # The single required status check. Jobs skipped by the path filter count as
+  # passing; a failed or cancelled job (including `changes`) fails this one.
+  all-checks:
+    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, docs]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check job results
+      env:
+        RESULTS: ${{ join(needs.*.result, ' ') }}
+      run: |
+        echo "Job results: $RESULTS"
+        for result in $RESULTS; do
+          case "$result" in
+            success|skipped) ;;
+            *) echo "A required job did not succeed."; exit 1 ;;
+          esac
+        done
