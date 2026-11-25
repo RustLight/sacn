@@ -158,11 +158,13 @@ pub struct SacnReceiver {
     receiver: SacnNetworkReceiver,
 
     /// Data that hasn't been passed up yet as it is waiting e.g. due to universe synchronisation.
-    /// Key is the universe. A receiver may not have more than one packet waiting per `data_universe`.
+    /// Key is the data universe and the start code (the first property value). A receiver may not have more than one packet
+    /// waiting per `data_universe` and start code, so that e.g. level data (start code 0x00) and per-address priority data
+    /// (start code 0xDD) held for the same synchronisation are both released rather than one replacing the other.
     /// `Data_universe` used as key as oppose to sync universe because multiple packets might be waiting on the same sync universe
     /// and adding data by data universe is at least as common as retrieving data by sync address because in a normal setup
     /// 1 or more bits of data wait for 1 sync.
-    waiting_data: HashMap<u16, DMXData>,
+    waiting_data: HashMap<(u16, u8), DMXData>,
 
     /// Universes that this receiver is currently listening for.
     universes: Vec<u16>,
@@ -370,14 +372,16 @@ impl SacnReceiver {
         self.waiting_data.clear();
     }
 
-    /// Clears data (if any) waiting to be passed up for the specific universe.
+    /// Clears data (if any) waiting to be passed up for the specific universe, whatever its start code.
     ///
     /// Returns true if data was removed and false if there wasn't any data to remove for this universe.
     ///
     /// # Arguments
     /// universe: The universe that the data that is waiting was sent to.
     pub fn clear_waiting_data(&mut self, universe: u16) -> bool {
-        self.waiting_data.remove(&universe).is_some()
+        let len = self.waiting_data.len();
+        self.waiting_data.retain(|(uni, _), _| *uni != universe);
+        self.waiting_data.len() != len
     }
 
     /// Sets the merge function to be used by this receiver.
@@ -870,22 +874,23 @@ impl SacnReceiver {
 
     /// Takes the given data and tries to add it to the waiting data.
     ///
-    /// Note that a receiver will only store a single packet of data per `data_universe` at once.
+    /// Note that a receiver will only store a single packet of data per `data_universe` and start code at once.
     ///
-    /// If there is waiting data for the same universe as the data then it will be merged as per the
+    /// If there is waiting data for the same universe and start code as the data then it will be merged as per the
     /// `merge_func` which by default keeps the highest priority data, if the data has the same priority
     /// then the newest data is kept.
     ///
     /// # Errors
     /// Will return an `DmxMergeError` if there is an issue merging or replacing new and existing waiting data.
     fn store_waiting_data(&mut self, data: DMXData) -> Result<()> {
-        match self.waiting_data.remove(&data.universe) {
+        let key = (data.universe, data.values.first().copied().unwrap_or(0));
+        match self.waiting_data.remove(&key) {
             Some(existing) => {
                 self.waiting_data
-                    .insert(data.universe, ((self.merge_func)(&existing, &data))?);
+                    .insert(key, ((self.merge_func)(&existing, &data))?);
             }
             None => {
-                self.waiting_data.insert(data.universe, data);
+                self.waiting_data.insert(key, data);
             }
         }
         Ok(())
@@ -957,12 +962,14 @@ impl SacnReceiver {
         // Get the universes (used as keys) to remove and then move the corresponding data out of the waiting data and into the result.
         // This prevents having to copy DMXData.
         // Cannot do both actions at once as cannot modify a data structure while iterating over it.
-        let mut keys: Vec<u16> = Vec::new();
-        for (uni, data) in self.waiting_data.iter() {
+        let mut keys: Vec<(u16, u8)> = Vec::new();
+        for (key, data) in self.waiting_data.iter() {
             if data.sync_uni == sync_uni {
-                keys.push(*uni);
+                keys.push(*key);
             }
         }
+        // Release the data in a stable order: by universe, then start code.
+        keys.sort_unstable();
 
         let mut res: Vec<DMXData> = Vec::new();
         for k in keys {
@@ -2633,7 +2640,9 @@ mod test {
             .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 0, false))
             .unwrap()
             .is_none());
-        assert!(dmx_rcv.waiting_data.contains_key(&UNIVERSE));
+        assert!(dmx_rcv
+            .waiting_data
+            .contains_key(&(UNIVERSE, TEST_DATA_SINGLE_UNIVERSE[0])));
 
         // Force_Synchronization set: process the data now, replacing the held data.
         let res = dmx_rcv
@@ -2643,6 +2652,92 @@ mod test {
         assert_eq!(res[0].universe, UNIVERSE);
         assert!(dmx_rcv.waiting_data.is_empty());
     }
+
+    /// Level data (start code 0x00) and per-address priority data (start code 0xDD) for the same universe held for the
+    /// same synchronisation are both released by the synchronisation packet, rather than one replacing the other, and
+    /// a merge function that requires matching start codes doesn't fail.
+    #[test]
+    fn test_sync_holds_levels_and_per_address_priority_separately() {
+        const UNIVERSE: u16 = 1;
+        const SYNC_UNI: u16 = 2;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        dmx_rcv.listen_universes(&[UNIVERSE, SYNC_UNI]).unwrap();
+        dmx_rcv.set_merge_fn(htp_dmx_merge).unwrap();
+        let cid = Uuid::new_v4();
+
+        dmx_rcv
+            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
+            .unwrap();
+
+        let levels: Vec<u8> = vec![0x00, 10, 20, 30];
+        let priorities: Vec<u8> = vec![0xDD, 100, 0, 200];
+        let levels_pkt = DataPacketFramingLayer {
+            data: DataPacketDmpLayer {
+                property_values: Cow::from(levels.clone()),
+            },
+            ..synchronized_data_packet(UNIVERSE, SYNC_UNI, 0, false)
+        };
+        let priorities_pkt = DataPacketFramingLayer {
+            data: DataPacketDmpLayer {
+                property_values: Cow::from(priorities.clone()),
+            },
+            ..synchronized_data_packet(UNIVERSE, SYNC_UNI, 1, false)
+        };
+
+        assert!(
+            dmx_rcv
+                .handle_data_packet(cid, levels_pkt)
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            dmx_rcv
+                .handle_data_packet(cid, priorities_pkt)
+                .unwrap()
+                .is_none()
+        );
+
+        let res = dmx_rcv
+            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 1))
+            .unwrap()
+            .expect("held data should be released by the synchronisation packet");
+        assert_eq!(res.len(), 2);
+        assert_eq!(res[0].universe, UNIVERSE);
+        assert_eq!(res[0].values, levels);
+        assert_eq!(res[1].universe, UNIVERSE);
+        assert_eq!(res[1].values, priorities);
+        assert!(dmx_rcv.waiting_data.is_empty());
+    }
+
+    /// Clearing a universe's waiting data clears it for every start code.
+    #[test]
+    fn test_clear_waiting_data_all_start_codes() {
+        const UNIVERSE: u16 = 1;
+        const SYNC_UNI: u16 = 2;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+
+        for start_code in [0x00, 0xDD] {
+            dmx_rcv
+                .store_waiting_data(DMXData {
+                    universe: UNIVERSE,
+                    values: vec![start_code, 1, 2, 3],
+                    sync_uni: SYNC_UNI,
+                    priority: 100,
+                    src_cid: None,
+                    preview: false,
+                    recv_timestamp: Instant::now(),
+                })
+                .unwrap();
+        }
+        assert_eq!(dmx_rcv.waiting_data.len(), 2);
+
+        assert!(dmx_rcv.clear_waiting_data(UNIVERSE));
+        assert!(dmx_rcv.waiting_data.is_empty());
+        assert!(!dmx_rcv.clear_waiting_data(UNIVERSE));
+    }
+
 
     #[test]
     fn test_handle_multi_page_discovery_packet() {
