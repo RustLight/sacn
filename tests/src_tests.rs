@@ -946,3 +946,15 @@ fn test_ttl_and_multicast_loop_ipv6() {
     }
     check_ttl_and_loop(SacnSource::with_ip("IPv6 source", addr).unwrap());
 }
+
+/// The `Force_Synchronization` option defaults to off and can be turned on, as per ANSI E1.31-2016 Section 6.2.6.
+#[test]
+#[serial]
+fn test_set_force_synchronization() {
+    let mut src = SacnSource::new_v4("Source").unwrap();
+    assert!(!src.force_synchronization().unwrap());
+    src.set_force_synchronization(true).unwrap();
+    assert!(src.force_synchronization().unwrap());
+    src.set_force_synchronization(false).unwrap();
+    assert!(!src.force_synchronization().unwrap());
+}
