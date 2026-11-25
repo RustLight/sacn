@@ -86,6 +86,9 @@ pub mod errors {
 
         /// A source was discovered by a receiver with the `announce_discovery_flag` set to true.
         ///
+        /// Raised when a source is first discovered and again whenever its name or universe list changes. Periodic
+        /// adverts that repeat what is already known don't raise it.
+        ///
         /// # Arguments
         /// The name of the source discovered.
         #[error("Source discovered with announce_discovery_flag set to true: {0}")]

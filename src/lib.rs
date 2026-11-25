@@ -322,7 +322,7 @@
 //!
 //! | Setter | Error returned |
 //! | --- | --- |
-//! | [`set_announce_source_discovery`](receive::SacnReceiver::set_announce_source_discovery) | [`SacnError::SourceDiscovered`](error::errors::SacnError::SourceDiscovered) when a universe discovery packet from a source has been received in full. |
+//! | [`set_announce_source_discovery`](receive::SacnReceiver::set_announce_source_discovery) | [`SacnError::SourceDiscovered`](error::errors::SacnError::SourceDiscovered) when a source is first discovered (or returns after timing out), and again when its name or universe list changes. Periodic adverts that change nothing don't raise it. |
 //! | [`set_announce_stream_termination`](receive::SacnReceiver::set_announce_stream_termination) | [`SacnError::UniverseTerminated`](error::errors::SacnError::UniverseTerminated) when a source terminates a universe. |
 //! | [`set_announce_timeout`](receive::SacnReceiver::set_announce_timeout) | [`SacnError::UniverseTimeout`](error::errors::SacnError::UniverseTimeout) when a source stops sending a universe for longer than [`packet::E131_NETWORK_DATA_LOSS_TIMEOUT`]. |
 //!
@@ -336,6 +336,8 @@
 //! Every receiver listens for universe discovery packets. Call
 //! [`get_discovered_sources`](receive::SacnReceiver::get_discovered_sources) at any time for the sources found so far
 //! and the universes each one sends. Discovery packets are only processed while `recv` runs.
+//! With `set_announce_source_discovery(true)`, `recv` reports each source once, and again only when its name or
+//! universe list changes.
 //!
 //! ```
 //! use sacn::error::errors::SacnError;

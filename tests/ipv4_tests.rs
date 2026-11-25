@@ -1833,6 +1833,24 @@ fn test_universe_discovery_one_universe_one_source_ipv4(){
     }
 }
 
+/// Receives until the first discovered source has been updated by a universe discovery advert received after `after`
+/// (or by any advert if `after` is None), and returns the time that advert was received.
+fn wait_for_discovery_advert(dmx_recv: &mut SacnReceiver, after: Option<Instant>) -> Instant {
+    loop {
+        match dmx_recv.recv(Some(Duration::from_millis(50))) {
+            Err(SacnError::SourceDiscovered(_)) => {}
+            Err(SacnError::Io(ref e)) if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) => {}
+            Err(k) => panic!("Unexpected error kind, {:?}", k),
+            Ok(d) => panic!("No data expected, {:?}", d),
+        }
+        if let Some(src) = dmx_recv.get_discovered_sources().first() {
+            if after.map_or(true, |a| src.last_updated > a) {
+                return src.last_updated;
+            }
+        }
+    }
+}
+
 /// Measures the time taken in milliseconds between 2 discovery packets to check that the interval fits with expected.
 #[test]
 #[ignore]
@@ -1868,43 +1886,14 @@ fn test_universe_discovery_interval_ipv4(){
 
     snd_rx.recv().unwrap(); // Receiver created and ready so allow the sender to be created.
 
-    let mut interval_start = Instant::now(); // Assignment never used.
+    // Measure the time between the first and second discovery packets, this removes the uncertainty in the time taken for
+    // the sender to start. Only the first advert raises SourceDiscovered, so watch the source's last_updated instead.
+    let first_advert = wait_for_discovery_advert(&mut dmx_recv, None);
+    let second_advert = wait_for_discovery_advert(&mut dmx_recv, Some(first_advert));
 
-    match dmx_recv.recv(None) {
-        Err(e) => {
-            match e {
-                SacnError::SourceDiscovered(_) => {
-                    // Measure the time between the first and second discovery packets, this removes the uncertainty in the time taken for the sender to start.
-                    interval_start = Instant::now();
-                }
-                k => {
-                    assert!(false, "Unexpected error kind, {:?}", k);
-                }
-            }
-        }
-        Ok(d) => {
-            assert!(false, "No data expected, {:?}", d);
-        }
-    }
-
-    match dmx_recv.recv(None) {
-        Err(e) => {
-            match e {
-                SacnError::SourceDiscovered(_) => {
-                    let interval = interval_start.elapsed();
-                    let interval_millis = interval.as_millis();
-                    assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), "Discovery interval is shorter than expected, {} ms", interval_millis);
-                    assert!(interval_millis < (INTERVAL_EXPECTED_MILLIS + INTERVAL_TOLERANCE_MILLIS), "Discovery interval is longer than expected, {} ms", interval_millis);
-                }
-                k => {
-                    assert!(false, "Unexpected error kind, {:?}", k);
-                }
-            }
-        }
-        Ok(d) => {
-            assert!(false, "No data expected, {:?}", d);
-        }
-    }
+    let interval_millis = (second_advert - first_advert).as_millis();
+    assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), "Discovery interval is shorter than expected, {} ms", interval_millis);
+    assert!(interval_millis < (INTERVAL_EXPECTED_MILLIS + INTERVAL_TOLERANCE_MILLIS), "Discovery interval is longer than expected, {} ms", interval_millis);
 
     snd_rx.recv().unwrap(); // Allow sender to finish.
 }
@@ -1952,43 +1941,14 @@ fn test_universe_discovery_interval_with_updates_ipv4(){
 
     snd_rx.recv().unwrap(); // Receiver created and ready so allow the sender to be created.
 
-    let mut interval_start = Instant::now(); // Assignment never used.
+    // Measure the time between the first and second discovery packets, this removes the uncertainty in the time taken for
+    // the sender to start. Only the first advert raises SourceDiscovered, so watch the source's last_updated instead.
+    let first_advert = wait_for_discovery_advert(&mut dmx_recv, None);
+    let second_advert = wait_for_discovery_advert(&mut dmx_recv, Some(first_advert));
 
-    match dmx_recv.recv(None) {
-        Err(e) => {
-            match e {
-                SacnError::SourceDiscovered(_) => {
-                    // Measure the time between the first and second discovery packets, this removes the uncertainty in the time taken for the sender to start.
-                    interval_start = Instant::now();
-                }
-                k => {
-                    assert!(false, "Unexpected error kind, {:?}", k);
-                }
-            }
-        }
-        Ok(d) => {
-            assert!(false, "No data expected, {:?}", d);
-        }
-    }
-
-    match dmx_recv.recv(None) {
-        Err(e) => {
-            match e {
-                SacnError::SourceDiscovered(_) => {
-                    let interval = interval_start.elapsed();
-                    let interval_millis = interval.as_millis();
-                    assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), "Discovery interval is shorter than expected, {} ms", interval_millis);
-                    assert!(interval_millis < (INTERVAL_EXPECTED_MILLIS + INTERVAL_TOLERANCE_MILLIS), "Discovery interval is longer than expected, {} ms", interval_millis);
-                }
-                k => {
-                    assert!(false, "Unexpected error kind, {:?}", k);
-                }
-            }
-        }
-        Ok(d) => {
-            assert!(false, "No data expected, {:?}", d);
-        }
-    }
+    let interval_millis = (second_advert - first_advert).as_millis();
+    assert!(interval_millis > (INTERVAL_EXPECTED_MILLIS - INTERVAL_TOLERANCE_MILLIS), "Discovery interval is shorter than expected, {} ms", interval_millis);
+    assert!(interval_millis < (INTERVAL_EXPECTED_MILLIS + INTERVAL_TOLERANCE_MILLIS), "Discovery interval is longer than expected, {} ms", interval_millis);
 
     snd_rx.recv().unwrap(); // Allow sender to finish.
 }
