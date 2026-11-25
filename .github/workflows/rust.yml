@@ -132,6 +132,8 @@ jobs:
 
     - name: Build documentation
       run: cargo doc --locked --no-deps
+      env:
+        RUSTDOCFLAGS: -D warnings
 
     - name: Run doctests
       run: cargo test --locked --doc
