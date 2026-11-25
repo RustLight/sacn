@@ -495,7 +495,8 @@ impl SacnReceiver {
     /// A timeout of duration 0 will do timeout checks but otherwise will return a WouldBlock/TimedOut error without checking for data.
     ///
     /// Will return `SacnError::SourceDiscovered` error if the `announce_source_discovery` flag is set and a universe discovery
-    /// packet is received and a source fully discovered.
+    /// packet is received and a source fully discovered. This happens once when the source is first discovered, and again
+    /// only if its name or universe list changes, not for every periodic advert.
     ///
     /// Will return a `UniverseNotRegistered` error if this method is called with an infinite timeout, no
     /// registered data universes and the `announce_discovered_sources` flag set to off. This is to protect the user from
@@ -663,7 +664,8 @@ impl SacnReceiver {
     /// By default this flag is false which indicates that when receiving data discovered sources through universe discovery
     ///  won't be announced by the recv method and the receivers list of discovered universes will be updated silently.
     /// If set to true then it means that a `SourceDiscovered` error will be thrown whenever a source is discovered through a
-    ///  complete universe discovery packet.
+    ///  complete universe discovery packet. A source that keeps advertising the same universes is announced once, and again
+    ///  only if its name or universe list changes.
     ///
     /// # Arguments:
     /// `new_val`: The new value for the `announce_source_discovery` flag.
@@ -936,15 +938,26 @@ impl SacnReceiver {
 
     /// Takes the given `DiscoveredSacnSource` and updates the record of discovered sacn sources.
     ///
-    /// This adds the new source deleting any previous source with the same name.
+    /// This adds the new source, replacing any previous record of a source with the same CID.
+    ///
+    /// Returns true if the source is new, or if its name or universe list differs from the previous record. Sources
+    /// re-advertise every `E131_UNIVERSE_DISCOVERY_INTERVAL`, so an unchanged advert returns false.
     ///
     /// Arguments:
     /// src: The `DiscoveredSacnSource` to update the record of discovered sacn sources with.
-    fn update_discovered_srcs(&mut self, src: DiscoveredSacnSource) {
-        if let Some(index) = find_discovered_src(&self.discovered_sources, &src.cid) {
-            self.discovered_sources.remove(index);
-        }
+    fn update_discovered_srcs(&mut self, src: DiscoveredSacnSource) -> bool {
+        let changed = match find_discovered_src(&self.discovered_sources, &src.cid) {
+            Some(index) => {
+                let old = self.discovered_sources.remove(index);
+                // An expired record that hasn't been pruned yet counts as a new discovery.
+                old.last_updated.elapsed() >= UNIVERSE_DISCOVERY_SOURCE_TIMEOUT
+                    || old.name != src.name
+                    || old.get_all_universes() != src.get_all_universes()
+            }
+            None => true,
+        };
         self.discovered_sources.push(src);
+        changed
     }
 
     /// Handles the given universe discovery packet.
@@ -952,7 +965,9 @@ impl SacnReceiver {
     /// This universe discovery packet might be the whole thing or may be just one page of a discovery packet.
     /// This method puts the pages to produce the `DiscoveredSacnSource` which is stored in the receiver.
     ///
-    /// Returns the source name if a source was fully discovered or None if the source was only partially discovered.
+    /// Returns the source name if a source was fully discovered and is either new or has changed its name or universe list
+    /// since its last advert. Returns None if the source was only partially discovered, or if the advert repeats what is
+    /// already known about it.
     ///
     /// Arguments:
     ///
@@ -996,8 +1011,9 @@ impl SacnReceiver {
             if self.partially_discovered_sources[index].has_all_pages() {
                 let discovered_src: DiscoveredSacnSource =
                     self.partially_discovered_sources.remove(index);
-                self.update_discovered_srcs(discovered_src);
-                return Some(discovery_pkt.source_name.to_string());
+                if self.update_discovered_srcs(discovered_src) {
+                    return Some(discovery_pkt.source_name.to_string());
+                }
             }
         } else {
             // This is the first page received from this source.
@@ -1011,8 +1027,9 @@ impl SacnReceiver {
 
             if page == 0 && page == last_page {
                 // Indicates that this is a single page universe discovery packet.
-                self.update_discovered_srcs(discovered_src);
-                return Some(discovery_pkt.source_name.to_string());
+                if self.update_discovered_srcs(discovered_src) {
+                    return Some(discovery_pkt.source_name.to_string());
+                }
             } else {
                 // Indicates that this is a page in a set of pages as part of a sources universe discovery.
                 self.partially_discovered_sources.push(discovered_src);
@@ -2462,6 +2479,69 @@ mod test {
 
         assert_eq!(dmx_rcv.discovered_sources[0].last_page, 1);
         assert_eq!(dmx_rcv.discovered_sources[0].get_all_universes(), vec![1, 2, 3, 4]);
+    }
+
+    /// Sources re-advertise every `E131_UNIVERSE_DISCOVERY_INTERVAL`. Only the first advert, and adverts that change the
+    /// source's universe list or name, should be reported as a discovery.
+    #[test]
+    fn test_repeated_discovery_advert_not_reported() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        let cid = Uuid::new_v4();
+
+        // Single page source.
+        assert_eq!(
+            dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2])),
+            Some("Test Src".to_string())
+        );
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2])).is_none());
+        // The repeat still refreshes the record so the source doesn't time out.
+        assert_eq!(dmx_rcv.discovered_sources.len(), 1);
+
+        // A changed universe list is reported again.
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2, 3])).is_some());
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1, 2, 3])).is_none());
+
+        // A changed name is reported again.
+        let mut renamed = discovery_page(0, 0, &[1, 2, 3]);
+        renamed.source_name = "Renamed Src".into();
+        assert_eq!(
+            dmx_rcv.handle_universe_discovery_packet(cid, renamed),
+            Some("Renamed Src".to_string())
+        );
+
+        // Multi page source: the second full set of identical pages isn't reported.
+        let cid2 = Uuid::new_v4();
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(0, 1, &[1, 2])).is_none());
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(1, 1, &[3, 4])).is_some());
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(0, 1, &[1, 2])).is_none());
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(1, 1, &[3, 4])).is_none());
+        assert!(dmx_rcv.partially_discovered_sources.is_empty());
+
+        // Changing a page's universes is reported once the set is complete.
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(0, 1, &[1, 2])).is_none());
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid2, discovery_page(1, 1, &[3, 5])).is_some());
+        assert_eq!(dmx_rcv.discovered_sources.len(), 2);
+    }
+
+    /// A source that times out and comes back is reported as discovered again.
+    #[test]
+    fn test_rediscovered_source_reported_after_timeout() {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        let cid = Uuid::new_v4();
+
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1])).is_some());
+        dmx_rcv.discovered_sources[0].last_updated =
+            Instant::now() - UNIVERSE_DISCOVERY_SOURCE_TIMEOUT - Duration::from_millis(100);
+        assert!(dmx_rcv.get_discovered_sources().is_empty());
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1])).is_some());
+
+        // Also when the expired record hasn't been pruned by get_discovered_sources() yet.
+        dmx_rcv.discovered_sources[0].last_updated =
+            Instant::now() - UNIVERSE_DISCOVERY_SOURCE_TIMEOUT - Duration::from_millis(100);
+        assert!(dmx_rcv.handle_universe_discovery_packet(cid, discovery_page(0, 0, &[1])).is_some());
+        assert_eq!(dmx_rcv.discovered_sources.len(), 1);
     }
 
     fn synchronized_data_packet<'a>(
