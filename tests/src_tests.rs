@@ -934,8 +934,13 @@ fn test_ttl_and_multicast_loop_ipv4() {
 fn test_ttl_and_multicast_loop_ipv6() {
     use std::net::Ipv6Addr;
     let addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 0);
-    // Some CI and container environments have no IPv6 stack at all.
+    // Some CI and container environments have no IPv6 stack at all. The IPv6 CI job sets
+    // SACN_REQUIRE_IPV6 so that this test can't silently pass there without running.
     if let Err(e) = std::net::UdpSocket::bind(addr) {
+        assert!(
+            std::env::var_os("SACN_REQUIRE_IPV6").is_none(),
+            "SACN_REQUIRE_IPV6 is set but IPv6 is unavailable: {e}"
+        );
         println!("Skipping, IPv6 unavailable: {e}");
         return;
     }
