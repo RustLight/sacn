@@ -81,12 +81,15 @@ fn display_data(stdout: &mut Stdout, remaining: &Duration, data: &DMXData) {
         let cursor_y = y + 1;
         queue!(stdout, cursor::MoveTo(0, cursor_y), Print("|")).unwrap();
         for x in 0..32 {
-            let data_index = ((y * 16 + x) + 1) as usize;
+            // 16 rows of 32 slots shows all 512 slots. Index 0 is the START code, so slots start at 1.
+            let data_index = ((y * 32 + x) + 1) as usize;
             let cursor_x = x * 4 + 1;
+            // Sources may send fewer than 512 slots; the missing trailing slots are 0.
+            let value = data.values.get(data_index).copied().unwrap_or(0);
             queue!(
                 stdout,
                 cursor::MoveTo(cursor_x, cursor_y),
-                Print(format!("{:03}|", data.values[data_index]))
+                Print(format!("{value:03}|"))
             )
             .unwrap();
         }
