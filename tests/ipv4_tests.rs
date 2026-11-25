@@ -631,8 +631,12 @@ fn test_send_recv_diff_priority_same_universe_multicast_ipv4(){
 
     src.register_universe(universe).unwrap();
 
+    // Same start code as the first packet (held data is kept per start code), different values.
+    let mut second_data = TEST_DATA_SINGLE_UNIVERSE;
+    second_data[1..21].reverse();
+
     src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(universe)).unwrap(); // First packet with higher priority.
-    src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority_2), None, Some(universe)).unwrap(); // Second packet with lower priority.
+    src.send(&[universe], &second_data, Some(priority_2), None, Some(universe)).unwrap(); // Second packet with lower priority.
     src.send_sync_packet(universe, None).unwrap(); // Trigger the packet to be passed up on the receiver.
 
     let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
@@ -684,8 +688,12 @@ fn test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4(){
 
     src.register_universe(universe).unwrap();
 
+    // Same start code as the first packet (held data is kept per start code), different values.
+    let mut second_data = TEST_DATA_SINGLE_UNIVERSE;
+    second_data[1..21].reverse();
+
     src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, Some(universe)).unwrap(); // First packet
-    src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(universe)).unwrap(); // Second packet which should override first.
+    src.send(&[universe], &second_data, Some(priority), None, Some(universe)).unwrap(); // Second packet which should override first.
     src.send_sync_packet(universe, None).unwrap(); // Trigger the packet to be passed up on the receiver.
 
     let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
@@ -702,7 +710,7 @@ fn test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4(){
 
     assert_eq!(received_universe.universe, universe); // Check that the universe received is as expected.
 
-    assert_eq!(received_universe.values, TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE.to_vec(), "Received payload values don't match sent!");
+    assert_eq!(received_universe.values, second_data.to_vec(), "Received payload values don't match sent!");
 }
 
 /// Sends data 2 packets with the same universe. The first packet is a synchronised packet with a synchronisation address
