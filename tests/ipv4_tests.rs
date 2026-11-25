@@ -401,6 +401,9 @@ fn test_send_across_universe_multiple_receivers_sync_multicast_ipv4(){
     src.register_universe(universe2).unwrap();
     src.register_universe(sync_uni).unwrap();
 
+    // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+    src.send_sync_packet(sync_uni, None).unwrap();
+
     src.send(&[universe1], &TEST_DATA_MULTIPLE_UNIVERSE[..513], Some(priority), None, Some(sync_uni)).unwrap();
     src.send(&[universe2], &TEST_DATA_MULTIPLE_UNIVERSE[513..], Some(priority), None, Some(sync_uni)).unwrap();
 
@@ -631,6 +634,9 @@ fn test_send_recv_diff_priority_same_universe_multicast_ipv4(){
 
     src.register_universe(universe).unwrap();
 
+    // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+    src.send_sync_packet(universe, None).unwrap();
+
     // Same start code as the first packet (held data is kept per start code), different values.
     let mut second_data = TEST_DATA_SINGLE_UNIVERSE;
     second_data[1..21].reverse();
@@ -687,6 +693,9 @@ fn test_send_recv_two_packets_same_priority_same_universe_multicast_ipv4(){
     let priority = 110;
 
     src.register_universe(universe).unwrap();
+
+    // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+    src.send_sync_packet(universe, None).unwrap();
 
     // Same start code as the first packet (held data is kept per start code), different values.
     let mut second_data = TEST_DATA_SINGLE_UNIVERSE;
@@ -748,6 +757,9 @@ fn test_send_recv_sync_then_nosync_packet_same_universe_multicast_ipv4() {
     let mut src = SacnSource::with_ip("Source", ip).unwrap();
 
     src.register_universe(universe).unwrap();
+
+    // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+    src.send_sync_packet(universe, None).unwrap();
 
     src.send(&[universe], &TEST_DATA_SINGLE_UNIVERSE, None, None, Some(universe)).unwrap(); // First packet, with sync.
     src.send(&[universe], &TEST_DATA_SINGLE_ALTERNATIVE_STARTCODE_UNIVERSE, None, None, None).unwrap(); // Second packet, no sync.
@@ -927,6 +939,9 @@ fn test_send_recv_across_universe_multicast_ipv4(){
 
     src.register_universes(&UNIVERSES).unwrap();
 
+    // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+    src.send_sync_packet(UNIVERSES[0], None).unwrap();
+
     src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
     src.send_sync_packet(UNIVERSES[0], None).unwrap();
@@ -985,6 +1000,9 @@ fn test_send_recv_across_alternative_startcode_universe_multicast_ipv4(){
     let priority = 100;
 
     src.register_universes(&UNIVERSES).unwrap();
+
+    // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+    src.send_sync_packet(UNIVERSES[0], None).unwrap();
 
     src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
@@ -1045,6 +1063,9 @@ fn test_send_recv_full_capacity_across_universe_multicast_ipv4(){
 
     src.register_universes(&UNIVERSES).unwrap();
 
+    // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+    src.send_sync_packet(UNIVERSES[0], None).unwrap();
+
     src.send(&UNIVERSES, &TEST_DATA_FULL_CAPACITY_MULTIPLE_UNIVERSE, Some(priority), None, Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation. See other warnings about the possibility of theses tests failing if the network isn't perfect.
     src.send_sync_packet(UNIVERSES[0], None).unwrap();
@@ -1103,6 +1124,9 @@ fn test_send_recv_across_universe_unicast_ipv4(){
     let priority = 100;
 
     src.register_universes(&UNIVERSES).unwrap();
+
+    // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+    src.send_sync_packet(UNIVERSES[0], Some(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT).into())).unwrap();
 
     let _ = src.send(&UNIVERSES, &TEST_DATA_MULTIPLE_UNIVERSE, Some(priority), Some(SocketAddr::new(Ipv4Addr::new(127,0,0,1).into(), ACN_SDT_MULTICAST_PORT).into()), Some(UNIVERSES[0])).unwrap();
     sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
@@ -1254,6 +1278,14 @@ fn test_two_senders_one_recv_same_universe_custom_merge_fn_sync_multicast_ipv4()
     dmx_recv.listen_universes(&[universe, sync_uni]).unwrap();
 
     dmx_recv.set_merge_fn(htp_dmx_merge).unwrap();
+
+    {
+        // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+        let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 3);
+        let mut src = SacnSource::with_ip("Sync starter", ip).unwrap();
+        src.register_universe(sync_uni).unwrap();
+        src.send_sync_packet(sync_uni, None).unwrap();
+    }
 
     let snd_thread_1 = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(IpAddr::V4(TEST_NETWORK_INTERFACE_IPV4[1].parse().unwrap()), ACN_SDT_MULTICAST_PORT + 1);
@@ -2857,6 +2889,10 @@ fn test_send_recv_multiple_sync_universes(){
         // Sender waits till the receiver says it is ready.
         thread_tx.send(()).unwrap();
 
+        // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+        src.send_sync_packet(universes[1], None).unwrap();
+        src.send_sync_packet(universes[2], None).unwrap();
+
         // Send on all 3 universes, the first universe waits for a sync packet on the second, the second on the third and the third
         // universe waits for a sync packet on its own universe.
         src.send(&[universes[0]], &TEST_DATA_SINGLE_UNIVERSE, None, None, Some(universes[1])).unwrap();
@@ -2933,6 +2969,9 @@ fn test_send_sync_timeout(){
 
         // Sender waits till the receiver says it is ready.
         thread_tx.send(()).unwrap();
+
+        // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+        src.send_sync_packet(sync_universe, None).unwrap();
 
         // Sender sends a data packet synchronised to the synchronisation universe.
         src.send(&[data_universe], &TEST_DATA_SINGLE_UNIVERSE, None, None, Some(sync_universe)).unwrap();
@@ -3042,7 +3081,16 @@ fn test_ansi_e131_appendix_b_runthrough_ipv4() {
     // Receiver created successfully so allow the sender to progress.
     rx.recv().unwrap();
 
-    for _ in 0 .. SYNC_PACKET_COUNT {
+    // The receiver hasn't received a synchronisation packet yet, so as per ANSI E1.31-2016 Section 11.1.1 it acts on the first
+    // set of data immediately. The synchronisation packet that follows starts synchronisation.
+    for (universe, values) in data_universes.iter().zip([&data, &data2]) {
+        let p = dmx_recv.recv(None).unwrap();
+        assert_eq!(p.len(), 1);
+        assert_eq!(p[0].universe, *universe);
+        assert_eq!(&p[0].values, values);
+    }
+
+    for _ in 1 .. SYNC_PACKET_COUNT {
         // "When the E1.31 Synchronization Packet arrives from Source A, Receiver B acts on the data."
         match dmx_recv.recv(None) {
             Ok(p) => {
@@ -3196,6 +3244,9 @@ fn test_discover_recv_sync_runthrough_ipv4() {
 
     dmx_recv.listen_universes(&universes).unwrap(); // Assert Successful
 
+    // Until the receiver has received a synchronisation packet it acts on data immediately (ANSI E1.31-2016 Section 11.1.1).
+    let mut synchronised = false;
+
     loop {
         match dmx_recv.recv(None) {
             Err(e) => {
@@ -3211,6 +3262,13 @@ fn test_discover_recv_sync_runthrough_ipv4() {
                 }
             }
             Ok(rcv_data) => {
+                if !synchronised && rcv_data.len() == 1 {
+                    let expected = if rcv_data[0].universe == DATA_UNIVERSES[0] { DATA } else { DATA2 };
+                    assert!(DATA_UNIVERSES.contains(&rcv_data[0].universe), "Unrecognised universe within data packet");
+                    assert_eq!(rcv_data[0].values, expected, "Unexpected data within unsynchronised data packet");
+                    continue;
+                }
+                synchronised = true;
                 assert_eq!(rcv_data.len(), DATA_PACKETS_PER_SYNC_PACKET);
                 if rcv_data[0].universe == DATA_UNIVERSES[0] {
                     assert_eq!(rcv_data[0].values, DATA, "Unexpected data within first data packet of a set of synchronised packets");

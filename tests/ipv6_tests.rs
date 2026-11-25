@@ -236,6 +236,9 @@ mod sacn_ipv6_multicast_test {
 
         src.register_universes(&UNIVERSES).unwrap();
 
+        // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+        src.send_sync_packet(UNIVERSES[0], None).unwrap();
+
         src.send(
             &UNIVERSES,
             &TEST_DATA_MULTIPLE_ALTERNATIVE_STARTCODE_UNIVERSE,
@@ -323,6 +326,9 @@ mod sacn_ipv6_multicast_test {
         let priority = 100;
 
         src.register_universes(&UNIVERSES).unwrap();
+
+        // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+        src.send_sync_packet(UNIVERSES[0], None).unwrap();
 
         src.send(
             &UNIVERSES,
@@ -488,6 +494,9 @@ mod sacn_ipv6_multicast_test {
 
         src.register_universes(&UNIVERSES).unwrap();
 
+        // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+        src.send_sync_packet(UNIVERSES[0], None).unwrap();
+
         src.send(
             &UNIVERSES,
             &TEST_DATA_MULTIPLE_UNIVERSE,
@@ -600,6 +609,9 @@ mod sacn_ipv6_multicast_test {
         src.register_universe(universe1).unwrap();
         src.register_universe(universe2).unwrap();
         src.register_universe(sync_uni).unwrap();
+
+        // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+        src.send_sync_packet(sync_uni, None).unwrap();
 
         src.send(
             &[universe1],
@@ -1334,7 +1346,16 @@ mod sacn_ipv6_multicast_test {
         // Receiver created successfully so allow the sender to progress.
         rx.recv().unwrap();
 
-        for _ in 0..SYNC_PACKET_COUNT {
+        // The receiver hasn't received a synchronisation packet yet, so as per ANSI E1.31-2016 Section 11.1.1 it acts on the first
+        // set of data immediately. The synchronisation packet that follows starts synchronisation.
+        for (universe, values) in data_universes.iter().zip([&data, &data2]) {
+            let p = dmx_recv.recv(None).unwrap();
+            assert_eq!(p.len(), 1);
+            assert_eq!(p[0].universe, *universe);
+            assert_eq!(&p[0].values, values);
+        }
+
+        for _ in 1..SYNC_PACKET_COUNT {
             // "When the E1.31 Synchronization Packet arrives from Source A, Receiver B acts on the data."
             match dmx_recv.recv(None) {
                 Ok(p) => {
@@ -1537,6 +1558,9 @@ mod sacn_ipv6_multicast_test {
 
         dmx_recv.listen_universes(&universes).unwrap(); // Assert Successful
 
+        // Until the receiver has received a synchronisation packet it acts on data immediately (ANSI E1.31-2016 Section 11.1.1).
+        let mut synchronised = false;
+
         loop {
             match dmx_recv.recv(None) {
                 Err(e) => {
@@ -1552,6 +1576,23 @@ mod sacn_ipv6_multicast_test {
                     }
                 }
                 Ok(rcv_data) => {
+                    if !synchronised && rcv_data.len() == 1 {
+                        let expected = if rcv_data[0].universe == DATA_UNIVERSES[0] {
+                            DATA
+                        } else {
+                            DATA2
+                        };
+                        assert!(
+                            DATA_UNIVERSES.contains(&rcv_data[0].universe),
+                            "Unrecognised universe within data packet"
+                        );
+                        assert_eq!(
+                            rcv_data[0].values, expected,
+                            "Unexpected data within unsynchronised data packet"
+                        );
+                        continue;
+                    }
+                    synchronised = true;
                     assert_eq!(rcv_data.len(), DATA_PACKETS_PER_SYNC_PACKET);
                     if rcv_data[0].universe == DATA_UNIVERSES[0] {
                         assert_eq!(
@@ -1910,6 +1951,19 @@ mod sacn_ipv6_unicast_test {
         let priority = 100;
 
         src.register_universes(&UNIVERSES).unwrap();
+
+        // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
+        src.send_sync_packet(
+            UNIVERSES[0],
+            Some(
+                SocketAddr::new(
+                    IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()),
+                    ACN_SDT_MULTICAST_PORT,
+                )
+                .into(),
+            ),
+        )
+        .unwrap();
 
         let _ = src
             .send(
