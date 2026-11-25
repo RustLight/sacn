@@ -369,6 +369,10 @@
 //!   [`is_multicast_enabled`](receive::SacnReceiver::is_multicast_enabled) tells you whether multicast is on.
 //! - Receivers listen on UDP port 5568 ([`packet::ACN_SDT_MULTICAST_PORT`]). Allow it through the host firewall, and
 //!   make sure the network passes multicast (IGMP snooping on managed switches, for example).
+//! - The library never prints to stdout or stderr. With the default `logging` feature it reports failures it can't
+//!   return, dropped packets and per-packet traces through the [`log`](https://docs.rs/log) crate under the
+//!   `sacn::source` and `sacn::receive` targets. See [Logging](https://github.com/RustLight/sacn#logging) in the README
+//!   for how to show or filter them.
 //!
 //! # Examples
 //!
@@ -383,6 +387,21 @@
 // #![warn(missing_docs)]
 // Recursion limit for error_chain.
 #![recursion_limit = "1024"]
+
+// Internal logging macros. With the `logging` feature they forward to the `log` crate. Without it they compile to nothing,
+// but still type-check their arguments so that values used only for logging don't cause unused-variable warnings.
+#[cfg(feature = "logging")]
+macro_rules! log_warn { ($($arg:tt)+) => { log::warn!($($arg)+) } }
+#[cfg(feature = "logging")]
+macro_rules! log_debug { ($($arg:tt)+) => { log::debug!($($arg)+) } }
+#[cfg(feature = "logging")]
+macro_rules! log_trace { ($($arg:tt)+) => { log::trace!($($arg)+) } }
+#[cfg(not(feature = "logging"))]
+macro_rules! log_warn { ($($arg:tt)+) => { if false { let _ = format_args!($($arg)+); } } }
+#[cfg(not(feature = "logging"))]
+macro_rules! log_debug { ($($arg:tt)+) => { if false { let _ = format_args!($($arg)+); } } }
+#[cfg(not(feature = "logging"))]
+macro_rules! log_trace { ($($arg:tt)+) => { if false { let _ = format_args!($($arg)+); } } }
 
 /// The errors within the sACN crate related to parse/pack errors.
 /// Error-chain is used for errors within the library to allow chaining errors together to provide more informative backtraces.

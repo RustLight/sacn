@@ -225,11 +225,10 @@ impl SacnSource {
                 // Stop if the source has been dropped or the mutex was poisoned by a panic elsewhere.
                 while matches!(trd_src.lock().map(|s| s.running), Ok(true)) {
                     thread::sleep(DEFAULT_POLL_PERIOD);
+                    // On error the source keeps running and tries again on the next period. With the `logging` feature the
+                    // error is reported through the `log` crate, so the application decides whether and where it is shown.
                     if let Err(e) = perform_periodic_update(&mut trd_src) {
-                        println!("Periodic error: {e:?}");
-                    } else {
-                        // In-case of an error on the discovery thread the source continues to operate and tries again.
-                        // As no unsafe code blocks are used the rust compiler guarantees this is memory safe.
+                        log_warn!("sACN source periodic update failed: {e:?}");
                     }
                 }
             })?),
@@ -616,27 +615,39 @@ impl SacnSource {
 /// and if it goes out of reference it will clean itself up and send the required termination packets etc.
 impl Drop for SacnSource {
     fn drop(&mut self) {
-        match unlock_internal_mut(&mut self.internal) {
-            Ok(mut i) => {
-                i.running = false;
-            }
-            Err(_) => {
-                return;
-            } // As drop isn't always explicitly called and cannot return an error the error is ignored. Memory safety is maintain and this prevents causing a panic!.
-        };
+        // The guard is dropped at the end of this statement so the update thread can see `running` change.
+        if let Ok(mut i) = unlock_internal_mut(&mut self.internal) {
+            i.running = false;
+        } else {
+            // As drop isn't always explicitly called and cannot return an error the error can't be returned. Memory safety is
+            // maintained and this prevents causing a panic!.
+            log_warn!(
+                "sACN source dropped with a poisoned mutex; termination packets were not sent"
+            );
+            return;
+        }
 
         if let Some(thread) = self.update_thread.take() {
             // Internal is accessed twice separately, this allows the discovery thread to interleave between running being set to false speeding up termination.
             if let Ok(mut i) = unlock_internal_mut(&mut self.internal) {
-                let _ = i.terminate(DEFAULT_TERMINATE_START_CODE);
-                {} // For same reasons as above a potential error is ignored and a 'best attempt' is used to clean up.
+                // For same reasons as above a potential error can't be returned and a 'best attempt' is used to clean up.
+                if let Err(e) = i.terminate(DEFAULT_TERMINATE_START_CODE) {
+                    log_warn!(
+                        "sACN source failed to send termination packets while being dropped: {e:?}"
+                    );
+                }
             } else {
-                {} // As drop isn't always explicitly called and cannot return an error the error is ignored. Memory safety is maintain and this prevents causing a panic!.
+                log_warn!(
+                    "sACN source dropped with a poisoned mutex; termination packets were not sent"
+                );
+                // As drop isn't always explicitly called and cannot return an error the error is ignored. Memory safety is maintain and this prevents causing a panic!.
             };
 
             // The update thread only panics if the mutex was poisoned. Panicking here as well would abort the
             // process if the source is being dropped while unwinding, so the result is ignored.
-            let _ = thread.join();
+            if thread.join().is_err() {
+                log_warn!("sACN source update thread panicked");
+            }
         }
     }
 }
@@ -941,6 +952,12 @@ impl SacnSourceInternal {
             },
         };
 
+        log_trace!(
+            "Sending sACN data packet: universe {universe}, sequence {sequence}, priority {priority}, sync address {sync_address}, {} bytes, destination {}",
+            data.len(),
+            dst_ip.map_or_else(|| "multicast".to_string(), |ip| ip.to_string())
+        );
+
         if dst_ip.is_some() {
             self.socket
                 .send_to(&packet.pack_alloc().unwrap(), &dst_ip.unwrap().into())
@@ -1013,6 +1030,7 @@ impl SacnSourceInternal {
                 }),
             },
         };
+        log_trace!("Sending sACN sync packet: sync address {universe}, sequence {sequence}");
         self.socket
             .send_to(&packet.pack_alloc()?, &ip)
             .map_err(|e| std::io::Error::new(e.kind(), "Failed to send sync packet on socket"))?;
@@ -1085,6 +1103,9 @@ impl SacnSourceInternal {
         };
         let res = &packet.pack_alloc().unwrap();
 
+        log_trace!(
+            "Sending sACN stream termination packet: universe {universe}, sequence {sequence}"
+        );
         self.socket.send_to(res, &ip)?;
 
         if sequence == 255 {
@@ -1257,6 +1278,10 @@ impl SacnSourceInternal {
             universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE)?
         };
 
+        log_trace!(
+            "Sending sACN universe discovery page {page} of {last_page} with {} universes",
+            universes.len()
+        );
         self.socket.send_to(&packet.pack_alloc()?, &ip)?;
 
         Ok(())

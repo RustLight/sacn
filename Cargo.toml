@@ -22,6 +22,7 @@ exclude = [
 [dependencies]
 byteorder = { version = "1.5.0", features = [] }
 libc = { version = "0.2.171" }
+log = { version = "0.4.20", optional = true }
 socket2 = { version = "0.6.1", features = ["all"] }
 thiserror = "2.0.0"
 uuid = { version = "1.12", features = ["v4"] }
@@ -31,8 +32,10 @@ crossterm = "0.29.0"
 serial_test = { version = "4.0.1", features = ["file_locks"] }
 
 [features]
-default = ["std"]
+default = ["std", "logging"]
 std = []
+# Reports errors from the library's background threads through the `log` crate. Disable to drop the dependency; the errors are then discarded.
+logging = ["dep:log"]
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }

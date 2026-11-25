@@ -20,7 +20,10 @@ cargo build
 
 ```sh
 cargo clippy
+cargo clippy --no-default-features --features std
 ```
+
+The second command checks the build without the `logging` feature. Log messages go through the crate's internal `log_warn!`, `log_debug!` and `log_trace!` macros, never `println!` or the `log` macros directly, so the code still builds when the feature is off. Start each message with or include "sACN" so it stands out in an application's logs.
 
 ## Documentation
 

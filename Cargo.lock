@@ -318,6 +318,7 @@ dependencies = [
  "byteorder",
  "crossterm",
  "libc",
+ "log",
  "serial_test",
  "socket2",
  "thiserror",
