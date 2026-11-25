@@ -37,7 +37,8 @@
 //! - **Priority**: every data packet carries a priority from 0 to 200 ([`packet::E131_MAX_PRIORITY`]), 100 by
 //!   default ([`packet::E131_DEFAULT_PRIORITY`]). Receivers use it to choose between sources.
 //! - **Synchronisation**: a source can send data that receivers hold until a synchronisation packet arrives on a
-//!   chosen synchronisation universe, so several universes change at the same moment.
+//!   chosen synchronisation universe, so several universes change at the same moment. Receivers start holding data
+//!   once they have received the first synchronisation packet on that universe.
 //! - **Universe discovery**: every source multicasts the list of universes it sends, every 10 seconds
 //!   ([`packet::E131_UNIVERSE_DISCOVERY_INTERVAL`]). Receivers collect these to learn which sources are on the network.
 //!
@@ -208,6 +209,8 @@
 //!
 //! Send each universe with the same synchronisation universe, wait briefly, then send one synchronisation packet.
 //! Receivers that support synchronisation hold the data and act on all of it when the synchronisation packet arrives.
+//! A receiver only starts holding data after it has received a synchronisation packet on that universe (ANSI E1.31-2016
+//! Section 11.1.1), so the first frame a receiver gets is acted on straight away.
 //! The synchronisation universe doesn't need to be registered; the first data universe is a reasonable choice.
 //!
 //! ```no_run
@@ -261,7 +264,9 @@
 //! Create a [`SacnReceiver`](receive::SacnReceiver), tell it which universes to listen to, then call
 //! [`recv`](receive::SacnReceiver::recv) in a loop. `recv` returns a `Vec` of [`DMXData`](receive::DMXData), one per
 //! universe that is ready to act on. Unsynchronised data is returned as soon as it arrives. Synchronised data is held
-//! until its synchronisation packet arrives, then all the universes waiting on it are returned together. Data is held
+//! until its synchronisation packet arrives, then all the universes waiting on it are returned together. Until the
+//! receiver has received a synchronisation packet on a data packet's synchronisation universe, that data is returned
+//! as soon as it arrives too, so output doesn't wait on a synchronisation stream that hasn't started. Data is held
 //! separately for each START code, so a universe whose source also sends per-address priority (START code `0xDD`)
 //! is returned twice: once with its levels and once with its priorities.
 //!

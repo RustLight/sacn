@@ -799,12 +799,15 @@ impl SacnReceiver {
             self.announce_timeout,
         )?;
 
-        // As per ANSI E1.31-2016 Section 6.2.6 and 11.1.2, if the Force_Synchronization option is set and synchronisation on this
-        // packet's synchronisation address has been lost (or has not started), the data doesn't have to wait for a synchronisation
-        // packet. Without the option the data is held until synchronisation resumes.
+        // As per ANSI E1.31-2016 Section 11.1.1 a receiver begins synchronising on receipt of the first synchronisation packet,
+        // so until one has been received on this packet's synchronisation address the data is processed immediately.
+        // Once synchronisation has started and is then lost, Section 6.2.6 and 11.1.2 apply: with the Force_Synchronization
+        // option set the data doesn't have to wait for a synchronisation packet, and without it the data is held until
+        // synchronisation resumes.
         let process_unsynchronized = data_pkt.synchronization_address != E131_NO_SYNC_ADDR
-            && data_pkt.force_synchronization
-            && !self.is_synchronized(data_pkt.synchronization_address);
+            && (!self.sync_started(data_pkt.synchronization_address)
+                || (data_pkt.force_synchronization
+                    && !self.is_synchronized(data_pkt.synchronization_address)));
 
         if process_unsynchronized {
             // Keep listening on the synchronisation address so synchronisation can resume.
@@ -1131,6 +1134,12 @@ impl SacnReceiver {
                 log_warn!("Failed to leave the sACN multicast group of sync address {u}: {e:?}");
             }
         }
+    }
+
+    /// Returns true if a synchronisation packet has ever been received on the given synchronisation address, meaning
+    /// synchronisation on that address has started as per ANSI E1.31-2016 Section 11.1.1.
+    fn sync_started(&self, sync_addr: u16) -> bool {
+        self.last_sync_packets.contains_key(&sync_addr)
     }
 
     /// Returns true if a synchronisation packet has been received on the given synchronisation address within
@@ -2819,6 +2828,68 @@ mod test {
     }
 
 
+    /// As per ANSI E1.31-2016 Section 11.1.1, synchronisation begins with the first synchronisation packet. Until then data
+    /// naming a synchronisation address is passed up straight away, whatever its `Force_Synchronization` option.
+    #[test]
+    fn test_data_passed_up_before_first_sync_packet() {
+        const UNIVERSE: u16 = 1;
+        const SYNC_UNI: u16 = 2;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        dmx_rcv.listen_universes(&[UNIVERSE]).unwrap();
+        let cid = Uuid::new_v4();
+
+        let res = dmx_rcv
+            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 0, false))
+            .unwrap()
+            .expect("data should be passed up before synchronisation has started");
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].universe, UNIVERSE);
+        assert_eq!(res[0].sync_uni, SYNC_UNI);
+        assert!(dmx_rcv.waiting_data.is_empty());
+        // The synchronisation address is joined so that the first synchronisation packet is received.
+        assert!(dmx_rcv.sync_universes.contains_key(&SYNC_UNI));
+
+        // The first synchronisation packet starts synchronisation; there is nothing waiting for it to release.
+        assert!(dmx_rcv
+            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
+            .unwrap()
+            .is_none());
+
+        // From then on the data waits for the synchronisation packet.
+        assert!(dmx_rcv
+            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 1, false))
+            .unwrap()
+            .is_none());
+        let res = dmx_rcv
+            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 1))
+            .unwrap()
+            .expect("held data should be released by the synchronisation packet");
+        assert_eq!(res[0].universe, UNIVERSE);
+    }
+
+    /// Synchronisation started on one address doesn't hold data naming a different address that has never had a
+    /// synchronisation packet.
+    #[test]
+    fn test_sync_started_is_per_sync_address() {
+        const UNIVERSE: u16 = 1;
+        const SYNC_UNI_A: u16 = 2;
+        const SYNC_UNI_B: u16 = 3;
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
+        let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+        dmx_rcv.listen_universes(&[UNIVERSE, SYNC_UNI_A]).unwrap();
+        let cid = Uuid::new_v4();
+
+        dmx_rcv
+            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI_A, 0))
+            .unwrap();
+
+        assert!(dmx_rcv
+            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI_B, 0, false))
+            .unwrap()
+            .is_some());
+    }
+
     #[test]
     fn test_handle_multi_page_discovery_packet() {
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), ACN_SDT_MULTICAST_PORT);
@@ -4039,10 +4110,11 @@ mod test {
         rcv.listen_universes(&[DATA_UNI]).unwrap();
         let src = Uuid::new_v4();
 
+        // Synchronisation hasn't started yet, so the data is passed up straight away.
         assert!(
             rcv.handle_data_packet(src, sync_data_packet(DATA_UNI, SYNC_UNI, 0))
                 .unwrap()
-                .is_none()
+                .is_some()
         );
         assert!(!rcv.is_listening(&SYNC_UNI));
         assert!(rcv.sync_universes.contains_key(&SYNC_UNI));
@@ -4051,9 +4123,21 @@ mod test {
         let on_sync_uni = generate_data_packet_framing_layer_seq_num(SYNC_UNI, 0);
         assert!(rcv.handle_data_packet(src, on_sync_uni).unwrap().is_none());
 
-        // The sync packet still releases the waiting data.
+        // The sync packet is still received, starting synchronisation.
+        assert!(
+            rcv.handle_sync_packet(src, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            rcv.handle_data_packet(src, sync_data_packet(DATA_UNI, SYNC_UNI, 1))
+                .unwrap()
+                .is_none()
+        );
+
+        // The next sync packet releases the waiting data.
         let released = rcv
-            .handle_sync_packet(src, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
+            .handle_sync_packet(src, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 1))
             .unwrap()
             .expect("sync packet should release the waiting data");
         assert_eq!(released.len(), 1);
