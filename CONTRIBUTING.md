@@ -69,13 +69,13 @@ The scripts run the network tests in parallel, one network namespace per test so
 
 ## Git hooks
 
-`.pre-commit-config.yaml` defines hooks that run the documentation and workflow checks from CI on your machine. Install [prek](https://prek.j178.dev) (or pre-commit), then enable them once:
+`.pre-commit-config.yaml` defines hooks that run the checks from CI on your machine. Install [prek](https://prek.j178.dev) (or pre-commit), then enable them once:
 
 ```sh
 prek install
 ```
 
-Before each commit they lint changed Markdown files with rumdl (configured in `.rumdl.toml`), check their web links with lychee (configured in `lychee.toml`), lint changed workflows with actionlint and audit them with zizmor, and build the documentation with warnings denied. Before each push they also run the doctests. Run every hook on the whole repository with `prek run --all-files`.
+Before each commit they check formatting with `cargo fmt --check`, run Clippy with warnings denied and `cargo test` (including the doctests), and build the documentation with warnings denied. They also lint changed Markdown files with rumdl (configured in `.rumdl.toml`), check their web links with lychee (configured in `lychee.toml`), and lint changed workflows with actionlint and audit them with zizmor. Run every hook on the whole repository with `prek run --all-files`.
 
 ## Continuous integration
 
