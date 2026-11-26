@@ -22,4 +22,7 @@ exclude = [
     # docs.rs shows the last release, which can lack anchors for sections
     # added to the crate docs since then.
     '^https://docs\.rs/sacn/?#',
+    # The coverage report, which CI publishes to GitHub Pages from main, so it
+    # doesn't exist yet when a pull request that adds a link to it is checked.
+    '^https://rustlight\.github\.io/sacn/',
 ]

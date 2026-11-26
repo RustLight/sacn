@@ -67,6 +67,18 @@ docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --network sacn-ipv6 sacn-test
 
 The scripts run the network tests in parallel, one network namespace per test so their sockets can't clash, as many at once as there are CPU cores (set `SACN_TEST_JOBS` to change that). To run them on a Linux host instead, run `docker-linux/run_tests.sh` or `docker-linux/run_tests_ipv6.sh` as root; `docker-linux/run_isolated.sh` sets up each namespace's addresses and routes.
 
+### Coverage
+
+[cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov) measures which lines `cargo test` runs. Install it once, then run the tests with coverage and open the HTML report:
+
+```sh
+rustup component add llvm-tools-preview
+cargo install cargo-llvm-cov --locked
+cargo llvm-cov --open
+```
+
+The doctests and the network tests aren't measured: cargo-llvm-cov needs nightly Rust for doctests, and the network tests run separately in Docker. CI publishes the report for `main` at <https://rustlight.github.io/sacn/>.
+
 ## Git hooks
 
 `.pre-commit-config.yaml` defines hooks that run the checks from CI on your machine. Install [prek](https://prek.j178.dev) (or pre-commit), then enable them once:
@@ -81,13 +93,15 @@ Before each commit they check formatting with `cargo fmt --check`, run Clippy wi
 
 `.github/workflows/rust.yml` runs on every pull request. A first job looks at which files changed, so the other jobs only run when they're needed:
 
-* When code changes (`src/`, `tests/`, `examples/`, Cargo files, `docker-linux/` or the workflows): a rustfmt check, then build, Clippy with warnings denied and `cargo test` on Linux, Windows and macOS, the IPv4 and IPv6 network tests in the Docker image on Linux, and a check of the workflow lockfile. Cargo runs with `--locked`, so update `Cargo.lock` alongside `Cargo.toml`.
+* When code changes (`src/`, `tests/`, `examples/`, Cargo files, `docker-linux/` or the workflows): a rustfmt check, then build, Clippy with warnings denied and `cargo test` on Linux, Windows and macOS, the IPv4 and IPv6 network tests in the Docker image on Linux, a [coverage](#coverage) run, and a check of the workflow lockfile. Cargo runs with `--locked`, so update `Cargo.lock` alongside `Cargo.toml`.
 * When code or Markdown changes: the documentation build with warnings denied, and the doctests.
 * When Markdown or the workflows change: the rumdl, lychee, actionlint and zizmor hooks from `.pre-commit-config.yaml`.
 
 Every action the workflows use is pinned in `.github/workflows/actions.lock`. After changing a `uses:` line, regenerate it with [`gh actions-lock`](https://github.com/github/gh-actions-lock) (`gh extension install github/gh-actions-lock`) and commit it with the workflow change.
 
-Pushes to `main` run everything. The `all-checks` job passes only when every job above passed or was skipped, and is the check that branch protection requires.
+The coverage job's summary lists the coverage of each file and, from [diff-cover](https://github.com/Bachmann1234/diff_cover), of the lines the pull request changes. Its full HTML report is attached to the workflow run as the `coverage-report` artifact. Coverage is reported, not enforced.
+
+Pushes to `main` run everything, and also publish the coverage report to GitHub Pages along with the data for the README's coverage badge. The `all-checks` job passes only when every job above passed or was skipped, and is the check that branch protection requires.
 
 ## Other testing material
 

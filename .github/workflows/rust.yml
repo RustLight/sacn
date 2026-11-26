@@ -143,6 +143,106 @@ jobs:
     - name: Run tests
       run: cargo test --locked --verbose
 
+  # Measures the line coverage of `cargo test` with cargo-llvm-cov. The job
+  # summary shows the totals for each file and, on pull requests, diff-cover's
+  # report on the lines the pull request changes. The HTML report is kept as an
+  # artifact; on main, coverage-pages publishes it with the README badge's data.
+  # Doctests aren't measured, because cargo-llvm-cov needs nightly Rust for them.
+  coverage:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.4.0
+      with:
+        persist-credentials: false
+        # diff-cover compares the pull request with its base branch.
+        fetch-depth: 0
+
+    - name: Install cargo-llvm-cov
+      run: |
+        rustup component add llvm-tools-preview
+        cargo install cargo-llvm-cov --locked --version 0.9.1
+
+    - name: Run tests with coverage
+      run: |
+        cargo llvm-cov --locked --no-report
+        cargo llvm-cov report --html
+        cargo llvm-cov report --lcov --output-path target/llvm-cov/lcov.info
+        cargo llvm-cov report --json --summary-only --output-path target/llvm-cov/summary.json
+
+    - name: Summarise coverage
+      run: |
+        {
+          echo "## Coverage"
+          echo
+          echo "| File | Lines | Functions | Regions |"
+          echo "| --- | ---: | ---: | ---: |"
+          jq -r --arg root "$GITHUB_WORKSPACE/" '
+            def pct: "\(. * 100 | round / 100)%";
+            def row($name): "| \($name) | \(.lines.percent | pct) | \(.functions.percent | pct) | \(.regions.percent | pct) |";
+            .data[0]
+            | (.files[] | .summary as $s | .filename | ltrimstr($root) as $f | $s | row($f)),
+              (.totals | row("**Total**"))
+          ' target/llvm-cov/summary.json
+          echo
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Report coverage of changed lines
+      if: github.event_name == 'pull_request'
+      env:
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        pipx run --spec diff-cover==11.0.1 diff-cover target/llvm-cov/lcov.info \
+          --compare-branch "origin/$BASE_REF" \
+          --format "markdown:target/llvm-cov/diff-cover.md"
+        cat target/llvm-cov/diff-cover.md >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload the coverage report
+      uses: actions/upload-artifact@v7.0.2
+      with:
+        name: coverage-report
+        path: target/llvm-cov/
+
+    # Data for the README badge, read by shields.io's endpoint badge
+    # (https://shields.io/badges/endpoint-badge).
+    - name: Write the badge data
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        jq '.data[0].totals.lines.percent as $p | {
+          schemaVersion: 1,
+          label: "coverage",
+          message: "\($p * 10 | round / 10)%",
+          color: (if $p >= 90 then "brightgreen" elif $p >= 75 then "green" elif $p >= 60 then "yellow" else "red" end)
+        }' target/llvm-cov/summary.json > target/llvm-cov/html/coverage.json
+
+    - name: Upload the Pages site
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-pages-artifact@v5.0.0
+      with:
+        path: target/llvm-cov/html/
+
+  # Publishes main's coverage report and badge data to GitHub Pages, at
+  # https://rustlight.github.io/sacn/. Not part of all-checks, as it only runs
+  # after a merge.
+  coverage-pages:
+    needs: coverage
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deploy
+      uses: actions/deploy-pages@v5.0.1
+
   # Runs for code and docs changes alike: Markdown files can be pulled into the
   # crate docs with include_str!, so their examples run as doctests.
   docs:
@@ -202,7 +302,7 @@ jobs:
   # The single required status check. Jobs skipped by the path filter count as
   # passing; a failed or cancelled job (including `changes`) fails this one.
   all-checks:
-    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, docs, lockfile, lint]
+    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, coverage, docs, lockfile, lint]
     if: always()
     runs-on: ubuntu-latest
     steps:
