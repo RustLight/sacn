@@ -3,40 +3,85 @@ name: Rust
 on:
   push:
     branches: [ "main" ]
+  # No branch filter, so stacked pull requests (based on another PR's branch) get CI too.
   pull_request:
-    branches: [ "main" ]
+
+permissions:
+  contents: read
+  # dorny/paths-filter lists a pull request's changed files through the API.
+  pull-requests: read
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Decides which of the jobs below a change needs. Pushes to main always run everything.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ github.event_name != 'pull_request' || steps.filter.outputs.code == 'true' }}
+      docs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
+    steps:
+    - uses: dorny/paths-filter@v4.0.3
+      if: github.event_name == 'pull_request'
+      id: filter
+      with:
+        # Anything that can change what gets built or tested, including doc
+        # comments in .rs files, which rustdoc and doctests read.
+        filters: |
+          code:
+            - 'src/**'
+            - 'tests/**'
+            - 'examples/**'
+            - 'benches/**'
+            - 'build.rs'
+            - 'Cargo.toml'
+            - 'Cargo.lock'
+            - '.cargo/**'
+            - 'rust-toolchain'
+            - 'rust-toolchain.toml'
+            - 'clippy.toml'
+            - '.clippy.toml'
+            - 'docker-linux/**'
+            - '.github/workflows/**'
+          docs:
+            - '**/*.md'
+            - 'documentation/**'
+            - 'LICENSE-*'
+
   test-linux:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4.4.0
 
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --locked --verbose
 
     - name: Clippy
-      run: cargo clippy
+      run: cargo clippy --locked
 
     - name: Run tests
-      run: cargo test --verbose
-  
+      run: cargo test --locked --verbose
+
   test-linux-ipv4:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4.4.0
     - name: Build
       run: docker build -t sacn-tests -f docker-linux/Dockerfile .
     - name: Run tests
       run: docker run --cap-add=NET_ADMIN sacn-tests
 
   test-linux-ipv6:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4.4.0
     - name: Build
       run: docker build -t sacn-tests -f docker-linux/Dockerfile .
     - name: Create IPv6 network
@@ -45,30 +90,80 @@ jobs:
       run: docker run --cap-add=NET_ADMIN --network sacn-ipv6 sacn-tests ./run_tests_ipv6.sh
 
   test-windows:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4.4.0
 
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --locked --verbose
 
     - name: Clippy
-      run: cargo clippy
+      run: cargo clippy --locked
 
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --locked --verbose
 
   test-macos:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4.4.0
 
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --locked --verbose
 
     - name: Clippy
-      run: cargo clippy
+      run: cargo clippy --locked
 
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --locked --verbose
 
+  # Runs for code and docs changes alike: Markdown files can be pulled into the
+  # crate docs with include_str!, so their examples run as doctests.
+  docs:
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.4.0
+
+    - name: Build documentation
+      run: cargo doc --locked --no-deps
+
+    - name: Run doctests
+      run: cargo test --locked --doc
+
+  # Checks that .github/workflows/actions.lock matches the workflows and that
+  # every locked action commit still verifies upstream. After changing a
+  # `uses:` line, run `gh actions-lock` to update the lockfile.
+  lockfile:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.4.0
+      with:
+        persist-credentials: false
+    - uses: github/gh-actions-lock@verify/v0.5.1
+
+  # The single required status check. Jobs skipped by the path filter count as
+  # passing; a failed or cancelled job (including `changes`) fails this one.
+  all-checks:
+    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, docs, lockfile]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check job results
+      env:
+        RESULTS: ${{ join(needs.*.result, ' ') }}
+      run: |
+        echo "Job results: $RESULTS"
+        for result in $RESULTS; do
+          case "$result" in
+            success|skipped) ;;
+            *) echo "A required job did not succeed."; exit 1 ;;
+          esac
+        done

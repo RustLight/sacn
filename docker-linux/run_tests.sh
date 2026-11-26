@@ -21,5 +21,5 @@ ip a show dev lo
 # EOF
 # sysctl -p
 
-cargo test
-cargo test --test ipv4_tests -- --ignored --test-threads=1
+cargo test --locked
+cargo test --locked --test ipv4_tests -- --ignored --test-threads=1
