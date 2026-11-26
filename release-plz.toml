@@ -1,0 +1,66 @@
+# release-plz configuration: https://release-plz.dev/docs/config
+#
+# On every push to main, the release-plz workflow opens or updates a release
+# pull request that bumps the version and updates CHANGELOG.md. Merging that
+# pull request publishes the crate to crates.io, pushes the `vX.Y.Z` tag and
+# creates the GitHub Release. See "Releasing" in CONTRIBUTING.md.
+
+[workspace]
+# Publish only when the release pull request is merged, not on every push to
+# main that happens to carry an unpublished version.
+release_always = false
+# Leave dependency updates to their own pull requests.
+dependencies_update = false
+# Prefix of the release pull request's branch. release-plz also uses it to
+# recognise the release pull request when it is merged.
+pr_branch_prefix = "release-plz-"
+git_release_body = """
+{{ changelog }}
+{% if remote.contributors %}
+### Contributors
+{% for contributor in remote.contributors %}
+* @{{ contributor.username }}
+{%- endfor %}
+{% endif %}
+"""
+
+[changelog]
+# Entries come from the conventional commit messages on main (with squash
+# merges, the pull request titles). The HTML comments only order the groups and
+# are stripped from the headings.
+commit_parsers = [
+    { message = "^feat", group = "<!-- 0 -->Added" },
+    { message = "^fix", group = "<!-- 1 -->Fixed" },
+    { message = "^perf", group = "<!-- 2 -->Performance" },
+    { message = "^docs", group = "<!-- 3 -->Documentation" },
+    { message = "^(chore|build)\\(deps\\)", group = "<!-- 4 -->Dependencies" },
+    # Changes that don't affect users of the crate.
+    { message = "^(ci|test|style|chore|build)(\\(.*\\))?!?:", skip = true },
+    { message = "^Merge (pull request|branch)", skip = true },
+    { message = ".*", group = "<!-- 5 -->Other" },
+]
+# Squash merge commits end with the pull request number, which the template
+# already links.
+commit_preprocessors = [
+    { pattern = '(?m)\s*\(#[0-9]+\)$', replace = "" },
+]
+# Keep breaking changes in the changelog even if a parser above would skip them.
+protect_breaking_commits = true
+# Keep the blank lines around headings that the Markdown linter requires.
+trim = false
+body = """
+## [{{ version }}]{%- if release_link -%}({{ release_link }}){% endif %} - {{ timestamp | date(format="%Y-%m-%d") }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+
+{% for commit in commits -%}
+- {% if commit.scope %}*({{ commit.scope }})* {% endif %}{% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message | upper_first }}{{ self::pr(commit=commit) }}{{ self::username(commit=commit) }}
+{% endfor -%}
+{% endfor %}
+{%- macro username(commit) -%}
+    {% if commit.remote.username %} by @{{ commit.remote.username }}{% endif -%}
+{% endmacro -%}
+{%- macro pr(commit) -%}
+    {% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}]({{ remote.link }}/pull/{{ commit.remote.pr_number }})){% endif -%}
+{% endmacro -%}
+"""

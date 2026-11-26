@@ -3,6 +3,10 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
+    '.github/workflows/release-plz.yml':
+        - 'actions/checkout@v4.4.0'
+        - 'actions/create-github-app-token@v3.4.0'
+        - 'release-plz/action@v0.5.148'
     '.github/workflows/rust.yml':
         - 'actions/checkout@v4.4.0'
         - 'actions/deploy-pages@v5.0.1'
@@ -18,6 +22,11 @@ dependencies:
         commit: 'sha1-11d5960a326750d5838078e36cf38b85af677262'
         owner_id: 44036562
         repo_id: 197814629
+    'actions/create-github-app-token@v3.4.0':
+        ref: 'v3.4.0'
+        commit: 'sha1-f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc'
+        owner_id: 44036562
+        repo_id: 642580244
     'actions/deploy-pages@v5.0.1':
         ref: 'v5.0.1'
         commit: 'sha1-368f82528645a54fb793d4d04e342629a3f51346'
@@ -45,6 +54,11 @@ dependencies:
         repo_id: 496012378
         uses:
             - 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f'
+    'cargo-bins/cargo-binstall@851112458b5f28a29e5bc14a690c3f283d9dcc6f':
+        ref: 'v1.26.2'
+        commit: 'sha1-851112458b5f28a29e5bc14a690c3f283d9dcc6f'
+        owner_id: 110581826
+        repo_id: 321270638
     'dorny/paths-filter@v4.0.3':
         ref: 'v4.0.3'
         commit: 'sha1-ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d'
@@ -60,3 +74,22 @@ dependencies:
         commit: 'sha1-7b101f8338a08d2bd6fdb3625e4e7692428763a3'
         owner_id: 10510431
         repo_id: 1052387486
+    'release-plz/action@v0.5.148':
+        ref: 'v0.5.148'
+        commit: 'sha1-66b324fd6c72d05d2a08568492ecdd62bfb8a62b'
+        owner_id: 188756284
+        repo_id: 476470908
+        uses:
+            - 'cargo-bins/cargo-binstall@851112458b5f28a29e5bc14a690c3f283d9dcc6f'
+            - 'release-plz/git-config@59144859caf016f8b817a2ac9b051578729173c4'
+            - 'taiki-e/install-action@1919c4a95903d2c33e4a221102edca87309fc14b'
+    'release-plz/git-config@59144859caf016f8b817a2ac9b051578729173c4':
+        ref: 'v0.1.2'
+        commit: 'sha1-59144859caf016f8b817a2ac9b051578729173c4'
+        owner_id: 188756284
+        repo_id: 735058483
+    'taiki-e/install-action@1919c4a95903d2c33e4a221102edca87309fc14b':
+        ref: 'v2.89.0'
+        commit: 'sha1-1919c4a95903d2c33e4a221102edca87309fc14b'
+        owner_id: 43724913
+        repo_id: 442947557

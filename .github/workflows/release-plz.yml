@@ -1,0 +1,92 @@
+name: Release-plz
+
+# Automates releases with release-plz (https://release-plz.dev), configured in
+# release-plz.toml. On every push to main:
+# - release-plz-pr opens or updates the release pull request, which bumps the
+#   version and updates CHANGELOG.md.
+# - release-plz-release runs when the release pull request is merged: it
+#   publishes the crate to crates.io, pushes the vX.Y.Z tag and creates the
+#   GitHub Release.
+# See "Releasing" in CONTRIBUTING.md for the one-time setup.
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions: {}
+
+jobs:
+  release-plz-release:
+    name: Release-plz release
+    if: github.repository == 'RustLight/sacn'
+    runs-on: ubuntu-latest
+    # Holds the GitHub App secrets, and is the environment crates.io trusted
+    # publishing is restricted to.
+    environment: release
+    permissions:
+      contents: read
+      # Trusted publishing: exchanges the workflow's OIDC token for a
+      # short-lived crates.io token.
+      id-token: write
+    steps:
+    - uses: actions/checkout@v4.4.0
+      with:
+        # release-plz needs the history to find the release pull request's
+        # commit and the previous release.
+        fetch-depth: 0
+        persist-credentials: false
+
+    # Tags and releases created with the default GITHUB_TOKEN don't trigger
+    # other workflows, and the tag ruleset doesn't let it create tags, so
+    # release-plz uses a token from the repository's GitHub App instead.
+    - name: Generate GitHub token
+      id: app-token
+      uses: actions/create-github-app-token@v3.4.0
+      with:
+        app-id: ${{ secrets.RELEASE_APP_ID }}
+        private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+        permission-contents: write
+        # With release_always = false, release-plz looks up the pull request
+        # of the pushed commit to tell whether it was the release pull request.
+        permission-pull-requests: read
+
+    - name: Run release-plz
+      uses: release-plz/action@v0.5.148
+      with:
+        command: release
+      env:
+        GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+  release-plz-pr:
+    name: Release-plz PR
+    if: github.repository == 'RustLight/sacn'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+    concurrency:
+      group: release-plz-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+    - uses: actions/checkout@v4.4.0
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+    # A pull request opened with the default GITHUB_TOKEN gets no CI runs, so
+    # the required checks would never pass on the release pull request.
+    - name: Generate GitHub token
+      id: app-token
+      uses: actions/create-github-app-token@v3.4.0
+      with:
+        app-id: ${{ secrets.RELEASE_APP_ID }}
+        private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+        permission-contents: write
+        permission-pull-requests: write
+
+    - name: Run release-plz
+      uses: release-plz/action@v0.5.148
+      with:
+        command: release-pr
+      env:
+        GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}

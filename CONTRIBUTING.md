@@ -112,6 +112,25 @@ The coverage job's summary lists the coverage of each file and, from [diff-cover
 
 Pushes to `main` run everything, and also publish the coverage report to GitHub Pages along with the data for the README's coverage badge. The `all-checks` job passes only when every job above passed or was skipped, and is the check that branch protection requires.
 
+## Releasing
+
+Releases are automated with [release-plz](https://release-plz.dev), configured in `release-plz.toml` and run by `.github/workflows/release-plz.yml`.
+
+Pull requests are squash-merged, so each one becomes a single commit on `main` whose message is the pull request title. Write titles in [Conventional Commits](https://www.conventionalcommits.org) format, because they become the changelog entries: `feat` goes under "Added", `fix` under "Fixed", `perf` under "Performance", `docs` under "Documentation" and `chore(deps)` under "Dependencies". `ci`, `test`, `style`, `build` and other `chore` changes are left out of the changelog, unless they are marked as breaking with `!`.
+
+On every push to `main`, release-plz opens or updates a release pull request. It sets the next version in `Cargo.toml` and `Cargo.lock`, following the Cargo SemVer rules (on 0.x, a breaking change bumps the minor version and anything else the patch version), and checks the public API with [cargo-semver-checks](https://github.com/obi1kenobi/cargo-semver-checks). It also adds the new section to `CHANGELOG.md`, crediting each pull request's author. Edit the pull request to reword the changelog or to pick a different version.
+
+Merging the release pull request makes the release: release-plz publishes the crate to crates.io, pushes the `vX.Y.Z` tag and creates the GitHub Release with the changelog section as its notes. Nothing is published until then.
+
+### One-time setup
+
+Maintainers set these up once in the repository and on crates.io:
+
+* A GitHub App with read and write access to "Contents" and "Pull requests", installed on the repository. Its tokens let the release pull request run CI, which the default `GITHUB_TOKEN` can't. Add the App as a bypass actor on the tag ruleset so it can push release tags.
+* A `release` deployment environment (Settings, Environments) with the App's ID and private key as the secrets `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY`.
+* [Trusted publishing](https://crates.io/docs/trusted-publishing) for the crate on crates.io, for the `RustLight/sacn` repository, the `release-plz.yml` workflow and the `release` environment. No crates.io token is stored in the repository.
+* Squash merging, with the pull request title as the default commit message, as the only merge method.
+
 ## Other testing material
 
 * `documentation/` holds the ANSI E1.31-2018 compliance checklist and design notes from the original project, as PDFs.
