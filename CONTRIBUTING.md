@@ -57,7 +57,7 @@ The easiest way to get the right setup is the Docker image in `docker-linux`, wh
 ```sh
 docker build -t sacn-test -f docker-linux/Dockerfile .
 
-# IPv4: runs cargo test, then the IPv4 tests. SYS_ADMIN lets each test run in its own network namespace.
+# IPv4: runs the IPv4 tests. SYS_ADMIN lets each test run in its own network namespace.
 docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN sacn-test
 
 # IPv6: needs a docker network with IPv6 enabled.
@@ -77,7 +77,16 @@ cargo install cargo-llvm-cov --locked
 cargo llvm-cov --open
 ```
 
-The doctests and the network tests aren't measured: cargo-llvm-cov needs nightly Rust for doctests, and the network tests run separately in Docker. CI publishes the report for `main` at <https://rustlight.github.io/sacn/>.
+That measures `cargo test` only. CI also measures the [network tests](#network-tests): the Linux job records the coverage of `cargo test`, the IPv4 and IPv6 jobs run their tests through `docker-linux/run_coverage.sh` in the Docker image built with cargo-llvm-cov, and the coverage job merges what the three recorded. To measure all of them locally in one report, mount the repository at the same path in the container, so the reports land in `target/llvm-cov/` with paths that match your checkout:
+
+```sh
+docker build --build-arg COVERAGE=1 -t sacn-test-cov -f docker-linux/Dockerfile .
+docker network create --ipv6 --subnet fd00:5ac0::/64 sacn-ipv6
+docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --network sacn-ipv6 \
+    -v "$PWD:$PWD" -w "$PWD" sacn-test-cov ./docker-linux/run_coverage.sh unit ipv4 ipv6
+```
+
+The files in `target/` are then owned by root; take them back with `sudo chown -R "$(id -u):$(id -g)" target`. Doctests aren't measured, because cargo-llvm-cov needs nightly Rust for them. CI publishes the report for `main` at <https://rustlight.github.io/sacn/>.
 
 ## Git hooks
 
@@ -93,7 +102,7 @@ Before each commit they check formatting with `cargo fmt --check`, run Clippy wi
 
 `.github/workflows/rust.yml` runs on every pull request. A first job looks at which files changed, so the other jobs only run when they're needed:
 
-* When code changes (`src/`, `tests/`, `examples/`, Cargo files, `docker-linux/` or the workflows): a rustfmt check, then build, Clippy with warnings denied and `cargo test` on Linux, Windows and macOS, the IPv4 and IPv6 network tests in the Docker image on Linux, a [coverage](#coverage) run, and a check of the workflow lockfile. Cargo runs with `--locked`, so update `Cargo.lock` alongside `Cargo.toml`.
+* When code changes (`src/`, `tests/`, `examples/`, Cargo files, `docker-linux/` or the workflows): a rustfmt check, then build, Clippy with warnings denied and `cargo test` on Linux, Windows and macOS, the IPv4 and IPv6 network tests in the Docker image on Linux, a job that merges the [coverage](#coverage) recorded by the Linux test jobs, and a check of the workflow lockfile. Cargo runs with `--locked`, so update `Cargo.lock` alongside `Cargo.toml`.
 * When code or Markdown changes: the documentation build with warnings denied, and the doctests.
 * When Markdown or the workflows change: the rumdl, lychee, actionlint and zizmor hooks from `.pre-commit-config.yaml`.
 
