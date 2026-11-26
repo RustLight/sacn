@@ -37,7 +37,8 @@ Update the documentation in the same pull request as the behaviour it describes:
 ## Git and pull requests
 
 * Use descriptive branch names with a type prefix, for example `fix/no-empty-universe-pages` or `chore/update-uuid`.
-* Write commit messages and pull request titles in [Conventional Commits](https://www.conventionalcommits.org) format, for example `fix(sender): do not send empty universe discovery pages` or `chore(deps): update uuid to 1.16`. Common scopes are `sender`, `receiver`, `packet`, `docs`, `ci` and `deps`.
+* Write commit messages and pull request titles in [Conventional Commits](https://www.conventionalcommits.org) format, always with a scope naming the area changed, for example `fix(sender): do not send empty universe discovery pages` or `chore(deps): update uuid to 1.16`, not `fix: ...`. Common scopes are `sender`, `receiver`, `packet`, `docs`, `ci`, `deps` and `cargo`.
+* Mark a breaking change with `!` after the scope, for example `fix(cargo)!: require Rust 1.88 or later`. A change is breaking if it can break code or builds that depend on the crate: a public API change, a raised minimum supported Rust version, or a behaviour change that existing callers may rely on. release-plz then bumps the minor version (the major version from 1.0) and tags the changelog entry as breaking. cargo-semver-checks only catches public API changes.
 * Pull requests are squash-merged and their titles become the changelog entries (see [Releasing](CONTRIBUTING.md#releasing)), so write titles that describe the change for users of the crate.
 * Keep pull request branches up to date with `main` by rebasing, not merging, and push with `--force-with-lease`.
 * One pull request per fix or feature. Split unrelated findings into separate pull requests, and say in the body when one depends on another.
