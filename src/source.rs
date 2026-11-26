@@ -140,7 +140,7 @@ impl SacnSource {
     /// This generates a new CID automatically using random values.
     ///
     /// # Errors
-    /// See (`with_cid_ip`)[`with_cid_ip`]
+    /// See [`with_cid_ip`](Self::with_cid_ip)
     pub fn new_v4(name: &str) -> Result<SacnSource> {
         let cid = Uuid::new_v4();
         SacnSource::with_cid_v4(name, cid)
@@ -149,7 +149,7 @@ impl SacnSource {
     /// Constructs a new `SacnSource` with the given name and specified CID binding to an IPv4 address.
     ///
     /// # Errors
-    /// See (`with_cid_ip`)[`with_cid_ip`]
+    /// See [`with_cid_ip`](Self::with_cid_ip)
     pub fn with_cid_v4(name: &str, cid: Uuid) -> Result<SacnSource> {
         let ip = SocketAddr::new(
             IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
@@ -164,7 +164,7 @@ impl SacnSource {
     /// By default this will only receive IPv6 data but IPv4 can also be enabled by calling `set_ipv6_only(false)`.
     ///
     /// # Errors
-    /// See (`with_cid_ip`)[`with_cid_ip`]
+    /// See [`with_cid_ip`](Self::with_cid_ip)
     pub fn new_v6(name: &str) -> Result<SacnSource> {
         let cid = Uuid::new_v4();
         SacnSource::with_cid_v6(name, cid)
@@ -173,7 +173,7 @@ impl SacnSource {
     /// Constructs a new `SacnSource` with the given name and specified CID binding to an IPv6 address.
     ///
     /// # Errors
-    /// See (`with_cid_ip`)[`with_cid_ip`]
+    /// See [`with_cid_ip`](Self::with_cid_ip)
     pub fn with_cid_v6(name: &str, cid: Uuid) -> Result<SacnSource> {
         let ip = SocketAddr::new(
             IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)),
@@ -191,7 +191,7 @@ impl SacnSource {
     /// and lost. Port 0 (an ephemeral port) is a good choice.
     ///
     /// # Errors
-    /// See (`with_cid_ip`)[`with_cid_ip`]
+    /// See [`with_cid_ip`](Self::with_cid_ip)
     pub fn with_ip(name: &str, ip: SocketAddr) -> Result<SacnSource> {
         SacnSource::with_cid_ip(name, Uuid::new_v4(), ip)
     }
@@ -263,7 +263,7 @@ impl SacnSource {
     /// the list of universes that appear in universe discovery packets that are sent (depending on the
     /// `set_is_sending_discovery` flag) periodically.
     ///
-    /// If registering multiple universes see (`register_universes`)[`register_universes`].
+    /// If registering multiple universes see [`register_universes`](Self::register_universes).
     ///
     /// # Arguments
     /// universe: The sACN universe to register for usage as a data universe and/or synchronisation address. Note that sACN
@@ -297,7 +297,7 @@ impl SacnSource {
     ///                 It doesn't need to be registered, so a universe used only for synchronisation isn't advertised in
     ///                 universe discovery.
     ///
-    /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate than specified in ANSI E1.11 [DMX] unless
+    /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate than specified in ANSI E1.11 \[DMX\] unless
     ///     configured by the user to do so in an environment which doesn't contain any E1.31 to DMX512-A converters.
     ///
     /// Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the follow up sync packet.
@@ -459,7 +459,7 @@ impl SacnSource {
 
     /// Returns true if `SacnSourceInternal` is in preview mode, false if not.
     ///
-    /// For details of `preview_mode` see (`set_preview_mode`)[`set_preview_mode`].
+    /// For details of `preview_mode` see [`set_preview_mode`](Self::set_preview_mode).
     ///
     /// # Errors
     /// `SourceCorrupt`: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
@@ -484,7 +484,7 @@ impl SacnSource {
 
     /// Returns the value of the `Force_Synchronization` option set on data packets sent by this `SacnSource`.
     ///
-    /// For details see (`set_force_synchronization`)[`set_force_synchronization`].
+    /// For details see [`set_force_synchronization`](Self::set_force_synchronization).
     ///
     /// # Errors
     /// `SourceCorrupt`: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
@@ -755,7 +755,7 @@ impl SacnSourceInternal {
     /// De-registers the given universe for sending with this source.
     ///
     /// # Errors
-    /// `IllegalUniverse`: Returned if the universe is outwith the allowed range, see (`is_universe_in_range`)[`fn.is_universe_in_range.packet`].
+    /// `IllegalUniverse`: Returned if the universe is outwith the allowed range, see [`is_universe_in_range`](crate::packet::is_universe_in_range).
     ///
     /// `UniverseNotFound`: Returned if the given universe was never registered originally.
     fn deregister_universe(&mut self, universe: u16) -> Result<()> {
@@ -809,7 +809,7 @@ impl SacnSourceInternal {
     ///                 It doesn't need to be registered, so a universe used only for synchronisation isn't advertised in
     ///                 universe discovery.
     ///
-    /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate than specified in ANSI E1.11 [DMX] unless
+    /// As per ANSI E1.31-2018 Section 6.6.1 this method shouldn't be called at a higher refresher rate than specified in ANSI E1.11 \[DMX\] unless
     ///     configured by the user to do so in an environment which doesn't contain any E1.31 to DMX512-A converters.
     ///
     /// Note as per ANSI-E1.31-2018 Appendix B.1 it is recommended to have a small delay before sending the follow up sync packet.
@@ -1471,7 +1471,7 @@ fn unlock_internal_mut(
 /// src: A reference to the `SacnSourceInternal` for which to send the universe discovery packet with/from.
 ///
 /// # Errors
-/// Returns a `SourceCorrupt` error if the internal source mutex has been corrupted, see (`unlock_internal`)[`unlock_internal`].
+/// Returns a `SourceCorrupt` error if the internal source mutex has been corrupted, see [`unlock_internal`].
 ///
 /// Returns an error if a discovery packet cannot be sent, see (`send_universe_discovery`)[`fn.send_universe_discovery.source`].
 fn perform_periodic_update(src: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<()> {
