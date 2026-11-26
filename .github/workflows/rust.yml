@@ -293,6 +293,37 @@ jobs:
       id: deploy
       uses: actions/deploy-pages@v5.0.1
 
+  # Checks that the library builds with the oldest Rust it supports, the
+  # rust-version in Cargo.toml. The tests and dev-dependencies can need a newer
+  # Rust, so only the library is checked. Cargo.lock is resolved afresh for that
+  # Rust version, picking dependency versions it can build, as Cargo does for
+  # users of the crate.
+  msrv:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Install the minimum supported Rust version
+      id: msrv
+      run: |
+        msrv=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "sacn") | .rust_version')
+        echo "Minimum supported Rust version: $msrv"
+        rustup toolchain install "$msrv" --profile minimal
+        echo "version=$msrv" >> "$GITHUB_OUTPUT"
+
+    - name: Check the library
+      env:
+        MSRV: ${{ steps.msrv.outputs.version }}
+        CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: fallback
+      run: |
+        cargo "+$MSRV" generate-lockfile
+        cargo "+$MSRV" check --lib
+        cargo "+$MSRV" check --lib --no-default-features --features std
+
   # Runs for code and docs changes alike: Markdown files can be pulled into the
   # crate docs with include_str!, so their examples run as doctests.
   docs:
@@ -352,7 +383,7 @@ jobs:
   # The single required status check. Jobs skipped by the path filter count as
   # passing; a failed or cancelled job (including `changes`) fails this one.
   all-checks:
-    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, coverage, docs, lockfile, lint]
+    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, msrv, coverage, docs, lockfile, lint]
     if: always()
     runs-on: ubuntu-latest
     steps:

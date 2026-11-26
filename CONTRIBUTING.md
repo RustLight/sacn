@@ -4,7 +4,7 @@ This guide covers building the library from source and running its tests. To use
 
 ## Prerequisites
 
-* [rustup](https://rustup.rs). It installs the Rust version pinned in `rust-toolchain.toml`, with Clippy and rustfmt, the first time you run `cargo` in the repository. The crate itself supports Rust 1.93.1 or later (`rust-version` in `Cargo.toml`).
+* [rustup](https://rustup.rs). It installs the Rust version pinned in `rust-toolchain.toml`, with Clippy and rustfmt, the first time you run `cargo` in the repository. The crate itself supports Rust 1.88 or later (`rust-version` in `Cargo.toml`), which the `msrv` CI job checks. The tests and dev-dependencies can need a newer Rust.
 * Git.
 * For the network integration tests: Linux with root access, or Docker (see [Network tests](#network-tests)).
 
@@ -102,7 +102,7 @@ Before each commit they check formatting with `cargo fmt --check`, run Clippy wi
 
 `.github/workflows/rust.yml` runs on every pull request. A first job looks at which files changed, so the other jobs only run when they're needed:
 
-* When code changes (`src/`, `tests/`, `examples/`, Cargo files, `docker-linux/` or the workflows): a rustfmt check, then build, Clippy with warnings denied and `cargo test` on Linux, Windows and macOS, the IPv4 and IPv6 network tests in the Docker image on Linux, a job that merges the [coverage](#coverage) recorded by the Linux test jobs, and a check of the workflow lockfile. Cargo runs with `--locked`, so update `Cargo.lock` alongside `Cargo.toml`.
+* When code changes (`src/`, `tests/`, `examples/`, Cargo files, `docker-linux/` or the workflows): a rustfmt check, then build, Clippy with warnings denied and `cargo test` on Linux, Windows and macOS, the IPv4 and IPv6 network tests in the Docker image on Linux, a job that merges the [coverage](#coverage) recorded by the Linux test jobs, a check that the library builds with the minimum supported Rust version, and a check of the workflow lockfile. Cargo runs with `--locked`, so update `Cargo.lock` alongside `Cargo.toml`.
 * When code or Markdown changes: the documentation build with warnings denied, and the doctests.
 * When Markdown or the workflows change: the rumdl, lychee, actionlint and zizmor hooks from `.pre-commit-config.yaml`.
 
