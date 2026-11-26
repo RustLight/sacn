@@ -96,24 +96,36 @@ jobs:
         path: target/lcov.info
         if-no-files-found: error
 
-  # The IPv4 and IPv6 network tests run in the Docker image with coverage
-  # recorded by docker-linux/run_coverage.sh. The checkout is mounted at the
-  # same path in the container, so the coverage's file paths match it.
+  # The IPv4 and IPv6 network tests run in the Docker image's test environment
+  # with coverage recorded by docker-linux/run_coverage.sh. The checkout is
+  # mounted at the same path in the container, so the coverage's file paths
+  # match it. docker-linux/ci_image.sh pulls the image from the GitHub Container
+  # Registry, and builds and pushes it when the files it is built from change.
   test-linux-ipv4:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Pushes the test image when it changes. Pull requests from forks only
+      # get read access, so they build it themselves instead.
+      packages: write
     steps:
     - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
-    - name: Build
-      run: docker build --build-arg COVERAGE=1 -t sacn-tests -f docker-linux/Dockerfile .
+    - name: Get the test image
+      env:
+        IMAGE_TAG: ${{ hashFiles('docker-linux/Dockerfile', 'rust-toolchain.toml') }}
+        PUSH: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_ACTOR: ${{ github.actor }}
+      run: ./docker-linux/ci_image.sh
     - name: Run tests
       run: >-
         docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN
         -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE"
-        sacn-tests ./docker-linux/run_coverage.sh ipv4
+        sacn-test-env ./docker-linux/run_coverage.sh ipv4
     - name: Upload coverage
       uses: actions/upload-artifact@v7.0.2
       with:
@@ -125,19 +137,29 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Pushes the test image when it changes. Pull requests from forks only
+      # get read access, so they build it themselves instead.
+      packages: write
     steps:
     - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
-    - name: Build
-      run: docker build --build-arg COVERAGE=1 -t sacn-tests -f docker-linux/Dockerfile .
+    - name: Get the test image
+      env:
+        IMAGE_TAG: ${{ hashFiles('docker-linux/Dockerfile', 'rust-toolchain.toml') }}
+        PUSH: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_ACTOR: ${{ github.actor }}
+      run: ./docker-linux/ci_image.sh
     - name: Create IPv6 network
       run: docker network create --ipv6 --subnet fd00:5ac0::/64 sacn-ipv6
     - name: Run tests
       run: >-
         docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --network sacn-ipv6
         -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE"
-        sacn-tests ./docker-linux/run_coverage.sh ipv6
+        sacn-test-env ./docker-linux/run_coverage.sh ipv6
     - name: Upload coverage
       uses: actions/upload-artifact@v7.0.2
       with:
