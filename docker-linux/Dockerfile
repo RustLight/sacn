@@ -16,8 +16,15 @@ COPY src/ src/
 # build tests to warm cache
 RUN cargo test --no-run --locked
 
-COPY docker-linux/run_tests.sh docker-linux/run_tests_ipv6.sh docker-linux/run_isolated.sh ./
-RUN chmod +x run_tests.sh run_tests_ipv6.sh run_isolated.sh
+# Build with --build-arg COVERAGE=1 for run_coverage.sh, which needs cargo-llvm-cov.
+ARG COVERAGE=
+RUN if [[ -n "$COVERAGE" ]]; then \
+        rustup component add llvm-tools-preview && \
+        cargo install cargo-llvm-cov --locked --version 0.9.1; \
+    fi
+
+COPY docker-linux/run_tests.sh docker-linux/run_tests_ipv6.sh docker-linux/run_isolated.sh docker-linux/run_coverage.sh ./
+RUN chmod +x run_tests.sh run_tests_ipv6.sh run_isolated.sh run_coverage.sh
 
 # RUN cargo test
 

@@ -76,9 +76,26 @@ jobs:
     - name: Clippy
       run: cargo clippy --locked --all-targets -- -D warnings
 
-    - name: Run tests
-      run: cargo test --locked --verbose
+    - name: Install cargo-llvm-cov
+      run: |
+        rustup component add llvm-tools-preview
+        cargo install cargo-llvm-cov --locked --version 0.9.1
 
+    # `cargo test` with coverage recorded, for the coverage job. The doctests
+    # run in the docs job.
+    - name: Run tests
+      run: cargo llvm-cov --locked --verbose --lcov --output-path target/lcov.info
+
+    - name: Upload coverage
+      uses: actions/upload-artifact@v7.0.2
+      with:
+        name: coverage-unit
+        path: target/lcov.info
+        if-no-files-found: error
+
+  # The IPv4 and IPv6 network tests run in the Docker image with coverage
+  # recorded by docker-linux/run_coverage.sh. The checkout is mounted at the
+  # same path in the container, so the coverage's file paths match it.
   test-linux-ipv4:
     needs: changes
     if: needs.changes.outputs.code == 'true'
@@ -88,9 +105,18 @@ jobs:
       with:
         persist-credentials: false
     - name: Build
-      run: docker build -t sacn-tests -f docker-linux/Dockerfile .
+      run: docker build --build-arg COVERAGE=1 -t sacn-tests -f docker-linux/Dockerfile .
     - name: Run tests
-      run: docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN sacn-tests
+      run: >-
+        docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN
+        -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE"
+        sacn-tests ./docker-linux/run_coverage.sh ipv4
+    - name: Upload coverage
+      uses: actions/upload-artifact@v7.0.2
+      with:
+        name: coverage-ipv4
+        path: target/llvm-cov/lcov.info
+        if-no-files-found: error
 
   test-linux-ipv6:
     needs: changes
@@ -101,11 +127,20 @@ jobs:
       with:
         persist-credentials: false
     - name: Build
-      run: docker build -t sacn-tests -f docker-linux/Dockerfile .
+      run: docker build --build-arg COVERAGE=1 -t sacn-tests -f docker-linux/Dockerfile .
     - name: Create IPv6 network
       run: docker network create --ipv6 --subnet fd00:5ac0::/64 sacn-ipv6
     - name: Run tests
-      run: docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --network sacn-ipv6 sacn-tests ./run_tests_ipv6.sh
+      run: >-
+        docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --network sacn-ipv6
+        -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE"
+        sacn-tests ./docker-linux/run_coverage.sh ipv6
+    - name: Upload coverage
+      uses: actions/upload-artifact@v7.0.2
+      with:
+        name: coverage-ipv6
+        path: target/llvm-cov/lcov.info
+        if-no-files-found: error
 
   test-windows:
     needs: changes
@@ -142,6 +177,121 @@ jobs:
 
     - name: Run tests
       run: cargo test --locked --verbose
+
+  # Merges the coverage recorded by test-linux (the unit tests),
+  # test-linux-ipv4 and test-linux-ipv6. The job summary shows the coverage of each file
+  # and, on pull requests, diff-cover's report on the lines the pull request
+  # changes. The HTML report is kept as an artifact; on main, coverage-pages
+  # publishes it with the README badge's data. Doctests aren't measured, because
+  # cargo-llvm-cov needs nightly Rust for them.
+  coverage:
+    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6]
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.4.0
+      with:
+        persist-credentials: false
+        # diff-cover compares the pull request with its base branch.
+        fetch-depth: 0
+
+    - name: Download the test jobs' coverage
+      uses: actions/download-artifact@v8.0.1
+      with:
+        pattern: coverage-*
+        path: coverage/
+
+    - name: Install lcov
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes --no-install-recommends lcov
+
+    - name: Merge coverage
+      run: |
+        lcov --add-tracefile coverage/coverage-unit/lcov.info \
+          --add-tracefile coverage/coverage-ipv4/lcov.info \
+          --add-tracefile coverage/coverage-ipv6/lcov.info \
+          --output-file coverage/lcov.info
+        genhtml coverage/lcov.info --output-directory coverage/html \
+          --prefix "$GITHUB_WORKSPACE" --title sacn --no-function-coverage
+
+    # Lines only: the function counts in the jobs' coverage don't add up,
+    # as the library is built separately for unit tests and integration tests.
+    - name: Summarise coverage
+      run: |
+        {
+          echo "## Coverage"
+          echo
+          echo "| File | Line coverage | Lines hit |"
+          echo "| --- | ---: | ---: |"
+          awk -F: -v root="$GITHUB_WORKSPACE/" '
+            function pct(hit, found) { return found ? sprintf("%.2f%%", 100 * hit / found) : "-" }
+            /^SF:/ { file = substr($0, 4); if (index(file, root) == 1) file = substr(file, length(root) + 1) }
+            /^LF:/ { found = $2; total_found += $2 }
+            /^LH:/ { hit = $2; total_hit += $2 }
+            /^end_of_record/ { printf "| %s | %s | %d of %d |\n", file, pct(hit, found), hit, found }
+            END { printf "| **Total** | %s | %d of %d |\n", pct(total_hit, total_found), total_hit, total_found }
+          ' coverage/lcov.info
+          echo
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Report coverage of changed lines
+      if: github.event_name == 'pull_request'
+      env:
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        pipx run --spec diff-cover==11.0.1 diff-cover coverage/lcov.info \
+          --compare-branch "origin/$BASE_REF" \
+          --format "markdown:coverage/diff-cover.md"
+        cat coverage/diff-cover.md >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload the coverage report
+      uses: actions/upload-artifact@v7.0.2
+      with:
+        name: coverage-report
+        path: |
+          coverage/lcov.info
+          coverage/html/
+
+    # Data for the README badge, read by shields.io's endpoint badge
+    # (https://shields.io/badges/endpoint-badge).
+    - name: Write the badge data
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        percent=$(awk -F: '/^LF:/ { found += $2 } /^LH:/ { hit += $2 } END { printf "%.1f", found ? 100 * hit / found : 0 }' coverage/lcov.info)
+        jq -n --argjson p "$percent" '{
+          schemaVersion: 1,
+          label: "coverage",
+          message: "\($p)%",
+          color: (if $p >= 90 then "brightgreen" elif $p >= 75 then "green" elif $p >= 60 then "yellow" else "red" end)
+        }' > coverage/html/coverage.json
+
+    - name: Upload the Pages site
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-pages-artifact@v5.0.0
+      with:
+        path: coverage/html/
+
+  # Publishes main's coverage report and badge data to GitHub Pages, at
+  # https://rustlight.github.io/sacn/. Not part of all-checks, as it only runs
+  # after a merge.
+  coverage-pages:
+    needs: coverage
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deploy
+      uses: actions/deploy-pages@v5.0.1
 
   # Runs for code and docs changes alike: Markdown files can be pulled into the
   # crate docs with include_str!, so their examples run as doctests.
@@ -202,7 +352,7 @@ jobs:
   # The single required status check. Jobs skipped by the path filter count as
   # passing; a failed or cancelled job (including `changes`) fails this one.
   all-checks:
-    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, docs, lockfile, lint]
+    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, coverage, docs, lockfile, lint]
     if: always()
     runs-on: ubuntu-latest
     steps:

@@ -1,6 +1,6 @@
 # sACN (E1.31) for Rust
 
-[![build]][build-link] [![crates.io]][crates-io-link] [![license]][license-link] [![downloads]][crates-io-link] [![docs.rs]][docs-rs-link]
+[![build]][build-link] [![crates.io]][crates-io-link] [![license]][license-link] [![downloads]][crates-io-link] [![docs.rs]][docs-rs-link] [![coverage]][coverage-link]
 
 [build]: https://img.shields.io/github/actions/workflow/status/RustLight/sacn/rust.yml?branch=main&event=push&label=build
 [build-link]: https://github.com/RustLight/sacn/actions/workflows/rust.yml?query=branch%3Amain
@@ -12,6 +12,8 @@
 [downloads]: https://img.shields.io/crates/d/sacn.svg
 [docs.rs]: https://img.shields.io/docsrs/sacn?label=docs.rs
 [docs-rs-link]: https://docs.rs/sacn
+[coverage]: https://img.shields.io/endpoint?url=https%3A%2F%2Frustlight.github.io%2Fsacn%2Fcoverage.json
+[coverage-link]: https://rustlight.github.io/sacn/
 
 A Rust library implementing the E1.31/sACN protocol for transmitting DMX512 control data over standard Ethernet for network-based DMX light control. For more details, see [What is E1.31](#what-is-esta-131-2018-ansi-e131-2018) and [Key Terms](#key-terms) below.
 
