@@ -39,9 +39,6 @@ logging = ["dep:log"]
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }
 
-[badges]
-travis-ci = { repository = "Lan2u/RustSacn" }
-
 [[example]]
 name = 'simple-receiver'
 path = 'examples/simple-receiver.rs'
