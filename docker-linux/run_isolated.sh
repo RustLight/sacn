@@ -13,6 +13,7 @@
 #
 # SACN_TEST_JOBS sets how many tests run at once (default: the CPU count, or 4 if it
 # can't be read).
+# SACN_TEST_TIMEOUT sets how long one test may run before it fails (default: 180 s).
 set -euo pipefail
 
 family=${1:?usage: run_isolated.sh <ipv4|ipv6> <test target> [filter]}
@@ -25,6 +26,7 @@ case "$family" in
 esac
 
 jobs=${SACN_TEST_JOBS:-$(nproc 2>/dev/null || echo 4)}
+export TEST_TIMEOUT=${SACN_TEST_TIMEOUT:-180}
 
 # Build the test binary and find its path in cargo's output.
 bin=$(cargo test --locked --test "$target" --no-run 2>&1 \
@@ -69,21 +71,30 @@ if [[ $family == ipv4 ]]; then
     done
     ip route add 224.0.0.0/4 dev lo
 else
+    # The kernel adds no IPv6 multicast route (ff00::/8) for the loopback interface, so
+    # give the namespace a veth pair to carry it. Multicast sent out of sacn0 is looped
+    # back to local members, as on a real interface.
+    ip link add sacn0 type veth peer name sacn1
+    ip link set dev sacn1 up
+    ip link set dev sacn0 up
     # TEST_NETWORK_INTERFACE_IPV6 in tests/ipv6_tests.rs.
     # nodad: skip duplicate address detection so they are usable immediately.
     for addr in \
         2a02:c7f:d20a:c600:a502:2dae:7716:601b \
         2a02:c7f:d20a:c600:a502:2dae:7716:601c \
         2a02:c7f:d20a:c600:a502:2dae:7716:601d; do
-        ip -6 addr add "$addr/128" dev lo nodad
+        ip -6 addr add "$addr/128" dev sacn0 nodad
     done
-    ip -6 route add ff00::/8 dev lo table local 2>/dev/null || true
 fi
 
 start=$SECONDS
-if "$bin" --ignored --exact "$test" --test-threads=1 >"$out.log" 2>&1; then
+# A test that never gets the packets it waits for can block forever; fail it instead.
+timeout --kill-after=10 "$TEST_TIMEOUT" "$bin" --ignored --exact "$test" --test-threads=1 >"$out.log" 2>&1
+rc=$?
+if (( rc == 0 )); then
     echo "ok     $(( SECONDS - start ))s  $test"
 else
+    (( rc == 124 || rc == 137 )) && echo "(timed out after ${TEST_TIMEOUT}s)" >>"$out.log"
     echo "FAILED $(( SECONDS - start ))s  $test"
     touch "$out.failed"
     exit 1
