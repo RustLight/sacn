@@ -1444,7 +1444,7 @@ mod sacn_ipv6_multicast_test {
     #[test]
     #[ignore]
     fn test_discover_recv_sync_runthrough_ipv6() {
-        // The number of sets of (data packets + sync packet) sent once the receiver is listening. More than 256,
+        // The number of sets of (data packets + sync packet) sent once the receiver is listening. More than 257,
         // so that the sequence numbers of every universe wrap from 255 to 0 while the receiver is checking them.
         const SYNC_PACKET_COUNT: usize = 260;
 
@@ -1648,11 +1648,13 @@ mod sacn_ipv6_multicast_test {
             }
         }
 
+        // The first set sent after the receiver joins can arrive before its synchronisation packet starts
+        // synchronisation, in which case the receiver acts on it straight away (ANSI E1.31-2016 Section 11.1.1).
         assert!(
-            sets_received >= SYNC_PACKET_COUNT,
+            sets_received >= SYNC_PACKET_COUNT - 1,
             "Received {} sets of synchronised data, expected at least {}",
             sets_received,
-            SYNC_PACKET_COUNT
+            SYNC_PACKET_COUNT - 1
         );
 
         // Finished receiving from the sender.

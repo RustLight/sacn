@@ -64,13 +64,13 @@ family=$1 bin=$2 test=$3 out=$4/$3
 
 ip link set dev lo up
 ip link set dev lo multicast on
-if [[ $family == ipv4 ]]; then
-    # TEST_NETWORK_INTERFACE_IPV4 in tests/ipv4_tests.rs.
-    for addr in 192.168.0.6 192.168.0.7 192.168.0.8; do
-        ip addr add "$addr/24" dev lo
-    done
-    ip route add 224.0.0.0/4 dev lo
-else
+# TEST_NETWORK_INTERFACE_IPV4 in tests/ipv4_tests.rs. The IPv6 suite needs IPv4 multicast
+# too, for the tests that compare the two.
+for addr in 192.168.0.6 192.168.0.7 192.168.0.8; do
+    ip addr add "$addr/24" dev lo
+done
+ip route add 224.0.0.0/4 dev lo
+if [[ $family == ipv6 ]]; then
     # The kernel adds no IPv6 multicast route (ff00::/8) for the loopback interface, so
     # give the namespace a veth pair to carry it. Multicast sent out of sacn0 is looped
     # back to local members, as on a real interface.
