@@ -1,4 +1,9 @@
-# sACN (E.131) for Rust &emsp; [![crates.io]][crates-io-link] [![license]][license-link] [![downloads]][crates-io-link] [![docs.rs]][docs-rs-link]
+# sACN (E1.31) for Rust
+
+[![build]][build-link] [![crates.io]][crates-io-link] [![license]][license-link] [![downloads]][crates-io-link] [![docs.rs]][docs-rs-link]
+
+[build]: https://img.shields.io/github/actions/workflow/status/RustLight/sacn/rust.yml?branch=main&event=push&label=build
+[build-link]: https://github.com/RustLight/sacn/actions/workflows/rust.yml?query=branch%3Amain
 
 [crates.io]: https://img.shields.io/crates/v/sacn.svg?label=crates.io
 [crates-io-link]: https://crates.io/crates/sacn
