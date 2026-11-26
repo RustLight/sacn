@@ -65,6 +65,8 @@ docker network create --ipv6 --subnet fd00:5ac0::/64 sacn-ipv6
 docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --network sacn-ipv6 sacn-test ./run_tests_ipv6.sh
 ```
 
+CI doesn't build the image on every run. Its `env` stage, the test environment without the sources, is published to the GitHub Container Registry as `ghcr.io/rustlight/sacn/test-env`, tagged with a hash of `docker-linux/Dockerfile` and `rust-toolchain.toml`. The test jobs pull it and run the tests from the checkout; when either file changes, `docker-linux/ci_image.sh` builds the new image and pushes it. Pull requests from forks can't push packages, so they build it in each job.
+
 The scripts run the network tests in parallel, one network namespace per test so their sockets can't clash, as many at once as there are CPU cores (set `SACN_TEST_JOBS` to change that). To run them on a Linux host instead, run `docker-linux/run_tests.sh` or `docker-linux/run_tests_ipv6.sh` as root; `docker-linux/run_isolated.sh` sets up each namespace's addresses and routes.
 
 ### Coverage
@@ -77,13 +79,13 @@ cargo install cargo-llvm-cov --locked
 cargo llvm-cov --open
 ```
 
-That measures `cargo test` only. CI also measures the [network tests](#network-tests): the Linux job records the coverage of `cargo test`, the IPv4 and IPv6 jobs run their tests through `docker-linux/run_coverage.sh` in the Docker image built with cargo-llvm-cov, and the coverage job merges what the three recorded. To measure all of them locally in one report, mount the repository at the same path in the container, so the reports land in `target/llvm-cov/` with paths that match your checkout:
+That measures `cargo test` only. CI also measures the [network tests](#network-tests): the Linux job records the coverage of `cargo test`, the IPv4 and IPv6 jobs run their tests through `docker-linux/run_coverage.sh` in the Docker image, which includes cargo-llvm-cov, and the coverage job merges what the three recorded. To measure all of them locally in one report, mount the repository at the same path in the container, so the reports land in `target/llvm-cov/` with paths that match your checkout:
 
 ```sh
-docker build --build-arg COVERAGE=1 -t sacn-test-cov -f docker-linux/Dockerfile .
+docker build -t sacn-test -f docker-linux/Dockerfile .
 docker network create --ipv6 --subnet fd00:5ac0::/64 sacn-ipv6
 docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --network sacn-ipv6 \
-    -v "$PWD:$PWD" -w "$PWD" sacn-test-cov ./docker-linux/run_coverage.sh unit ipv4 ipv6
+    -v "$PWD:$PWD" -w "$PWD" sacn-test ./docker-linux/run_coverage.sh unit ipv4 ipv6
 ```
 
 The files in `target/` are then owned by root; take them back with `sudo chown -R "$(id -u):$(id -g)" target`. Doctests aren't measured, because cargo-llvm-cov needs nightly Rust for them. CI publishes the report for `main` at <https://rustlight.github.io/sacn/>.

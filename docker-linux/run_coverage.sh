@@ -9,7 +9,7 @@
 # e.g. run_coverage.sh unit ipv4 ipv6 for one report covering all of them. CI
 # records each suite in its own job and merges their lcov.info files.
 #
-# Needs the image built with --build-arg COVERAGE=1. For ipv4 and ipv6, start the
+# Needs cargo-llvm-cov, which the Docker image includes. For ipv4 and ipv6, start the
 # container as for the suites' own scripts: with NET_ADMIN and SYS_ADMIN, and on
 # an IPv6-enabled docker network for ipv6. The IPv4 tests run in their own
 # network namespaces, so they don't mind the IPv6 network. To get the reports
