@@ -2154,13 +2154,15 @@ fn test_universe_discovery_multiple_pages_one_source_ipv4(){
 }
 
 /// Creates a sender and a receiver with the sender having no registered universes.
-/// Receiver waits for a discovery packet from the sender and uses it to show that the sender is transmitting
-/// an empty list of universes as expected.
+/// A source with no universes has nothing to advertise, so the receiver must not receive any discovery packet from it
+/// for longer than one discovery interval.
 #[test]
 #[ignore]
 fn test_universe_discovery_no_universes_ipv4(){
     const SND_THREADS: usize = 1;
     const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
+    // Long enough for the first discovery advert to have been sent if the source were sending one.
+    const WAIT: Duration = Duration::from_secs(E131_UNIVERSE_DISCOVERY_INTERVAL.as_secs() + 3);
     let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
 
     let mut snd_threads = Vec::new();
@@ -2178,9 +2180,9 @@ fn test_universe_discovery_no_universes_ipv4(){
             // Explicitly make sure that the src is sending discovery packets (by default not).
             src.set_is_sending_discovery(true);
 
-            // No universes registered so should transmit an empty list.
+            // No universes registered so no discovery packet should be sent.
 
-            tx.send(()).unwrap(); // Used to force the sender to wait till the receiver has received a universe discovery.
+            tx.send(()).unwrap(); // Keep the sender alive until the receiver has finished waiting.
         }));
     }
 
@@ -2189,26 +2191,28 @@ fn test_universe_discovery_no_universes_ipv4(){
 
     snd_rx.recv().unwrap(); // Receiver created and ready so allow the sender to be created.
 
-    match dmx_recv.recv(None) {
-        Err(e) => {
-            match e {
-                SacnError::SourceDiscovered(src_name) => {
-                    assert_eq!(src_name, SOURCE_NAMES[0], "Name of source discovered doesn't match expected");
-                    let sources = dmx_recv.get_discovered_sources();
-                    assert_eq!(sources.len(), 1, "Number of sources discovered doesn't match expected (1)");
-                    assert_eq!(sources[0].get_all_universes(), Vec::new(), "Number of universes on source is greater than expected (0)");
-                }
-                k => {
-                    assert!(false, "Unexpected error kind, {:?}", k);
-                }
-            }
+    let deadline = Instant::now() + WAIT;
+    loop {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            break;
         }
-        Ok(d) => {
-            assert!(false, "No data expected, {:?}", d);
+        match dmx_recv.recv(Some(remaining)) {
+            Err(SacnError::Io(ref e)) if matches!(e.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) => break,
+            Err(SacnError::SourceDiscovered(name)) => {
+                assert!(false, "Source {} with no universes sent a discovery packet", name);
+            }
+            Err(e) => assert!(false, "Unexpected error kind, {:?}", e),
+            Ok(d) => assert!(false, "No data expected, {:?}", d),
         }
     }
+    assert!(dmx_recv.get_discovered_sources().is_empty(), "Source with no universes was discovered");
 
     snd_rx.recv().unwrap(); // Allow sender to finish.
+
+    for s in snd_threads {
+        s.join().unwrap();
+    }
 }
 
 /// Creates a receiver with a source limit of 2 and then creates 3 sources to trigger a sources exceeded condition.
