@@ -1,0 +1,8 @@
+# The toolchain used to build, lint and test this repository, locally and in
+# CI. It is pinned because CI denies Clippy warnings, and a new Rust release
+# can add lints. To upgrade, change the version, fix any new Clippy warnings
+# or formatting changes, and commit them together. This is separate from the
+# crate's minimum supported Rust version (`rust-version` in Cargo.toml).
+[toolchain]
+channel = "1.100.0"
+components = ["clippy", "rustfmt"]

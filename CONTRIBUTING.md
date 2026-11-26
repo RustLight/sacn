@@ -4,7 +4,7 @@ This guide covers building the library from source and running its tests. To use
 
 ## Prerequisites
 
-* Rust 1.93.1 or later, the crate's minimum supported version (`rust-version` in `Cargo.toml`). Install it with [rustup](https://rustup.rs) and add Clippy with `rustup component add clippy`.
+* [rustup](https://rustup.rs). It installs the Rust version pinned in `rust-toolchain.toml`, with Clippy and rustfmt, the first time you run `cargo` in the repository. The crate itself supports Rust 1.93.1 or later (`rust-version` in `Cargo.toml`).
 * Git.
 * For the network integration tests: Linux with root access, or Docker (see [Network tests](#network-tests)).
 
@@ -16,13 +16,15 @@ cd sacn
 cargo build
 ```
 
-`.cargo/config.toml` turns on a standard set of Clippy lints and denies `unsafe` code for every build in the repository. CI fails on any Clippy warning or unformatted code, so check your changes with:
+`.cargo/config.toml` turns on a standard set of Clippy lints and denies `unsafe` code for every build in the repository. `rust-toolchain.toml` pins the Rust version used for development and CI, and rustup installs it automatically. CI fails on any Clippy warning or unformatted code, so check your changes with:
 
 ```sh
 cargo fmt
 cargo clippy --all-targets -- -D warnings
 cargo clippy --all-targets --no-default-features --features std -- -D warnings
 ```
+
+To move to a newer Rust release, change the version in `rust-toolchain.toml`, run the commands above, and commit the version change together with any fixes for new warnings.
 
 The last command checks the build without the `logging` feature. Log messages go through the crate's internal `log_warn!`, `log_debug!` and `log_trace!` macros, never `println!` or the `log` macros directly, so the code still builds when the feature is off. Start each message with or include "sACN" so it stands out in an application's logs.
 
