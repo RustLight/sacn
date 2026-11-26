@@ -67,12 +67,27 @@ docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --network sacn-ipv6 sacn-test
 
 The scripts run the network tests in parallel, one network namespace per test so their sockets can't clash, as many at once as there are CPU cores (set `SACN_TEST_JOBS` to change that). To run them on a Linux host instead, run `docker-linux/run_tests.sh` or `docker-linux/run_tests_ipv6.sh` as root; `docker-linux/run_isolated.sh` sets up each namespace's addresses and routes.
 
+## Git hooks
+
+`.pre-commit-config.yaml` defines hooks that run the documentation and workflow checks from CI on your machine. Install [prek](https://prek.j178.dev) (or pre-commit), then enable them once:
+
+```sh
+prek install
+```
+
+Before each commit they lint changed Markdown files with rumdl (configured in `.rumdl.toml`), check their web links with lychee (configured in `lychee.toml`), lint changed workflows with actionlint and audit them with zizmor, and build the documentation with warnings denied. Before each push they also run the doctests. Run every hook on the whole repository with `prek run --all-files`.
+
 ## Continuous integration
 
-`.github/workflows/rust.yml` runs on every pull request to `main`:
+`.github/workflows/rust.yml` runs on every pull request. A first job looks at which files changed, so the other jobs only run when they're needed:
 
-* a rustfmt check on Linux, then build, Clippy (warnings denied) and `cargo test` on Linux, Windows and macOS;
-* the IPv4 and IPv6 network tests in the Docker image on Linux.
+* When code changes (`src/`, `tests/`, `examples/`, Cargo files, `docker-linux/` or the workflows): a rustfmt check, then build, Clippy with warnings denied and `cargo test` on Linux, Windows and macOS, the IPv4 and IPv6 network tests in the Docker image on Linux, and a check of the workflow lockfile. Cargo runs with `--locked`, so update `Cargo.lock` alongside `Cargo.toml`.
+* When code or Markdown changes: the documentation build with warnings denied, and the doctests.
+* When Markdown or the workflows change: the rumdl, lychee, actionlint and zizmor hooks from `.pre-commit-config.yaml`.
+
+Every action the workflows use is pinned in `.github/workflows/actions.lock`. After changing a `uses:` line, regenerate it with [`gh actions-lock`](https://github.com/github/gh-actions-lock) (`gh extension install github/gh-actions-lock`) and commit it with the workflow change.
+
+Pushes to `main` run everything. The `all-checks` job passes only when every job above passed or was skipped, and is the check that branch protection requires.
 
 ## Other testing material
 

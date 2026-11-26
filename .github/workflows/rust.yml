@@ -21,6 +21,7 @@ jobs:
     outputs:
       code: ${{ github.event_name != 'pull_request' || steps.filter.outputs.code == 'true' }}
       docs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
+      workflows: ${{ github.event_name != 'pull_request' || steps.filter.outputs.workflows == 'true' }}
     steps:
     - uses: dorny/paths-filter@v4.0.3
       if: github.event_name == 'pull_request'
@@ -52,6 +53,10 @@ jobs:
             - 'LICENSE-*'
             - '.rumdl.toml'
             - 'lychee.toml'
+            - '.pre-commit-config.yaml'
+          workflows:
+            - '.github/workflows/**'
+            - '.pre-commit-config.yaml'
 
   test-linux:
     needs: changes
@@ -59,6 +64,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.4.0
+      with:
+        persist-credentials: false
 
     - name: Check formatting
       run: cargo fmt --check
@@ -78,6 +85,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.4.0
+      with:
+        persist-credentials: false
     - name: Build
       run: docker build -t sacn-tests -f docker-linux/Dockerfile .
     - name: Run tests
@@ -89,6 +98,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.4.0
+      with:
+        persist-credentials: false
     - name: Build
       run: docker build -t sacn-tests -f docker-linux/Dockerfile .
     - name: Create IPv6 network
@@ -102,6 +113,8 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4.4.0
+      with:
+        persist-credentials: false
 
     - name: Build
       run: cargo build --locked --verbose
@@ -118,6 +131,8 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4.4.0
+      with:
+        persist-credentials: false
 
     - name: Build
       run: cargo build --locked --verbose
@@ -136,6 +151,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.4.0
+      with:
+        persist-credentials: false
 
     - name: Build documentation
       run: cargo doc --locked --no-deps
@@ -158,31 +175,34 @@ jobs:
         persist-credentials: false
     - uses: github/gh-actions-lock@verify/v0.5.1
 
-  # Lints the Markdown files and checks their links (configured in
-  # .rumdl.toml and lychee.toml).
-  markdown:
+  # Runs the lint hooks from .pre-commit-config.yaml (at the versions pinned
+  # there, so CI matches local runs): rumdl and lychee for Markdown,
+  # actionlint and zizmor for the workflows.
+  lint:
     needs: changes
-    if: needs.changes.outputs.docs == 'true'
+    if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.workflows == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.4.0
-
-    - name: Lint Markdown
-      run: pipx run --spec rumdl==0.3.6 rumdl check .
-
-    - name: Check links
-      uses: lycheeverse/lychee-action@v2.9.0
       with:
-        args: --config lychee.toml --no-progress './**/*.md'
-        fail: true
+        persist-credentials: false
+
+    - name: Run lint hooks
+      uses: j178/prek-action@v3.1.1
+      with:
+        prek-version: '0.5.11'
+        extra-args: --all-files rumdl-check lychee actionlint zizmor
       env:
-        # Authenticated requests avoid GitHub's rate limit for github.com links.
+        # Authenticated requests avoid GitHub's rate limits when installing
+        # the tools and checking github.com links (GITHUB_TOKEN), and turn on
+        # zizmor's online audits (GH_TOKEN).
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # The single required status check. Jobs skipped by the path filter count as
   # passing; a failed or cancelled job (including `changes`) fails this one.
   all-checks:
-    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, docs, lockfile, markdown]
+    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, docs, lockfile, lint]
     if: always()
     runs-on: ubuntu-latest
     steps:

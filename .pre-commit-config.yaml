@@ -1,0 +1,45 @@
+# Git hooks, run with prek (https://prek.j178.dev); pre-commit works too.
+# Install them once with `prek install`.
+# CI runs the Markdown and workflow hooks from this file too, so the versions
+# here are the ones CI uses.
+default_install_hook_types: [pre-commit, pre-push]
+
+repos:
+  - repo: https://github.com/rvben/rumdl-pre-commit
+    rev: v0.3.6
+    hooks:
+      - id: rumdl-check
+
+  - repo: https://github.com/lycheeverse/lychee
+    rev: lychee-v0.24.2
+    hooks:
+      - id: lychee
+        args: ["--no-progress", "--config", "lychee.toml"]
+        types: [markdown]
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.33.1
+    hooks:
+      - id: zizmor
+
+  - repo: local
+    hooks:
+      - id: rustdoc
+        name: rustdoc (deny warnings)
+        entry: env RUSTDOCFLAGS=-Dwarnings cargo doc --no-deps --quiet
+        language: system
+        types_or: [rust, markdown]
+        pass_filenames: false
+
+      - id: doctests
+        name: doctests
+        entry: cargo test --doc --quiet
+        language: system
+        types_or: [rust, markdown]
+        pass_filenames: false
+        stages: [pre-push]
