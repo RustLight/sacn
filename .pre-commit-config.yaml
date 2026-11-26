@@ -1,0 +1,59 @@
+# Git hooks, run with prek (https://prek.j178.dev); pre-commit works too.
+# Install them once with `prek install`.
+# CI runs the Markdown and workflow hooks from this file too, so the versions
+# here are the ones CI uses.
+
+repos:
+  - repo: https://github.com/rvben/rumdl-pre-commit
+    rev: v0.3.6
+    hooks:
+      - id: rumdl-check
+
+  - repo: https://github.com/lycheeverse/lychee
+    rev: lychee-v0.24.2
+    hooks:
+      - id: lychee
+        args: ["--no-progress", "--config", "lychee.toml"]
+        types: [markdown]
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.33.1
+    hooks:
+      - id: zizmor
+
+  - repo: local
+    hooks:
+      # The same Rust checks CI runs on every code change.
+      - id: rustfmt
+        name: rustfmt
+        entry: cargo fmt --check
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      - id: clippy
+        name: clippy (deny warnings)
+        entry: cargo clippy --locked --all-targets --quiet -- -D warnings
+        language: system
+        types_or: [rust, toml]
+        pass_filenames: false
+
+      - id: rustdoc
+        name: rustdoc (deny warnings)
+        entry: env RUSTDOCFLAGS=-Dwarnings cargo doc --locked --no-deps --quiet
+        language: system
+        types_or: [rust, markdown]
+        pass_filenames: false
+
+      # Includes the doctests.
+      - id: cargo-test
+        name: cargo test
+        entry: cargo test --locked --quiet
+        language: system
+        types_or: [rust, markdown, toml]
+        pass_filenames: false
