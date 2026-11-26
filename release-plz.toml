@@ -11,6 +11,10 @@
 release_always = false
 # Leave dependency updates to their own pull requests.
 dependencies_update = false
+# Open a release pull request only for changes users of the crate see. Other
+# commit types (ci, test, style, build, chore) are left out of the changelog,
+# so on their own they would produce a release with an empty changelog.
+release_commits = "^(feat|fix|perf|docs|refactor|revert)(\\(.*\\))?!?:|^[a-z]+(\\(.*\\))?!:"
 # Prefix of the release pull request's branch. release-plz also uses it to
 # recognise the release pull request when it is merged.
 pr_branch_prefix = "release-plz-"
