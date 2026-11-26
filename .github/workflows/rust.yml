@@ -76,10 +76,13 @@ jobs:
     - name: Clippy
       run: cargo clippy --locked --all-targets -- -D warnings
 
+    - name: Install llvm-tools
+      run: rustup component add llvm-tools-preview
+
     - name: Install cargo-llvm-cov
-      run: |
-        rustup component add llvm-tools-preview
-        cargo install cargo-llvm-cov --locked --version 0.9.1
+      uses: taiki-e/install-action@v2.90.10
+      with:
+        tool: cargo-llvm-cov@0.9.1
 
     # `cargo test` with coverage recorded, for the coverage job. The doctests
     # run in the docs job.
@@ -201,22 +204,22 @@ jobs:
         pattern: coverage-*
         path: coverage/
 
-    - name: Install lcov
-      run: |
-        sudo apt-get update
-        sudo apt-get install --yes --no-install-recommends lcov
+    - name: Install grcov
+      uses: taiki-e/install-action@v2.90.10
+      with:
+        tool: grcov@0.10.7
 
+    # grcov adds up the line counts of the three lcov files, and makes the file
+    # paths relative to the checkout.
     - name: Merge coverage
       run: |
-        lcov --add-tracefile coverage/coverage-unit/lcov.info \
-          --add-tracefile coverage/coverage-ipv4/lcov.info \
-          --add-tracefile coverage/coverage-ipv6/lcov.info \
-          --output-file coverage/lcov.info
-        genhtml coverage/lcov.info --output-directory coverage/html \
-          --prefix "$GITHUB_WORKSPACE" --title sacn --no-function-coverage
+        inputs=(coverage/coverage-unit/lcov.info coverage/coverage-ipv4/lcov.info coverage/coverage-ipv6/lcov.info)
+        grcov "${inputs[@]}" --source-dir . --output-types lcov --output-path coverage/lcov.info
+        grcov "${inputs[@]}" --source-dir . --output-types html --output-path coverage/html
 
-    # Lines only: the function counts in the jobs' coverage don't add up,
-    # as the library is built separately for unit tests and integration tests.
+    # Lines only: the function counts in the jobs' coverage don't add up, as
+    # the library is built separately for unit tests and integration tests, so
+    # the functions column of the HTML report overcounts.
     - name: Summarise coverage
       run: |
         {
@@ -224,9 +227,9 @@ jobs:
           echo
           echo "| File | Line coverage | Lines hit |"
           echo "| --- | ---: | ---: |"
-          awk -F: -v root="$GITHUB_WORKSPACE/" '
+          awk -F: '
             function pct(hit, found) { return found ? sprintf("%.2f%%", 100 * hit / found) : "-" }
-            /^SF:/ { file = substr($0, 4); if (index(file, root) == 1) file = substr(file, length(root) + 1) }
+            /^SF:/ { file = substr($0, 4) }
             /^LF:/ { found = $2; total_found += $2 }
             /^LH:/ { hit = $2; total_hit += $2 }
             /^end_of_record/ { printf "| %s | %s | %d of %d |\n", file, pct(hit, found), hit, found }
