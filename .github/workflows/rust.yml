@@ -63,7 +63,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.4.0
+    - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
 
@@ -101,7 +101,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.4.0
+    - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
     - name: Build
@@ -123,7 +123,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.4.0
+    - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
     - name: Build
@@ -147,7 +147,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4.4.0
+    - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
 
@@ -165,7 +165,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v4.4.0
+    - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
 
@@ -189,7 +189,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.4.0
+    - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         # diff-cover compares the pull request with its base branch.
@@ -300,7 +300,7 @@ jobs:
     if: needs.changes.outputs.code == 'true' || needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.4.0
+    - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
 
@@ -320,7 +320,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.4.0
+    - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
     - uses: github/gh-actions-lock@verify/v0.5.1
@@ -333,7 +333,7 @@ jobs:
     if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.workflows == 'true'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4.4.0
+    - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
 

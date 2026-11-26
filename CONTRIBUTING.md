@@ -127,7 +127,7 @@ Merging the release pull request makes the release: release-plz publishes the cr
 Maintainers set these up once in the repository and on crates.io:
 
 * A GitHub App with read and write access to "Contents" and "Pull requests", installed on the repository. Its tokens let the release pull request run CI, which the default `GITHUB_TOKEN` can't. Add the App as a bypass actor on the tag ruleset so it can push release tags.
-* A `release` deployment environment (Settings, Environments) with the App's ID and private key as the secrets `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY`.
+* A `release` deployment environment (Settings, Environments) with the App's client ID as the variable `RELEASE_APP_CLIENT_ID` and its private key as the secret `RELEASE_APP_PRIVATE_KEY`.
 * [Trusted publishing](https://crates.io/docs/trusted-publishing) for the crate on crates.io, for the `RustLight/sacn` repository, the `release-plz.yml` workflow and the `release` environment. No crates.io token is stored in the repository.
 * Squash merging, with the pull request title as the default commit message, as the only merge method.
 
