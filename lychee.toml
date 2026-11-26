@@ -25,4 +25,7 @@ exclude = [
     # The coverage report, which CI publishes to GitHub Pages from main, so it
     # doesn't exist yet when a pull request that adds a link to it is checked.
     '^https://rustlight\.github\.io/sacn/',
+    # CHANGELOG.md compare links for a release point at its tag, which only
+    # exists once the release pull request is merged and the release is made.
+    '^https://github\.com/RustLight/sacn/compare/',
 ]
