@@ -38,6 +38,7 @@ Update the documentation in the same pull request as the behaviour it describes:
 
 * Use descriptive branch names with a type prefix, for example `fix/no-empty-universe-pages` or `chore/update-uuid`.
 * Write commit messages and pull request titles in [Conventional Commits](https://www.conventionalcommits.org) format, for example `fix(sender): do not send empty universe discovery pages` or `chore(deps): update uuid to 1.16`. Common scopes are `sender`, `receiver`, `packet`, `docs`, `ci` and `deps`.
+* Pull requests are squash-merged and their titles become the changelog entries (see [Releasing](CONTRIBUTING.md#releasing)), so write titles that describe the change for users of the crate.
 * Keep pull request branches up to date with `main` by rebasing, not merging, and push with `--force-with-lease`.
 * One pull request per fix or feature. Split unrelated findings into separate pull requests, and say in the body when one depends on another.
 * The pull request body holds only content useful to a reviewer: what changed, why, the spec sections involved, and how it was tested. Leave out tool attribution such as "Generated with ..." footers or session links.
