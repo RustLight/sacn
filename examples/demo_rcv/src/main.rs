@@ -15,10 +15,10 @@
 //! Primarily used for testing the library including real-world conformance, compliance, integration and acceptance tests.
 //! As a test program the error handling is limited for simplicity.
 //!
-//! Usage instructions are described by either running the receiver and using the help command or by the get_usage_str function
+//! Usage instructions are described by either running the receiver and using the help command or by the `get_usage_str` function
 //! below.
 //!
-//! The ACTION_... constants describe the various user input strings possible once the program has started, with more details described in get_usage_str within
+//! The ACTION_... constants describe the various user input strings possible once the program has started, with more details described in `get_usage_str` within
 //! the code. The details aren't repeated outside of that to minimise the amount of references that have to be kept upto date and which could diverge over time.
 //!
 //! Note the lack of top level constant strings used in the place of output format strings is due to a limitation in rust where the format string cannot be a
@@ -83,7 +83,7 @@ const ACTION_FILE_OUT: &str = "f";
 /// The string given by the user to cause termination packets to be announced. "e" for end.
 const ACTION_ANNOUNCE_TERMINATION: &str = "e";
 
-/// The headers used for the top of the file when the FILE_OUT action is used.
+/// The headers used for the top of the file when the `FILE_OUT` action is used.
 const WRITE_TO_FILE_HEADERS: &str =
     "Data_ID, Universe, Sync_Addr, Priority, Preview_data?, Payload";
 
@@ -137,10 +137,10 @@ fn get_usage_str() -> String {
     ACTION_ANNOUNCE_TERMINATION, ACTION_FILE_OUT, ACTION_IGNORE)
 }
 
-/// The entry point of the demo_rcv. Usage is described in get_usage_str or by running the program and typing "h" or "help".
+/// The entry point of the `demo_rcv`. Usage is described in `get_usage_str` or by running the program and typing "h" or "help".
 ///
 /// # Arguments
-/// Usage: ./main <interface_ip>
+/// Usage: ./main <`interface_ip`>
 fn main() {
     let cmd_args: Vec<String> = env::args().collect();
 
@@ -188,7 +188,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
 
             let split_input: Vec<&str> = input.split_whitespace().collect();
 
-            if split_input.len() < 1 {
+            if split_input.is_empty() {
                 display_help();
                 return Ok(true);
             }
@@ -363,7 +363,7 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
 
                     let mut boxed_file = Box::new(out_file);
 
-                    write!(boxed_file, "{}\n", WRITE_TO_FILE_HEADERS)?;
+                    writeln!(boxed_file, "{}", WRITE_TO_FILE_HEADERS)?;
 
                     for i in 0..count {
                         let res: Vec<DMXData> = dmx_recv.recv(timeout).unwrap();
@@ -380,13 +380,11 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
             }
             Ok(true)
         }
-        Err(e) => {
-            return Err(e.into());
-        }
+        Err(e) => Err(e.into()),
     }
 }
 
-/// Writes the given data to the given file (uses the given data_id as first column).
+/// Writes the given data to the given file (uses the given `data_id` as first column).
 /// Uses comma separated values.
 ///
 /// # Arguments
@@ -394,15 +392,15 @@ fn handle_input(dmx_recv: &mut SacnReceiver) -> Result<bool> {
 ///
 /// data: The data to write to the file.
 ///
-/// data_id: The id used as the first column within the file for the data.
+/// `data_id`: The id used as the first column within the file for the data.
 fn write_to_file(file: &mut Box<File>, data: Vec<DMXData>, data_id: u64) -> Result<()> {
     for d in data {
         let values_str = create_values_str(d.values)?;
 
         // Note that the formatting string literal must be here and cannot be subsituted using const.
-        write!(
+        writeln!(
             *file,
-            "{},{},{},{},{},{}\n",
+            "{},{},{},{},{},{}",
             data_id, d.universe, d.sync_uni, d.priority, d.preview, values_str
         )?;
     }
@@ -417,7 +415,7 @@ fn write_to_file(file: &mut Box<File>, data: Vec<DMXData>, data_id: u64) -> Resu
 fn create_values_str(values: Vec<u8>) -> Result<String> {
     let mut res: String = "".to_string();
 
-    if values.len() < 1 {
+    if values.is_empty() {
         return Ok(res);
     }
 
@@ -454,7 +452,7 @@ fn print_recv(res: Result<Vec<DMXData>>) {
     }
 }
 
-/// Prints the given data to stdout in the format [{{ Universe(s): x, Sync_Universe: y, Values: z }}, ...] where x is the universe, y is the synchronisation address
+/// Prints the given data to stdout in the format [{{ Universe(s): x, `Sync_Universe`: y, Values: z }}, ...] where x is the universe, y is the synchronisation address
 /// and z is the values. The ... indicates that there may be multiple bits of data to print at once which follows the same format.
 ///
 /// # Arguments

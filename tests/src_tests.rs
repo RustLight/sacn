@@ -26,17 +26,14 @@ fn test_new_ipv4_one_too_long_source_name() {
     match SacnSource::new_v4(SRC_NAME) {
         Err(e) => match e {
             SacnError::MalformedSourceName(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             _ => {
-                assert!(false, "Unexpected error returned");
+                panic!("Unexpected error returned");
             }
         },
         Ok(_) => {
-            assert!(
-                false,
-                "SacnSource created with a source name length greater than the allowed maximum"
-            );
+            panic!("SacnSource created with a source name length greater than the allowed maximum");
         }
     }
 }
@@ -48,17 +45,14 @@ fn test_new_ipv6_one_too_long_source_name() {
     match SacnSource::new_v6(SRC_NAME) {
         Err(e) => match e {
             SacnError::MalformedSourceName(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             _ => {
-                assert!(false, "Unexpected error returned");
+                panic!("Unexpected error returned");
             }
         },
         Ok(_) => {
-            assert!(
-                false,
-                "SacnSource created with a source name length greater than the allowed maximum"
-            );
+            panic!("SacnSource created with a source name length greater than the allowed maximum");
         }
     }
 }
@@ -74,17 +68,14 @@ fn test_new_with_cid_ip_too_long_source_name() {
     ) {
         Err(e) => match e {
             SacnError::MalformedSourceName(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             _ => {
-                assert!(false, "Unexpected error returned");
+                panic!("Unexpected error returned");
             }
         },
         Ok(_) => {
-            assert!(
-                false,
-                "SacnSource created with a source name length greater than the allowed maximum"
-            );
+            panic!("SacnSource created with a source name length greater than the allowed maximum");
         }
     }
 }
@@ -96,17 +87,14 @@ fn test_new_with_cid_ip_v4_too_long_source_name() {
     match SacnSource::with_cid_v4(SRC_NAME, Uuid::new_v4()) {
         Err(e) => match e {
             SacnError::MalformedSourceName(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             _ => {
-                assert!(false, "Unexpected error returned");
+                panic!("Unexpected error returned");
             }
         },
         Ok(_) => {
-            assert!(
-                false,
-                "SacnSource created with a source name length greater than the allowed maximum"
-            );
+            panic!("SacnSource created with a source name length greater than the allowed maximum");
         }
     }
 }
@@ -118,17 +106,14 @@ fn test_new_with_cid_ip_v6_too_long_source_name() {
     match SacnSource::with_cid_v6(SRC_NAME, Uuid::new_v4()) {
         Err(e) => match e {
             SacnError::MalformedSourceName(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             _ => {
-                assert!(false, "Unexpected error returned");
+                panic!("Unexpected error returned");
             }
         },
         Ok(_) => {
-            assert!(
-                false,
-                "SacnSource created with a source name length greater than the allowed maximum"
-            );
+            panic!("SacnSource created with a source name length greater than the allowed maximum");
         }
     }
 }
@@ -143,17 +128,14 @@ fn test_new_with_ip_too_long_source_name() {
     ) {
         Err(e) => match e {
             SacnError::MalformedSourceName(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             _ => {
-                assert!(false, "Unexpected error returned");
+                panic!("Unexpected error returned");
             }
         },
         Ok(_) => {
-            assert!(
-                false,
-                "SacnSource created with a source name length greater than the allowed maximum"
-            );
+            panic!("SacnSource created with a source name length greater than the allowed maximum");
         }
     }
 }
@@ -167,17 +149,14 @@ fn test_set_name_too_long_source_name() {
     match src.set_name(SRC_NAME) {
         Err(e) => match e {
             SacnError::MalformedSourceName(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             _ => {
-                assert!(false, "Unexpected error returned");
+                panic!("Unexpected error returned");
             }
         },
         Ok(_) => {
-            assert!(
-                false,
-                "SacnSource created with a source name length greater than the allowed maximum"
-            );
+            panic!("SacnSource created with a source name length greater than the allowed maximum");
         }
     }
 }
@@ -355,11 +334,11 @@ fn test_send_without_registering() {
 
     match src.send(&[1], &TEST_DATA_SINGLE_UNIVERSE, Some(priority), None, None) {
         Ok(_) => {
-            assert!(false, "Source didn't prevent sending without registering")
+            panic!("Source didn't prevent sending without registering");
         }
         Err(e) => match e {
-            SacnError::UniverseNotRegistered(ref _s) => assert!(true),
-            _ => assert!(false, "Unexpected error type returned, {}", e),
+            SacnError::UniverseNotRegistered(ref _s) => {}
+            _ => panic!("Unexpected error type returned, {}", e),
         },
     }
 }
@@ -383,19 +362,19 @@ fn test_send_above_priority() {
     ) {
         Err(e) => match e {
             SacnError::InvalidPriority(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             x => {
-                assert!(false, "Unexpected error type returned, {:?}", x);
+                panic!("Unexpected error type returned, {:?}", x);
             }
         },
         Ok(_) => {
-            assert!(false, "Invalid priority (> limit) was not rejected");
+            panic!("Invalid priority (> limit) was not rejected");
         }
     }
 }
 
-/// Tests sending a single universe of data, this appear 'assertion-free' but it isn't because .unwrap() will panic
+/// Tests sending a single universe of data, this appear 'assertion-free' but it isn't because .`unwrap()` will panic
 /// if a function returns an error.
 /// This test therefore checks that the sender works without crashing in one of the simplest cases.
 #[test]
@@ -436,7 +415,7 @@ fn test_send_across_universe() {
     .unwrap();
 }
 
-/// Attempt to register a universe below the minimum allowed universe. This should fail with an IllegalUniverse error.
+/// Attempt to register a universe below the minimum allowed universe. This should fail with an `IllegalUniverse` error.
 /// Exceptional test.
 #[test]
 #[serial]
@@ -447,22 +426,19 @@ fn test_register_below_min_universe() {
     match src.register_universes(&[UNIVERSE]) {
         Err(e) => match e {
             SacnError::IllegalUniverse(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             _ => {
-                assert!(false, "Unexpected error type returned");
+                panic!("Unexpected error type returned");
             }
         },
         _ => {
-            assert!(
-                false,
-                "Attempt to register universe below minimum succeeded when should have failed"
-            );
+            panic!("Attempt to register universe below minimum succeeded when should have failed");
         }
     }
 }
 
-/// Attempt to register a universe above the maximum allowed universe. This should fail with an IllegalUniverse error.
+/// Attempt to register a universe above the maximum allowed universe. This should fail with an `IllegalUniverse` error.
 /// Exceptional test.
 #[test]
 #[serial]
@@ -473,17 +449,14 @@ fn test_register_above_max_universe() {
     match src.register_universes(&[UNIVERSE]) {
         Err(e) => match e {
             SacnError::IllegalUniverse(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             _ => {
-                assert!(false, "Unexpected error type returned");
+                panic!("Unexpected error type returned");
             }
         },
         _ => {
-            assert!(
-                false,
-                "Attempt to register universe above maximum succeeded when should have failed"
-            );
+            panic!("Attempt to register universe above maximum succeeded when should have failed");
         }
     }
 }
@@ -497,7 +470,9 @@ fn test_register_discovery_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
     match src.register_universes(&[E131_DISCOVERY_UNIVERSE]) {
         Err(SacnError::IllegalUniverse(_)) => {}
-        other => panic!("Expected IllegalUniverse when registering the discovery universe, got {other:?}"),
+        other => panic!(
+            "Expected IllegalUniverse when registering the discovery universe, got {other:?}"
+        ),
     }
     assert!(src.universes().unwrap().is_empty());
 }
@@ -511,17 +486,23 @@ fn test_send_on_discovery_universe_rejected() {
 
     match src.send(&[E131_DISCOVERY_UNIVERSE], &[0u8; 513], None, None, None) {
         Err(SacnError::IllegalUniverse(_)) => {}
-        other => panic!("Expected IllegalUniverse for data on the discovery universe, got {other:?}"),
+        other => {
+            panic!("Expected IllegalUniverse for data on the discovery universe, got {other:?}")
+        }
     }
 
     match src.send(&[1], &[0u8; 513], None, None, Some(E131_DISCOVERY_UNIVERSE)) {
         Err(SacnError::IllegalSyncUniverse(_)) => {}
-        other => panic!("Expected IllegalSyncUniverse for the discovery universe as sync address, got {other:?}"),
+        other => panic!(
+            "Expected IllegalSyncUniverse for the discovery universe as sync address, got {other:?}"
+        ),
     }
 
     match src.send_sync_packet(E131_DISCOVERY_UNIVERSE, None) {
         Err(SacnError::IllegalUniverse(_)) => {}
-        other => panic!("Expected IllegalUniverse for a sync packet on the discovery universe, got {other:?}"),
+        other => panic!(
+            "Expected IllegalUniverse for a sync packet on the discovery universe, got {other:?}"
+        ),
     }
 }
 
@@ -544,14 +525,13 @@ fn test_register_max_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
     match src.register_universes(&[E131_MAX_MULTICAST_UNIVERSE]) {
         Err(e) => {
-            assert!(
-                false,
+            panic!(
                 "Unexpected error returned when attempting to register the maximum allowed universe, {:?}",
                 e
             );
         }
         _ => {
-            assert!(true, "Registration successful");
+            {};
         }
     }
 }
@@ -564,14 +544,13 @@ fn test_register_min_universe() {
     let mut src = SacnSource::new_v4("Controller").unwrap();
     match src.register_universes(&[E131_MIN_MULTICAST_UNIVERSE]) {
         Err(e) => {
-            assert!(
-                false,
+            panic!(
                 "Unexpected error returned when attempting to register the maximum allowed universe, {:?}",
                 e
             );
         }
         _ => {
-            assert!(true, "Registration successful");
+            {};
         }
     }
 }
@@ -586,15 +565,14 @@ fn test_sync_addr_0() {
     match src.send_sync_packet(SYNC_UNI, None) {
         Err(e) => match e {
             SacnError::IllegalUniverse(_) => {
-                assert!(true, "Expected error returned");
+                {};
             }
             _ => {
-                assert!(false, "Unexpected error type returned");
+                panic!("Unexpected error type returned");
             }
         },
         _ => {
-            assert!(
-                false,
+            panic!(
                 "Attempt to send a synchronisation packet with a synchronisation address of 0 succeeded when it should have been rejected"
             );
         }
@@ -776,7 +754,10 @@ fn test_pack_parse_63_byte_source_name() {
 /// (64 bytes) or a panic (65 or more bytes).
 #[test]
 fn test_pack_too_long_source_name_rejected() {
-    for len in [E131_SOURCE_NAME_FIELD_LENGTH, E131_SOURCE_NAME_FIELD_LENGTH + 1] {
+    for len in [
+        E131_SOURCE_NAME_FIELD_LENGTH,
+        E131_SOURCE_NAME_FIELD_LENGTH + 1,
+    ] {
         let name = "a".repeat(len);
         match data_packet_with_source_name(&name).pack_alloc() {
             Err(SacnError::SacnParsePackError(
@@ -788,14 +769,16 @@ fn test_pack_too_long_source_name_rejected() {
         let discovery = AcnRootLayerProtocol {
             pdu: E131RootLayer {
                 cid: Uuid::new_v4(),
-                data: E131RootLayerData::UniverseDiscoveryPacket(UniverseDiscoveryPacketFramingLayer {
-                    source_name: name.as_str().into(),
-                    data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
-                        page: 0,
-                        last_page: 0,
-                        universes: vec![1u16].into(),
+                data: E131RootLayerData::UniverseDiscoveryPacket(
+                    UniverseDiscoveryPacketFramingLayer {
+                        source_name: name.as_str().into(),
+                        data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
+                            page: 0,
+                            last_page: 0,
+                            universes: vec![1u16].into(),
+                        },
                     },
-                }),
+                ),
             },
         };
         match discovery.pack_alloc() {
@@ -846,8 +829,12 @@ fn test_terminate_stream_to_reaches_unicast_receiver() {
     let src_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0);
     let mut src = SacnSource::with_ip("Unicast source", src_addr).unwrap();
     src.register_universe(1).unwrap();
-    src.send(&[1], &[0, 1, 2], None, Some(rcv_addr), None).unwrap();
-    assert_eq!(rcv.recv(Some(Duration::from_secs(2))).unwrap()[0].universe, 1);
+    src.send(&[1], &[0, 1, 2], None, Some(rcv_addr), None)
+        .unwrap();
+    assert_eq!(
+        rcv.recv(Some(Duration::from_secs(2))).unwrap()[0].universe,
+        1
+    );
 
     src.terminate_stream_to(1, 0, &[rcv_addr]).unwrap();
     match rcv.recv(Some(Duration::from_secs(2))) {

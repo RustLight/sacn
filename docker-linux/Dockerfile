@@ -7,7 +7,7 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get install iproute2 -y && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /work
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
 # (if workspace, copy all manifest files here instead)
 COPY examples/ examples/
 COPY tests/ tests/

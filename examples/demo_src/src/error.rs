@@ -8,14 +8,13 @@
 // This file was created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
 /// Use the error-chain system to allow handling IO and sACN errors chained together.
-/// error_chain! macro automatically creates the Error / ErrorKind / Result required to use the Errors/external errors below with error-chain.
+/// `error_chain!` macro automatically creates the Error / `ErrorKind` / Result required to use the Errors/external errors below with error-chain.
 ///
-/// Sacn create errors are wrapped in Sacn(::sacn::error::errors::Error).
+/// Sacn create errors are wrapped in `Sacn(::sacn::error::errors::Error)`.
 ///
-/// Std io errors are wrapped in Io(::std::io::Error).
+/// Std io errors are wrapped in `Io(::std::io::Error)`.
 ///
-/// Boolean parse errors from Std str ParseBoolError are wrapped in BoolStr(::std::str::ParseBoolError).
-
+/// Boolean parse errors from Std str `ParseBoolError` are wrapped in `BoolStr(::std::str::ParseBoolError)`.
 pub mod errors {
     use thiserror::Error;
 
