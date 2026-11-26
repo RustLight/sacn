@@ -1396,11 +1396,11 @@ impl SacnNetworkReceiver {
     /// Creates a new DMX receiver on the interface specified by the given address.
     ///
     /// If the given address is an IPv4 address then communication will only work between IPv4 devices, if the given address is IPv6 then communication
-    /// will only work between IPv6 devices by default but IPv4 receiving can be enabled using set_ipv6_only(false).
+    /// will only work between IPv6 devices by default but IPv4 receiving can be enabled using `set_ipv6_only(false)`.
     ///
     /// # Errors
-    /// Will return an Io error if the SacnReceiver fails to bind to a socket with the given ip.
-    /// For more details see socket2::Socket::new().
+    /// Will return an Io error if the `SacnReceiver` fails to bind to a socket with the given ip.
+    /// For more details see `socket2::Socket::new()`.
     fn new(ip: SocketAddr) -> Result<SacnNetworkReceiver> {
         Ok(SacnNetworkReceiver {
             socket: create_unix_socket(ip)?,
@@ -1409,11 +1409,11 @@ impl SacnNetworkReceiver {
         })
     }
 
-    /// Connects this SacnNetworkReceiver to the multicast address which corresponds to the given universe to allow receiving packets for that universe.
+    /// Connects this `SacnNetworkReceiver` to the multicast address which corresponds to the given universe to allow receiving packets for that universe.
     ///
     /// # Errors
-    /// Will return an Error if the given universe cannot be converted to an IPv4 or IPv6 multicast_addr depending on if the Receiver is bound to an
-    /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
+    /// Will return an Error if the given universe cannot be converted to an IPv4 or IPv6 `multicast_addr` depending on if the Receiver is bound to an
+    /// IPv4 or IPv6 address. See `packet::universe_to_ipv4_multicast_addr` and `packet::universe_to_ipv6_multicast_addr`.
     ///
     /// Will return an Io error if cannot join the universes corresponding multicast group address.
     fn listen_multicast_universe(&self, universe: u16) -> Result<()> {
@@ -1426,11 +1426,11 @@ impl SacnNetworkReceiver {
         join_unix_multicast(&self.socket, multicast_addr, self.addr.ip())
     }
 
-    /// Removes this SacnNetworkReceiver from the multicast group which corresponds to the given universe.
+    /// Removes this `SacnNetworkReceiver` from the multicast group which corresponds to the given universe.
     ///
     /// # Errors
-    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 multicast_addr depending on if the Receiver is bound to an
-    /// IPv4 or IPv6 address. See packet::universe_to_ipv4_multicast_addr and packet::universe_to_ipv6_multicast_addr.
+    /// Will return an Error if the given universe cannot be converted to an Ipv4 or Ipv6 `multicast_addr` depending on if the Receiver is bound to an
+    /// IPv4 or IPv6 address. See `packet::universe_to_ipv4_multicast_addr` and `packet::universe_to_ipv6_multicast_addr`.
     fn mute_multicast_universe(&mut self, universe: u16) -> Result<()> {
         let multicast_addr = if self.addr.is_ipv4() {
             universe_to_ipv4_multicast_addr(universe)?
@@ -1441,17 +1441,17 @@ impl SacnNetworkReceiver {
         leave_unix_multicast(&self.socket, multicast_addr, self.addr.ip())
     }
 
-    /// Sets the value of the is_multicast_enabled flag to the given value.
+    /// Sets the value of the `is_multicast_enabled` flag to the given value.
     ///
     /// If set to false then the receiver won't attempt to join any more multicast groups.
     ///
-    /// This method does not attempt to leave multicast groups already joined through previous listen_universe calls.
+    /// This method does not attempt to leave multicast groups already joined through previous `listen_universe` calls.
     ///
     /// # Arguments
-    /// val: The new value for the is_multicast_enabled flag.
+    /// val: The new value for the `is_multicast_enabled` flag.
     ///
     /// # Errors
-    /// Will return an OsOperationUnsupported error if attempting to set the flag to true in an environment that multicast
+    /// Will return an `OsOperationUnsupported` error if attempting to set the flag to true in an environment that multicast
     /// isn't supported i.e. Ipv6 on Windows. Note that this is the UNIX implementation
     fn set_is_multicast_enabled(&mut self, val: bool) -> Result<()> {
         self.is_multicast_enabled = val;
@@ -1466,7 +1466,7 @@ impl SacnNetworkReceiver {
     }
 
     /// If set to true then only receive over IPv6. If false then receiving will be over both IPv4 and IPv6.
-    /// This will return an error if the SacnReceiver wasn't created using an IPv6 address to bind to.
+    /// This will return an error if the `SacnReceiver` wasn't created using an IPv6 address to bind to.
     fn set_only_v6(&mut self, val: bool) -> Result<()> {
         if self.addr.is_ipv4() {
             Err(SacnError::IpVersionError())
@@ -1478,21 +1478,21 @@ impl SacnNetworkReceiver {
     /// Returns a packet if there is one available.
     ///
     /// The packet may not be ready to transmit if it is awaiting synchronisation.
-    /// Will only block if set_timeout was called with a timeout of None so otherwise (and by default) it won't
+    /// Will only block if `set_timeout` was called with a timeout of None so otherwise (and by default) it won't
     /// block so may return a WouldBlock/TimedOut error to indicate that there was no data ready.
     ///
     /// IMPORTANT NOTE:
-    /// An explicit lifetime is given to the AcnRootLayerProtocol which comes from the lifetime of the given buffer.
-    /// The compiler will prevent usage of the returned AcnRootLayerProtocol after the buffer is dropped.
+    /// An explicit lifetime is given to the `AcnRootLayerProtocol` which comes from the lifetime of the given buffer.
+    /// The compiler will prevent usage of the returned `AcnRootLayerProtocol` after the buffer is dropped.
     ///
     /// Arguments:
     /// buf: The buffer to use for storing the received data into. This buffer shouldn't be accessed or used directly as the data
-    /// is returned formatted properly in the AcnRootLayerProtocol. This buffer is used as memory space for the returned AcnRootLayerProtocol.
+    /// is returned formatted properly in the `AcnRootLayerProtocol`. This buffer is used as memory space for the returned `AcnRootLayerProtocol`.
     ///
     /// # Errors
     /// May return an error if there is an issue receiving data from the underlying socket, see (recv)[fn.recv.Socket].
     ///
-    /// May return an error if there is an issue parsing the data from the underlying socket, see (parse)[fn.AcnRootLayerProtocol::parse.packet].
+    /// May return an error if there is an issue parsing the data from the underlying socket, see (parse)[`fn.AcnRootLayerProtocol::parse.packet`].
     fn recv<'a>(
         &mut self,
         buf: &'a mut [u8; RCV_BUF_DEFAULT_SIZE],
@@ -1508,7 +1508,7 @@ impl SacnNetworkReceiver {
     /// timeout: The new timeout for the receive operation, a value of None means the recv operation will become blocking.
     ///
     /// Errors:
-    /// A timeout with Duration 0 will cause an error. See (set_read_timeout)[fn.set_read_timeout.Socket].
+    /// A timeout with Duration 0 will cause an error. See (`set_read_timeout`)[`fn.set_read_timeout.Socket`].
     fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
         Ok(self.socket.set_read_timeout(timeout)?)
     }
@@ -1567,7 +1567,7 @@ impl DiscoveredSacnSource {
     /// This is based on each page containing a last-page value which indicates the number of the last page expected.
     pub fn has_all_pages(&mut self) -> bool {
         // https://rust-lang-nursery.github.io/rust-cookbook/algorithms/sorting.html (31/12/2019)
-        self.pages.sort_by(|a, b| a.page.cmp(&b.page));
+        self.pages.sort_by_key(|a| a.page);
         for i in 0..=self.last_page {
             if self.pages.get(i as usize).is_none_or(|p| p.page != i) {
                 return false;
@@ -1603,7 +1603,7 @@ impl DiscoveredSacnSource {
 /// addr: The address that the newly created socket should bind to.
 ///
 /// # Errors
-/// Will return an error if the socket cannot be created, see (Socket::new)[fn.new.Socket].
+/// Will return an error if the socket cannot be created, see (`Socket::new`)[fn.new.Socket].
 ///
 /// Will return an error if the socket cannot be bound to the given address, see (bind)[fn.bind.Socket2].
 #[cfg(not(target_os = "windows"))]
@@ -1657,9 +1657,9 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 ///
 /// # Errors
 /// Will return an error if the given socket cannot be joined to the given multicast group address.
-///     See join_multicast_v4[fn.join_multicast_v4.Socket] and join_multicast_v6[fn.join_multicast_v6.Socket]
+///     See `join_multicast_v4`[`fn.join_multicast_v4.Socket`] and `join_multicast_v6`[`fn.join_multicast_v6.Socket`]
 ///
-/// Will return an IpVersionError if addr and interface_addr are not the same IP version.
+/// Will return an `IpVersionError` if addr and `interface_addr` are not the same IP version.
 #[cfg(not(target_os = "windows"))]
 fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.family() as i32 {
@@ -1713,9 +1713,9 @@ fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) 
 ///
 /// # Errors
 /// Will return an error if the given socket cannot leave the given multicast group address.
-///     See leave_multicast_v4[fn.leave_multicast_v4.Socket] and leave_multicast_v6[fn.leave_multicast_v6.Socket]
+///     See `leave_multicast_v4`[`fn.leave_multicast_v4.Socket`] and `leave_multicast_v6`[`fn.leave_multicast_v6.Socket`]
 ///
-/// Will return an IpVersionError if addr and interface_addr are not the same IP version.
+/// Will return an `IpVersionError` if addr and `interface_addr` are not the same IP version.
 #[cfg(not(target_os = "windows"))]
 fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
     match addr.family() as i32 {
@@ -2082,7 +2082,7 @@ impl SequenceNumbering {
 /// `refresh_timeout`: True if the packet keeps the source / universe alive (Null START Code data and synchronisation packets). Otherwise
 ///                 (alternate START Code data) the sequence number is still checked and updated, but the data loss timer of a live
 ///                 source / universe isn't reset. A new or timed out source / universe is tracked as usual, so a source sending only
-///                 alternate START Code data times out E131_NETWORK_DATA_LOSS_TIMEOUT after it starts.
+///                 alternate START Code data times out `E131_NETWORK_DATA_LOSS_TIMEOUT` after it starts.
 ///
 /// # Errors
 /// Returns an `OutOfSequence` error if a packet is received out of order as detected by the different between
@@ -2443,10 +2443,10 @@ mod test {
 
                 // Universe discovery layer.
                 data: UniverseDiscoveryPacketUniverseDiscoveryLayer {
-                    page: page,
+                    page,
 
                     // The number of the final page.
-                    last_page: last_page,
+                    last_page,
 
                     // List of universes.
                     universes: universes.clone().into(),
@@ -2913,7 +2913,6 @@ mod test {
         assert!(!dmx_rcv.clear_waiting_data(UNIVERSE));
     }
 
-
     /// As per ANSI E1.31-2016 Section 11.1.1, synchronisation begins with the first synchronisation packet. Until then data
     /// naming a synchronisation address is passed up straight away, whatever its `Force_Synchronization` option.
     #[test]
@@ -2937,16 +2936,20 @@ mod test {
         assert!(dmx_rcv.sync_universes.contains_key(&SYNC_UNI));
 
         // The first synchronisation packet starts synchronisation; there is nothing waiting for it to release.
-        assert!(dmx_rcv
-            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
-            .unwrap()
-            .is_none());
+        assert!(
+            dmx_rcv
+                .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 0))
+                .unwrap()
+                .is_none()
+        );
 
         // From then on the data waits for the synchronisation packet.
-        assert!(dmx_rcv
-            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 1, false))
-            .unwrap()
-            .is_none());
+        assert!(
+            dmx_rcv
+                .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI, 1, false))
+                .unwrap()
+                .is_none()
+        );
         let res = dmx_rcv
             .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI, 1))
             .unwrap()
@@ -2967,13 +2970,21 @@ mod test {
         let cid = Uuid::new_v4();
 
         dmx_rcv
-            .handle_sync_packet(cid, generate_sync_packet_framing_layer_seq_num(SYNC_UNI_A, 0))
+            .handle_sync_packet(
+                cid,
+                generate_sync_packet_framing_layer_seq_num(SYNC_UNI_A, 0),
+            )
             .unwrap();
 
-        assert!(dmx_rcv
-            .handle_data_packet(cid, synchronized_data_packet(UNIVERSE, SYNC_UNI_B, 0, false))
-            .unwrap()
-            .is_some());
+        assert!(
+            dmx_rcv
+                .handle_data_packet(
+                    cid,
+                    synchronized_data_packet(UNIVERSE, SYNC_UNI_B, 0, false)
+                )
+                .unwrap()
+                .is_some()
+        );
     }
 
     #[test]
@@ -3070,9 +3081,9 @@ mod test {
         let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let dmx_data = DMXData {
-            universe: universe,
+            universe,
             values: vals.clone(),
-            sync_uni: sync_uni,
+            sync_uni,
             priority: 100,
             src_cid: None,
             preview: false,
@@ -3100,9 +3111,9 @@ mod test {
         let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let dmx_data = DMXData {
-            universe: universe,
+            universe,
             values: vals.clone(),
-            sync_uni: sync_uni,
+            sync_uni,
             priority: 100,
             src_cid: None,
             preview: false,
@@ -3141,9 +3152,9 @@ mod test {
         let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let dmx_data = DMXData {
-            universe: universe,
+            universe,
             values: vals.clone(),
-            sync_uni: sync_uni,
+            sync_uni,
             priority: 100,
             src_cid: None,
             preview: false,
@@ -3191,9 +3202,9 @@ mod test {
         let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let dmx_data = DMXData {
-            universe: universe,
+            universe,
             values: vals.clone(),
-            sync_uni: sync_uni,
+            sync_uni,
             priority: 100,
             src_cid: None,
             preview: false,
@@ -3203,9 +3214,9 @@ mod test {
         let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
 
         let dmx_data2 = DMXData {
-            universe: universe,
+            universe,
             values: vals2.clone(),
-            sync_uni: sync_uni,
+            sync_uni,
             priority: 100,
             src_cid: None,
             preview: false,
@@ -3236,9 +3247,9 @@ mod test {
         let vals: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let dmx_data = DMXData {
-            universe: universe,
+            universe,
             values: vals.clone(),
-            sync_uni: sync_uni,
+            sync_uni,
             priority: 120,
             src_cid: None,
             preview: false,
@@ -3248,9 +3259,9 @@ mod test {
         let vals2: Vec<u8> = vec![0, 9, 7, 3, 2, 4, 5, 6, 5, 1, 2, 3];
 
         let dmx_data2 = DMXData {
-            universe: universe,
+            universe,
             values: vals2.clone(),
-            sync_uni: sync_uni,
+            sync_uni,
             priority: 100,
             src_cid: None,
             preview: false,
@@ -3273,17 +3284,17 @@ mod test {
     /// Generates a data packet framing layer with arbitrary values except for the sequence number which is set to the given value.
     /// This is used for tests targeted at checking sequence number behaviour that don't care about other fields.
     /// The generated data packet framing layer has structure
-    /// DataPacketFramingLayer {
-    ///     source_name: "Source_A".into(),
+    /// `DataPacketFramingLayer` {
+    ///     `source_name`: "`Source_A".into()`,
     ///     priority: 100,
-    ///     synchronization_address: <given sequence number>,
-    ///     sequence_number: sequence_number,
-    ///     preview_data: false,
-    ///     stream_terminated: false,
-    ///     force_synchronization: false,
+    ///     `synchronization_address`: <given sequence number>,
+    ///     `sequence_number`: `sequence_number`,
+    ///     `preview_data`: false,
+    ///     `stream_terminated`: false,
+    ///     `force_synchronization`: false,
     ///     universe: <given universe>,
-    ///     data: DataPacketDmpLayer {
-    ///         property_values: Cow::from(&TEST_DATA_SINGLE_UNIVERSE[0..]),
+    ///     data: `DataPacketDmpLayer` {
+    ///         `property_values`: `Cow::from(&TEST_DATA_SINGLE_UNIVERSE`[0..]),
     ///     },
     /// }
     fn generate_data_packet_framing_layer_seq_num<'a>(
@@ -3294,11 +3305,11 @@ mod test {
             source_name: "Source_A".into(),
             priority: 100,
             synchronization_address: 0,
-            sequence_number: sequence_number,
+            sequence_number,
             preview_data: false,
             stream_terminated: false,
             force_synchronization: false,
-            universe: universe,
+            universe,
             data: DataPacketDmpLayer {
                 property_values: Cow::from(&TEST_NULL_START_CODE_DATA[0..]),
             },
@@ -3311,16 +3322,16 @@ mod test {
     /// Generates a sync packet framing layer with arbitrary values except for the sequence number which is set to the given value.
     /// This is used for tests targeted at checking sequence number behaviour that don't care about other fields.
     /// The generated Generates a sync packet framing layer has structure:
-    /// SynchronizationPacketFramingLayer {
-    ///     sequence_number: <given sequence number>,
-    ///     synchronization_address: <given synchronisation address>
+    /// `SynchronizationPacketFramingLayer` {
+    ///     `sequence_number`: <given sequence number>,
+    ///     `synchronization_address`: <given synchronisation address>
     /// }
-    fn generate_sync_packet_framing_layer_seq_num<'a>(
+    fn generate_sync_packet_framing_layer_seq_num(
         sync_address: u16,
         sequence_number: u8,
     ) -> SynchronizationPacketFramingLayer {
         SynchronizationPacketFramingLayer {
-            sequence_number: sequence_number,
+            sequence_number,
             synchronization_address: sync_address,
         }
     }
@@ -3366,17 +3377,13 @@ mod test {
         // Check that the third data packet with the low sequence number is rejected correctly with the expected OutOfSequence error.
         match dmx_rcv.handle_data_packet(src_cid, data_packet3) {
             Err(SacnError::OutOfSequence(..)) => {
-                assert!(
-                    true,
-                    "Receiver correctly rejected third data packet with correct error"
-                );
+                {};
             }
             Ok(_) => {
-                assert!(false, "Receiver incorrectly accepted third data packet");
+                panic!("Receiver incorrectly accepted third data packet");
             }
             Err(e) => {
-                assert!(
-                    false,
+                panic!(
                     "Receiver correctly rejected third data packet but with unexpected error: {}",
                     e
                 );
@@ -3458,13 +3465,9 @@ mod test {
                 Err(SacnError::OutOfSequence(..)) => {
                     // Data packet was rejected due to sequence number.
                     if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
-                        assert!(
-                            true,
-                            "Rejection is correct as per ANSI E1.31-2018 Section 6.7.2"
-                        );
+                        {};
                     } else {
-                        assert!(
-                            false,
+                        panic!(
                             "Data packet with sequence number: {} was rejected incorrectly",
                             i
                         );
@@ -3473,32 +3476,28 @@ mod test {
                 Ok(_p) => {
                     // Data packet and therefore sequence number was accepted.
                     if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
-                        assert!(
-                            false,
+                        panic!(
                             "Data packet with sequence number: {} was accepted incorrectly",
                             1
                         );
                     } else {
-                        assert!(
-                            true,
-                            "Acceptance is correct as per ANSI E1.31-2018 Section 6.7.2"
-                        );
+                        {};
                     }
                 }
                 Err(e) => {
                     // This is never expected and always means test failure.
-                    assert!(false, "Receiver produced unexpected error: {}", e);
+                    panic!("Receiver produced unexpected error: {}", e);
                 }
             }
         }
     }
 
-    /// Exactly the same as test_data_packet_sequence_number_exhaustive but using synchronisation packets.
+    /// Exactly the same as `test_data_packet_sequence_number_exhaustive` but using synchronisation packets.
     ///
     /// This exhaustively checks that only sequence numbers outwith the reject range as specified by ANSI E1.31-2018 Section 6.7.2 are accepted for
     /// synchronisation packets specifically.
     ///
-    /// As shown by test_sequence_number_packet_type_independence sequence numbers are treated independently for data and synchronisation packets so
+    /// As shown by `test_sequence_number_packet_type_independence` sequence numbers are treated independently for data and synchronisation packets so
     /// therefore appropriate to test separately. Could have been combined with the data packet variant of this test but by keeping them separate
     /// it more clearly shows that data and sync packet sequence numbers should be treated independently and it report errors independently.
     #[test]
@@ -3569,13 +3568,9 @@ mod test {
                 Err(SacnError::OutOfSequence(..)) => {
                     // Sync packet was rejected due to sequence number.
                     if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
-                        assert!(
-                            true,
-                            "Rejection is correct as per ANSI E1.31-2018 Section 6.7.2"
-                        );
+                        {};
                     } else {
-                        assert!(
-                            false,
+                        panic!(
                             "Sync packet with sequence number: {} was rejected incorrectly",
                             i
                         );
@@ -3584,21 +3579,17 @@ mod test {
                 Ok(_p) => {
                     // Sync packet and therefore sequence number was accepted.
                     if (diff <= REJECT_RANGE_UPPER_BOUND) && (diff > REJECT_RANGE_LOWER_BOUND) {
-                        assert!(
-                            false,
+                        panic!(
                             "Sync packet with sequence number: {} was accepted incorrectly",
                             i
                         );
                     } else {
-                        assert!(
-                            true,
-                            "Acceptance is correct as per ANSI E1.31-2018 Section 6.7.2"
-                        );
+                        {};
                     }
                 }
                 Err(e) => {
                     // This is never expected and always means test failure.
-                    assert!(false, "Receiver produced unexpected error: {}", e);
+                    panic!("Receiver produced unexpected error: {}", e);
                 }
             }
         }
@@ -3645,17 +3636,13 @@ mod test {
         // Check that the third sync packet with the low sequence number is rejected correctly with the expected OutOfSequence error.
         match dmx_rcv.handle_sync_packet(src_cid, sync_packet3) {
             Err(SacnError::OutOfSequence(..)) => {
-                assert!(
-                    true,
-                    "Receiver correctly rejected third sync packet with correct error"
-                );
+                {};
             }
             Ok(_) => {
-                assert!(false, "Receiver incorrectly accepted third sync packet");
+                panic!("Receiver incorrectly accepted third sync packet");
             }
             Err(e) => {
-                assert!(
-                    false,
+                panic!(
                     "Receiver correctly rejected third sync packet but with unexpected error: {}",
                     e
                 );
@@ -3665,7 +3652,7 @@ mod test {
 
     /// Creates a receiver and then makes it handle 2 sync packets with sequence numbers 0 and 1 respectively.
     /// The receiver then resets the sequence number counters and then handles a sync packet with sequence number 0. This would normally be rejected
-    /// as per test_sync_packet_sequence_number_below_expected but because of the reset it shouldn't be.
+    /// as per `test_sync_packet_sequence_number_below_expected` but because of the reset it shouldn't be.
     ///
     /// This checks that the sync packet sequence numbers are reset correctly.
     #[test]
@@ -3716,7 +3703,7 @@ mod test {
 
     /// Creates a receiver and then makes it handle 2 data packets with sequence numbers 0 and 1 respectively.
     /// The receiver then resets the sequence number counters and then handles a data packet with sequence number 0. This would normally be rejected
-    /// as per test_data_packet_sequence_number_below_expected but because of the reset it shouldn't be.
+    /// as per `test_data_packet_sequence_number_below_expected` but because of the reset it shouldn't be.
     ///
     /// This checks that the data packet sequence numbers are reset correctly.
     #[test]
@@ -3931,17 +3918,14 @@ mod test {
         match SacnReceiver::with_ip(addr, source_limit) {
             Err(e) => match e {
                 SacnError::SourceLimitZero() => {
-                    assert!(true, "Correct error returned");
+                    {};
                 }
                 _ => {
-                    assert!(false, "Unexpected error type returned");
+                    panic!("Unexpected error type returned");
                 }
             },
             _ => {
-                assert!(
-                    false,
-                    "SacnReceiver accepted 0 source limit when it shouldn't"
-                );
+                panic!("SacnReceiver accepted 0 source limit when it shouldn't");
             }
         }
     }
@@ -4053,7 +4037,7 @@ mod test {
         );
     }
 
-    /// Tests the equivalence of 2 DMXDatas which are only similar in the aspects used for checking equivalence.
+    /// Tests the equivalence of 2 `DMXDatas` which are only similar in the aspects used for checking equivalence.
     #[test]
     fn test_dmx_data_eq() {
         const UNIVERSE: u16 = 1;
@@ -4076,7 +4060,7 @@ mod test {
 
         let data2 = DMXData {
             universe: UNIVERSE,
-            values: values,
+            values,
             sync_uni: SYNC_ADDR,
 
             // The below values can be different for 2 DMXData to be taken as equivalent.

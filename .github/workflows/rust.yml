@@ -42,6 +42,8 @@ jobs:
             - 'rust-toolchain.toml'
             - 'clippy.toml'
             - '.clippy.toml'
+            - 'rustfmt.toml'
+            - '.rustfmt.toml'
             - 'docker-linux/**'
             - '.github/workflows/**'
           docs:
@@ -58,11 +60,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4.4.0
 
+    - name: Check formatting
+      run: cargo fmt --check
+
     - name: Build
       run: cargo build --locked --verbose
 
     - name: Clippy
-      run: cargo clippy --locked
+      run: cargo clippy --locked --all-targets -- -D warnings
 
     - name: Run tests
       run: cargo test --locked --verbose
@@ -102,7 +107,7 @@ jobs:
       run: cargo build --locked --verbose
 
     - name: Clippy
-      run: cargo clippy --locked
+      run: cargo clippy --locked --all-targets -- -D warnings
 
     - name: Run tests
       run: cargo test --locked --verbose
@@ -118,7 +123,7 @@ jobs:
       run: cargo build --locked --verbose
 
     - name: Clippy
-      run: cargo clippy --locked
+      run: cargo clippy --locked --all-targets -- -D warnings
 
     - name: Run tests
       run: cargo test --locked --verbose

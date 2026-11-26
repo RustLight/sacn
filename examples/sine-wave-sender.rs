@@ -44,10 +44,10 @@ fn sine_wave(start_time: Instant, data: &mut [u8; UNIVERSE_CHANNEL_CAPACITY]) {
     // If you were using the sACN library then this is where you would do all the fancy things you want to do.
     let wave_period_ms = 4000.0;
     let wave_offset_ms = 10.0;
-    for i in 1..data.len() {
-        // Use a 0 startcode so skip first value.
+    // Use a 0 startcode so skip first value.
+    for (i, value) in data.iter_mut().enumerate().skip(1) {
         let x: f64 = ((start_time.elapsed().as_millis() as f64) + (i as f64) * wave_offset_ms)
             / wave_period_ms;
-        data[i] = ((std::u8::MAX as f64) * x.sin()).abs() as u8;
+        *value = (f64::from(u8::MAX) * x.sin()).abs() as u8;
     }
 }

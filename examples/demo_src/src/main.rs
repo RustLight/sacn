@@ -17,10 +17,10 @@
 //! As this program is used for testing the library and isn't part of the actual library it doesn't follow the same standards of error handling and as not user
 //! facing it was more helpful to have errors flagged up immediately and explicitly at the source to help development rather than trying to handle the errors.
 //!
-//! Usage instructions are described by either running the receiver and using the help command or by the get_usage_str function
+//! Usage instructions are described by either running the receiver and using the help command or by the `get_usage_str` function
 //! below.
 //!
-//! The ACTION_... constants describe the various user input strings possible once the program has started, with more details described in get_usage_str within
+//! The ACTION_... constants describe the various user input strings possible once the program has started, with more details described in `get_usage_str` within
 //! the code. The details aren't repeated outside of that to minimise the amount of references that have to be kept upto date and which could diverge over time.
 //!
 //! Note the lack of top level constant strings used in the place of output format strings is due to a limitation in rust where the format string cannot be a
@@ -129,7 +129,7 @@ const TEST_PRESET_RAPID_CHANGE_PERIOD: usize = 10;
 const TEST_PRESET_HIGH_DATA_RATE_VARIATION_RANGE: f64 = 10.0;
 
 /// The 2 universes used for the acceptance test.
-/// ACCEPT_TEST_UNI_1 contains the backlight fixtures and ACCEPT_TEST_UNI_2 the frontlight fixtures.
+/// `ACCEPT_TEST_UNI_1` contains the backlight fixtures and `ACCEPT_TEST_UNI_2` the frontlight fixtures.
 const ACCEPT_TEST_UNI_1: u16 = 1;
 const ACCEPT_TEST_UNI_2: u16 = 2;
 
@@ -220,10 +220,10 @@ fn get_usage_str() -> String {
     ACTION_ALL_DATA_OPTION, ACTION_TEST_PRESENT_OPTION, ACTION_IGNORE)
 }
 
-/// Entry point to the demo source. Details of usage can be found in the get_usage_str function or by running the program and typing "h" or "help".
+/// Entry point to the demo source. Details of usage can be found in the `get_usage_str` function or by running the program and typing "h" or "help".
 ///
 /// # Arguments:
-/// Usage ./main <interface_ip> <source_name>
+/// Usage ./main <`interface_ip`> <`source_name`>
 fn main() {
     let cmd_args: Vec<String> = env::args().collect();
 
@@ -267,17 +267,17 @@ fn display_help() {
 /// Handles the user command to send a full universe of data which starts with the data given and then is padded with 0's upto the full length.
 ///
 /// # Arguments
-/// src: A mutable reference to the SacnSource to use to send the data with.
+/// src: A mutable reference to the `SacnSource` to use to send the data with.
 ///
-/// split_input: The parts of the user command which have been split up by white space.
+/// `split_input`: The parts of the user command which have been split up by white space.
 ///
-/// split_input[1] is expected to be the universe.
+/// `split_input[1]` is expected to be the universe.
 ///
-/// split_input[2] is expected to be the syncronisation universe.
+/// `split_input[2]` is expected to be the syncronisation universe.
 ///
-/// split_input[3] is expected to be the priority.
+/// `split_input[3]` is expected to be the priority.
 ///
-/// split_input[4] is expected to be the start of the data to send.
+/// `split_input[4]` is expected to be the start of the data to send.
 fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 4 {
         return Err(std::io::Error::new(
@@ -311,13 +311,13 @@ fn handle_full_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Resu
 /// Handles the user command to send a full universe of data with all the payload being the same value (with a zero startcode).
 ///
 /// # Arguments
-/// src: A mutable reference to the SacnSource to use for sending data.
+/// src: A mutable reference to the `SacnSource` to use for sending data.
 ///
-/// split_input: The input from the user as part of the command split by white space.
+/// `split_input`: The input from the user as part of the command split by white space.
 ///
-/// split_input[1] is expected to be the universe.
+/// `split_input[1]` is expected to be the universe.
 ///
-/// split_input[2] is expected to be the value to set all the payload values to.
+/// `split_input[2]` is expected to be the value to set all the payload values to.
 fn handle_all_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 3 {
         return Err(std::io::Error::new(
@@ -340,18 +340,18 @@ fn handle_all_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Resul
     Ok(true)
 }
 
-/// Sends data from the given SacnSource to the multicast address for the given data universe.
+/// Sends data from the given `SacnSource` to the multicast address for the given data universe.
 ///
 /// # Arguments
-/// src: A mutable reference to the SacnSource to use as the sender to send the unicast data from.
+/// src: A mutable reference to the `SacnSource` to use as the sender to send the unicast data from.
 ///
-/// split_input: The input from the user as part of the command split by white space.
+/// `split_input`: The input from the user as part of the command split by white space.
 ///
-/// split_input[1] is expected to be the universe to send the data to.
+/// `split_input[1]` is expected to be the universe to send the data to.
 ///
-/// split_input[2] is expected to be the synchronisation address to use for the data, 0 means none.
+/// `split_input[2]` is expected to be the synchronisation address to use for the data, 0 means none.
 ///
-/// split_input[3] is expected to be the priority to send the data with.
+/// `split_input[3]` is expected to be the priority to send the data with.
 ///
 /// The rest of the input is expected to be the data to send.
 fn handle_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
@@ -371,8 +371,8 @@ fn handle_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bo
 
     let mut data: Vec<u8> = Vec::new();
 
-    for i in 4..split_input.len() {
-        data.push(split_input[i].parse().unwrap());
+    for value in &split_input[4..] {
+        data.push(value.parse().unwrap());
     }
 
     if sync_uni == 0 {
@@ -384,21 +384,21 @@ fn handle_data_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bo
     Ok(true)
 }
 
-/// Sends data from the given SacnSource to the receiver at the given destination using unicast
+/// Sends data from the given `SacnSource` to the receiver at the given destination using unicast
 /// (or broadcast if a broadcast IP is provided).
 ///
 /// # Arguments
-/// src: A mutable reference to the SacnSource to use as the sender to send the unicast data from.
+/// src: A mutable reference to the `SacnSource` to use as the sender to send the unicast data from.
 ///
-/// split_input: The input from the user as part of the command split by white space.
+/// `split_input`: The input from the user as part of the command split by white space.
 ///
-/// split_input[1] is expected to be the universe to send the data to.
+/// `split_input[1]` is expected to be the universe to send the data to.
 ///
-/// split_input[2] is expected to be the synchronisation address to use for the data, 0 means none.
+/// `split_input[2]` is expected to be the synchronisation address to use for the data, 0 means none.
 ///
-/// split_input[3] is expected to be the priority to send the data with.
+/// `split_input[3]` is expected to be the priority to send the data with.
 ///
-/// split_input[4] is expected to be the ip to send the data to.
+/// `split_input[4]` is expected to be the ip to send the data to.
 ///
 /// The rest of the input is expected to be the data to send.
 fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
@@ -420,8 +420,8 @@ fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result
 
     let mut data: Vec<u8> = Vec::new();
 
-    for i in 5..split_input.len() {
-        data.push(split_input[i].parse().unwrap());
+    for value in &split_input[5..] {
+        data.push(value.parse().unwrap());
     }
 
     if sync_uni == 0 {
@@ -429,9 +429,10 @@ fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result
             &[universe],
             &data,
             Some(priority),
-            Some(
-                SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT).into(),
-            ),
+            Some(SocketAddr::new(
+                IpAddr::V4(dst_ip.parse().unwrap()),
+                ACN_SDT_MULTICAST_PORT,
+            )),
             None,
         )?;
     } else {
@@ -439,9 +440,10 @@ fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result
             &[universe],
             &data,
             Some(priority),
-            Some(
-                SocketAddr::new(IpAddr::V4(dst_ip.parse().unwrap()), ACN_SDT_MULTICAST_PORT).into(),
-            ),
+            Some(SocketAddr::new(
+                IpAddr::V4(dst_ip.parse().unwrap()),
+                ACN_SDT_MULTICAST_PORT,
+            )),
             Some(sync_uni),
         )?;
     }
@@ -453,15 +455,15 @@ fn handle_unicast_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result
 /// The specific data isn't important as this is more to show the receiver and sender are connected properly.
 ///
 /// # Arguments
-/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// src: A mutable reference to the `SacnSource` to use as the sender in this test.
 ///
-/// split_input: The input from the user as part of the command split by white space.
+/// `split_input`: The input from the user as part of the command split by white space.
 ///
-/// split_input[1] is expected to be the universe to send the data to.
+/// `split_input[1]` is expected to be the universe to send the data to.
 ///
-/// split_input[2] is expected to be the time to keep sending data for in milliseconds.
+/// `split_input[2]` is expected to be the time to keep sending data for in milliseconds.
 ///
-/// split_input[3] is expected to be the priority to send the data with.
+/// `split_input[3]` is expected to be the priority to send the data with.
 fn handle_data_over_time_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 4 {
         return Err(std::io::Error::new(
@@ -480,7 +482,7 @@ fn handle_data_over_time_option(src: &mut SacnSource, split_input: Vec<&str>) ->
     let start_time = Instant::now();
 
     while start_time.elapsed() < duration {
-        let x: f64 = (start_time.elapsed().as_millis() as f64) / (1000 as f64);
+        let x: f64 = (start_time.elapsed().as_millis() as f64) / 1000_f64;
         let d: u8 = (255.0 * x.sin()) as u8;
 
         let mut data: [u8; 513] = [d; 513];
@@ -498,15 +500,15 @@ fn handle_data_over_time_option(src: &mut SacnSource, split_input: Vec<&str>) ->
 /// Interoperability Testing document.
 ///
 /// # Arguments
-/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// src: A mutable reference to the `SacnSource` to use as the sender in this test.
 ///
-/// split_input: The input from the user as part of the command split by white space.
+/// `split_input`: The input from the user as part of the command split by white space.
 ///
-/// split_input[1] is expected to be the preset to run.
+/// `split_input[1]` is expected to be the preset to run.
 ///
-/// split_input[2] is expected to be the universe to use.
+/// `split_input[2]` is expected to be the universe to use.
 ///
-/// More input is dependent on the test preset being run as described in the usage / get_usage_str().
+/// More input is dependent on the test preset being run as described in the usage / `get_usage_str()`.
 fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Result<bool> {
     if split_input.len() < 3 {
         return Err(std::io::Error::new(
@@ -544,8 +546,8 @@ fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Re
                 src,
                 universe,
                 universe_2,
-                std::u8::MAX / 2,
-                std::u8::MAX,
+                u8::MAX / 2,
+                u8::MAX,
                 None,
             )?;
         }
@@ -565,8 +567,8 @@ fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Re
                 src,
                 universe,
                 universe_2,
-                std::u8::MAX / 2,
-                std::u8::MAX,
+                u8::MAX / 2,
+                u8::MAX,
                 Some(addr),
             )?;
         }
@@ -589,17 +591,17 @@ fn handle_test_preset_option(src: &mut SacnSource, split_input: Vec<&str>) -> Re
 /// the Interoperability Testing document.
 ///
 /// # Arguments:
-/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// src: A mutable reference to the `SacnSource` to use as the sender in this test.
 ///
-/// uni_1: The first universe to send data on.
+/// `uni_1`: The first universe to send data on.
 ///
-/// uni_2: The second universe to send data on.
+/// `uni_2`: The second universe to send data on.
 ///
-/// uni1_val: The value to send on the first universe.
+/// `uni1_val`: The value to send on the first universe.
 ///
-/// uni2_val: The value to send on the second universe.
+/// `uni2_val`: The value to send on the second universe.
 ///
-/// dst_ip: None to use multicast or Some(addr) to use unicast to a specific address.
+/// `dst_ip`: None to use multicast or Some(addr) to use unicast to a specific address.
 fn run_test_2_universes_distinct_values(
     src: &mut SacnSource,
     uni_1: u16,
@@ -628,7 +630,7 @@ fn run_test_2_universes_distinct_values(
 /// Runs the moving channel test preset as part of the interoperability testing. As described in more detail within the Interoperability Testing document.
 ///
 /// # Arguments:
-/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// src: A mutable reference to the `SacnSource` to use as the sender in this test.
 ///
 /// universe: The universe to send data on in the test.
 fn run_test_moving_channel_preset(src: &mut SacnSource, universe: u16) -> Result<()> {
@@ -638,12 +640,11 @@ fn run_test_moving_channel_preset(src: &mut SacnSource, universe: u16) -> Result
 
     while start_time.elapsed() < TEST_PRESET_DURATION {
         // Use a 0 startcode so skip first value.
-        for i in 1..data.len() {
+        for (i, value) in data.iter_mut().enumerate().skip(1) {
             let x: f64 = ((start_time.elapsed().as_millis() as f64)
                 + (i as f64) * MOVING_CHANNEL_TEST_WAVE_OFFSET)
                 / MOVING_CHANNEL_TEST_WAVE_PERIOD;
-            let d: u8 = ((std::u8::MAX as f64) * x.sin()) as u8;
-            data[i] = d;
+            *value = (f64::from(u8::MAX) * x.sin()) as u8;
         }
 
         src.send(&[universe], &data, None, None, None)?;
@@ -657,7 +658,7 @@ fn run_test_moving_channel_preset(src: &mut SacnSource, universe: u16) -> Result
 /// Runs the rapid changes test preset as part of the interoperability testing. As described in more detail within the Interoperability Testing document.
 ///
 /// # Arguments:
-/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// src: A mutable reference to the `SacnSource` to use as the sender in this test.
 ///
 /// universe: The universe to send data on in the test.
 fn run_test_rapid_changes_preset(src: &mut SacnSource, universe: u16) -> Result<()> {
@@ -669,7 +670,7 @@ fn run_test_rapid_changes_preset(src: &mut SacnSource, universe: u16) -> Result<
         let mut data = if counter < (TEST_PRESET_RAPID_CHANGE_PERIOD / 2) {
             [0; UNIVERSE_CHANNEL_CAPACITY]
         } else {
-            [std::u8::MAX; UNIVERSE_CHANNEL_CAPACITY]
+            [u8::MAX; UNIVERSE_CHANNEL_CAPACITY]
         };
 
         // Use a zero startcode.
@@ -687,11 +688,11 @@ fn run_test_rapid_changes_preset(src: &mut SacnSource, universe: u16) -> Result<
 /// Runs the high data rate interoperability test preset. As described in more detail within the Interoperability Testing document.
 ///
 /// # Arguments:
-/// src: A mutable reference to the SacnSource to use as the sender in this test.
+/// src: A mutable reference to the `SacnSource` to use as the sender in this test.
 ///
-/// start_universe: The universe to use as the first universe in the test.
+/// `start_universe`: The universe to use as the first universe in the test.
 ///
-/// universe_count: The number of universes starting at the start_universe (inclusive) to send data on.
+/// `universe_count`: The number of universes starting at the `start_universe` (inclusive) to send data on.
 fn run_test_high_data_rate(
     src: &mut SacnSource,
     start_universe: u16,
@@ -711,7 +712,7 @@ fn run_test_high_data_rate(
             src.send(&[universe], &data, None, None, None)?;
         }
 
-        counter = counter + 0.05;
+        counter += 0.05;
         sleep(TEST_PRESET_UPDATE_PERIOD);
     }
 
@@ -722,10 +723,10 @@ fn run_test_high_data_rate(
 ///
 /// Made to work with the corresponding vision visualiser "Student-Union-Model.v3s" file with patch as follows:
 /// Format:
-/// <fixture_name> <channel_count>ch: <sACN_universe>-<address>, ....
+/// <`fixture_name`> <`channel_count>ch`: <`sACN_universe`>-<address>, ....
 ///
 /// Patch:
-/// Robe Robin LedBeam 150 16ch: 1-1, 1-50, 1-100, 1-150, 1-200, 1-250, 1-300, 1-350.
+/// Robe Robin `LedBeam` 150 16ch: 1-1, 1-50, 1-100, 1-150, 1-200, 1-250, 1-300, 1-350.
 /// Fresnel-Front-Light 1ch: 2-1, 2-2, 2-3
 ///
 /// Step 1, 150 + Front On at full.
@@ -734,7 +735,7 @@ fn run_test_high_data_rate(
 /// Step 4, All off
 ///
 /// # Arguments
-/// src: A mutable reference to the SacnSource to use as the sender in the acceptance test.
+/// src: A mutable reference to the `SacnSource` to use as the sender in the acceptance test.
 fn run_acceptance_test_demo(src: &mut SacnSource) -> Result<()> {
     // The number of steps and the length (in packets) of each step.
     const STEP_COUNT: usize = 4;
@@ -835,7 +836,7 @@ fn gen_acceptance_test_step_1(buf: &mut [u8; UNIVERSE_CHANNEL_CAPACITY * 2]) {
 /// Acceptance Test.
 ///
 /// The backlights use 16 dmx channels each. The usage of each channel is as described by the DMX chart found at the manufacture website:
-/// https://www.robe.cz/ledbeam-150/download/#dmx-charts (12/04/2020).
+/// <https://www.robe.cz/ledbeam-150/download/#dmx-charts> (12/04/2020).
 /// The backlights are in 16 channel mode (mode 2).
 /// Channel : Usage (explaination)
 /// 1: Pan (positioning)
@@ -1099,7 +1100,7 @@ fn gen_acceptance_test_step_4_frontlight_state(buf: &mut [u8]) {
 /// Returns Ok(true) to continue or Ok(false) if no more input.
 ///
 /// # Arguments
-/// src: A mutable reference to the SacnSource to perform the user instructions on.
+/// src: A mutable reference to the `SacnSource` to perform the user instructions on.
 fn handle_input(src: &mut SacnSource) -> Result<bool> {
     let mut input = String::new();
 
@@ -1146,10 +1147,7 @@ fn handle_input(src: &mut SacnSource) -> Result<bool> {
 
                     let universe: u16 = split_input[1].parse().unwrap();
                     let dst_ip = split_input[2];
-                    src.send_sync_packet(
-                        universe,
-                        Some(SocketAddr::from_str(dst_ip).unwrap().into()),
-                    )?;
+                    src.send_sync_packet(universe, Some(SocketAddr::from_str(dst_ip).unwrap()))?;
                     Ok(true)
                 }
                 ACTION_REGISTER_OPTION => {
@@ -1194,17 +1192,13 @@ fn handle_input(src: &mut SacnSource) -> Result<bool> {
                 }
                 ACTION_ALL_DATA_OPTION => handle_all_data_option(src, split_input),
                 ACTION_TEST_PRESENT_OPTION => handle_test_preset_option(src, split_input),
-                x => {
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::InvalidInput,
-                        format!("Unknown input type: {}", x),
-                    )
-                    .into());
-                }
+                x => Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    format!("Unknown input type: {}", x),
+                )
+                .into()),
             }
         }
-        Err(e) => {
-            return Err(e.into());
-        }
+        Err(e) => Err(e.into()),
     }
 }

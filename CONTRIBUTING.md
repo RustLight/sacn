@@ -16,14 +16,15 @@ cd sacn
 cargo build
 ```
 
-`.cargo/config.toml` turns on a standard set of Clippy lints and denies `unsafe` code for every build in the repository. Check your changes with:
+`.cargo/config.toml` turns on a standard set of Clippy lints and denies `unsafe` code for every build in the repository. CI fails on any Clippy warning or unformatted code, so check your changes with:
 
 ```sh
-cargo clippy
-cargo clippy --no-default-features --features std
+cargo fmt
+cargo clippy --all-targets -- -D warnings
+cargo clippy --all-targets --no-default-features --features std -- -D warnings
 ```
 
-The second command checks the build without the `logging` feature. Log messages go through the crate's internal `log_warn!`, `log_debug!` and `log_trace!` macros, never `println!` or the `log` macros directly, so the code still builds when the feature is off. Start each message with or include "sACN" so it stands out in an application's logs.
+The last command checks the build without the `logging` feature. Log messages go through the crate's internal `log_warn!`, `log_debug!` and `log_trace!` macros, never `println!` or the `log` macros directly, so the code still builds when the feature is off. Start each message with or include "sACN" so it stands out in an application's logs.
 
 ## Documentation
 
@@ -68,7 +69,7 @@ The scripts run the network tests in parallel, one network namespace per test so
 
 `.github/workflows/rust.yml` runs on every pull request to `main`:
 
-* build, Clippy and `cargo test` on Linux, Windows and macOS;
+* a rustfmt check on Linux, then build, Clippy (warnings denied) and `cargo test` on Linux, Windows and macOS;
 * the IPv4 and IPv6 network tests in the Docker image on Linux.
 
 ## Other testing material

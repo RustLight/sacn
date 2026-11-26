@@ -9,7 +9,7 @@
 
 pub mod ipv4_tests;
 
-const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 3] = [
+const TEST_NETWORK_INTERFACE_IPV6: [&str; 3] = [
     "2a02:c7f:d20a:c600:a502:2dae:7716:601b",
     "2a02:c7f:d20a:c600:a502:2dae:7716:601c",
     "2a02:c7f:d20a:c600:a502:2dae:7716:601d",
@@ -22,12 +22,12 @@ const TEST_NETWORK_INTERFACE_IPV6: [&'static str; 3] = [
 mod sacn_ipv6_multicast_test {
 
     use std::io::Read;
-    use std::iter;
+
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+    use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::mpsc;
-    use std::sync::Arc;
-    use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, SyncSender};
+    use std::sync::mpsc::RecvTimeoutError;
     use std::thread;
     use std::thread::sleep;
     use std::time::Duration;
@@ -58,8 +58,7 @@ mod sacn_ipv6_multicast_test {
     #[test]
     #[ignore]
     fn test_send_recv_partial_capacity_universe_multicast_ipv6() {
-        let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) =
-            mpsc::channel();
+        let (tx, rx) = mpsc::channel::<Result<Vec<DMXData>>>();
 
         let thread_tx = tx.clone();
 
@@ -133,8 +132,7 @@ mod sacn_ipv6_multicast_test {
     #[test]
     #[ignore]
     fn test_send_recv_single_universe_alternative_startcode_multicast_ipv6() {
-        let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) =
-            mpsc::channel();
+        let (tx, rx) = mpsc::channel::<Result<Vec<DMXData>>>();
 
         let thread_tx = tx.clone();
 
@@ -208,8 +206,7 @@ mod sacn_ipv6_multicast_test {
     #[test]
     #[ignore]
     fn test_across_alternative_startcode_universe_multicast_ipv6() {
-        let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) =
-            mpsc::channel();
+        let (tx, rx) = mpsc::channel::<Result<Vec<DMXData>>>();
 
         let thread_tx = tx.clone();
 
@@ -293,8 +290,7 @@ mod sacn_ipv6_multicast_test {
     /// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
     /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
     fn test_send_recv_full_capacity_across_universe_multicast_ipv6() {
-        let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) =
-            mpsc::channel();
+        let (tx, rx) = mpsc::channel::<Result<Vec<DMXData>>>();
 
         let thread_tx = tx.clone();
 
@@ -382,8 +378,7 @@ mod sacn_ipv6_multicast_test {
     #[test]
     #[ignore]
     fn test_send_recv_single_universe_multicast_ipv6() {
-        let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) =
-            mpsc::channel();
+        let (tx, rx) = mpsc::channel::<Result<Vec<DMXData>>>();
 
         let thread_tx = tx.clone();
 
@@ -421,15 +416,14 @@ mod sacn_ipv6_multicast_test {
 
         src.register_universe(universe).unwrap();
 
-        let _ = src
-            .send(
-                &[universe],
-                &TEST_DATA_SINGLE_UNIVERSE,
-                Some(priority),
-                None,
-                None,
-            )
-            .unwrap();
+        src.send(
+            &[universe],
+            &TEST_DATA_SINGLE_UNIVERSE,
+            Some(priority),
+            None,
+            None,
+        )
+        .unwrap();
 
         let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
 
@@ -460,8 +454,7 @@ mod sacn_ipv6_multicast_test {
     /// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
     /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
     fn test_send_recv_across_universe_multicast_ipv6() {
-        let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) =
-            mpsc::channel();
+        let (tx, rx) = mpsc::channel::<Result<Vec<DMXData>>>();
 
         let thread_tx = tx.clone();
 
@@ -549,8 +542,7 @@ mod sacn_ipv6_multicast_test {
     #[test]
     #[ignore]
     fn test_send_across_universe_multiple_receivers_sync_multicast_ipv6() {
-        let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) =
-            mpsc::channel();
+        let (tx, rx) = mpsc::channel::<Result<Vec<DMXData>>>();
 
         let thread1_tx = tx.clone();
         let thread2_tx = tx.clone();
@@ -643,7 +635,7 @@ mod sacn_ipv6_multicast_test {
         match attempt_recv {
             Ok(o) => {
                 println!("{:#?}", o);
-                assert!(false, "Receivers received without waiting for sync");
+                panic!("Receivers received without waiting for sync");
             }
             Err(e) => assert_eq!(e, RecvTimeoutError::Timeout),
         }
@@ -661,7 +653,7 @@ mod sacn_ipv6_multicast_test {
         assert_eq!(received_result1.len(), 1); // Check only 1 universe received as expected.
         assert_eq!(received_result2.len(), 1); // Check only 1 universe received as expected.
 
-        let mut results = vec![received_result1[0].clone(), received_result2[0].clone()];
+        let mut results = [received_result1[0].clone(), received_result2[0].clone()];
         results.sort_unstable(); // Ordering of received data is undefined, to make it easier to check sort first.
 
         assert_eq!(results[0].universe, universe1); // Check that the universe 1 received is as expected.
@@ -697,11 +689,8 @@ mod sacn_ipv6_multicast_test {
         let mut snd_threads = Vec::new();
         let mut rcv_threads = Vec::new();
 
-        let (rcv_tx, rcv_rx): (
-            SyncSender<Vec<Result<Vec<DMXData>>>>,
-            Receiver<Vec<Result<Vec<DMXData>>>>,
-        ) = mpsc::sync_channel(0);
-        let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0); // Used for handshaking, allows syncing the sender states.
+        let (rcv_tx, rcv_rx) = mpsc::sync_channel::<Vec<Result<Vec<DMXData>>>>(0);
+        let (snd_tx, snd_rx) = mpsc::sync_channel::<()>(0); // Used for handshaking, allows syncing the sender states.
 
         assert!(
             RCV_THREADS <= TEST_NETWORK_INTERFACE_IPV6.len(),
@@ -710,10 +699,10 @@ mod sacn_ipv6_multicast_test {
 
         const BASE_UNIVERSE: u16 = 2;
 
-        for i in 0..SND_THREADS {
+        for (i, data) in snd_data.iter().enumerate() {
             let tx = snd_tx.clone();
 
-            let data = snd_data[i].clone();
+            let data = data.clone();
 
             snd_threads.push(thread::spawn(move || {
                 let ip: SocketAddr = SocketAddr::new(
@@ -736,14 +725,14 @@ mod sacn_ipv6_multicast_test {
             }));
         }
 
-        for i in 0..RCV_THREADS {
+        for interface_ip in TEST_NETWORK_INTERFACE_IPV6.iter().take(RCV_THREADS) {
             let tx = rcv_tx.clone();
 
             rcv_threads.push(thread::spawn(move || {
                 // Port kept the same so must use multiple IP's.
                 let mut dmx_recv = SacnReceiver::with_ip(
                     SocketAddr::new(
-                        IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[i].parse().unwrap()),
+                        IpAddr::V6(interface_ip.parse().unwrap()),
                         ACN_SDT_MULTICAST_PORT,
                     ),
                     None,
@@ -751,7 +740,7 @@ mod sacn_ipv6_multicast_test {
                 .unwrap();
 
                 // Receivers listen to all universes
-                for i in (BASE_UNIVERSE as u16)..((SND_THREADS as u16) + (BASE_UNIVERSE as u16)) {
+                for i in BASE_UNIVERSE..((SND_THREADS as u16) + BASE_UNIVERSE) {
                     dmx_recv.listen_universes(&[i]).unwrap();
                 }
 
@@ -817,13 +806,13 @@ mod sacn_ipv6_multicast_test {
         const SND_THREADS: usize = 1;
         const BASE_UNIVERSE: u16 = 2;
         const UNIVERSE_COUNT: usize = 1;
-        const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
+        const SOURCE_NAMES: [&str; SND_THREADS] = ["Source 1"];
 
-        let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+        let (snd_tx, snd_rx) = mpsc::sync_channel::<()>(0);
 
         let mut snd_threads = Vec::new();
 
-        for i in 0..SND_THREADS {
+        for (i, source_name) in SOURCE_NAMES.iter().enumerate() {
             let tx = snd_tx.clone();
 
             snd_threads.push(thread::spawn(move || {
@@ -832,7 +821,7 @@ mod sacn_ipv6_multicast_test {
                     ACN_SDT_MULTICAST_PORT + 1 + (i as u16),
                 );
 
-                let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
+                let mut src = SacnSource::with_ip(source_name, ip).unwrap();
 
                 let mut universes: Vec<u16> = Vec::new();
                 for j in 0..UNIVERSE_COUNT {
@@ -861,35 +850,33 @@ mod sacn_ipv6_multicast_test {
                     match e {
                         SacnError::Io(ref s) => {
                             match s.kind() {
-                                std::io::ErrorKind::WouldBlock => {
-                                    // Expected to timeout / would block.
-                                    // The different errors are due to windows and unix returning different errors for the same thing.
-                                }
-                                std::io::ErrorKind::TimedOut => {}
+                                // Expected to timeout / would block.
+                                // The different errors are due to windows and unix returning different errors for the same thing.
+                                std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {}
                                 _ => {
-                                    assert!(false, "Unexpected error returned");
+                                    panic!("Unexpected error returned");
                                 }
                             }
                         }
                         _ => {
-                            assert!(false, "Unexpected error returned");
+                            panic!("Unexpected error returned");
                         }
                     }
                 }
                 Ok(_) => {
-                    assert!(false, "No data should have been passed up!");
+                    panic!("No data should have been passed up!");
                 }
             }
 
             let discovered = dmx_recv.get_discovered_sources();
 
-            if discovered.len() > 0 {
+            if !discovered.is_empty() {
                 assert_eq!(discovered.len(), 1);
                 assert_eq!(discovered[0].name, SOURCE_NAMES[0]);
                 let universes = discovered[0].get_all_universes();
                 assert_eq!(universes.len(), UNIVERSE_COUNT);
-                for j in 0..UNIVERSE_COUNT {
-                    assert_eq!(universes[j], (j as u16) + BASE_UNIVERSE);
+                for (j, universe) in universes.iter().enumerate() {
+                    assert_eq!(*universe, (j as u16) + BASE_UNIVERSE);
                 }
                 break;
             }
@@ -908,13 +895,13 @@ mod sacn_ipv6_multicast_test {
         const SND_THREADS: usize = 1;
         const BASE_UNIVERSE: u16 = 2;
         const UNIVERSE_COUNT: usize = 5;
-        const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
+        const SOURCE_NAMES: [&str; SND_THREADS] = ["Source 1"];
 
-        let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+        let (snd_tx, snd_rx) = mpsc::sync_channel::<()>(0);
 
         let mut snd_threads = Vec::new();
 
-        for i in 0..SND_THREADS {
+        for (i, source_name) in SOURCE_NAMES.iter().enumerate() {
             let tx = snd_tx.clone();
 
             snd_threads.push(thread::spawn(move || {
@@ -923,7 +910,7 @@ mod sacn_ipv6_multicast_test {
                     ACN_SDT_MULTICAST_PORT + 1 + (i as u16),
                 );
 
-                let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
+                let mut src = SacnSource::with_ip(source_name, ip).unwrap();
 
                 let mut universes: Vec<u16> = Vec::new();
                 for j in 0..UNIVERSE_COUNT {
@@ -952,36 +939,34 @@ mod sacn_ipv6_multicast_test {
                     match e {
                         SacnError::Io(ref s) => {
                             match s.kind() {
-                                std::io::ErrorKind::WouldBlock => {
-                                    // Expected to timeout / would block.
-                                    // The different errors are due to windows and unix returning different errors for the same thing.
-                                }
-                                std::io::ErrorKind::TimedOut => {}
+                                // Expected to timeout / would block.
+                                // The different errors are due to windows and unix returning different errors for the same thing.
+                                std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {}
                                 _ => {
-                                    assert!(false, "Unexpected error returned");
+                                    panic!("Unexpected error returned");
                                 }
                             }
                         }
                         _ => {
-                            assert!(false, "Unexpected error returned");
+                            panic!("Unexpected error returned");
                         }
                     }
                 }
                 Ok(_) => {
-                    assert!(false, "No data should have been passed up!");
+                    panic!("No data should have been passed up!");
                 }
             }
 
             let discovered = dmx_recv.get_discovered_sources();
 
-            if discovered.len() > 0 {
+            if !discovered.is_empty() {
                 assert_eq!(discovered.len(), 1);
                 assert_eq!(discovered[0].name, SOURCE_NAMES[0]);
 
                 let universes = discovered[0].get_all_universes();
                 assert_eq!(universes.len(), UNIVERSE_COUNT);
-                for j in 0..UNIVERSE_COUNT {
-                    assert_eq!(universes[j], (j as u16) + BASE_UNIVERSE);
+                for (j, universe) in universes.iter().enumerate() {
+                    assert_eq!(*universe, (j as u16) + BASE_UNIVERSE);
                 }
                 break;
             }
@@ -1000,13 +985,13 @@ mod sacn_ipv6_multicast_test {
         const SND_THREADS: usize = 1;
         const BASE_UNIVERSE: u16 = 2;
         const UNIVERSE_COUNT: usize = 600;
-        const SOURCE_NAMES: [&'static str; 1] = ["Source 1"];
+        const SOURCE_NAMES: [&str; SND_THREADS] = ["Source 1"];
 
-        let (snd_tx, snd_rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+        let (snd_tx, snd_rx) = mpsc::sync_channel::<()>(0);
 
         let mut snd_threads = Vec::new();
 
-        for i in 0..SND_THREADS {
+        for (i, source_name) in SOURCE_NAMES.iter().enumerate() {
             let tx = snd_tx.clone();
 
             snd_threads.push(thread::spawn(move || {
@@ -1015,7 +1000,7 @@ mod sacn_ipv6_multicast_test {
                     ACN_SDT_MULTICAST_PORT + 1 + (i as u16),
                 );
 
-                let mut src = SacnSource::with_ip(SOURCE_NAMES[i], ip).unwrap();
+                let mut src = SacnSource::with_ip(source_name, ip).unwrap();
 
                 src.set_is_sending_discovery(false); // To stop universe discovery packets being sent until all universes are registered.
 
@@ -1049,35 +1034,33 @@ mod sacn_ipv6_multicast_test {
                     match e {
                         SacnError::Io(ref s) => {
                             match s.kind() {
-                                std::io::ErrorKind::WouldBlock => {
-                                    // Expected to timeout / would block.
-                                    // The different errors are due to windows and unix returning different errors for the same thing.
-                                }
-                                std::io::ErrorKind::TimedOut => {}
+                                // Expected to timeout / would block.
+                                // The different errors are due to windows and unix returning different errors for the same thing.
+                                std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut => {}
                                 _ => {
-                                    assert!(false, "Unexpected error returned");
+                                    panic!("Unexpected error returned");
                                 }
                             }
                         }
                         _ => {
-                            assert!(false, "Unexpected error returned");
+                            panic!("Unexpected error returned");
                         }
                     }
                 }
                 Ok(_) => {
-                    assert!(false, "No data should have been passed up!");
+                    panic!("No data should have been passed up!");
                 }
             }
 
             let discovered = dmx_recv.get_discovered_sources();
 
-            if discovered.len() > 0 {
+            if !discovered.is_empty() {
                 assert_eq!(discovered.len(), 1);
                 assert_eq!(discovered[0].name, SOURCE_NAMES[0]);
                 let universes = discovered[0].get_all_universes();
                 assert_eq!(universes.len(), UNIVERSE_COUNT);
-                for j in 0..UNIVERSE_COUNT {
-                    assert_eq!(universes[j], (j as u16) + BASE_UNIVERSE);
+                for (j, universe) in universes.iter().enumerate() {
+                    assert_eq!(*universe, (j as u16) + BASE_UNIVERSE);
                 }
                 break;
             }
@@ -1093,8 +1076,7 @@ mod sacn_ipv6_multicast_test {
     #[test]
     #[ignore]
     fn test_send_recv_two_universe_multicast_ipv6() {
-        let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) =
-            mpsc::channel();
+        let (tx, rx) = mpsc::channel::<Result<Vec<DMXData>>>();
 
         let thread_tx = tx.clone();
 
@@ -1191,15 +1173,14 @@ mod sacn_ipv6_multicast_test {
 
             src.register_universe(universe).unwrap();
 
-            let _ = src
-                .send(
-                    &[universe],
-                    &TEST_DATA_SINGLE_UNIVERSE,
-                    Some(priority),
-                    None,
-                    None,
-                )
-                .unwrap();
+            src.send(
+                &[universe],
+                &TEST_DATA_SINGLE_UNIVERSE,
+                Some(priority),
+                None,
+                None,
+            )
+            .unwrap();
         });
 
         let snd_thread_2 = thread::spawn(move || {
@@ -1213,15 +1194,14 @@ mod sacn_ipv6_multicast_test {
 
             src.register_universe(universe).unwrap();
 
-            let _ = src
-                .send(
-                    &[universe],
-                    &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE,
-                    Some(priority),
-                    None,
-                    None,
-                )
-                .unwrap();
+            src.send(
+                &[universe],
+                &TEST_DATA_PARTIAL_CAPACITY_UNIVERSE,
+                Some(priority),
+                None,
+                None,
+            )
+            .unwrap();
         });
 
         let res1: Vec<DMXData> = dmx_recv.recv(None).unwrap();
@@ -1233,7 +1213,7 @@ mod sacn_ipv6_multicast_test {
         assert_eq!(res1.len(), 1);
         assert_eq!(res2.len(), 1);
 
-        let res = vec![res1[0].clone(), res2[0].clone()];
+        let res = [res1[0].clone(), res2[0].clone()];
 
         assert_eq!(res[0].universe, universe);
         assert_eq!(res[1].universe, universe);
@@ -1264,7 +1244,7 @@ mod sacn_ipv6_multicast_test {
         // The 'slight pause' as specified by ANSI E1.31-2018 Section 11.2.2 between data and sync packets.
         const PAUSE_PERIOD: Duration = Duration::from_millis(100);
 
-        let (tx, rx): (SyncSender<()>, Receiver<()>) = mpsc::sync_channel(0);
+        let (tx, rx) = mpsc::sync_channel::<()>(0);
 
         let thread_tx = tx.clone();
 
@@ -1278,14 +1258,10 @@ mod sacn_ipv6_multicast_test {
         let data2 = [
             0x00, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xa,
         ];
-        let src_cid: Uuid = Uuid::from_bytes(
-            [
-                0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
-                0x14, 0x3e,
-            ]
-            .try_into()
-            .unwrap(),
-        );
+        let src_cid: Uuid = Uuid::from_bytes([
+            0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
+            0x14, 0x3e,
+        ]);
 
         let snd_thread = thread::spawn(move || {
             let ip: SocketAddr = SocketAddr::new(
@@ -1391,11 +1367,11 @@ mod sacn_ipv6_multicast_test {
                             "Unexpected data within second data packet of a set of synchronised packets"
                         );
                     } else {
-                        assert!(false, "Unrecognised universe within data packet");
+                        panic!("Unrecognised universe within data packet");
                     }
                 }
                 Err(e) => {
-                    assert!(false, "{}", format!("Unexpected error returned: {:?}", e));
+                    panic!("{}", format!("Unexpected error returned: {:?}", e));
                 }
             }
         }
@@ -1475,14 +1451,10 @@ mod sacn_ipv6_multicast_test {
         ];
 
         // The source CID.
-        let src_cid: Uuid = Uuid::from_bytes(
-            [
-                0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
-                0x14, 0x3e,
-            ]
-            .try_into()
-            .unwrap(),
-        );
+        let src_cid: Uuid = Uuid::from_bytes([
+            0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6,
+            0x14, 0x3e,
+        ]);
 
         // Set once the receiver has discovered the source and is listening to its universes.
         let receiver_listening = Arc::new(AtomicBool::new(false));
@@ -1589,7 +1561,7 @@ mod sacn_ipv6_multicast_test {
                             break;
                         }
                         _ => {
-                            assert!(false, "Unexpected error returned");
+                            panic!("Unexpected error returned");
                         }
                     }
                 }
@@ -1642,7 +1614,7 @@ mod sacn_ipv6_multicast_test {
                             "Unexpected data within second data packet of a set of synchronised packets"
                         );
                     } else {
-                        assert!(false, "Unrecognised universe within data packet");
+                        panic!("Unrecognised universe within data packet");
                     }
                 }
             }
@@ -1674,16 +1646,10 @@ mod sacn_ipv6_multicast_test {
 
         let universe: u16 = 1;
 
-        let source_name = "SourceName".to_string()
-            + "\0\0\0\0\0\0\0\0\0\0"
-            + "\0\0\0\0\0\0\0\0\0\0"
-            + "\0\0\0\0\0\0\0\0\0\0"
-            + "\0\0\0\0\0\0\0\0\0\0"
-            + "\0\0\0\0\0\0\0\0\0\0"
-            + "\0\0\0\0";
+        let source_name = format!("SourceName{}", "\0".repeat(54));
         let mut dmx_data: Vec<u8> = Vec::new();
         dmx_data.push(0); // Start code
-        dmx_data.extend(iter::repeat(100).take(255));
+        dmx_data.extend(std::iter::repeat_n(100, 255));
 
         /*  */
 
@@ -1692,11 +1658,15 @@ mod sacn_ipv6_multicast_test {
             IpAddr::V4(Ipv4Addr::UNSPECIFIED),
             ACN_SDT_MULTICAST_PORT + 1,
         );
-        let mut ipv4_source =
-            SacnSource::with_cid_ip(source_name.trim_end_matches('\0'), Uuid::from_bytes(CID), ipv4).unwrap();
+        let mut ipv4_source = SacnSource::with_cid_ip(
+            source_name.trim_end_matches('\0'),
+            Uuid::from_bytes(CID),
+            ipv4,
+        )
+        .unwrap();
         ipv4_source.set_preview_mode(false).unwrap();
         ipv4_source.set_multicast_loop_v4(true).unwrap();
-        ipv4_source.register_universes(&[universe as u16]).unwrap();
+        ipv4_source.register_universes(&[universe]).unwrap();
 
         // Create and setup the ipv4 receiver socket.
         let mut ipv4_recv = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
@@ -1717,13 +1687,13 @@ mod sacn_ipv6_multicast_test {
             .unwrap();
         ipv4_recv
             .join_multicast_v4(
-                &ipv4_multicast_addr.as_socket_ipv4().unwrap().ip(),
+                ipv4_multicast_addr.as_socket_ipv4().unwrap().ip(),
                 &Ipv4Addr::UNSPECIFIED,
             )
             .unwrap();
         ipv4_recv
             .join_multicast_v4(
-                &ipv4_discovery_multicast_addr.as_socket_ipv4().unwrap().ip(),
+                ipv4_discovery_multicast_addr.as_socket_ipv4().unwrap().ip(),
                 &Ipv4Addr::UNSPECIFIED,
             )
             .unwrap();
@@ -1733,8 +1703,12 @@ mod sacn_ipv6_multicast_test {
             IpAddr::V6(Ipv6Addr::UNSPECIFIED),
             ACN_SDT_MULTICAST_PORT + 1,
         );
-        let mut ipv6_source =
-            SacnSource::with_cid_ip(source_name.trim_end_matches('\0'), Uuid::from_bytes(CID), ipv6).unwrap();
+        let mut ipv6_source = SacnSource::with_cid_ip(
+            source_name.trim_end_matches('\0'),
+            Uuid::from_bytes(CID),
+            ipv6,
+        )
+        .unwrap();
         ipv6_source.set_preview_mode(false).unwrap();
         ipv6_source.register_universes(&[universe]).unwrap();
 
@@ -1755,11 +1729,11 @@ mod sacn_ipv6_multicast_test {
             )
             .unwrap();
         ipv6_recv
-            .join_multicast_v6(&ipv6_multicast_addr.as_socket_ipv6().unwrap().ip(), 0)
+            .join_multicast_v6(ipv6_multicast_addr.as_socket_ipv6().unwrap().ip(), 0)
             .unwrap();
         ipv6_recv
             .join_multicast_v6(
-                &ipv6_discovery_multicast_addr.as_socket_ipv6().unwrap().ip(),
+                ipv6_discovery_multicast_addr.as_socket_ipv6().unwrap().ip(),
                 0,
             )
             .unwrap();
@@ -1845,7 +1819,6 @@ mod sacn_ipv6_multicast_test {
 mod sacn_ipv6_unicast_test {
 
     use std::sync::mpsc;
-    use std::sync::mpsc::{Receiver, Sender};
     use std::thread;
     use std::thread::sleep;
 
@@ -1864,8 +1837,7 @@ mod sacn_ipv6_unicast_test {
     #[test]
     #[ignore]
     fn test_send_recv_single_universe_unicast_ipv6() {
-        let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) =
-            mpsc::channel();
+        let (tx, rx) = mpsc::channel::<Result<Vec<DMXData>>>();
 
         let thread_tx = tx.clone();
 
@@ -1905,15 +1877,14 @@ mod sacn_ipv6_unicast_test {
             ACN_SDT_MULTICAST_PORT,
         );
 
-        let _ = src
-            .send(
-                &[universe],
-                &TEST_DATA_SINGLE_UNIVERSE,
-                Some(priority),
-                Some(dst_ip),
-                None,
-            )
-            .unwrap();
+        src.send(
+            &[universe],
+            &TEST_DATA_SINGLE_UNIVERSE,
+            Some(priority),
+            Some(dst_ip),
+            None,
+        )
+        .unwrap();
 
         let received_result: Result<Vec<DMXData>> = rx.recv().unwrap();
 
@@ -1944,8 +1915,7 @@ mod sacn_ipv6_unicast_test {
     /// Note: this test assumes perfect network conditions (0% reordering, loss, duplication etc.), this should be the case for
     /// the loopback adapter with the low amount of data sent but this may be a possible cause if integration tests fail unexpectedly.
     fn test_send_recv_across_universe_unicast_ipv6() {
-        let (tx, rx): (Sender<Result<Vec<DMXData>>>, Receiver<Result<Vec<DMXData>>>) =
-            mpsc::channel();
+        let (tx, rx) = mpsc::channel::<Result<Vec<DMXData>>>();
 
         let thread_tx = tx.clone();
 
@@ -1983,41 +1953,31 @@ mod sacn_ipv6_unicast_test {
         // Start synchronisation first: as per ANSI E1.31-2016 Section 11.1.1 data is only held once a synchronisation packet has been received.
         src.send_sync_packet(
             UNIVERSES[0],
-            Some(
-                SocketAddr::new(
-                    IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()),
-                    ACN_SDT_MULTICAST_PORT,
-                )
-                .into(),
-            ),
+            Some(SocketAddr::new(
+                IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()),
+                ACN_SDT_MULTICAST_PORT,
+            )),
         )
         .unwrap();
 
-        let _ = src
-            .send(
-                &UNIVERSES,
-                &TEST_DATA_MULTIPLE_UNIVERSE,
-                Some(priority),
-                Some(
-                    SocketAddr::new(
-                        IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()),
-                        ACN_SDT_MULTICAST_PORT,
-                    )
-                    .into(),
-                ),
-                Some(UNIVERSES[0]),
-            )
-            .unwrap();
+        src.send(
+            &UNIVERSES,
+            &TEST_DATA_MULTIPLE_UNIVERSE,
+            Some(priority),
+            Some(SocketAddr::new(
+                IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()),
+                ACN_SDT_MULTICAST_PORT,
+            )),
+            Some(UNIVERSES[0]),
+        )
+        .unwrap();
         sleep(Duration::from_millis(500)); // Small delay to allow the data packets to get through as per NSI-E1.31-2018 Appendix B.1 recommendation.
         src.send_sync_packet(
             UNIVERSES[0],
-            Some(
-                SocketAddr::new(
-                    IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()),
-                    ACN_SDT_MULTICAST_PORT,
-                )
-                .into(),
-            ),
+            Some(SocketAddr::new(
+                IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()),
+                ACN_SDT_MULTICAST_PORT,
+            )),
         )
         .unwrap();
 
