@@ -48,6 +48,8 @@ jobs:
             - '**/*.md'
             - 'documentation/**'
             - 'LICENSE-*'
+            - '.rumdl.toml'
+            - 'lychee.toml'
 
   test-linux:
     needs: changes
@@ -151,10 +153,31 @@ jobs:
         persist-credentials: false
     - uses: github/gh-actions-lock@verify/v0.5.1
 
+  # Lints the Markdown files and checks their links (configured in
+  # .rumdl.toml and lychee.toml).
+  markdown:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4.4.0
+
+    - name: Lint Markdown
+      run: pipx run --spec rumdl==0.3.6 rumdl check .
+
+    - name: Check links
+      uses: lycheeverse/lychee-action@v2.9.0
+      with:
+        args: --config lychee.toml --no-progress './**/*.md'
+        fail: true
+      env:
+        # Authenticated requests avoid GitHub's rate limit for github.com links.
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # The single required status check. Jobs skipped by the path filter count as
   # passing; a failed or cancelled job (including `changes`) fails this one.
   all-checks:
-    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, docs, lockfile]
+    needs: [changes, test-linux, test-linux-ipv4, test-linux-ipv6, test-windows, test-macos, docs, lockfile, markdown]
     if: always()
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,7 @@
+# rumdl (Markdown linter) configuration, used by CI and the prek hooks.
+# Rules: https://rumdl.dev/rules/
+
+[global]
+# Prose is written one paragraph per line; don't wrap it.
+disable = ["MD013"]
+exclude = ["target"]
