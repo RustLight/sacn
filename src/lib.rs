@@ -40,7 +40,8 @@
 //!   chosen synchronisation universe, so several universes change at the same moment. Receivers start holding data
 //!   once they have received the first synchronisation packet on that universe.
 //! - **Universe discovery**: every source multicasts the list of universes it sends, every 10 seconds
-//!   ([`packet::E131_UNIVERSE_DISCOVERY_INTERVAL`]). Receivers collect these to learn which sources are on the network.
+//!   ([`packet::E131_UNIVERSE_DISCOVERY_INTERVAL`]), split into pages of up to 512 universes. A source with no
+//!   registered universes sends no discovery packets. Receivers collect these to learn which sources are on the network.
 //!
 //! ## Modules
 //!

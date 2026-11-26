@@ -19,7 +19,6 @@ use crate::packet::*;
 
 use std::cell::RefCell;
 use std::cmp;
-use std::cmp::min;
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -1215,21 +1214,8 @@ impl SacnSourceInternal {
     /// # Errors
     /// See (`send_universe_discovery_detailed`)[`fn.send_universe_discovery_detailed.source`].
     fn send_universe_discovery(&self) -> Result<()> {
-        // Given a u16 universe field and self.universes containing no duplicates it means that the maximum total number of universes (65536, ignoring sACN restrictions)
-        // divided by the number of universes per page (512) is 128 which therefore fits into the discovery universe 8 bit page field making this cast safe.
-        let pages_req: u8 = ((self.universes.len() / DISCOVERY_UNI_PER_PAGE) + 1) as u8;
-
-        for p in 0..pages_req {
-            let start_index = (p as usize) * DISCOVERY_UNI_PER_PAGE;
-            let end_index = min(
-                ((p as usize) + 1) * DISCOVERY_UNI_PER_PAGE,
-                self.universes.len(),
-            );
-            self.send_universe_discovery_detailed(
-                p,
-                pages_req - 1,
-                &self.universes[start_index..end_index],
-            )?;
+        for (page, last_page, universes) in discovery_pages(&self.universes) {
+            self.send_universe_discovery_detailed(page, last_page, universes)?;
         }
         Ok(())
     }
@@ -1500,6 +1486,22 @@ fn perform_periodic_update(src: &mut Arc<Mutex<SacnSourceInternal>>) -> Result<(
     Ok(())
 }
 
+/// Splits the given (sorted) universe list into universe discovery pages.
+///
+/// Returns one `(page, last_page, universes)` entry per page, each holding at most `DISCOVERY_UNI_PER_PAGE` universes.
+/// A list of n universes gives ceil(n / 512) pages with a last page of `(n - 1) / 512`, so a source with no universes
+/// sends no discovery packet at all and an exact multiple of 512 does not produce a trailing empty page.
+fn discovery_pages(universes: &[u16]) -> Vec<(u8, u8, &[u16])> {
+    let chunks: Vec<&[u16]> = universes.chunks(DISCOVERY_UNI_PER_PAGE).collect();
+    // A u16 universe field and no duplicates give at most 65536 / 512 = 128 pages, so the page numbers fit in a u8.
+    let last_page = chunks.len().saturating_sub(1) as u8;
+    chunks
+        .into_iter()
+        .enumerate()
+        .map(|(p, c)| (p as u8, last_page, c))
+        .collect()
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -1522,5 +1524,55 @@ mod test {
             src.universes
         );
         assert!(!src.running);
+    }
+
+    /// A source with no universes has nothing to advertise and sends no discovery page.
+    #[test]
+    fn test_discovery_pages_empty() {
+        assert!(discovery_pages(&[]).is_empty());
+    }
+
+    #[test]
+    fn test_discovery_pages_single_page() {
+        let unis: Vec<u16> = (1..=3).collect();
+        let pages = discovery_pages(&unis);
+        assert_eq!(pages, vec![(0, 0, &unis[..])]);
+    }
+
+    /// Exactly 512 universes fill one page; no trailing empty page is sent.
+    #[test]
+    fn test_discovery_pages_exact_multiple() {
+        let unis: Vec<u16> = (1..=(DISCOVERY_UNI_PER_PAGE as u16)).collect();
+        let pages = discovery_pages(&unis);
+        assert_eq!(pages, vec![(0, 0, &unis[..])]);
+
+        let unis: Vec<u16> = (1..=(2 * DISCOVERY_UNI_PER_PAGE as u16)).collect();
+        let pages = discovery_pages(&unis);
+        assert_eq!(pages.len(), 2);
+        assert_eq!(pages[0], (0, 1, &unis[..DISCOVERY_UNI_PER_PAGE]));
+        assert_eq!(pages[1], (1, 1, &unis[DISCOVERY_UNI_PER_PAGE..]));
+    }
+
+    #[test]
+    fn test_discovery_pages_partial_last_page() {
+        let unis: Vec<u16> = (1..=(DISCOVERY_UNI_PER_PAGE as u16 + 1)).collect();
+        let pages = discovery_pages(&unis);
+        assert_eq!(pages.len(), 2);
+        assert_eq!(pages[0], (0, 1, &unis[..DISCOVERY_UNI_PER_PAGE]));
+        assert_eq!(pages[1], (1, 1, &unis[DISCOVERY_UNI_PER_PAGE..]));
+    }
+
+    /// The largest possible universe set still fits the 8-bit page fields.
+    #[test]
+    fn test_discovery_pages_max() {
+        let unis: Vec<u16> = (0..=u16::MAX).collect();
+        let pages = discovery_pages(&unis);
+        assert_eq!(pages.len(), 128);
+        assert_eq!(pages.last().unwrap().0, 127);
+        assert!(
+            pages
+                .iter()
+                .all(|(_, last, u)| *last == 127 && u.len() == DISCOVERY_UNI_PER_PAGE)
+        );
     }
 }
