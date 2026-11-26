@@ -12,6 +12,8 @@ use std::io::Read;
 use std::{array, thread};
 use std::thread::sleep;
 use std::sync::mpsc;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Sender, SyncSender, Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -3161,8 +3163,9 @@ fn test_ansi_e131_appendix_b_runthrough_ipv4() {
 #[test]
 #[ignore]
 fn test_discover_recv_sync_runthrough_ipv4() {
-    // The number of set of (data packets + sync packet) to send.
-    const SYNC_PACKET_COUNT: usize = 250;
+    // The number of sets of (data packets + sync packet) sent once the receiver is listening. More than 257,
+    // so that the sequence numbers of every universe wrap from 255 to 0 while the receiver is checking them.
+    const SYNC_PACKET_COUNT: usize = 260;
 
     // The number of data packets sent before each sync packet.
     const DATA_PACKETS_PER_SYNC_PACKET: usize = 2;
@@ -3171,7 +3174,7 @@ fn test_discover_recv_sync_runthrough_ipv4() {
     const PAUSE_PERIOD: Duration = Duration::from_millis(50);
 
     // The interval between sets of sync/data packets.
-    const INTERVAL: Duration = Duration::from_millis(100);
+    const INTERVAL: Duration = Duration::from_millis(50);
 
     // The universes used for data.
     const DATA_UNIVERSES: [u16; 2] = [1, 2];
@@ -3189,6 +3192,10 @@ fn test_discover_recv_sync_runthrough_ipv4() {
     // The source CID.
     let src_cid: Uuid = Uuid::from_bytes([0xef, 0x07, 0xc8, 0xdd, 0x00, 0x64, 0x44, 0x01, 0xa3, 0xa2, 0x45, 0x9e, 0xf8, 0xe6, 0x14, 0x3e].try_into().unwrap());
 
+    // Set once the receiver has discovered the source and is listening to its universes.
+    let receiver_listening = Arc::new(AtomicBool::new(false));
+    let snd_receiver_listening = Arc::clone(&receiver_listening);
+
     let snd_thread = thread::spawn(move || {
         let ip: SocketAddr = SocketAddr::new(TEST_NETWORK_INTERFACE_IPV4[0].parse().unwrap(), ACN_SDT_MULTICAST_PORT + 1);
         let mut src = SacnSource::with_cid_ip(SOURCE_NAME, src_cid, ip).unwrap();
@@ -3196,7 +3203,15 @@ fn test_discover_recv_sync_runthrough_ipv4() {
         src.register_universes(&DATA_UNIVERSES).unwrap();
         src.register_universe(SYNC_UNIVERSE).unwrap();
 
-        for _ in 0 .. SYNC_PACKET_COUNT {
+        // The source starts sending straight away. The receiver only joins after the first universe discovery
+        // advert, about E131_UNIVERSE_DISCOVERY_INTERVAL later, so it joins a stream whose sequence numbers are already
+        // past 0. The source then sends SYNC_PACKET_COUNT more sets, all of which the receiver must get.
+        let mut sets_after_listening = 0;
+        while sets_after_listening < SYNC_PACKET_COUNT {
+            if snd_receiver_listening.load(Ordering::SeqCst) {
+                sets_after_listening += 1;
+            }
+
             // Sender sends data packets to the 2 data universes using the same synchronisation address.
             src.send(&[DATA_UNIVERSES[0]], &DATA, None, None, Some(SYNC_UNIVERSE)).unwrap();
             src.send(&[DATA_UNIVERSES[1]], &DATA2, None, None, Some(SYNC_UNIVERSE)).unwrap();
@@ -3247,6 +3262,9 @@ fn test_discover_recv_sync_runthrough_ipv4() {
     };
 
     dmx_recv.listen_universes(&universes).unwrap(); // Assert Successful
+    receiver_listening.store(true, Ordering::SeqCst);
+
+    let mut sets_received = 0;
 
     // Until the receiver has received a synchronisation packet it acts on data immediately (ANSI E1.31-2016 Section 11.1.1).
     let mut synchronised = false;
@@ -3274,6 +3292,7 @@ fn test_discover_recv_sync_runthrough_ipv4() {
                 }
                 synchronised = true;
                 assert_eq!(rcv_data.len(), DATA_PACKETS_PER_SYNC_PACKET);
+                sets_received += 1;
                 if rcv_data[0].universe == DATA_UNIVERSES[0] {
                     assert_eq!(rcv_data[0].values, DATA, "Unexpected data within first data packet of a set of synchronised packets");
 
@@ -3290,6 +3309,15 @@ fn test_discover_recv_sync_runthrough_ipv4() {
             }
         }
     }
+
+    // The first set sent after the receiver joins can arrive before its synchronisation packet starts
+    // synchronisation, in which case the receiver acts on it straight away (ANSI E1.31-2016 Section 11.1.1).
+    assert!(
+        sets_received >= SYNC_PACKET_COUNT - 1,
+        "Received {} sets of synchronised data, expected at least {}",
+        sets_received,
+        SYNC_PACKET_COUNT - 1
+    );
 
     // Finished receiving from the sender.
     snd_thread.join().unwrap();

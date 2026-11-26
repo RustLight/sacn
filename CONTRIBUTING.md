@@ -54,15 +54,15 @@ The easiest way to get the right setup is the Docker image in `docker-linux`, wh
 ```sh
 docker build -t sacn-test -f docker-linux/Dockerfile .
 
-# IPv4: adds the test addresses to the loopback interface, then runs cargo test and the IPv4 tests.
-docker run --cap-add=NET_ADMIN sacn-test
+# IPv4: runs cargo test, then the IPv4 tests. SYS_ADMIN lets each test run in its own network namespace.
+docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN sacn-test
 
 # IPv6: needs a docker network with IPv6 enabled.
 docker network create --ipv6 --subnet fd00:5ac0::/64 sacn-ipv6
-docker run --cap-add=NET_ADMIN --network sacn-ipv6 sacn-test ./run_tests_ipv6.sh
+docker run --cap-add=NET_ADMIN --cap-add=SYS_ADMIN --network sacn-ipv6 sacn-test ./run_tests_ipv6.sh
 ```
 
-To run them on a Linux host instead, see `docker-linux/run_tests.sh` and `docker-linux/run_tests_ipv6.sh` for the addresses and routes they add. Both need root.
+The scripts run the network tests in parallel, one network namespace per test so their sockets can't clash, as many at once as there are CPU cores (set `SACN_TEST_JOBS` to change that). To run them on a Linux host instead, run `docker-linux/run_tests.sh` or `docker-linux/run_tests_ipv6.sh` as root; `docker-linux/run_isolated.sh` sets up each namespace's addresses and routes.
 
 ## Continuous integration
 

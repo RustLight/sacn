@@ -24,7 +24,9 @@ mod sacn_ipv6_multicast_test {
     use std::io::Read;
     use std::iter;
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::mpsc;
+    use std::sync::Arc;
     use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, SyncSender};
     use std::thread;
     use std::thread::sleep;
@@ -1442,8 +1444,9 @@ mod sacn_ipv6_multicast_test {
     #[test]
     #[ignore]
     fn test_discover_recv_sync_runthrough_ipv6() {
-        // The number of set of (data packets + sync packet) to send.
-        const SYNC_PACKET_COUNT: usize = 250;
+        // The number of sets of (data packets + sync packet) sent once the receiver is listening. More than 257,
+        // so that the sequence numbers of every universe wrap from 255 to 0 while the receiver is checking them.
+        const SYNC_PACKET_COUNT: usize = 260;
 
         // The number of data packets sent before each sync packet.
         const DATA_PACKETS_PER_SYNC_PACKET: usize = 2;
@@ -1452,7 +1455,7 @@ mod sacn_ipv6_multicast_test {
         const PAUSE_PERIOD: Duration = Duration::from_millis(50);
 
         // The interval between sets of sync/data packets.
-        const INTERVAL: Duration = Duration::from_millis(100);
+        const INTERVAL: Duration = Duration::from_millis(50);
 
         // The universes used for data.
         const DATA_UNIVERSES: [u16; 2] = [1, 2];
@@ -1481,6 +1484,10 @@ mod sacn_ipv6_multicast_test {
             .unwrap(),
         );
 
+        // Set once the receiver has discovered the source and is listening to its universes.
+        let receiver_listening = Arc::new(AtomicBool::new(false));
+        let snd_receiver_listening = Arc::clone(&receiver_listening);
+
         let snd_thread = thread::spawn(move || {
             let ip: SocketAddr = SocketAddr::new(
                 TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap(),
@@ -1491,7 +1498,15 @@ mod sacn_ipv6_multicast_test {
             src.register_universes(&DATA_UNIVERSES).unwrap();
             src.register_universe(SYNC_UNIVERSE).unwrap();
 
-            for _ in 0..SYNC_PACKET_COUNT {
+            // The source starts sending straight away. The receiver only joins after the first universe discovery
+            // advert, about E131_UNIVERSE_DISCOVERY_INTERVAL later, so it joins a stream whose sequence numbers are already
+            // past 0. The source then sends SYNC_PACKET_COUNT more sets, all of which the receiver must get.
+            let mut sets_after_listening = 0;
+            while sets_after_listening < SYNC_PACKET_COUNT {
+                if snd_receiver_listening.load(Ordering::SeqCst) {
+                    sets_after_listening += 1;
+                }
+
                 // Sender sends data packets to the 2 data universes using the same synchronisation address.
                 src.send(&[DATA_UNIVERSES[0]], &DATA, None, None, Some(SYNC_UNIVERSE))
                     .unwrap();
@@ -1557,6 +1572,9 @@ mod sacn_ipv6_multicast_test {
         };
 
         dmx_recv.listen_universes(&universes).unwrap(); // Assert Successful
+        receiver_listening.store(true, Ordering::SeqCst);
+
+        let mut sets_received = 0;
 
         // Until the receiver has received a synchronisation packet it acts on data immediately (ANSI E1.31-2016 Section 11.1.1).
         let mut synchronised = false;
@@ -1594,6 +1612,7 @@ mod sacn_ipv6_multicast_test {
                     }
                     synchronised = true;
                     assert_eq!(rcv_data.len(), DATA_PACKETS_PER_SYNC_PACKET);
+                    sets_received += 1;
                     if rcv_data[0].universe == DATA_UNIVERSES[0] {
                         assert_eq!(
                             rcv_data[0].values, DATA,
@@ -1628,6 +1647,15 @@ mod sacn_ipv6_multicast_test {
                 }
             }
         }
+
+        // The first set sent after the receiver joins can arrive before its synchronisation packet starts
+        // synchronisation, in which case the receiver acts on it straight away (ANSI E1.31-2016 Section 11.1.1).
+        assert!(
+            sets_received >= SYNC_PACKET_COUNT - 1,
+            "Received {} sets of synchronised data, expected at least {}",
+            sets_received,
+            SYNC_PACKET_COUNT - 1
+        );
 
         // Finished receiving from the sender.
         snd_thread.join().unwrap();
