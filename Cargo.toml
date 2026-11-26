@@ -10,7 +10,6 @@ authors = ["Lukas Schmierer <lukas.schmierer@lschmierer.de>", "Paul Lancaster <p
 documentation = "https://github.com/RustLight/sacn"
 repository = "https://github.com/RustLight/sacn"
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/RustLight/sacn"
 exclude = [
     "documentation/*",
     "further testing/*",
