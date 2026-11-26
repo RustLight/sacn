@@ -16,6 +16,7 @@ workflows:
         - 'dorny/paths-filter@v4.0.3'
         - 'github/gh-actions-lock@verify/v0.5.1'
         - 'j178/prek-action@v3.1.1'
+        - 'taiki-e/install-action@v2.90.10'
 dependencies:
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'
@@ -91,5 +92,10 @@ dependencies:
     'taiki-e/install-action@1919c4a95903d2c33e4a221102edca87309fc14b':
         ref: 'v2.89.0'
         commit: 'sha1-1919c4a95903d2c33e4a221102edca87309fc14b'
+        owner_id: 43724913
+        repo_id: 442947557
+    'taiki-e/install-action@v2.90.10':
+        ref: 'v2.90.10'
+        commit: 'sha1-893d6ee8d714b6c7dfe2bcd94e5759e9a7958a7e'
         owner_id: 43724913
         repo_id: 442947557
