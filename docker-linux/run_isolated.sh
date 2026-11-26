@@ -36,12 +36,16 @@ if [[ -z "$bin" ]]; then
     exit 1
 fi
 
-# Start the discovery tests first: they wait on the 10 s universe discovery interval
-# and are the longest, so starting them early keeps them off the end of the run.
+# Start the longest tests first so none of them starts late and holds up the end of the
+# run: the sync runthrough (the longest), then the other tests that wait on the 10 s
+# universe discovery interval, then the rest.
 mapfile -t tests < <(
     "$bin" --ignored --list --format terse ${filter:+"$filter"} \
         | sed -n 's/: test$//p' \
-        | awk '/discover/ { print; next } { rest[++n] = $0 } END { for (i = 1; i <= n; i++) print rest[i] }'
+        | awk '/discover_recv_sync_runthrough/ { print; next }
+               /discover/ { discovery[++d] = $0; next }
+               { rest[++n] = $0 }
+               END { for (i = 1; i <= d; i++) print discovery[i]; for (i = 1; i <= n; i++) print rest[i] }'
 )
 if (( ${#tests[@]} == 0 )); then
     echo "no ignored tests in $target match '$filter'" >&2
