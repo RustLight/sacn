@@ -3,6 +3,8 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
+    '.github/workflows/copilot-setup-steps.yml':
+        - 'actions/checkout@v7.0.1'
     '.github/workflows/release-plz.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/create-github-app-token@v3.4.0'
