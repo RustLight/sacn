@@ -28,7 +28,7 @@ use crate::packet::{
 
 /// Same reasoning as for packet meaning all sacn errors are imported.
 use crate::error::errors::*;
-use crate::interface::{self, MulticastIf, NetworkInterface};
+use crate::interface::{self, MulticastIf, NetworkInterface, ResolvedIf};
 
 /// The uuid crate is used for working with/generating UUIDs which sACN uses as part of the cid field in the protocol.
 /// This is used for uniquely identifying sources when counting sequence numbers.
@@ -67,6 +67,11 @@ const ANNOUNCE_STREAM_TERMINATION_DEFAULT: bool = false;
 
 /// The default value of the `announce_timeout` flag.
 const ANNOUNCE_TIMEOUT_DEFAULT: bool = false;
+
+/// After the receiver's interfaces change, how long a copy of the last packet from a source is dropped quietly instead
+/// of being reported as `OutOfSequence`: the groups are joined on the new interfaces before being left on the old ones,
+/// so a packet can arrive on both during the change.
+const INTERFACE_CHANGE_DUPLICATE_WINDOW: Duration = Duration::from_secs(1);
 
 /// If a packet for a universe is waiting to be synchronised and then another packet is received with the same universe and synchronisation address
 /// this situation must be handled. By default the implementation discards the lowest priority packet and if equal priority it discards the oldest
@@ -232,7 +237,11 @@ struct SacnNetworkReceiver {
     is_multicast_enabled: bool,
 
     /// The interfaces that multicast groups are joined on. Empty means the default, see `group_interfaces`.
-    multicast_interfaces: Vec<MulticastIf>,
+    multicast_interfaces: Vec<ResolvedIf>,
+
+    /// When the interfaces were last changed. Groups are joined on the new interfaces before they are left on the old
+    /// ones, so for a short time afterwards a packet may still arrive once on each.
+    interfaces_changed_at: Option<Instant>,
 }
 
 /// Universe discovery packets are broken down into pages to allow sending a large list of universes, each page contains a list of universes and
@@ -293,6 +302,34 @@ impl SacnReceiver {
     /// Will return an error if the created `SacnReceiver` fails to listen to the `E1.31_DISCOVERY_UNIVERSE`.
     /// For more details see `SacnReceiver::listen_universes()`.
     pub fn with_ip(ip: SocketAddr, source_limit: Option<usize>) -> Result<SacnReceiver> {
+        Self::with_interfaces(ip, source_limit, &[])
+    }
+
+    /// Creates a new `SacnReceiver` that joins multicast groups on the given network interfaces from the start,
+    /// including the universe discovery universe it joins on creation. It is otherwise the same as `with_ip`, and the
+    /// interfaces can be changed later with `set_multicast_interfaces`.
+    ///
+    /// An empty list gives the same receiver as `with_ip`.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use sacn::interface::NetworkInterface;
+    /// use sacn::packet::ACN_SDT_MULTICAST_PORT;
+    /// use sacn::receive::SacnReceiver;
+    /// use std::net::SocketAddr;
+    ///
+    /// let addr: SocketAddr = ([0, 0, 0, 0], ACN_SDT_MULTICAST_PORT).into();
+    /// let mut dmx_rcv = SacnReceiver::with_interfaces(addr, None, &["eth0".into()]).unwrap();
+    /// dmx_rcv.listen_universes(&[1]).unwrap();
+    /// ```
+    ///
+    /// # Errors
+    /// The errors of `with_ip`, and of `set_multicast_interfaces` for the interfaces.
+    pub fn with_interfaces(
+        ip: SocketAddr,
+        source_limit: Option<usize>,
+        interfaces: &[NetworkInterface],
+    ) -> Result<SacnReceiver> {
         if let Some(x) = source_limit
             && x == 0
         {
@@ -315,6 +352,7 @@ impl SacnReceiver {
             last_sync_packets: HashMap::new(),
         };
 
+        sri.receiver.multicast_interfaces = interface::resolve(interfaces, sri.receiver.is_ipv6())?;
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])?;
 
         Ok(sri)
@@ -396,8 +434,11 @@ impl SacnReceiver {
     }
 
     /// Sets the network interfaces that multicast groups are joined on. Every universe being listened to, including
-    /// the universe discovery universe and any synchronisation universes, is left on the previous interfaces and joined
-    /// on the new ones.
+    /// the universe discovery universe and any synchronisation universes, is joined on the new interfaces and then
+    /// left on the old ones, so no packets are missed during the change. The exception is the default interface of a
+    /// receiver created with the unspecified address: the receiver can't tell which interface the operating system
+    /// chose, so it leaves that one first. To choose interfaces before any group is joined, create the receiver with
+    /// `with_interfaces`.
     ///
     /// By default, and when given an empty list, groups are joined on the interface with the address the receiver was
     /// created with (see `with_ip`), which for the unspecified address (`0.0.0.0` or `::`) is the interface the
@@ -440,6 +481,32 @@ impl SacnReceiver {
             return Ok(());
         }
 
+        let old = self.receiver.named_group_interfaces();
+        self.receiver.multicast_interfaces = resolved;
+        let new = self.receiver.named_group_interfaces();
+
+        // Interfaces are compared by host interface name, as one interface can appear with different addresses. An
+        // interface the operating system chooses has no name, and may be any of the others, so it is left before
+        // joining, and while it is joined nothing else is left late.
+        let known = |list: &[(MulticastIf, Option<String>)], name: &Option<String>| {
+            name.is_some() && list.iter().any(|(_, n)| n == name)
+        };
+        let any_unnamed = old.iter().chain(&new).any(|(_, n)| n.is_none());
+        let to_join: Vec<MulticastIf> = new
+            .iter()
+            .filter(|(_, n)| !known(&old, n))
+            .map(|(i, _)| *i)
+            .collect();
+        let to_leave: Vec<MulticastIf> = old
+            .iter()
+            .filter(|(_, n)| !known(&new, n))
+            .map(|(i, _)| *i)
+            .collect();
+        if to_join.is_empty() && to_leave.is_empty() {
+            return Ok(());
+        }
+        self.receiver.interfaces_changed_at = Some(Instant::now());
+
         let mut groups: Vec<u16> = self.universes.clone();
         groups.extend(
             self.sync_universes
@@ -456,18 +523,25 @@ impl SacnReceiver {
             });
         }
 
-        for g in &groups_addrs {
-            // Leaving can only fail if the group wasn't joined, which leaves nothing to undo.
-            let _ = self.receiver.leave_group(g);
+        // Join on the new interfaces before leaving the old ones, so no packets are missed during the change. Leaving can
+        // only fail if the group wasn't joined, which leaves nothing to undo.
+        let leave = |receiver: &SacnNetworkReceiver| {
+            for g in &groups_addrs {
+                let _ = receiver.leave_group_on(g, &to_leave);
+            }
+        };
+        if any_unnamed {
+            leave(&self.receiver);
         }
-        self.receiver.multicast_interfaces = resolved;
-
         let mut result = Ok(());
         for g in &groups_addrs {
-            let joined = self.receiver.join_group(g);
+            let joined = self.receiver.join_group_on(g, &to_join);
             if joined.is_err() && result.is_ok() {
                 result = joined;
             }
+        }
+        if !any_unnamed {
+            leave(&self.receiver);
         }
         result
     }
@@ -1351,6 +1425,7 @@ impl SacnNetworkReceiver {
             addr: ip,
             is_multicast_enabled: !(ip.is_ipv6()), // IPv6 Windows IP Multicast is currently unsupported.
             multicast_interfaces: Vec::new(),
+            interfaces_changed_at: None,
         })
     }
 
@@ -1483,6 +1558,7 @@ impl SacnNetworkReceiver {
             addr: ip,
             is_multicast_enabled: true, // Linux IP Multicast is supported for Ipv4 and Ipv6.
             multicast_interfaces: Vec::new(),
+            interfaces_changed_at: None,
         })
     }
 
@@ -1602,18 +1678,35 @@ impl SacnNetworkReceiver {
     /// interface.
     fn is_multi_interface(&self) -> bool {
         self.multicast_interfaces.len() > 1
+            || self
+                .interfaces_changed_at
+                .is_some_and(|t| t.elapsed() < INTERFACE_CHANGE_DUPLICATE_WINDOW)
     }
 
     /// Returns the interfaces that multicast groups are joined on: the ones set with `set_multicast_interfaces`, or if
     /// none are set the default. The default is the interface with the address this receiver was created with, which
     /// for the unspecified address lets the operating system choose.
     fn group_interfaces(&self) -> Vec<MulticastIf> {
+        self.named_group_interfaces()
+            .into_iter()
+            .map(|(i, _)| i)
+            .collect()
+    }
+
+    /// Like `group_interfaces`, with the name of each interface's host interface. The name is `None` when the operating
+    /// system chooses the interface (the unspecified address) or the interface can't be found.
+    fn named_group_interfaces(&self) -> Vec<(MulticastIf, Option<String>)> {
         if !self.multicast_interfaces.is_empty() {
-            return self.multicast_interfaces.clone();
+            return self
+                .multicast_interfaces
+                .iter()
+                .map(|r| (r.mcast, Some(r.name.clone())))
+                .collect();
         }
         match self.addr.ip() {
-            IpAddr::V4(a) => vec![MulticastIf::V4(a)],
-            IpAddr::V6(_) => vec![MulticastIf::V6(0)],
+            IpAddr::V4(a) if a.is_unspecified() => vec![(MulticastIf::V4(a), None)],
+            IpAddr::V4(a) => vec![(MulticastIf::V4(a), interface::name_of_addr(IpAddr::V4(a)))],
+            IpAddr::V6(_) => vec![(MulticastIf::V6(0), None)],
         }
     }
 
@@ -1624,7 +1717,12 @@ impl SacnNetworkReceiver {
     ///
     /// `IpVersionError`: Returned if the group and the interfaces are not the same IP version.
     fn join_group(&self, group: &SockAddr) -> Result<()> {
-        for iface in self.group_interfaces() {
+        self.join_group_on(group, &self.group_interfaces())
+    }
+
+    /// Joins the given multicast group on each of the given interfaces. See `join_group`.
+    fn join_group_on(&self, group: &SockAddr, ifaces: &[MulticastIf]) -> Result<()> {
+        for &iface in ifaces {
             match (group.as_socket(), iface) {
                 (Some(SocketAddr::V4(g)), MulticastIf::V4(i)) => {
                     self.socket.join_multicast_v4(g.ip(), &i)
@@ -1655,6 +1753,11 @@ impl SacnNetworkReceiver {
     ///
     /// `OsOperationUnsupported`: Returned for IPv6 on Windows, where IPv6 multicast is unsupported.
     fn leave_group(&self, group: &SockAddr) -> Result<()> {
+        self.leave_group_on(group, &self.group_interfaces())
+    }
+
+    /// Leaves the given multicast group on each of the given interfaces. See `leave_group`.
+    fn leave_group_on(&self, group: &SockAddr, ifaces: &[MulticastIf]) -> Result<()> {
         #[cfg(target_os = "windows")]
         if group.is_ipv6() {
             return Err(SacnError::OsOperationUnsupported(
@@ -1663,7 +1766,7 @@ impl SacnNetworkReceiver {
         }
 
         let mut result = Ok(());
-        for iface in self.group_interfaces() {
+        for &iface in ifaces {
             let left = match (group.as_socket(), iface) {
                 (Some(SocketAddr::V4(g)), MulticastIf::V4(i)) => {
                     self.socket.leave_multicast_v4(g.ip(), &i)

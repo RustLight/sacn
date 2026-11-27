@@ -403,11 +403,13 @@
 //! src.set_multicast_interfaces(&["eth0".into(), "eth1".into()])?;
 //!
 //! let addr = SocketAddr::new("0.0.0.0".parse()?, ACN_SDT_MULTICAST_PORT);
-//! let mut dmx_rcv = SacnReceiver::with_ip(addr, None)?;
-//! dmx_rcv.set_multicast_interfaces(&[NetworkInterface::Addr("192.168.0.6".parse()?)])?;
+//! // Choosing the interfaces when creating the receiver means no multicast group is joined on another interface.
+//! let mut dmx_rcv =
+//!     SacnReceiver::with_interfaces(addr, None, &[NetworkInterface::Addr("192.168.0.6".parse()?)])?;
 //!
-//! // Or every interface that is up and isn't loopback.
-//! dmx_rcv.set_multicast_interfaces(&[NetworkInterface::All])?;
+//! // Interfaces can be changed later, for example to every interface that is up and isn't loopback, plus the
+//! // loopback interface for programs on the same host.
+//! dmx_rcv.set_multicast_interfaces(&[NetworkInterface::All, NetworkInterface::Loopback])?;
 //! # Ok(())
 //! # }
 //! ```
@@ -415,7 +417,8 @@
 //! A source sends each multicast packet once on every chosen interface; unicast still follows the routing table. A
 //! receiver joins every universe on every chosen interface and processes a packet that arrives on several of them
 //! once. IPv6 interfaces can be given by name or by any of their IPv6 addresses, including link-local ones. An empty
-//! list returns to the default.
+//! list returns to the default. When a receiver's chosen interfaces change, it joins the new ones before leaving the
+//! old ones, so no packets are missed.
 //!
 //! ## Platform notes
 //!
