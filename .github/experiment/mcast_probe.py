@@ -48,7 +48,11 @@ def probe_v6(idx, group="ff18::83:0:0:1", port=5568):
 
 v4 = sys.argv[1:] or []
 print("interfaces:", ifaces())
+print("v6 loopback ::1 index 0/1 probes follow")
 for ip in v4:
-    print(f"v4 via {ip}: {probe_v4(ip)}")
+    try:
+        print(f"v4 via {ip}: {probe_v4(ip)}")
+    except Exception as e:
+        print(f"v4 via {ip}: FAIL setup {e!r}")
 for idx, name in ifaces():
     print(f"v6 via {name} ({idx}): {probe_v6(idx)}")
