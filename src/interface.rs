@@ -10,7 +10,7 @@
 //! By default a [`SacnSource`](crate::source::SacnSource) sends multicast on the interface chosen by the operating
 //! system's routing table, and a [`SacnReceiver`](crate::receive::SacnReceiver) joins multicast groups on the default
 //! interface. Both can be told to use one or more specific interfaces instead with `set_multicast_interfaces`,
-//! identifying each interface by its name or by one of its IP addresses, or choosing every interface with
+//! identifying each interface by its name, its index, or one of its IP addresses, or choosing every interface with
 //! [`NetworkInterface::All`].
 //!
 //! [`network_interfaces`] lists the interfaces of this host, for example to let a user pick one.
@@ -18,7 +18,8 @@
 use crate::error::errors::{Result, SacnError};
 use std::net::{IpAddr, Ipv4Addr};
 
-/// A network interface to use for multicast, identified by its name or by one of its IP addresses, or every interface.
+/// A network interface to use for multicast, identified by its name, its index, or one of its IP addresses, or every
+/// interface.
 ///
 /// The interface is looked up when it is passed to `set_multicast_interfaces`. If the interface later disappears and
 /// comes back (for example a USB adapter being re-plugged), call `set_multicast_interfaces` again.
@@ -30,6 +31,7 @@ use std::net::{IpAddr, Ipv4Addr};
 /// let by_name = NetworkInterface::Name("eth0".to_string());
 /// let by_v4_addr = NetworkInterface::Addr("192.168.1.10".parse().unwrap());
 /// let by_v6_addr = NetworkInterface::Addr("fe80::1".parse().unwrap());
+/// let by_index = NetworkInterface::Index(2);
 /// let every_interface = NetworkInterface::All;
 /// let loopback = NetworkInterface::Loopback;
 /// ```
@@ -42,6 +44,11 @@ pub enum NetworkInterface {
 
     /// The interface that has this IP address assigned.
     Addr(IpAddr),
+
+    /// The interface with this index, as the operating system numbers its interfaces. IPv6 identifies interfaces by
+    /// index (the zone or scope ID, as in `fe80::1%2`), so an index from another IPv6 API can be passed on unchanged.
+    /// See [`InterfaceInfo::index`]. An IPv4 socket uses the interface's first IPv4 address.
+    Index(u32),
 
     /// Every interface that is up, isn't a loopback interface, and has an address of the socket's IP version.
     ///
@@ -83,8 +90,10 @@ pub struct InterfaceInfo {
     /// The IP addresses assigned to the interface, including link-local addresses.
     pub addrs: Vec<IpAddr>,
 
-    /// The operating system's index for the interface, used for IPv6 multicast.
-    index: Option<u32>,
+    /// The operating system's index for the interface, usable with [`NetworkInterface::Index`]. This is the number
+    /// IPv6 uses to identify an interface, for example the `2` in `fe80::1%2`. `None` if the operating system didn't
+    /// report one.
+    pub index: Option<u32>,
 
     /// True if the interface has a loopback address.
     loopback: bool,
@@ -201,6 +210,7 @@ fn resolve_among_named(
     for interface in interfaces {
         let info = match interface {
             NetworkInterface::Name(name) => host.iter().find(|i| &i.name == name),
+            NetworkInterface::Index(index) => host.iter().find(|i| i.index == Some(*index)),
             NetworkInterface::Addr(addr) => {
                 if addr.is_ipv6() != ipv6 {
                     return Err(SacnError::IpVersionError());
@@ -357,6 +367,25 @@ mod tests {
     }
 
     #[test]
+    fn index_resolves_to_itself_or_first_ipv4_address() {
+        let r = resolve_among(&[NetworkInterface::Index(4)], true, &host()).unwrap();
+        assert_eq!(r, vec![MulticastIf::V6(4)]);
+        let r = resolve_among(&[NetworkInterface::Index(2)], false, &host()).unwrap();
+        assert_eq!(r, vec![MulticastIf::V4("10.0.0.5".parse().unwrap())]);
+        let r = resolve_among(&[NetworkInterface::Index(2), "eth0".into()], true, &host()).unwrap();
+        assert_eq!(r, vec![MulticastIf::V6(2)]);
+    }
+
+    #[test]
+    fn unknown_index_is_not_found() {
+        assert!(is_not_found(resolve_among(
+            &[NetworkInterface::Index(99)],
+            true,
+            &host()
+        )));
+    }
+
+    #[test]
     fn duplicates_are_removed() {
         let r = resolve_among(
             &[
@@ -499,6 +528,16 @@ mod tests {
     #[test]
     fn empty_list_resolves_to_empty() {
         assert_eq!(resolve(&[], false).unwrap(), Vec::new());
+    }
+
+    #[test]
+    fn host_interfaces_have_unique_indexes() {
+        let ifaces = network_interfaces().unwrap();
+        let indexes: Vec<u32> = ifaces.iter().filter_map(|i| i.index).collect();
+        let mut unique = indexes.clone();
+        unique.sort_unstable();
+        unique.dedup();
+        assert_eq!(indexes.len(), unique.len());
     }
 
     #[test]

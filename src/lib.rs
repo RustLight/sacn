@@ -379,12 +379,18 @@
 //!
 //! ## Choosing network interfaces
 //!
+//! A common setup that goes wrong without this: a laptop whose Wi-Fi carries the default route, with a USB Ethernet
+//! adapter (`eth1`, address `10.0.0.5`) plugged into the lighting network. Unicast to a node at `10.0.0.20` works,
+//! because the routing table knows `10.0.0.0/24` is on `eth1`. Multicast has no such route: the data for universe 1,
+//! sent to `239.255.0.1`, follows the default route out over Wi-Fi, and a receiver joins its multicast groups on
+//! Wi-Fi too, so it never hears the consoles on the lighting network.
+//!
 //! By default a source sends multicast on the interface the operating system's routing table picks, and a receiver
 //! joins multicast groups on the default interface (for an IPv4 receiver created with a specific address, the
-//! interface with that address). On a host with several networks, for example one for lighting and one for the
-//! office, call `set_multicast_interfaces` on the [source](source::SacnSource::set_multicast_interfaces) or
-//! [receiver](receive::SacnReceiver::set_multicast_interfaces) to choose one or more interfaces, by name or by one of
-//! their addresses, or every interface ([`NetworkInterface`](interface::NetworkInterface)):
+//! interface with that address). Call `set_multicast_interfaces` on the
+//! [source](source::SacnSource::set_multicast_interfaces) or
+//! [receiver](receive::SacnReceiver::set_multicast_interfaces) to choose one or more interfaces instead, by name,
+//! index, or one of their addresses, or every interface ([`NetworkInterface`](interface::NetworkInterface)):
 //!
 //! ```no_run
 //! use sacn::interface::{NetworkInterface, network_interfaces};
@@ -394,18 +400,20 @@
 //! use std::net::SocketAddr;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! // List the interfaces, for example to let the user pick one.
+//! // List the interfaces, for example to let the user pick the lighting network.
 //! for iface in network_interfaces()? {
-//!     println!("{}: {:?}", iface.name, iface.addrs);
+//!     println!("{} (index {:?}): {:?}", iface.name, iface.index, iface.addrs);
 //! }
 //!
+//! // Send on the USB Ethernet adapter rather than Wi-Fi.
 //! let mut src = SacnSource::new_v4("My lighting desk")?;
-//! src.set_multicast_interfaces(&["eth0".into(), "eth1".into()])?;
+//! src.set_multicast_interfaces(&["eth1".into()])?;
 //!
+//! // Receive on the lighting network, choosing the adapter by its address. Choosing the interfaces when creating the
+//! // receiver means no multicast group is joined on Wi-Fi in the meantime.
 //! let addr = SocketAddr::new("0.0.0.0".parse()?, ACN_SDT_MULTICAST_PORT);
-//! // Choosing the interfaces when creating the receiver means no multicast group is joined on another interface.
 //! let mut dmx_rcv =
-//!     SacnReceiver::with_interfaces(addr, None, &[NetworkInterface::Addr("192.168.0.6".parse()?)])?;
+//!     SacnReceiver::with_interfaces(addr, None, &[NetworkInterface::Addr("10.0.0.5".parse()?)])?;
 //!
 //! // Interfaces can be changed later, for example to every interface that is up and isn't loopback, plus the
 //! // loopback interface for programs on the same host.
@@ -416,7 +424,8 @@
 //!
 //! A source sends each multicast packet once on every chosen interface; unicast still follows the routing table. A
 //! receiver joins every universe on every chosen interface and processes a packet that arrives on several of them
-//! once. IPv6 interfaces can be given by name or by any of their IPv6 addresses, including link-local ones. An empty
+//! once. IPv6 identifies interfaces by index (the `%2` in `fe80::1%2`); an IPv6 interface can be given by that index,
+//! by name, or by any of its IPv6 addresses, including link-local ones, and the library looks up the index. An empty
 //! list returns to the default. When a receiver's chosen interfaces change, it joins the new ones before leaving the
 //! old ones, so no packets are missed.
 //!
