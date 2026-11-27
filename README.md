@@ -95,7 +95,7 @@ loop {
 
 If your computer has more than one network interface (for example Wi-Fi and a USB Ethernet adapter on the lighting network), see [Choosing network interfaces](https://docs.rs/sacn/#choosing-network-interfaces).
 
-To set socket options the library doesn't expose, such as DSCP or a larger receive buffer, create the socket yourself and pass it to `SacnSource::from_socket` or `SacnReceiver::from_socket`. See [Setting socket options](https://docs.rs/sacn/#setting-socket-options).
+To set your own socket options, such as DSCP, see [Setting socket options](https://docs.rs/sacn/#setting-socket-options).
 
 The source only sends when you call `send`, so your application must resend data to keep the stream alive, as described [in the documentation](https://docs.rs/sacn/#keeping-a-universe-alive).
 
