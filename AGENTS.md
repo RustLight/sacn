@@ -16,7 +16,7 @@ Guidance for AI coding agents working on this repository. Read [CONTRIBUTING.md]
 
 * Code and doc comments explain the behaviour itself or cite the E1.31 section that requires it. Don't justify behaviour by pointing at another sACN implementation.
 * Log only through the crate's internal `log_warn!`, `log_debug!` and `log_trace!` macros, and include "sACN" in each message. See [CONTRIBUTING.md](CONTRIBUTING.md#building).
-* Don't break the public API without discussing it first. Some types, such as `SacnError`, are not `#[non_exhaustive]`, so even adding a variant is a breaking change that needs a major version bump.
+* Don't break the public API without discussing it first. `SacnError` and `ParsePacketError` are `#[non_exhaustive]`, so adding a variant to them isn't breaking, but removing or changing one is. Other public enums, and structs whose fields are all public, aren't, so adding a variant or a field to them is a breaking change.
 * `unsafe` code is denied by `.cargo/config.toml`. Don't work around it.
 * Keep changes focused. Don't reformat or fix lints in code you aren't otherwise changing; do that in a separate pull request.
 

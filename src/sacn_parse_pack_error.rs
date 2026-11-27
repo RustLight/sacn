@@ -12,7 +12,11 @@
 use thiserror::Error;
 use uuid::Uuid;
 
+/// The errors returned when a packet can't be parsed or packed.
+///
+/// New variants may be added in any release, so a `match` on this enum needs a wildcard (`_`) arm.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum ParsePacketError {
     /// When parsing packet invalid data encountered.
     ///
