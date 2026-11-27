@@ -79,7 +79,7 @@ use sacn::receive::SacnReceiver;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-// The address of the network interface to receive on, with the sACN port.
+// Receive on all addresses, on the sACN port.
 let mut dmx_rcv = SacnReceiver::with_ip(SocketAddr::new("0.0.0.0".parse()?, ACN_SDT_MULTICAST_PORT), None)?;
 dmx_rcv.listen_universes(&[1])?;
 
@@ -92,6 +92,8 @@ loop {
     }
 }
 ```
+
+To send or receive on particular network interfaces rather than the operating system's default, call `set_multicast_interfaces` on the source or receiver with interface names or addresses, for example `src.set_multicast_interfaces(&["eth0".into()])?`. See [Choosing network interfaces](https://docs.rs/sacn/#choosing-network-interfaces).
 
 The source only sends when you call `send`, so your application must resend data to keep the stream alive, as described [in the documentation](https://docs.rs/sacn/#keeping-a-universe-alive).
 
