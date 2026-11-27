@@ -30,7 +30,7 @@ Key features:
 
 * Rust 1.88 or later (the crate uses the 2024 edition). Install Rust with [rustup](https://rustup.rs).
 
-* Linux, macOS or Windows. On Windows, IPv6 multicast isn't supported, so an IPv6 receiver there only receives unicast and broadcast.
+* Linux, macOS or Windows.
 
 * A network that carries UDP on port 5568, the sACN port. Allow it through the host firewall.
 

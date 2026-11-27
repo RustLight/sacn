@@ -231,9 +231,7 @@ struct SacnNetworkReceiver {
     /// The address that this `SacnNetworkReceiver` is bound to.
     addr: SocketAddr,
 
-    /// If true then this receiver supports multicast, is false then it does not.
-    /// This flag is set when the receiver is created as not all environments currently support IP multicast.
-    /// E.g. IPv6 Windows IP Multicast is currently unsupported.
+    /// If true then this receiver joins multicast groups, if false then it does not. True when the receiver is created.
     is_multicast_enabled: bool,
 
     /// The interfaces that multicast groups are joined on. Empty means the default, see `group_interfaces`.
@@ -278,11 +276,6 @@ impl SacnReceiver {
     ///
     /// By default for an IPv6 address this will only receive IPv6 data but IPv4 can also be enabled by calling `set_ipv6_only(false)`.
     /// A receiver with an IPv4 address will only receive IPv4 data.
-    ///
-    /// IPv6 multicast is unsupported on Windows in Rust. This is due to the underlying library (Socket2) not providing support.
-    /// Since `UniverseDiscovery` is primarily based around multicast to receive the `UniverseDiscovery` packets this mechanism is expected
-    /// to have limited usage when running in an Ipv6 Windows environment. The `is_multicast_enabled` method can be used to see if multicast
-    /// is enabled or not.
     ///
     /// Arguments:
     ///     ip: The address of the interface for this receiver to join, with the port `ACN_SDT_MULTICAST_PORT` as defined in
@@ -372,15 +365,13 @@ impl SacnReceiver {
     /// val: The new value for the `is_multicast_enabled` flag.
     ///
     /// # Errors
-    /// Will return an `OsOperationUnsupported` error if attempting to set the flag to true in an environment that multicast
-    /// isn't supported i.e. Ipv6 on Windows.
+    /// Currently always succeeds. The `Result` is kept so platforms without multicast support can report it.
     pub fn set_is_multicast_enabled(&mut self, val: bool) -> Result<()> {
         self.receiver.set_is_multicast_enabled(val)
     }
 
-    /// Returns true if multicast is enabled on this receiver and false if not.
-    /// This flag is set when the receiver is created as not all environments currently support IP multicast.
-    /// E.g. IPv6 Windows IP Multicast is currently unsupported.
+    /// Returns true if multicast is enabled on this receiver and false if not. Multicast is enabled when the receiver
+    /// is created; see [`set_is_multicast_enabled`](Self::set_is_multicast_enabled).
     pub fn is_multicast_enabled(&self) -> bool {
         self.receiver.is_multicast_enabled()
     }
@@ -1432,7 +1423,7 @@ impl SacnNetworkReceiver {
         Ok(SacnNetworkReceiver {
             socket: create_win_socket(ip)?,
             addr: ip,
-            is_multicast_enabled: !(ip.is_ipv6()), // IPv6 Windows IP Multicast is currently unsupported.
+            is_multicast_enabled: true,
             multicast_interfaces: Vec::new(),
             interfaces_changed_at: None,
         })
@@ -1479,22 +1470,12 @@ impl SacnNetworkReceiver {
     /// # Arguments
     /// val: The new value for the `is_multicast_enabled` flag.
     ///
-    /// # Errors
-    /// Will return an `OsOperationUnsupported` error if attempting to set the flag to true in an environment that multicast
-    /// isn't supported i.e. Ipv6 on Windows.
     fn set_is_multicast_enabled(&mut self, val: bool) -> Result<()> {
-        if val && self.is_ipv6() {
-            return Err(SacnError::OsOperationUnsupported(
-                "IPv6 multicast is currently unsupported on Windows".to_string(),
-            ));
-        }
         self.is_multicast_enabled = val;
         Ok(())
     }
 
     /// Returns true if multicast is enabled on this receiver and false if not.
-    /// This flag is set when the receiver is created as not all environments currently support IP multicast.
-    /// E.g. IPv6 Windows IP Multicast is currently unsupported.
     fn is_multicast_enabled(&self) -> bool {
         self.is_multicast_enabled
     }
@@ -1612,17 +1593,12 @@ impl SacnNetworkReceiver {
     /// # Arguments
     /// val: The new value for the `is_multicast_enabled` flag.
     ///
-    /// # Errors
-    /// Will return an `OsOperationUnsupported` error if attempting to set the flag to true in an environment that multicast
-    /// isn't supported i.e. Ipv6 on Windows. Note that this is the UNIX implementation
     fn set_is_multicast_enabled(&mut self, val: bool) -> Result<()> {
         self.is_multicast_enabled = val;
         Ok(())
     }
 
     /// Returns true if multicast is enabled on this receiver and false if not.
-    /// This flag is set when the receiver is created as not all environments currently support IP multicast.
-    /// E.g. IPv6 Windows IP Multicast is currently unsupported.
     fn is_multicast_enabled(&self) -> bool {
         self.is_multicast_enabled
     }
@@ -1759,21 +1735,12 @@ impl SacnNetworkReceiver {
     /// Io: Returned if the group can't be left on an interface.
     ///
     /// `IpVersionError`: Returned if the group and the interfaces are not the same IP version.
-    ///
-    /// `OsOperationUnsupported`: Returned for IPv6 on Windows, where IPv6 multicast is unsupported.
     fn leave_group(&self, group: &SockAddr) -> Result<()> {
         self.leave_group_on(group, &self.group_interfaces())
     }
 
     /// Leaves the given multicast group on each of the given interfaces. See `leave_group`.
     fn leave_group_on(&self, group: &SockAddr, ifaces: &[MulticastIf]) -> Result<()> {
-        #[cfg(target_os = "windows")]
-        if group.is_ipv6() {
-            return Err(SacnError::OsOperationUnsupported(
-                "IPv6 multicast is currently unsupported on Windows".to_string(),
-            ));
-        }
-
         let mut result = Ok(());
         for &iface in ifaces {
             let left = match (group.as_socket(), iface) {
