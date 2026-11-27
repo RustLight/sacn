@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
 #![warn(missing_docs)]
 
 // Copyright 2020 sacn Developers

@@ -22,6 +22,7 @@ jobs:
       code: ${{ github.event_name != 'pull_request' || steps.filter.outputs.code == 'true' }}
       docs: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
       workflows: ${{ github.event_name != 'pull_request' || steps.filter.outputs.workflows == 'true' }}
+      headers: ${{ github.event_name != 'pull_request' || steps.filter.outputs.headers == 'true' }}
     steps:
     - uses: dorny/paths-filter@v4.0.3
       if: github.event_name == 'pull_request'
@@ -56,6 +57,11 @@ jobs:
             - '.pre-commit-config.yaml'
           workflows:
             - '.github/workflows/**'
+            - '.pre-commit-config.yaml'
+          # Files that must carry the SPDX license header, and its config.
+          headers:
+            - '**/*.rs'
+            - '.license-header.txt'
             - '.pre-commit-config.yaml'
 
   test-linux:
@@ -383,10 +389,11 @@ jobs:
 
   # Runs the lint hooks from .pre-commit-config.yaml (at the versions pinned
   # there, so CI matches local runs): rumdl and lychee for Markdown,
-  # actionlint and zizmor for the workflows.
+  # actionlint and zizmor for the workflows, and the SPDX license header
+  # check for Rust files.
   lint:
     needs: changes
-    if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.workflows == 'true'
+    if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.headers == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7.0.1
@@ -397,7 +404,7 @@ jobs:
       uses: j178/prek-action@v3.1.1
       with:
         prek-version: '0.5.11'
-        extra-args: --all-files rumdl-check lychee actionlint zizmor
+        extra-args: --all-files rumdl-check lychee actionlint zizmor insert-license
       env:
         # Authenticated requests avoid GitHub's rate limits when installing
         # the tools and checking github.com links (GITHUB_TOKEN), and turn on

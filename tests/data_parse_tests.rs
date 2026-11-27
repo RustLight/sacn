@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
 #![cfg_attr(rustfmt, rustfmt_skip)]
 
 // Copyright 2020 sacn Developers

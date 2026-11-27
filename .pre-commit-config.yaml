@@ -26,6 +26,25 @@ repos:
     hooks:
       - id: zizmor
 
+  # Every Rust file starts with the crate's SPDX license identifier, read from
+  # .license-header.txt. The hook adds the line to files that lack it and
+  # fails, so the change can be reviewed and committed.
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.6
+    hooks:
+      - id: insert-license
+        name: SPDX license header
+        types: [rust]
+        args:
+          - --license-filepath=.license-header.txt
+          - --comment-style=//
+          - --detect-license-in-X-top-lines=1
+          - --no-extra-eol
+          # The hook skips leading `#!` lines as shebangs, which would put the
+          # header after a Rust inner attribute such as `#![warn(...)]`. A
+          # regex that never matches makes it insert at the very top instead.
+          - --insert-license-after-regex=(?!)
+
   - repo: local
     hooks:
       # The same Rust checks CI runs on every code change.

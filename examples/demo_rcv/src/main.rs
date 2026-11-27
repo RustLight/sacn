@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
 #![recursion_limit = "1024"]
 // Recursion limit for error-chain, value used as recommended by the crates documentation.
 

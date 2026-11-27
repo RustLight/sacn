@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
 // Copyright 2020 sacn Developers
 //
 // Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
