@@ -444,10 +444,13 @@ impl SacnReceiver {
     /// created with (see `with_ip`), which for the unspecified address (`0.0.0.0` or `::`) is the interface the
     /// operating system chooses.
     ///
-    /// Interfaces are given by name or by one of their addresses, or as [`NetworkInterface::All`] for every interface
-    /// that is up and isn't loopback; see [`NetworkInterface`]. For an IPv4 receiver an
-    /// interface named by name is used through its first IPv4 address; for an IPv6 receiver an interface must have an
-    /// IPv6 address, which may be link-local.
+    /// Interfaces are given by name, index or one of their addresses, or as [`NetworkInterface::All`] for every
+    /// interface that is up and isn't loopback; see [`NetworkInterface`].
+    ///
+    /// IPv4 identifies an interface to the operating system by one of its addresses, so an IPv4 receiver uses the address
+    /// that was given, or the interface's first IPv4 address for an interface given by name or index. IPv6
+    /// identifies an interface by its index, so no address is chosen, but the interface must have an IPv6 address (a
+    /// link-local one is enough).
     ///
     /// A packet that arrives on more than one interface is processed once: the copies after the first are discarded
     /// as duplicates by the sequence number check (ANSI E1.31-2018 Section 6.7.2).
