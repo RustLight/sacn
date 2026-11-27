@@ -41,8 +41,6 @@ use std::net::{IpAddr, SocketAddr};
 use std::time::{Duration, Instant};
 use std::{fmt, io};
 
-/// Extra net imports required for the IPv6 handling on the linux side.
-#[cfg(not(target_os = "windows"))]
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 /// The default size of the buffer used to receive E1.31 packets.
@@ -280,9 +278,9 @@ impl SacnReceiver {
     /// Arguments:
     ///     ip: The address of the interface for this receiver to join, with the port `ACN_SDT_MULTICAST_PORT` as defined in
     ///         ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
-    ///         On Linux and macOS the socket is always bound to the unspecified address and port 5568, whatever address
-    ///         and port are given: a socket bound to a unicast address there doesn't receive multicast. On Windows the
-    ///         socket is bound to the given address and port.
+    ///         The socket is always bound to the unspecified address and port 5568, whatever address and port are
+    ///         given: on Linux and macOS a socket bound to a unicast address doesn't receive multicast, and on Windows
+    ///         it only receives multicast on that address's interface.
     ///         For IPv4, multicast groups are joined on the interface with this address unless overridden with
     ///         `set_multicast_interfaces`. Specifying an IPv4 address is kept for compatibility; prefer the unspecified
     ///         address (`0.0.0.0`) with `set_multicast_interfaces` to choose interfaces at runtime, or `with_interfaces`
@@ -449,11 +447,6 @@ impl SacnReceiver {
     ///
     /// A packet that arrives on more than one interface is processed once: the copies after the first are discarded
     /// as duplicates by the sequence number check (ANSI E1.31-2018 Section 6.7.2).
-    ///
-    /// On Windows a receiver created with a specific address is bound to that address, so it only receives on that
-    /// address's interface: create it with the unspecified address to receive on several interfaces. On other
-    /// platforms the receiver's socket is always bound to the unspecified address, and the address given at creation
-    /// only chooses the default IPv4 interface, which this method replaces.
     ///
     /// # Examples
     /// ```no_run
@@ -1932,19 +1925,20 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
 /// Will return an error if the socket cannot be bound to the given address, see (bind)[fn.bind.Socket].
 #[cfg(target_os = "windows")]
 fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
-    if addr.is_ipv4() {
-        let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
-
-        socket.set_reuse_address(true)?;
-        socket.bind(&SockAddr::from(addr))?;
-        Ok(socket)
+    // Bound to the unspecified address and the ACN port as on other platforms, so a receiver created with a specific
+    // address can still join groups on several interfaces. The given address only picks the default IPv4 interface.
+    let (domain, unspecified) = if addr.is_ipv4() {
+        (Domain::IPV4, IpAddr::V4(Ipv4Addr::UNSPECIFIED))
     } else {
-        let socket = Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?;
-
-        socket.set_reuse_address(true)?;
-        socket.bind(&SockAddr::from(addr))?;
-        Ok(socket)
-    }
+        (Domain::IPV6, IpAddr::V6(Ipv6Addr::UNSPECIFIED))
+    };
+    let socket = Socket::new(domain, Type::DGRAM, Some(Protocol::UDP))?;
+    socket.set_reuse_address(true)?;
+    socket.bind(&SockAddr::from(SocketAddr::new(
+        unspecified,
+        ACN_SDT_MULTICAST_PORT,
+    )))?;
+    Ok(socket)
 }
 
 /// Stores a sequence number and a timestamp.
