@@ -46,7 +46,9 @@ jobs:
         Get-NetIPAddress -InterfaceIndex $if | Format-Table -Auto
         Get-NetFirewallProfile | Format-Table Name,Enabled -Auto
     - name: Multicast loopback probe
-      run: python .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1 127.0.0.2 $(ipconfig | sed -n 's/.*IPv4 Address[ .]*: //p' | tr -d '\\r' | head -1) || true
+      run: |
+        hostip=$(powershell -c "(Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex (Get-NetRoute -DestinationPrefix 0.0.0.0/0)[0].ifIndex).IPAddress" | tr -d '\r')
+        python .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1 127.0.0.2 "$hostip" || true
     - name: Build tests
       run: cargo test --locked --no-run
     - name: Unit/integration tests (not ignored)
