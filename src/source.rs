@@ -602,10 +602,14 @@ impl SacnSource {
     ///
     /// By default, and when given an empty list, packets are sent once on the interface the operating system chooses.
     ///
-    /// Interfaces are given by name or by one of their addresses, or as [`NetworkInterface::All`] for every interface
-    /// that is up and isn't loopback; see [`NetworkInterface`]. For an IPv4 source an
-    /// interface named by name is used through its first IPv4 address; for an IPv6 source an interface must have an IPv6
-    /// address, which may be link-local.
+    /// Interfaces are given by name, index or one of their addresses, or as [`NetworkInterface::All`] for every
+    /// interface that is up and isn't loopback; see [`NetworkInterface`].
+    ///
+    /// IPv4 identifies an interface to the operating system by one of its addresses, so an IPv4 source uses the address
+    /// that was given, or the interface's first IPv4 address for an interface given by name or index. On Linux,
+    /// packets sent on it carry that address as their source address unless the source was bound to a specific
+    /// address. IPv6 identifies an interface by its index, so no address is chosen, but the interface must have an
+    /// IPv6 address (a link-local one is enough).
     ///
     /// # Examples
     /// ```no_run
