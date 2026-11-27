@@ -211,15 +211,70 @@ impl SacnSource {
     ///
     /// `MalformedSourceName`: Returned if the given source name is longer than the maximum allowed size of `E131_SOURCE_NAME_MAX_LENGTH` (63 bytes, leaving room for the null terminator).
     pub fn with_cid_ip(name: &str, cid: Uuid, ip: SocketAddr) -> Result<SacnSource> {
-        if name.len() > E131_SOURCE_NAME_MAX_LENGTH {
-            return Err(SacnError::MalformedSourceName(
-                "Source name provided is longer than maximum allowed".to_string(),
-            ));
-        }
+        check_source_name(name)?;
+        SacnSource::start(SacnSourceInternal::with_cid_ip(name, cid, ip)?)
+    }
 
+    /// Constructs a new `SacnSource` with the given name that sends on a socket the caller has created, for example to
+    /// set socket options this library doesn't expose. This generates a new CID automatically using random values.
+    ///
+    /// The socket must be bound, and it is used as given apart from these changes:
+    /// - It is put in blocking mode.
+    /// - If interfaces are chosen with [`set_multicast_interfaces`](Self::set_multicast_interfaces), its multicast
+    ///   interface (`IP_MULTICAST_IF` or `IPV6_MULTICAST_IF`) is set before each multicast send.
+    /// - [`set_ttl`](Self::set_ttl), [`set_multicast_ttl`](Self::set_multicast_ttl),
+    ///   [`set_multicast_loop_v4`](Self::set_multicast_loop_v4) and similar methods change its options as usual.
+    ///
+    /// Avoid binding it to `ACN_SDT_MULTICAST_PORT` if a `SacnReceiver` may run on the same host, as explained in
+    /// [`with_ip`](Self::with_ip).
+    ///
+    /// # Examples
+    /// Using [`socket2`](https://docs.rs/socket2) to mark packets for priority on a network that uses DSCP, then
+    /// handing the socket over:
+    /// ```no_run
+    /// use sacn::source::SacnSource;
+    /// use socket2::{Domain, Socket, Type};
+    /// use std::net::SocketAddr;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let socket = Socket::new(Domain::IPV4, Type::DGRAM, None)?;
+    /// socket.set_tos_v4(46 << 2)?; // DSCP 46 (Expedited Forwarding).
+    /// socket.bind(&SocketAddr::from(([0, 0, 0, 0], 0)).into())?;
+    ///
+    /// let mut src = SacnSource::from_socket("My lighting desk", socket.into())?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    /// Io: Returned if the socket's address can't be read or it can't be put in blocking mode, or if the thread used
+    ///     for sending periodic discovery adverts fails to be created.
+    ///
+    /// `MalformedSourceName`: Returned if the given source name is longer than the maximum allowed size of
+    /// `E131_SOURCE_NAME_MAX_LENGTH`.
+    pub fn from_socket(name: &str, socket: std::net::UdpSocket) -> Result<SacnSource> {
+        SacnSource::with_cid_socket(name, Uuid::new_v4(), socket)
+    }
+
+    /// Constructs a new `SacnSource` with the given name and CID that sends on a socket the caller has created. See
+    /// [`from_socket`](Self::from_socket).
+    ///
+    /// # Errors
+    /// See [`from_socket`](Self::from_socket).
+    pub fn with_cid_socket(
+        name: &str,
+        cid: Uuid,
+        socket: std::net::UdpSocket,
+    ) -> Result<SacnSource> {
+        check_source_name(name)?;
+        SacnSource::start(SacnSourceInternal::from_socket(name, cid, socket.into())?)
+    }
+
+    /// Starts the update thread for the given internal source and wraps both in a `SacnSource`.
+    fn start(internal: SacnSourceInternal) -> Result<SacnSource> {
         let trd_builder = thread::Builder::new().name(SND_UPDATE_THREAD_NAME.into());
 
-        let internal_src = Arc::new(Mutex::new(SacnSourceInternal::with_cid_ip(name, cid, ip)?));
+        let internal_src = Arc::new(Mutex::new(internal));
 
         let mut trd_src = internal_src.clone();
 
@@ -692,6 +747,19 @@ impl Drop for SacnSource {
     }
 }
 
+/// Checks that the given source name fits in a packet.
+///
+/// # Errors
+/// `MalformedSourceName`: Returned if the name is longer than `E131_SOURCE_NAME_MAX_LENGTH`.
+fn check_source_name(name: &str) -> Result<()> {
+    if name.len() > E131_SOURCE_NAME_MAX_LENGTH {
+        return Err(SacnError::MalformedSourceName(
+            "Source name provided is longer than maximum allowed".to_string(),
+        ));
+    }
+    Ok(())
+}
+
 impl SacnSourceInternal {
     /// Constructs a new `SacnSourceInternal` with DMX START code set to 0 with specified CID and binding IP address.
     ///
@@ -727,9 +795,30 @@ impl SacnSourceInternal {
         socket.set_reuse_address(true)?;
         socket.bind(&ip.into())?;
 
-        let ds = SacnSourceInternal {
+        Ok(SacnSourceInternal::with_socket(name, cid, socket, ip))
+    }
+
+    /// Constructs a new `SacnSourceInternal` that sends on the given bound socket, putting it in blocking mode.
+    ///
+    /// # Errors
+    /// Io: Returned if the socket's address can't be read or it can't be put in blocking mode.
+    ///
+    /// `UnsupportedIpVersion`: Returned if the socket isn't bound to an IPv4 or IPv6 address.
+    fn from_socket(name: &str, cid: Uuid, socket: Socket) -> Result<SacnSourceInternal> {
+        let addr = socket.local_addr()?.as_socket().ok_or_else(|| {
+            SacnError::UnsupportedIpVersion(
+                "Socket given to SacnSource is not bound to an IPv4 or IPv6 address".to_string(),
+            )
+        })?;
+        socket.set_nonblocking(false)?;
+        Ok(SacnSourceInternal::with_socket(name, cid, socket, addr))
+    }
+
+    /// Constructs a new `SacnSourceInternal` around a socket that is already set up and bound to `addr`.
+    fn with_socket(name: &str, cid: Uuid, socket: Socket, addr: SocketAddr) -> SacnSourceInternal {
+        SacnSourceInternal {
             socket,
-            addr: ip,
+            addr,
             cid,
             name: name.to_string(),
             preview_data: false,
@@ -741,9 +830,7 @@ impl SacnSourceInternal {
             last_discovery_advert_timestamp: Instant::now(),
             is_sending_discovery: true,
             multicast_interfaces: Vec::new(),
-        };
-
-        Ok(ds)
+        }
     }
 
     /// Sets the `is_sending_discovery` flag to the given value.

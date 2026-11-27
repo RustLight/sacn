@@ -4312,3 +4312,75 @@ pub mod interface_selection {
         assert_eq!(count_received(&mut rcv), 1);
     }
 }
+
+/// Sources and receivers created on sockets the caller set up (`from_socket`).
+pub mod user_socket {
+    use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
+
+    use sacn::error::errors::SacnError;
+    use sacn::interface::NetworkInterface;
+    use sacn::packet::ACN_SDT_MULTICAST_PORT;
+    use sacn::receive::SacnReceiver;
+    use sacn::source::SacnSource;
+    use socket2::{Domain, Socket, Type};
+
+    use super::interface_selection::{DATA, UNIVERSE, count_received};
+
+    /// A receiver socket set up the way an application would, left in non-blocking mode to check the receiver
+    /// changes it.
+    fn receiver_socket() -> UdpSocket {
+        let socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
+        socket.set_reuse_address(true).unwrap();
+        #[cfg(not(any(target_os = "windows", target_os = "espidf")))]
+        socket.set_reuse_port(true).unwrap();
+        socket.set_recv_buffer_size(1024 * 1024).unwrap();
+        socket
+            .bind(&SocketAddr::from((Ipv4Addr::UNSPECIFIED, ACN_SDT_MULTICAST_PORT)).into())
+            .unwrap();
+        socket.set_nonblocking(true).unwrap();
+        socket.into()
+    }
+
+    #[test]
+    fn receiver_rejects_zero_source_limit() {
+        let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).unwrap();
+        assert!(matches!(
+            SacnReceiver::from_socket(socket, Some(0), &[]),
+            Err(SacnError::SourceLimitZero())
+        ));
+    }
+
+    #[test]
+    fn source_rejects_long_name() {
+        let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).unwrap();
+        assert!(matches!(
+            SacnSource::from_socket(&"x".repeat(100), socket),
+            Err(SacnError::MalformedSourceName(_))
+        ));
+    }
+
+    #[test]
+    #[ignore]
+    fn source_and_receiver_on_user_sockets() {
+        let mut rcv =
+            SacnReceiver::from_socket(receiver_socket(), None, &[NetworkInterface::Loopback])
+                .unwrap();
+        rcv.listen_universes(&[UNIVERSE]).unwrap();
+
+        let src_socket = Socket::new(Domain::IPV4, Type::DGRAM, None).unwrap();
+        src_socket.set_tos_v4(46 << 2).unwrap();
+        src_socket
+            .bind(&SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)).into())
+            .unwrap();
+        src_socket.set_nonblocking(true).unwrap();
+        let mut src = SacnSource::from_socket("user socket source", src_socket.into()).unwrap();
+        src.set_multicast_interfaces(&[NetworkInterface::Loopback])
+            .unwrap();
+        src.set_multicast_loop_v4(true).unwrap();
+        src.register_universe(UNIVERSE).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
+        assert_eq!(count_received(&mut rcv), 1);
+    }
+}
