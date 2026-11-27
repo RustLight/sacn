@@ -452,8 +452,10 @@ impl SacnReceiver {
     /// A packet that arrives on more than one interface is processed once: the copies after the first are discarded
     /// as duplicates by the sequence number check (ANSI E1.31-2018 Section 6.7.2).
     ///
-    /// On Windows a receiver created with a specific address only receives on that address's interface, so create it
-    /// with the unspecified address to receive on several interfaces.
+    /// On Windows a receiver created with a specific address is bound to that address, so it only receives on that
+    /// address's interface: create it with the unspecified address to receive on several interfaces. On other
+    /// platforms the receiver's socket is always bound to the unspecified address, and the address given at creation
+    /// only chooses the default IPv4 interface, which this method replaces.
     ///
     /// # Examples
     /// ```no_run
