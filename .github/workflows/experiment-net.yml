@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: windows-latest, setup: none }
+          - { os: macos-latest, setup: lo0 }
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     env:
@@ -28,12 +28,16 @@ jobs:
     - name: Add test addresses (macOS)
       if: runner.os == 'macOS'
       run: |
-        dev=$SETUP
-        for a in 192.168.0.6 192.168.0.7 192.168.0.8; do sudo ifconfig "$dev" alias "$a" netmask 255.255.255.255; done
-        for a in 2a02:c7f:d20a:c600:a502:2dae:7716:601b 2a02:c7f:d20a:c600:a502:2dae:7716:601c 2a02:c7f:d20a:c600:a502:2dae:7716:601d; do sudo ifconfig "$dev" inet6 "$a" prefixlen 128 alias || true; done
-        # No IPv6 multicast route by default; send ff00::/8 out of the test interface.
-        sudo route add -inet6 -net ff00:: -prefixlen 8 -interface "$dev" || true
-        ifconfig "$dev"; netstat -rn -f inet6 | head -40
+        for a in 192.168.0.6 192.168.0.7 192.168.0.8; do sudo ifconfig lo0 alias "$a" netmask 255.255.255.255; done
+        for a in 2a02:c7f:d20a:c600:a502:2dae:7716:601b 2a02:c7f:d20a:c600:a502:2dae:7716:601c 2a02:c7f:d20a:c600:a502:2dae:7716:601d; do sudo ifconfig lo0 inet6 "$a" prefixlen 128 alias; done
+        # Multicast out of en0 fails with EHOSTUNREACH on hosted runners; send it out of lo0 by default.
+        sudo route add -net 224.0.0.0/4 -interface lo0
+        sudo route add -inet6 -net ff00:: -prefixlen 8 -interface lo0 || sudo route change -inet6 -net ff00:: -prefixlen 8 -interface lo0 || true
+        # A second multicast-capable interface, like the veth pair on Linux: a fake ethernet pair.
+        sudo ifconfig feth0 create && sudo ifconfig feth1 create && sudo ifconfig feth0 peer feth1 || true
+        sudo ifconfig feth0 inet 192.168.100.6/24 up || true
+        sudo ifconfig feth1 up || true
+        ifconfig; netstat -rn
     - name: Add test addresses (Windows)
       if: runner.os == 'Windows' && matrix.setup != 'none'
       shell: pwsh
@@ -47,8 +51,8 @@ jobs:
         Get-NetFirewallProfile | Format-Table Name,Enabled -Auto
     - name: Multicast loopback probe
       run: |
-        hostip=$(powershell -c "(Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex (Get-NetRoute -DestinationPrefix 0.0.0.0/0)[0].ifIndex).IPAddress" | tr -d '\r')
-        python .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1 127.0.0.2 "$hostip" || true
+        # hostip=$(powershell -c "(Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex (Get-NetRoute -DestinationPrefix 0.0.0.0/0)[0].ifIndex).IPAddress" | tr -d '\r')
+        python3 .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1 192.168.100.6 || true
     - name: Build tests
       run: cargo test --locked --no-run
     - name: Unit/integration tests (not ignored)
