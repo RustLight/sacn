@@ -441,10 +441,8 @@
 //! ## Platform notes
 //!
 //! - The crate is built and unit tested on Linux, Windows and macOS. The network integration tests run on Linux.
-//! - On Windows, create a receiver with the unspecified address (`0.0.0.0`) to receive on several interfaces; one
-//!   created with a specific address only receives on that address's interface.
-//! - Receivers listen on UDP port 5568 ([`packet::ACN_SDT_MULTICAST_PORT`]). On Linux and macOS this is always the
-//!   port used, even if a receiver is created with another one. Allow it through the host firewall, and
+//! - Receivers listen on UDP port 5568 ([`packet::ACN_SDT_MULTICAST_PORT`]) on every address of the host, even if a
+//!   receiver is created with another address or port. Allow it through the host firewall, and
 //!   make sure the network passes multicast (IGMP snooping on managed switches, for example).
 //! - The library never prints to stdout or stderr. With the default `logging` feature it reports failures it can't
 //!   return, dropped packets and per-packet traces through the [`log`](https://docs.rs/log) crate under the

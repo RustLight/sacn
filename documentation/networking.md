@@ -30,16 +30,14 @@ On Linux, an IPv4 source socket bound to `0.0.0.0` also uses the `IP_MULTICAST_I
 
 ### Binding
 
-| | Linux and macOS | Windows |
-| --- | --- | --- |
-| Address bound | always the unspecified address (`0.0.0.0` or `::`) | the address given to `with_ip` |
-| Port bound | always 5568 (`ACN_SDT_MULTICAST_PORT`) | the port given to `with_ip` |
-| Address given to `with_ip` used for | IPv4: the default interface to join groups on; IPv6: only the IP version | the bind, and IPv4: the default interface to join groups on |
+A receiver's socket is always bound to the unspecified address (`0.0.0.0` or `::`) and port 5568 (`ACN_SDT_MULTICAST_PORT`), on every platform. The address given to `with_ip` only gives the IP version and, for IPv4, the default interface to join groups on; its port is ignored.
 
-The difference comes from how each OS matches an incoming datagram to a socket:
+Binding a specific address would behave differently on each OS, because each matches an incoming datagram to a socket differently:
 
-- On Linux and macOS a UDP socket bound to a unicast address only receives datagrams whose destination is that address. Multicast is addressed to the group, so a socket bound to `192.168.0.6` never receives it, even after joining the group. A socket has to be bound to the unspecified address (or to the group address itself) to receive multicast.
-- On Windows a socket bound to a unicast address also receives multicast for groups joined on that address's interface, but not for groups joined on other interfaces. A Windows receiver bound to a specific address therefore can't receive on several interfaces.
+- On Linux and macOS a UDP socket bound to a unicast address only receives datagrams whose destination is that address. Multicast is addressed to the group, so a socket bound to `192.168.0.6` never receives it, even after joining the group.
+- On Windows a socket bound to a unicast address also receives multicast for groups joined on that address's interface, but not for groups joined on other interfaces, so it can't receive on several interfaces.
+
+Up to version 0.12.0, Windows receivers were bound to the address and port given to `with_ip`; they now follow the same rule as the other platforms.
 
 Binding the group address (for example `239.255.0.1:5568`) also works on Linux and macOS, but receives only that one group and no unicast. sACN uses one group per universe plus the discovery universe, so this would mean one socket per universe; the library doesn't do it.
 
