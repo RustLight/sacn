@@ -67,7 +67,6 @@ Several programs on one host may receive sACN, so receiver sockets set `SO_REUSE
 - Joining a group a second time on the same interface fails with `EADDRINUSE`. Two `NetworkInterface`s that resolve to the same host interface (for example two of its addresses) are therefore joined once, and an IPv6 membership on index 0 (OS's choice) is the same as one on the interface the OS picked.
 - When a receiver's configured interfaces change, new memberships are joined before old ones are left, so no packets are lost.
 - The exception is a membership on the OS's choice (`0.0.0.0` / index 0), which is left first. The OS resolves the choice to a concrete interface when the group is joined, and the membership stays on that interface even if the default route changes later. Leaving with `0.0.0.0` / index 0 doesn't name an interface, so Linux removes the socket's most recently joined membership of that group. If a new membership for the group had already been joined, that is the one removed, and the old one stays. Joining first could also fail with `EADDRINUSE` when the new interface is the one the OS chose.
-- On Windows, IPv6 multicast is reported as unsupported (`is_multicast_enabled` is false for an IPv6 receiver).
 
 ### Duplicate packets
 

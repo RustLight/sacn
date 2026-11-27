@@ -16,9 +16,10 @@ const TEST_NETWORK_INTERFACE_IPV6: [&str; 3] = [
 ];
 
 // Split the IPv6 tests into 2 modules.
-// This allows only running the IPv6 Multicast tests on Linux as they are unsupported on Windows.
+// The multicast tests need IPv6 multicast routes and the test addresses, as set up by docker-linux/run_isolated.sh on
+// Linux; on Windows they need the same addresses.
 #[cfg(test)]
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 mod sacn_ipv6_multicast_test {
 
     use std::io::Read;
@@ -1675,6 +1676,7 @@ mod sacn_ipv6_multicast_test {
             universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap();
 
         // To allow joining multiple multicast groups like this reuse port/address must be true.
+        #[cfg(not(target_os = "windows"))]
         ipv4_recv.set_reuse_port(true).unwrap();
         ipv4_recv.set_reuse_address(true).unwrap();
 
@@ -1719,6 +1721,7 @@ mod sacn_ipv6_multicast_test {
             universe_to_ipv6_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap();
 
         // To allow joining multiple multicast groups like this reuse port/address must be true.
+        #[cfg(not(target_os = "windows"))]
         ipv6_recv.set_reuse_port(true).unwrap();
         ipv6_recv.set_reuse_address(true).unwrap();
 
@@ -2021,7 +2024,7 @@ mod sacn_ipv6_unicast_test {
 // Choosing the IPv6 multicast interface. Needs TEST_NETWORK_INTERFACE_IPV6 on an interface with an IPv6 multicast route,
 // as docker-linux/run_isolated.sh sets up.
 #[cfg(test)]
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 mod sacn_ipv6_interface_test {
     use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 

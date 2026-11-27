@@ -432,8 +432,6 @@
 //! ## Platform notes
 //!
 //! - The crate is built and unit tested on Linux, Windows and macOS. The network integration tests run on Linux.
-//! - On Windows, IPv6 multicast isn't supported, so an IPv6 receiver there only receives unicast and broadcast.
-//!   [`is_multicast_enabled`](receive::SacnReceiver::is_multicast_enabled) tells you whether multicast is on.
 //! - On Windows, create a receiver with the unspecified address (`0.0.0.0`) to receive on several interfaces; one
 //!   created with a specific address only receives on that address's interface.
 //! - Receivers listen on UDP port 5568 ([`packet::ACN_SDT_MULTICAST_PORT`]). On Linux and macOS this is always the
