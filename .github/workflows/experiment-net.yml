@@ -11,9 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-latest, setup: lo0 }
-          - { os: macos-latest, setup: en0 }
-          - { os: windows-latest, setup: ethernet }
+          - { os: windows-latest, setup: none }
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     env:
@@ -37,7 +35,7 @@ jobs:
         sudo route add -inet6 -net ff00:: -prefixlen 8 -interface "$dev" || true
         ifconfig "$dev"; netstat -rn -f inet6 | head -40
     - name: Add test addresses (Windows)
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && matrix.setup != 'none'
       shell: pwsh
       run: |
         $if = (Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Select-Object -First 1).ifIndex
@@ -48,7 +46,7 @@ jobs:
         Get-NetIPAddress -InterfaceIndex $if | Format-Table -Auto
         Get-NetFirewallProfile | Format-Table Name,Enabled -Auto
     - name: Multicast loopback probe
-      run: python3 .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1 || python .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1
+      run: python .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1 127.0.0.2 $(ipconfig | sed -n 's/.*IPv4 Address[ .]*: //p' | tr -d '\\r' | head -1) || true
     - name: Build tests
       run: cargo test --locked --no-run
     - name: Unit/integration tests (not ignored)
