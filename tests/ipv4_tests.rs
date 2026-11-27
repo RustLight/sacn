@@ -4219,4 +4219,31 @@ pub mod interface_selection {
         src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
         assert_eq!(count_received(&mut rcv), 0);
     }
+
+    #[test]
+    #[ignore]
+    fn all_interfaces_reach_receiver_on_other_interface() {
+        let mut rcv = receiver(&[other_interface()]);
+        let mut src = source(&[NetworkInterface::All]);
+        src.set_multicast_loop_v4(true).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
+        assert_eq!(count_received(&mut rcv), 1);
+    }
+
+    #[test]
+    #[ignore]
+    fn receiver_on_all_interfaces_skips_loopback() {
+        let mut rcv = receiver(&[NetworkInterface::All]);
+        let mut src = source(&[loopback()]);
+        src.set_multicast_loop_v4(true).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+        assert_eq!(count_received(&mut rcv), 0);
+
+        src.set_multicast_interfaces(&[other_interface()]).unwrap();
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+        assert_eq!(count_received(&mut rcv), 1);
+    }
 }

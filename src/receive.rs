@@ -403,7 +403,8 @@ impl SacnReceiver {
     /// created with (see `with_ip`), which for the unspecified address (`0.0.0.0` or `::`) is the interface the
     /// operating system chooses.
     ///
-    /// Interfaces are given by name or by one of their addresses, see [`NetworkInterface`]. For an IPv4 receiver an
+    /// Interfaces are given by name or by one of their addresses, or as [`NetworkInterface::All`] for every interface
+    /// that is up and isn't loopback; see [`NetworkInterface`]. For an IPv4 receiver an
     /// interface named by name is used through its first IPv4 address; for an IPv6 receiver an interface must have an
     /// IPv6 address, which may be link-local.
     ///
