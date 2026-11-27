@@ -4168,6 +4168,24 @@ pub mod interface_selection {
 
     #[test]
     #[ignore]
+    fn source_and_receiver_on_interface_by_index() {
+        let index = network_interfaces()
+            .unwrap()
+            .into_iter()
+            .find(|i| i.addrs.contains(&IpAddr::V4(Ipv4Addr::LOCALHOST)))
+            .and_then(|i| i.index)
+            .expect("loopback interface has an index");
+        let mut rcv = receiver(&[NetworkInterface::Index(index)]);
+        let mut src = source(&[NetworkInterface::Index(index)]);
+        src.set_multicast_loop_v4(true).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
+        assert_eq!(count_received(&mut rcv), 1);
+    }
+
+    #[test]
+    #[ignore]
     fn receiver_on_other_interface_misses_packets() {
         let mut rcv = receiver(&[other_interface()]);
         let mut src = source(&[loopback()]);
