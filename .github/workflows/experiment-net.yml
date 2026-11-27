@@ -12,6 +12,7 @@ jobs:
       matrix:
         include:
           - { os: macos-latest, setup: lo0 }
+          - { os: windows-latest, setup: none }
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     env:
@@ -28,10 +29,10 @@ jobs:
     - name: Add test addresses (macOS)
       if: runner.os == 'macOS'
       run: |
-        for a in 192.168.0.6 192.168.0.7 192.168.0.8; do sudo ifconfig lo0 alias "$a" netmask 255.255.255.255; done
+        for a in 127.0.0.6 127.0.0.7 127.0.0.8 192.168.0.6; do sudo ifconfig lo0 alias "$a" netmask 255.255.255.255; done
         for a in 2a02:c7f:d20a:c600:a502:2dae:7716:601b 2a02:c7f:d20a:c600:a502:2dae:7716:601c 2a02:c7f:d20a:c600:a502:2dae:7716:601d; do sudo ifconfig lo0 inet6 "$a" prefixlen 128 alias; done
         # Multicast out of en0 fails with EHOSTUNREACH on hosted runners; send it out of lo0 by default.
-        sudo route add -net 224.0.0.0/4 -interface lo0
+        sudo route delete -net 224.0.0.0/4; sudo route add -net 224.0.0.0/4 -interface lo0; route -n get 239.255.0.1
         sudo route add -inet6 -net ff00:: -prefixlen 8 -interface lo0 || sudo route change -inet6 -net ff00:: -prefixlen 8 -interface lo0 || true
         # A second multicast-capable interface, like the veth pair on Linux: a fake ethernet pair.
         sudo ifconfig feth0 create && sudo ifconfig feth1 create && sudo ifconfig feth0 peer feth1 || true
@@ -51,8 +52,18 @@ jobs:
         Get-NetFirewallProfile | Format-Table Name,Enabled -Auto
     - name: Multicast loopback probe
       run: |
-        # hostip=$(powershell -c "(Get-NetIPAddress -AddressFamily IPv4 -InterfaceIndex (Get-NetRoute -DestinationPrefix 0.0.0.0/0)[0].ifIndex).IPAddress" | tr -d '\r')
-        python3 .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1 192.168.100.6 || true
+        py=python3; command -v python3 >/dev/null || py=python
+        "$py" .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1 127.0.0.6 192.168.100.6 || true
+        # Apple-signed Python: local network privacy does not apply to Apple binaries.
+        if [[ -x /usr/bin/python3 && $RUNNER_OS == macOS ]]; then
+          en0ip=$(ipconfig getifaddr en0 || true)
+          echo "Apple python3:"; /usr/bin/python3 .github/experiment/mcast_probe.py "$en0ip" 192.168.100.6 || true
+        fi
+    - name: Use loopback test addresses
+      run: |
+        sed -i.bak 's/\["192.168.0.6", "192.168.0.7", "192.168.0.8"\]/["127.0.0.6", "127.0.0.7", "127.0.0.8"]/' tests/ipv4_tests.rs
+        sed -i.bak 's/"2a02:c7f:d20a:c600:a502:2dae:7716:601[bcd]"/"::1"/' tests/ipv6_tests.rs
+        grep -n 'TEST_NETWORK_INTERFACE_IPV4: ' tests/ipv4_tests.rs; sed -n 12,16p tests/ipv6_tests.rs
     - name: Build tests
       run: cargo test --locked --no-run
     - name: Unit/integration tests (not ignored)

@@ -55,4 +55,6 @@ for ip in v4:
     except Exception as e:
         print(f"v4 via {ip}: FAIL setup {e!r}")
 for idx, name in ifaces():
-    print(f"v6 via {name} ({idx}): {probe_v6(idx)}")
+    if name.startswith(("lo", "en0", "feth0", "loopback", "ethernet_4")):
+        for g in ("ff18::83:0:0:1", "ff02::1:5ac0"):
+            print(f"v6 {g} via {name} ({idx}): {probe_v6(idx, g)}")
