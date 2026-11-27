@@ -51,6 +51,7 @@
 //! | [`receive`] | [`SacnReceiver`](receive::SacnReceiver): receives data; [`DMXData`](receive::DMXData): one universe of received data; [`DiscoveredSacnSource`](receive::DiscoveredSacnSource); the merge functions [`htp_dmx_merge`](receive::htp_dmx_merge) and [`discard_lowest_priority_then_previous`](receive::discard_lowest_priority_then_previous). |
 //! | [`packet`] | Protocol constants (port, priorities, universe limits, timeouts) and the packet types, for parsing and packing packets yourself. |
 //! | [`error`] | [`SacnError`](error::errors::SacnError) and the crate's [`Result`](error::errors::Result) type. |
+//! | [`interface`] | [`NetworkInterface`](interface::NetworkInterface): a network interface to send or receive multicast on, by name or address; [`network_interfaces`](interface::network_interfaces) lists the host's interfaces. |
 //! | [`sacn_parse_pack_error`] | [`ParsePacketError`](sacn_parse_pack_error::ParsePacketError), returned when a packet can't be parsed or packed. |
 //!
 //! ## Sending data
@@ -241,8 +242,9 @@
 //!
 //! `new_v4` and `new_v6` bind to the unspecified address (`0.0.0.0` or `::`) on an ephemeral port, and the operating
 //! system picks the interface to send from. Use [`with_ip`](source::SacnSource::with_ip) (or
-//! [`with_cid_ip`](source::SacnSource::with_cid_ip)) to bind to an address of your choice, for example the address of
-//! the network interface that faces your lighting network.
+//! [`with_cid_ip`](source::SacnSource::with_cid_ip)) to bind to an address of your choice, which sets the packets'
+//! source address. Binding doesn't choose the interface multicast is sent on; for that see
+//! [Choosing network interfaces](#choosing-network-interfaces).
 //!
 //! ```no_run
 //! use sacn::source::SacnSource;
@@ -310,8 +312,9 @@
 //!
 //! `values` may be shorter than 513 bytes if the source sent fewer slots; the missing slots are zero.
 //!
-//! [`SacnReceiver::with_ip`](receive::SacnReceiver::with_ip) takes the address of the interface to receive on; use an
-//! IPv6 address to receive IPv6. Use [`listen_universes`](receive::SacnReceiver::listen_universes) and
+//! [`SacnReceiver::with_ip`](receive::SacnReceiver::with_ip) takes the address to bind to, normally the unspecified
+//! address (`0.0.0.0` or `::`) with the sACN port; use an IPv6 address to receive IPv6. To choose the interfaces that
+//! multicast is received on, see [Choosing network interfaces](#choosing-network-interfaces). Use [`listen_universes`](receive::SacnReceiver::listen_universes) and
 //! [`mute_universe`](receive::SacnReceiver::mute_universe) to change the universes at any time.
 //!
 //! ### Several sources on one universe
@@ -374,11 +377,50 @@
 //! # }
 //! ```
 //!
+//! ## Choosing network interfaces
+//!
+//! By default a source sends multicast on the interface the operating system's routing table picks, and a receiver
+//! joins multicast groups on the default interface (for an IPv4 receiver created with a specific address, the
+//! interface with that address). On a host with several networks, for example one for lighting and one for the
+//! office, call `set_multicast_interfaces` on the [source](source::SacnSource::set_multicast_interfaces) or
+//! [receiver](receive::SacnReceiver::set_multicast_interfaces) to choose one or more interfaces, by name or by one of
+//! their addresses ([`NetworkInterface`](interface::NetworkInterface)):
+//!
+//! ```no_run
+//! use sacn::interface::{NetworkInterface, network_interfaces};
+//! use sacn::packet::ACN_SDT_MULTICAST_PORT;
+//! use sacn::receive::SacnReceiver;
+//! use sacn::source::SacnSource;
+//! use std::net::SocketAddr;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! // List the interfaces, for example to let the user pick one.
+//! for iface in network_interfaces()? {
+//!     println!("{}: {:?}", iface.name, iface.addrs);
+//! }
+//!
+//! let mut src = SacnSource::new_v4("My lighting desk")?;
+//! src.set_multicast_interfaces(&["eth0".into(), "eth1".into()])?;
+//!
+//! let addr = SocketAddr::new("0.0.0.0".parse()?, ACN_SDT_MULTICAST_PORT);
+//! let mut dmx_rcv = SacnReceiver::with_ip(addr, None)?;
+//! dmx_rcv.set_multicast_interfaces(&[NetworkInterface::Addr("192.168.0.6".parse()?)])?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! A source sends each multicast packet once on every chosen interface; unicast still follows the routing table. A
+//! receiver joins every universe on every chosen interface and processes a packet that arrives on several of them
+//! once. IPv6 interfaces can be given by name or by any of their IPv6 addresses, including link-local ones. An empty
+//! list returns to the default.
+//!
 //! ## Platform notes
 //!
 //! - The crate is built and unit tested on Linux, Windows and macOS. The network integration tests run on Linux.
 //! - On Windows, IPv6 multicast isn't supported, so an IPv6 receiver there only receives unicast and broadcast.
 //!   [`is_multicast_enabled`](receive::SacnReceiver::is_multicast_enabled) tells you whether multicast is on.
+//! - On Windows, create a receiver with the unspecified address (`0.0.0.0`) to receive on several interfaces; one
+//!   created with a specific address only receives on that address's interface.
 //! - Receivers listen on UDP port 5568 ([`packet::ACN_SDT_MULTICAST_PORT`]). Allow it through the host firewall, and
 //!   make sure the network passes multicast (IGMP snooping on managed switches, for example).
 //! - The library never prints to stdout or stderr. With the default `logging` feature it reports failures it can't
@@ -431,3 +473,5 @@ pub mod source;
 
 /// The receive module handles the receiving of sACN on the network.
 pub mod receive;
+
+pub mod interface;

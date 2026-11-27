@@ -15,6 +15,7 @@
 //
 
 use crate::error::errors::*;
+use crate::interface::{self, MulticastIf, NetworkInterface};
 use crate::packet::*;
 
 use std::cell::RefCell;
@@ -27,7 +28,7 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 /// Socket2 used to create the underlying UDP socket that sACN is sent on.
-use socket2::{Domain, Socket, Type};
+use socket2::{Domain, SockAddr, Socket, Type};
 
 /// UUID library used to handle the UUID's used in the CID fields.
 use uuid::Uuid;
@@ -133,6 +134,10 @@ struct SacnSourceInternal {
 
     /// Flag that is set to True to indicate that the source is sending periodic universe discovery packets.
     is_sending_discovery: bool,
+
+    /// The interfaces that multicast packets are sent on, each packet being sent once per interface.
+    /// Empty means the interface chosen by the operating system.
+    multicast_interfaces: Vec<MulticastIf>,
 }
 
 impl SacnSource {
@@ -591,6 +596,37 @@ impl SacnSource {
         unlock_internal_mut(&mut self.internal)?.set_multicast_loop(multicast_loop)
     }
 
+    /// Sets the network interfaces that multicast packets (data, synchronisation, termination and universe discovery)
+    /// are sent on. Each packet is sent once on each interface. Unicast packets aren't affected: they follow the
+    /// operating system's routing table.
+    ///
+    /// By default, and when given an empty list, packets are sent once on the interface the operating system chooses.
+    ///
+    /// Interfaces are given by name or by one of their addresses, see [`NetworkInterface`]. For an IPv4 source an
+    /// interface named by name is used through its first IPv4 address; for an IPv6 source an interface must have an IPv6
+    /// address, which may be link-local.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use sacn::interface::NetworkInterface;
+    /// use sacn::source::SacnSource;
+    ///
+    /// let mut src = SacnSource::new_v4("Source").unwrap();
+    /// src.set_multicast_interfaces(&["eth0".into(), "eth1".into()]).unwrap();
+    /// ```
+    ///
+    /// # Errors
+    /// Io: Returned with kind `NotFound` if an interface doesn't exist or has no address of the source's IP version, in
+    /// which case the interfaces are left unchanged. Also returned if the socket's multicast interface can't be reset.
+    ///
+    /// `IpVersionError`: Returned if an interface is given by an address of the other IP version.
+    ///
+    /// `SourceCorrupt`: Returned if the Mutex used to control access to the internal sender is poisoned by a thread encountering
+    /// a panic while accessing causing the source to be left in a potentially inconsistent state.
+    pub fn set_multicast_interfaces(&mut self, interfaces: &[NetworkInterface]) -> Result<()> {
+        unlock_internal_mut(&mut self.internal)?.set_multicast_interfaces(interfaces)
+    }
+
     /// Returns true if multicast loop is enabled, false if not.
     ///
     /// # Errors
@@ -699,6 +735,7 @@ impl SacnSourceInternal {
             running: true,
             last_discovery_advert_timestamp: Instant::now(),
             is_sending_discovery: true,
+            multicast_interfaces: Vec::new(),
         };
 
         Ok(ds)
@@ -970,8 +1007,7 @@ impl SacnSourceInternal {
                 universe_to_ipv4_multicast_addr(universe)?
             };
 
-            self.socket
-                .send_to(&packet.pack_alloc().unwrap(), &dst)
+            self.send_multicast(&packet.pack_alloc().unwrap(), &dst)
                 .map_err(|e| {
                     std::io::Error::new(e.kind(), "Failed to send data multicast on socket")
                 })?;
@@ -1007,9 +1043,7 @@ impl SacnSourceInternal {
     fn send_sync_packet(&self, universe: u16, dst_ip: Option<SocketAddr>) -> Result<()> {
         is_data_universe_in_range(universe)?;
 
-        let ip = if let Some(dst) = dst_ip {
-            dst.into()
-        } else if self.addr.is_ipv6() {
+        let multicast_addr = if self.addr.is_ipv6() {
             universe_to_ipv6_multicast_addr(universe)?
         } else {
             universe_to_ipv4_multicast_addr(universe)?
@@ -1030,9 +1064,12 @@ impl SacnSourceInternal {
             },
         };
         log_trace!("Sending sACN sync packet: sync address {universe}, sequence {sequence}");
-        self.socket
-            .send_to(&packet.pack_alloc()?, &ip)
-            .map_err(|e| std::io::Error::new(e.kind(), "Failed to send sync packet on socket"))?;
+        let buf = packet.pack_alloc()?;
+        match dst_ip {
+            Some(dst) => self.socket.send_to(&buf, &dst.into()).map(|_| ()),
+            None => self.send_multicast(&buf, &multicast_addr),
+        }
+        .map_err(|e| std::io::Error::new(e.kind(), "Failed to send sync packet on socket"))?;
 
         if sequence == 255 {
             sequence = 0;
@@ -1066,15 +1103,10 @@ impl SacnSourceInternal {
     ) -> Result<()> {
         self.universe_allowed(&universe)?;
 
-        let ip = match dst_ip {
-            Some(x) => x.into(),
-            None => {
-                if self.addr.is_ipv6() {
-                    universe_to_ipv6_multicast_addr(universe)?
-                } else {
-                    universe_to_ipv4_multicast_addr(universe)?
-                }
-            }
+        let multicast_addr = if self.addr.is_ipv6() {
+            universe_to_ipv6_multicast_addr(universe)?
+        } else {
+            universe_to_ipv4_multicast_addr(universe)?
         };
 
         let mut sequence = match self.data_sequences.borrow_mut().remove(&universe) {
@@ -1105,7 +1137,12 @@ impl SacnSourceInternal {
         log_trace!(
             "Sending sACN stream termination packet: universe {universe}, sequence {sequence}"
         );
-        self.socket.send_to(res, &ip)?;
+        match dst_ip {
+            Some(dst) => {
+                self.socket.send_to(res, &dst.into())?;
+            }
+            None => self.send_multicast(res, &multicast_addr)?,
+        }
 
         if sequence == 255 {
             sequence = 0;
@@ -1268,8 +1305,51 @@ impl SacnSourceInternal {
             "Sending sACN universe discovery page {page} of {last_page} with {} universes",
             universes.len()
         );
-        self.socket.send_to(&packet.pack_alloc()?, &ip)?;
+        self.send_multicast(&packet.pack_alloc()?, &ip)?;
 
+        Ok(())
+    }
+
+    /// Sends the given packet to the given multicast address once on each of the source's multicast interfaces, or once
+    /// on the interface chosen by the operating system if none are set.
+    ///
+    /// A failure on one interface doesn't stop the packet being sent on the others; the first error is returned.
+    ///
+    /// # Errors
+    /// Io: Returned if the packet fails to be sent on the socket, or the socket's multicast interface can't be set.
+    fn send_multicast(&self, buf: &[u8], dst: &SockAddr) -> std::io::Result<()> {
+        if self.multicast_interfaces.is_empty() {
+            return self.socket.send_to(buf, dst).map(|_| ());
+        }
+
+        let mut result = Ok(());
+        for iface in &self.multicast_interfaces {
+            let sent = match iface {
+                MulticastIf::V4(addr) => self.socket.set_multicast_if_v4(addr),
+                MulticastIf::V6(index) => self.socket.set_multicast_if_v6(*index),
+            }
+            .and_then(|()| self.socket.send_to(buf, dst));
+            if let Err(e) = sent
+                && result.is_ok()
+            {
+                result = Err(e);
+            }
+        }
+        result
+    }
+
+    /// Sets the network interfaces that multicast packets are sent on. See `SacnSource::set_multicast_interfaces`.
+    fn set_multicast_interfaces(&mut self, interfaces: &[NetworkInterface]) -> Result<()> {
+        let resolved = interface::resolve(interfaces, self.addr.is_ipv6())?;
+        if resolved.is_empty() {
+            // Hand the choice of interface back to the operating system.
+            if self.addr.is_ipv6() {
+                self.socket.set_multicast_if_v6(0)?;
+            } else {
+                self.socket.set_multicast_if_v4(&Ipv4Addr::UNSPECIFIED)?;
+            }
+        }
+        self.multicast_interfaces = resolved;
         Ok(())
     }
 

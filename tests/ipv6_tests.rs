@@ -2017,3 +2017,44 @@ mod sacn_ipv6_unicast_test {
         );
     }
 }
+
+// Choosing the IPv6 multicast interface. Needs TEST_NETWORK_INTERFACE_IPV6 on an interface with an IPv6 multicast route,
+// as docker-linux/run_isolated.sh sets up.
+#[cfg(test)]
+#[cfg(target_os = "linux")]
+mod sacn_ipv6_interface_test {
+    use std::net::{IpAddr, Ipv6Addr, SocketAddr};
+
+    use sacn::interface::NetworkInterface;
+    use sacn::packet::ACN_SDT_MULTICAST_PORT;
+    use sacn::receive::SacnReceiver;
+    use sacn::source::SacnSource;
+
+    use crate::TEST_NETWORK_INTERFACE_IPV6;
+    use crate::ipv4_tests::interface_selection::{DATA, UNIVERSE, count_received};
+
+    #[test]
+    #[ignore]
+    fn ipv6_source_and_receiver_on_chosen_interface() {
+        // The interface that has the test addresses, picked by address so the library has to find its index.
+        let iface = NetworkInterface::Addr(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()));
+
+        let mut rcv = SacnReceiver::with_ip(
+            SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT),
+            None,
+        )
+        .unwrap();
+        rcv.set_multicast_interfaces(std::slice::from_ref(&iface))
+            .unwrap();
+        rcv.listen_universes(&[UNIVERSE]).unwrap();
+
+        let mut src = SacnSource::new_v6("interface test source").unwrap();
+        src.set_multicast_interfaces(&[iface]).unwrap();
+        src.set_multicast_loop(true).unwrap();
+        src.register_universe(UNIVERSE).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
+        assert_eq!(count_received(&mut rcv), 1);
+    }
+}

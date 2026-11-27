@@ -28,6 +28,7 @@ use crate::packet::{
 
 /// Same reasoning as for packet meaning all sacn errors are imported.
 use crate::error::errors::*;
+use crate::interface::{self, MulticastIf, NetworkInterface};
 
 /// The uuid crate is used for working with/generating UUIDs which sACN uses as part of the cid field in the protocol.
 /// This is used for uniquely identifying sources when counting sequence numbers.
@@ -36,29 +37,13 @@ use uuid::Uuid;
 use std::cmp::{Ordering, max};
 use std::collections::HashMap;
 use std::io::Read;
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::time::{Duration, Instant};
 use std::{fmt, io};
 
 /// Extra net imports required for the IPv6 handling on the linux side.
 #[cfg(not(target_os = "windows"))]
-use std::net::{IpAddr, Ipv6Addr};
-
-/// Constants required to detect if an IP is IPv4 or IPv6.
-#[cfg(not(target_os = "windows"))]
-use libc::{AF_INET, AF_INET6};
-
-/// The libc constants required are not available on many windows environments and therefore are hard-coded.
-/// Defined as per <https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket>
-#[cfg(target_os = "windows")]
-const AF_INET: i32 = 2;
-
-/// Defined as per <https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket>
-#[cfg(target_os = "windows")]
-const AF_INET6: i32 = 23;
-
-#[cfg(target_os = "windows")]
-use std::net::IpAddr;
+use std::net::{Ipv4Addr, Ipv6Addr};
 
 /// The default size of the buffer used to receive E1.31 packets.
 /// 1143 bytes is biggest packet required as per Section 8 of ANSI E1.31-2018, aligned to 64 bit that is 1144 bytes.
@@ -245,6 +230,9 @@ struct SacnNetworkReceiver {
     /// This flag is set when the receiver is created as not all environments currently support IP multicast.
     /// E.g. IPv6 Windows IP Multicast is currently unsupported.
     is_multicast_enabled: bool,
+
+    /// The interfaces that multicast groups are joined on. Empty means the default, see `group_interfaces`.
+    multicast_interfaces: Vec<MulticastIf>,
 }
 
 /// Universe discovery packets are broken down into pages to allow sending a large list of universes, each page contains a list of universes and
@@ -290,6 +278,9 @@ impl SacnReceiver {
     /// Arguments:
     ///     ip: The address of the interface for this receiver to join, by default this address should use the `ACN_SDT_MULTICAST_PORT` as defined in
     ///         ANSI E1.31-2018 Appendix A: Defined Parameters (Normative) however another address might be used in some situations.
+    ///         For IPv4, multicast groups are joined on the interface with this address unless `set_multicast_interfaces` is
+    ///         used. That use of the address is kept for compatibility; prefer the unspecified address (`0.0.0.0`) with
+    ///         `set_multicast_interfaces` to choose interfaces.
     ///     `source_limit`: The limit to the number of sources, past this limit a new source will cause a `SourcesExceededError` as per ANSI E1.31-2018 Section 6.2.3.3.
     ///                     A source limit of None means no limit to the number of sources.
     ///
@@ -402,6 +393,82 @@ impl SacnReceiver {
     /// Allow only receiving on Ipv6.
     pub fn set_ipv6_only(&mut self, val: bool) -> Result<()> {
         self.receiver.set_only_v6(val)
+    }
+
+    /// Sets the network interfaces that multicast groups are joined on. Every universe being listened to, including
+    /// the universe discovery universe and any synchronisation universes, is left on the previous interfaces and joined
+    /// on the new ones.
+    ///
+    /// By default, and when given an empty list, groups are joined on the interface with the address the receiver was
+    /// created with (see `with_ip`), which for the unspecified address (`0.0.0.0` or `::`) is the interface the
+    /// operating system chooses.
+    ///
+    /// Interfaces are given by name or by one of their addresses, see [`NetworkInterface`]. For an IPv4 receiver an
+    /// interface named by name is used through its first IPv4 address; for an IPv6 receiver an interface must have an
+    /// IPv6 address, which may be link-local.
+    ///
+    /// A packet that arrives on more than one interface is processed once: the copies after the first are discarded
+    /// as duplicates by the sequence number check (ANSI E1.31-2018 Section 6.7.2).
+    ///
+    /// On Windows a receiver created with a specific address only receives on that address's interface, so create it
+    /// with the unspecified address to receive on several interfaces.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use sacn::interface::NetworkInterface;
+    /// use sacn::receive::SacnReceiver;
+    /// use sacn::packet::ACN_SDT_MULTICAST_PORT;
+    /// use std::net::SocketAddr;
+    ///
+    /// let addr: SocketAddr = ([0, 0, 0, 0], ACN_SDT_MULTICAST_PORT).into();
+    /// let mut dmx_rcv = SacnReceiver::with_ip(addr, None).unwrap();
+    /// dmx_rcv.set_multicast_interfaces(&["eth0".into(), "eth1".into()]).unwrap();
+    /// dmx_rcv.listen_universes(&[1]).unwrap();
+    /// ```
+    ///
+    /// # Errors
+    /// Io: Returned with kind `NotFound` if an interface doesn't exist or has no address of the receiver's IP
+    /// version, in which case nothing is changed. Also returned if a group can't be joined on a new interface, in which
+    /// case the new interfaces are kept and the group is joined again by the next `set_multicast_interfaces` call.
+    ///
+    /// `IpVersionError`: Returned if an interface is given by an address of the other IP version.
+    pub fn set_multicast_interfaces(&mut self, interfaces: &[NetworkInterface]) -> Result<()> {
+        let resolved = interface::resolve(interfaces, self.receiver.is_ipv6())?;
+        if !self.is_multicast_enabled() {
+            self.receiver.multicast_interfaces = resolved;
+            return Ok(());
+        }
+
+        let mut groups: Vec<u16> = self.universes.clone();
+        groups.extend(
+            self.sync_universes
+                .keys()
+                .filter(|u| !self.universes.contains(u)),
+        );
+
+        let mut groups_addrs = Vec::with_capacity(groups.len());
+        for u in groups {
+            groups_addrs.push(if self.receiver.is_ipv6() {
+                universe_to_ipv6_multicast_addr(u)?
+            } else {
+                universe_to_ipv4_multicast_addr(u)?
+            });
+        }
+
+        for g in &groups_addrs {
+            // Leaving can only fail if the group wasn't joined, which leaves nothing to undo.
+            let _ = self.receiver.leave_group(g);
+        }
+        self.receiver.multicast_interfaces = resolved;
+
+        let mut result = Ok(());
+        for g in &groups_addrs {
+            let joined = self.receiver.join_group(g);
+            if joined.is_err() && result.is_ok() {
+                result = joined;
+            }
+        }
+        result
     }
 
     /// Allows receiving from the given universe and starts listening to the multicast addresses which corresponds to the given universe.
@@ -798,14 +865,20 @@ impl SacnReceiver {
         // source that only sends alternate START Code data has lost its data and times out.
         let null_start_code = data_pkt.data.property_values.first() == Some(&E131_NULL_START_CODE);
 
-        self.sequences.check_data_seq_number(
+        match self.sequences.check_data_seq_number(
             self.source_limit,
             cid,
             data_pkt.sequence_number,
             data_pkt.universe,
             self.announce_timeout,
             null_start_code,
-        )?;
+        ) {
+            Err(SacnError::OutOfSequence(_, _, 0)) if self.receiver.is_multi_interface() => {
+                // A copy of the last packet, received on another interface.
+                return Ok(None);
+            }
+            r => r?,
+        }
 
         // As per ANSI E1.31-2016 Section 11.1.1 a receiver begins synchronising on receipt of the first synchronisation packet,
         // so until one has been received on this packet's synchronisation address the data is processed immediately.
@@ -947,13 +1020,19 @@ impl SacnReceiver {
             return Ok(None);
         }
 
-        self.sequences.check_sync_seq_number(
+        match self.sequences.check_sync_seq_number(
             self.source_limit,
             cid,
             sync_pkt.sequence_number,
             sync_pkt.synchronization_address,
             self.announce_timeout,
-        )?;
+        ) {
+            Err(SacnError::OutOfSequence(_, _, 0)) if self.receiver.is_multi_interface() => {
+                // A copy of the last packet, received on another interface.
+                return Ok(None);
+            }
+            r => r?,
+        }
 
         self.last_sync_packets
             .insert(sync_pkt.synchronization_address, Instant::now());
@@ -1270,6 +1349,7 @@ impl SacnNetworkReceiver {
             socket: create_win_socket(ip)?,
             addr: ip,
             is_multicast_enabled: !(ip.is_ipv6()), // IPv6 Windows IP Multicast is currently unsupported.
+            multicast_interfaces: Vec::new(),
         })
     }
 
@@ -1287,7 +1367,7 @@ impl SacnNetworkReceiver {
             universe_to_ipv6_multicast_addr(universe)? // "Failed to convert universe to IPv6 multicast addr"
         };
 
-        join_win_multicast(&self.socket, multicast_addr, self.addr.ip())
+        self.join_group(&multicast_addr)
     }
 
     /// Removes this `SacnNetworkReceiver` from the multicast group which corresponds to the given universe.
@@ -1302,7 +1382,7 @@ impl SacnNetworkReceiver {
             universe_to_ipv6_multicast_addr(universe)? // "Failed to convert universe to IPv6 multicast addr"
         };
 
-        leave_win_multicast(&self.socket, multicast_addr)
+        self.leave_group(&multicast_addr)
     }
 
     /// Sets the value of the `is_multicast_enabled` flag to the given value.
@@ -1382,11 +1462,6 @@ impl SacnNetworkReceiver {
     fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
         Ok(self.socket.set_read_timeout(timeout)?)
     }
-
-    /// Returns true if this `SacnNetworkReceiver` is bound to an Ipv6 address.
-    fn is_ipv6(&self) -> bool {
-        self.addr.is_ipv6()
-    }
 }
 
 /// Windows and linux handle multicast sockets differently.
@@ -1406,6 +1481,7 @@ impl SacnNetworkReceiver {
             socket: create_unix_socket(ip)?,
             addr: ip,
             is_multicast_enabled: true, // Linux IP Multicast is supported for Ipv4 and Ipv6.
+            multicast_interfaces: Vec::new(),
         })
     }
 
@@ -1423,7 +1499,7 @@ impl SacnNetworkReceiver {
             universe_to_ipv6_multicast_addr(universe)? // "Failed to convert universe to IPv6 multicast addr"
         };
 
-        join_unix_multicast(&self.socket, multicast_addr, self.addr.ip())
+        self.join_group(&multicast_addr)
     }
 
     /// Removes this `SacnNetworkReceiver` from the multicast group which corresponds to the given universe.
@@ -1438,7 +1514,7 @@ impl SacnNetworkReceiver {
             universe_to_ipv6_multicast_addr(universe)?
         };
 
-        leave_unix_multicast(&self.socket, multicast_addr, self.addr.ip())
+        self.leave_group(&multicast_addr)
     }
 
     /// Sets the value of the `is_multicast_enabled` flag to the given value.
@@ -1511,6 +1587,102 @@ impl SacnNetworkReceiver {
     /// A timeout with Duration 0 will cause an error. See (`set_read_timeout`)[`fn.set_read_timeout.Socket`].
     fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
         Ok(self.socket.set_read_timeout(timeout)?)
+    }
+}
+
+/// Multicast group membership, common to all operating systems.
+impl SacnNetworkReceiver {
+    /// Returns true if this `SacnNetworkReceiver` is bound to an Ipv6 address.
+    fn is_ipv6(&self) -> bool {
+        self.addr.is_ipv6()
+    }
+
+    /// Returns true if multicast groups are joined on more than one interface, so a packet may be received once per
+    /// interface.
+    fn is_multi_interface(&self) -> bool {
+        self.multicast_interfaces.len() > 1
+    }
+
+    /// Returns the interfaces that multicast groups are joined on: the ones set with `set_multicast_interfaces`, or if
+    /// none are set the default. The default is the interface with the address this receiver was created with, which
+    /// for the unspecified address lets the operating system choose.
+    fn group_interfaces(&self) -> Vec<MulticastIf> {
+        if !self.multicast_interfaces.is_empty() {
+            return self.multicast_interfaces.clone();
+        }
+        match self.addr.ip() {
+            IpAddr::V4(a) => vec![MulticastIf::V4(a)],
+            IpAddr::V6(_) => vec![MulticastIf::V6(0)],
+        }
+    }
+
+    /// Joins the given multicast group on each of this receiver's interfaces.
+    ///
+    /// # Errors
+    /// Io: Returned if the group can't be joined on an interface.
+    ///
+    /// `IpVersionError`: Returned if the group and the interfaces are not the same IP version.
+    fn join_group(&self, group: &SockAddr) -> Result<()> {
+        for iface in self.group_interfaces() {
+            match (group.as_socket(), iface) {
+                (Some(SocketAddr::V4(g)), MulticastIf::V4(i)) => {
+                    self.socket.join_multicast_v4(g.ip(), &i)
+                }
+                (Some(SocketAddr::V6(g)), MulticastIf::V6(i)) => {
+                    self.socket.join_multicast_v6(g.ip(), i)
+                }
+                _ => return Err(SacnError::IpVersionError()),
+            }
+            .map_err(|e| {
+                SacnError::Io(io::Error::new(
+                    e.kind(),
+                    format!("Failed to join multicast group: {e}"),
+                ))
+            })?;
+        }
+        Ok(())
+    }
+
+    /// Leaves the given multicast group on each of this receiver's interfaces.
+    ///
+    /// All interfaces are tried even if leaving fails on one of them; the first error is returned.
+    ///
+    /// # Errors
+    /// Io: Returned if the group can't be left on an interface.
+    ///
+    /// `IpVersionError`: Returned if the group and the interfaces are not the same IP version.
+    ///
+    /// `OsOperationUnsupported`: Returned for IPv6 on Windows, where IPv6 multicast is unsupported.
+    fn leave_group(&self, group: &SockAddr) -> Result<()> {
+        #[cfg(target_os = "windows")]
+        if group.is_ipv6() {
+            return Err(SacnError::OsOperationUnsupported(
+                "IPv6 multicast is currently unsupported on Windows".to_string(),
+            ));
+        }
+
+        let mut result = Ok(());
+        for iface in self.group_interfaces() {
+            let left = match (group.as_socket(), iface) {
+                (Some(SocketAddr::V4(g)), MulticastIf::V4(i)) => {
+                    self.socket.leave_multicast_v4(g.ip(), &i)
+                }
+                (Some(SocketAddr::V6(g)), MulticastIf::V6(i)) => {
+                    self.socket.leave_multicast_v6(g.ip(), i)
+                }
+                _ => return Err(SacnError::IpVersionError()),
+            }
+            .map_err(|e| {
+                SacnError::Io(io::Error::new(
+                    e.kind(),
+                    format!("Failed to leave multicast group: {e}"),
+                ))
+            });
+            if left.is_err() && result.is_ok() {
+                result = left;
+            }
+        }
+        result
     }
 }
 
@@ -1595,6 +1767,15 @@ impl DiscoveredSacnSource {
     }
 }
 
+/// Turns an error from setting a socket option that the OS doesn't support into success.
+#[cfg(target_os = "linux")]
+fn ignore_unsupported_option(result: io::Result<()>) -> io::Result<()> {
+    match result {
+        Err(e) if e.raw_os_error() == Some(libc::ENOPROTOOPT) => Ok(()),
+        r => r,
+    }
+}
+
 /// Creates a new Socket2 socket bound to the given address.
 ///
 /// Returns the created socket.
@@ -1624,6 +1805,11 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
         }
         socket.set_reuse_address(true)?;
 
+        // Only deliver multicast for the groups this socket joined, on the interfaces it joined them on. Linux
+        // otherwise delivers every group joined by any socket on the host, on any interface.
+        #[cfg(target_os = "linux")]
+        ignore_unsupported_option(socket.set_multicast_all_v4(false))?;
+
         let socket_addr =
             SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
         socket.bind(&socket_addr.into())?;
@@ -1642,123 +1828,15 @@ fn create_unix_socket(addr: SocketAddr) -> Result<Socket> {
         }
         socket.set_reuse_address(true)?;
 
+        // See the IPv4 case above.
+        #[cfg(target_os = "linux")]
+        ignore_unsupported_option(socket.set_multicast_all_v6(false))?;
+
         let socket_addr =
             SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT);
         socket.bind(&socket_addr.into())?;
         Ok(socket)
     }
-}
-
-/// Joins the multicast group with the given address using the given socket.
-///
-/// Arguments:
-/// socket: The socket to join to the multicast group.
-/// addr:   The address of the multicast group to join.
-///
-/// # Errors
-/// Will return an error if the given socket cannot be joined to the given multicast group address.
-///     See `join_multicast_v4`[`fn.join_multicast_v4.Socket`] and `join_multicast_v6`[`fn.join_multicast_v6.Socket`]
-///
-/// Will return an `IpVersionError` if addr and `interface_addr` are not the same IP version.
-#[cfg(not(target_os = "windows"))]
-fn join_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
-    match addr.family() as i32 {
-        // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
-        AF_INET => match addr.as_socket_ipv4() {
-            Some(a) => match interface_addr {
-                IpAddr::V4(ref interface_v4) => {
-                    socket
-                        .join_multicast_v4(a.ip(), interface_v4)
-                        .map_err(|e| {
-                            SacnError::Io(std::io::Error::new(
-                                e.kind(),
-                                "Failed to join IPv4 multicast",
-                            ))
-                        })?;
-                }
-                IpAddr::V6(ref _interface_v6) => {
-                    return Err(SacnError::IpVersionError());
-                }
-            },
-            None => {
-                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
-            }
-        },
-        AF_INET6 => match addr.as_socket_ipv6() {
-            Some(a) => {
-                socket.join_multicast_v6(a.ip(), 0).map_err(|e| {
-                    SacnError::Io(std::io::Error::new(
-                        e.kind(),
-                        "Failed to join IPv6 multicast",
-                    ))
-                })?;
-            }
-            None => {
-                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
-            }
-        },
-        x => {
-            return Err(SacnError::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
-        }
-    };
-
-    Ok(())
-}
-
-/// Leaves the multicast group with the given address using the given socket.
-///
-/// Arguments:
-/// socket: The socket to leave the multicast group.
-/// addr:   The address of the multicast group to leave.
-///
-/// # Errors
-/// Will return an error if the given socket cannot leave the given multicast group address.
-///     See `leave_multicast_v4`[`fn.leave_multicast_v4.Socket`] and `leave_multicast_v6`[`fn.leave_multicast_v6.Socket`]
-///
-/// Will return an `IpVersionError` if addr and `interface_addr` are not the same IP version.
-#[cfg(not(target_os = "windows"))]
-fn leave_unix_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
-    match addr.family() as i32 {
-        // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
-        AF_INET => match addr.as_socket_ipv4() {
-            Some(a) => match interface_addr {
-                IpAddr::V4(ref interface_v4) => {
-                    socket
-                        .leave_multicast_v4(a.ip(), interface_v4)
-                        .map_err(|e| {
-                            SacnError::Io(std::io::Error::new(
-                                e.kind(),
-                                "Failed to leave IPv4 multicast",
-                            ))
-                        })?;
-                }
-                IpAddr::V6(ref _interface_v6) => {
-                    return Err(SacnError::IpVersionError());
-                }
-            },
-            None => {
-                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
-            }
-        },
-        AF_INET6 => match addr.as_socket_ipv6() {
-            Some(a) => {
-                socket.leave_multicast_v6(a.ip(), 0).map_err(|e| {
-                    SacnError::Io(std::io::Error::new(
-                        e.kind(),
-                        "Failed to leave IPv6 multicast",
-                    ))
-                })?;
-            }
-            None => {
-                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
-            }
-        },
-        x => {
-            return Err(SacnError::UnsupportedIpVersion(format!("IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {}", x).to_string()));
-        }
-    };
-
-    Ok(())
 }
 
 /// Creates a new Socket2 socket bound to the given address.
@@ -1787,118 +1865,6 @@ fn create_win_socket(addr: SocketAddr) -> Result<Socket> {
         socket.bind(&SockAddr::from(addr))?;
         Ok(socket)
     }
-}
-
-/// Joins the multicast group with the given address using the given socket on the windows operating system.
-///
-/// Note that Ipv6 is currently unsupported.
-///
-/// Arguments:
-/// socket: The socket to join to the multicast group.
-/// addr:   The address of the multicast group to join.
-///
-/// # Errors
-/// Will return an error if the given socket cannot be joined to the given multicast group address.
-///     See `join_multicast_v4`[`fn.join_multicast_v4.Socket`] and `join_multicast_v6`[`fn.join_multicast_v6.Socket`]
-///
-/// Will return `OsOperationUnsupported` error if attempt to leave an Ipv6 multicast group as all Ipv6 multicast operations are currently unsupported in Rust on Windows.
-#[cfg(target_os = "windows")]
-fn join_win_multicast(socket: &Socket, addr: SockAddr, interface_addr: IpAddr) -> Result<()> {
-    match addr.family() as i32 {
-        // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
-        AF_INET => match addr.as_socket_ipv4() {
-            Some(a) => match interface_addr {
-                IpAddr::V4(ref interface_v4) => {
-                    socket
-                        .join_multicast_v4(a.ip(), interface_v4)
-                        .map_err(|e| {
-                            SacnError::Io(std::io::Error::new(
-                                e.kind(),
-                                "Failed to join IPv4 multicast",
-                            ))
-                        })?;
-                }
-                IpAddr::V6(ref _interface_v6) => {
-                    return Err(SacnError::IpVersionError());
-                }
-            },
-            None => {
-                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
-            }
-        },
-        AF_INET6 => match addr.as_socket_ipv6() {
-            Some(a) => {
-                socket.join_multicast_v6(a.ip(), 0).map_err(|e| {
-                    SacnError::Io(std::io::Error::new(
-                        e.kind(),
-                        "Failed to join IPv6 multicast",
-                    ))
-                })?;
-            }
-            None => {
-                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
-            }
-        },
-        x => {
-            return Err(SacnError::UnsupportedIpVersion(format!(
-                "IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {x}"
-            )));
-        }
-    };
-
-    Ok(())
-}
-
-/// Leaves the multicast group with the given address using the given socket.
-///
-/// Note that Ipv6 is currently unsupported.
-///
-/// Arguments:
-/// socket: The socket to leave the multicast group.
-/// addr:   The address of the multicast group to leave.
-///
-/// # Errors
-/// Will return an error if the given socket cannot leave the given multicast group address.
-///     See `leave_multicast_v4`[`fn.leave_multicast_v4.Socket`] and `leave_multicast_v6`[`fn.leave_multicast_v6.Socket`]
-///
-/// Will return `OsOperationUnsupported` error if attempt to leave an Ipv6 multicast group as all Ipv6 multicast operations are currently unsupported in Rust on Windows.
-#[cfg(target_os = "windows")]
-fn leave_win_multicast(socket: &Socket, addr: SockAddr) -> Result<()> {
-    match addr.family() as i32 {
-        // Cast required because AF_INET is defined in libc in terms of a c_int (i32) but addr.family returns using u16.
-        AF_INET => match addr.as_socket_ipv4() {
-            Some(a) => {
-                socket
-                    .leave_multicast_v4(a.ip(), &Ipv4Addr::new(0, 0, 0, 0))
-                    .map_err(|e| {
-                        SacnError::Io(std::io::Error::new(
-                            e.kind(),
-                            "Failed to leave IPv4 multicast",
-                        ))
-                    })?;
-            }
-            None => {
-                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET but not actually usable as AF_INET so must be unknown type".to_string()));
-            }
-        },
-        AF_INET6 => match addr.as_socket_ipv6() {
-            Some(_) => {
-                return Err(SacnError::OsOperationUnsupported(
-                    "IPv6 multicast is currently unsupported on Windows".to_string(),
-                ));
-            }
-            None => {
-                return Err(SacnError::UnsupportedIpVersion("IP version recognised as AF_INET6 but not actually usable as AF_INET6 so must be unknown type".to_string()));
-            }
-        },
-        x => {
-            return Err(SacnError::UnsupportedIpVersion(format!(
-                "IP version not recognised as AF_INET (Ipv4) or AF_INET6 (Ipv6) - family value (as i32): {x}"
-            )));
-        }
-    };
-
-    Ok(())
 }
 
 /// Stores a sequence number and a timestamp.
