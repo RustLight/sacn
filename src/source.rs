@@ -1341,7 +1341,10 @@ impl SacnSourceInternal {
 
     /// Sets the network interfaces that multicast packets are sent on. See `SacnSource::set_multicast_interfaces`.
     fn set_multicast_interfaces(&mut self, interfaces: &[NetworkInterface]) -> Result<()> {
-        let resolved = interface::resolve(interfaces, self.addr.is_ipv6())?;
+        let resolved: Vec<MulticastIf> = interface::resolve(interfaces, self.addr.is_ipv6())?
+            .into_iter()
+            .map(|r| r.mcast)
+            .collect();
         if resolved.is_empty() {
             // Hand the choice of interface back to the operating system.
             if self.addr.is_ipv6() {

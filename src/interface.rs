@@ -31,6 +31,7 @@ use std::net::{IpAddr, Ipv4Addr};
 /// let by_v4_addr = NetworkInterface::Addr("192.168.1.10".parse().unwrap());
 /// let by_v6_addr = NetworkInterface::Addr("fe80::1".parse().unwrap());
 /// let every_interface = NetworkInterface::All;
+/// let loopback = NetworkInterface::Loopback;
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -46,8 +47,12 @@ pub enum NetworkInterface {
     ///
     /// The interfaces are listed when `set_multicast_interfaces` is called, so an interface that appears later isn't
     /// used until `set_multicast_interfaces` is called again. Combine it with another variant to add a loopback
-    /// interface, for example `[NetworkInterface::All, "lo".into()]`.
+    /// interface, for example `[NetworkInterface::All, NetworkInterface::Loopback]`.
     All,
+
+    /// The loopback interface (`lo` on Linux, `lo0` on macOS, `Loopback Pseudo-Interface 1` on Windows), for
+    /// sending to and receiving from other programs on the same host.
+    Loopback,
 }
 
 impl From<IpAddr> for NetworkInterface {
@@ -136,23 +141,60 @@ pub(crate) enum MulticastIf {
 /// Io (`NotFound`): Returned if an interface doesn't exist, or has no address of the socket's IP version.
 ///
 /// `IpVersionError`: Returned if an interface is given by an address of the other IP version.
-pub(crate) fn resolve(interfaces: &[NetworkInterface], ipv6: bool) -> Result<Vec<MulticastIf>> {
+pub(crate) fn resolve(interfaces: &[NetworkInterface], ipv6: bool) -> Result<Vec<ResolvedIf>> {
     if interfaces.is_empty() {
         return Ok(Vec::new());
     }
-    resolve_among(interfaces, ipv6, &network_interfaces()?)
+    resolve_among_named(interfaces, ipv6, &network_interfaces()?)
 }
 
-/// Resolves the given interfaces against the given list of host interfaces. Split from `resolve` for testing.
+/// An interface resolved for a socket, with the name of the host interface it belongs to.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ResolvedIf {
+    /// The interface in the form the socket options take.
+    pub(crate) mcast: MulticastIf,
+
+    /// The name of the host interface. Two `ResolvedIf`s with the same name are the same interface, even if their
+    /// `mcast` differ (for example two IPv4 addresses of one interface).
+    pub(crate) name: String,
+}
+
+/// Returns the name of the host interface that has the given address, if any.
+pub(crate) fn name_of_addr(addr: IpAddr) -> Option<String> {
+    network_interfaces()
+        .ok()?
+        .into_iter()
+        .find(|i| i.addrs.contains(&addr))
+        .map(|i| i.name)
+}
+
+/// Resolves the given interfaces against the given list of host interfaces, without their names.
+#[cfg(test)]
 fn resolve_among(
     interfaces: &[NetworkInterface],
     ipv6: bool,
     host: &[InterfaceInfo],
 ) -> Result<Vec<MulticastIf>> {
-    let mut resolved = Vec::with_capacity(interfaces.len());
-    let mut push = |mcast_if: MulticastIf| {
-        if !resolved.contains(&mcast_if) {
-            resolved.push(mcast_if);
+    Ok(resolve_among_named(interfaces, ipv6, host)?
+        .into_iter()
+        .map(|r| r.mcast)
+        .collect())
+}
+
+/// Resolves the given interfaces against the given list of host interfaces. Split from `resolve` for testing. Each
+/// host interface appears at most once, the first time it is named.
+fn resolve_among_named(
+    interfaces: &[NetworkInterface],
+    ipv6: bool,
+    host: &[InterfaceInfo],
+) -> Result<Vec<ResolvedIf>> {
+    let mut resolved: Vec<ResolvedIf> = Vec::with_capacity(interfaces.len());
+    let mut push = |mcast: MulticastIf, info: &InterfaceInfo| {
+        if !resolved.iter().any(|r| r.name == info.name) {
+            resolved.push(ResolvedIf {
+                mcast,
+                name: info.name.clone(),
+            });
         }
     };
 
@@ -165,11 +207,29 @@ fn resolve_among(
                 }
                 host.iter().find(|i| i.addrs.contains(addr))
             }
+            NetworkInterface::Loopback => {
+                let loopback_addr = |a: &IpAddr| a.is_loopback() && a.is_ipv6() == ipv6;
+                let info = host
+                    .iter()
+                    .find(|i| i.addrs.iter().any(loopback_addr))
+                    .ok_or_else(|| {
+                        not_found(format!(
+                            "no loopback interface with an {} address",
+                            if ipv6 { "IPv6" } else { "IPv4" }
+                        ))
+                    })?;
+                let v4_hint = info.addrs.iter().find_map(|a| match a {
+                    IpAddr::V4(v4) if v4.is_loopback() => Some(*v4),
+                    _ => None,
+                });
+                push(resolve_info(info, v4_hint, ipv6)?, info);
+                continue;
+            }
             NetworkInterface::All => {
                 let mut found = false;
                 for info in host.iter().filter(|i| !i.loopback && !i.down) {
                     if let Ok(mcast_if) = resolve_info(info, None, ipv6) {
-                        push(mcast_if);
+                        push(mcast_if, info);
                         found = true;
                     }
                 }
@@ -188,7 +248,7 @@ fn resolve_among(
             NetworkInterface::Addr(IpAddr::V4(a)) => Some(*a),
             _ => None,
         };
-        push(resolve_info(info, v4_hint, ipv6)?);
+        push(resolve_info(info, v4_hint, ipv6)?, info);
     }
     Ok(resolved)
 }
@@ -398,6 +458,42 @@ mod tests {
             false,
             &only_loopback
         )));
+    }
+
+    #[test]
+    fn loopback_resolves_to_loopback_address_or_index() {
+        let host = vec![
+            iface("eth0", &["10.0.0.5"], 2),
+            iface("lo", &["192.168.0.6", "127.0.0.1", "::1"], 1),
+        ];
+        let r = resolve_among(&[NetworkInterface::Loopback], false, &host).unwrap();
+        assert_eq!(r, vec![MulticastIf::V4("127.0.0.1".parse().unwrap())]);
+        let r = resolve_among(&[NetworkInterface::Loopback], true, &host).unwrap();
+        assert_eq!(r, vec![MulticastIf::V6(1)]);
+    }
+
+    #[test]
+    fn missing_loopback_is_not_found() {
+        let host = vec![iface("lo", &["127.0.0.1"], 1)];
+        assert!(is_not_found(resolve_among(
+            &[NetworkInterface::Loopback],
+            true,
+            &host
+        )));
+    }
+
+    #[test]
+    fn two_addresses_of_one_interface_resolve_once() {
+        let r = resolve_among(
+            &[
+                NetworkInterface::Addr("10.0.0.6".parse().unwrap()),
+                NetworkInterface::Addr("10.0.0.5".parse().unwrap()),
+            ],
+            false,
+            &host(),
+        )
+        .unwrap();
+        assert_eq!(r, vec![MulticastIf::V4("10.0.0.6".parse().unwrap())]);
     }
 
     #[test]

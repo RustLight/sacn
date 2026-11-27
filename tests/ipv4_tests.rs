@@ -4073,7 +4073,7 @@ pub mod interface_selection {
     pub const TIMEOUT: Duration = Duration::from_millis(500);
 
     fn loopback() -> NetworkInterface {
-        NetworkInterface::Addr(IpAddr::V4(Ipv4Addr::LOCALHOST))
+        NetworkInterface::Loopback
     }
 
     /// An interface other than the loopback interface that has an IPv4 address, identified by name.
@@ -4087,12 +4087,12 @@ pub mod interface_selection {
     }
 
     fn receiver(interfaces: &[NetworkInterface]) -> SacnReceiver {
-        let mut rcv = SacnReceiver::with_ip(
+        let mut rcv = SacnReceiver::with_interfaces(
             SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT),
             None,
+            interfaces,
         )
         .unwrap();
-        rcv.set_multicast_interfaces(interfaces).unwrap();
         rcv.listen_universes(&[UNIVERSE]).unwrap();
         rcv
     }
@@ -4244,6 +4244,53 @@ pub mod interface_selection {
 
         src.set_multicast_interfaces(&[other_interface()]).unwrap();
         src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+        assert_eq!(count_received(&mut rcv), 1);
+    }
+
+    #[test]
+    #[ignore]
+    fn receiver_switching_between_interfaces_keeps_receiving() {
+        let mut rcv = receiver(&[loopback()]);
+        let mut src = source(&[loopback(), other_interface()]);
+        src.set_multicast_loop_v4(true).unwrap();
+
+        // Both interfaces carry every packet, so the receiver gets each one before and after switching.
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+        assert_eq!(count_received(&mut rcv), 1);
+
+        rcv.set_multicast_interfaces(&[other_interface()]).unwrap();
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+        assert_eq!(count_received(&mut rcv), 1);
+    }
+
+    #[test]
+    fn with_interfaces_rejects_unknown_interface() {
+        let err = SacnReceiver::with_interfaces(
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT),
+            None,
+            &["no-such-interface-xyz".into()],
+        )
+        .unwrap_err();
+        assert!(matches!(err, SacnError::Io(e) if e.kind() == std::io::ErrorKind::NotFound));
+    }
+
+    /// The operating system's default interface for multicast is the loopback interface here (`run_isolated.sh` routes
+    /// 224.0.0.0/4 to it), so choosing it explicitly names the interface the receiver has already joined on.
+    #[test]
+    #[ignore]
+    fn receiver_moves_from_default_to_the_same_interface_by_name() {
+        let mut rcv = SacnReceiver::with_ip(
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT),
+            None,
+        )
+        .unwrap();
+        rcv.listen_universes(&[UNIVERSE]).unwrap();
+        rcv.set_multicast_interfaces(&[loopback()]).unwrap();
+
+        let mut src = source(&[loopback()]);
+        src.set_multicast_loop_v4(true).unwrap();
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
         assert_eq!(count_received(&mut rcv), 1);
     }
 }
