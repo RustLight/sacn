@@ -16,9 +16,10 @@ const TEST_NETWORK_INTERFACE_IPV6: [&str; 3] = [
 ];
 
 // Split the IPv6 tests into 2 modules.
-// This allows only running the IPv6 Multicast tests on Linux as they are unsupported on Windows.
+// The multicast tests need IPv6 multicast routes and the test addresses, as set up by docker-linux/run_isolated.sh on
+// Linux; on Windows they need the same addresses.
 #[cfg(test)]
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 mod sacn_ipv6_multicast_test {
 
     use std::io::Read;
@@ -1675,6 +1676,7 @@ mod sacn_ipv6_multicast_test {
             universe_to_ipv4_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap();
 
         // To allow joining multiple multicast groups like this reuse port/address must be true.
+        #[cfg(not(target_os = "windows"))]
         ipv4_recv.set_reuse_port(true).unwrap();
         ipv4_recv.set_reuse_address(true).unwrap();
 
@@ -1719,6 +1721,7 @@ mod sacn_ipv6_multicast_test {
             universe_to_ipv6_multicast_addr(E131_DISCOVERY_UNIVERSE).unwrap();
 
         // To allow joining multiple multicast groups like this reuse port/address must be true.
+        #[cfg(not(target_os = "windows"))]
         ipv6_recv.set_reuse_port(true).unwrap();
         ipv6_recv.set_reuse_address(true).unwrap();
 
@@ -2015,5 +2018,78 @@ mod sacn_ipv6_unicast_test {
             TEST_DATA_MULTIPLE_UNIVERSE[UNIVERSE_CHANNEL_CAPACITY..].to_vec(),
             "Universe 2 received payload values don't match sent!"
         );
+    }
+}
+
+// Choosing the IPv6 multicast interface. Needs TEST_NETWORK_INTERFACE_IPV6 on an interface with an IPv6 multicast route,
+// as docker-linux/run_isolated.sh sets up.
+#[cfg(test)]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+mod sacn_ipv6_interface_test {
+    use std::net::{IpAddr, Ipv6Addr, SocketAddr};
+
+    use sacn::interface::{NetworkInterface, network_interfaces};
+    use sacn::packet::ACN_SDT_MULTICAST_PORT;
+    use sacn::receive::SacnReceiver;
+    use sacn::source::SacnSource;
+
+    use crate::TEST_NETWORK_INTERFACE_IPV6;
+    use crate::ipv4_tests::interface_selection::{DATA, UNIVERSE, count_received};
+
+    #[test]
+    #[ignore]
+    fn ipv6_source_and_receiver_on_chosen_interface() {
+        // The interface that has the test addresses, picked by address so the library has to find its index.
+        let iface =
+            NetworkInterface::Addr(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()));
+
+        let mut rcv = SacnReceiver::with_ip(
+            SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT),
+            None,
+        )
+        .unwrap();
+        rcv.set_multicast_interfaces(std::slice::from_ref(&iface))
+            .unwrap();
+        rcv.listen_universes(&[UNIVERSE]).unwrap();
+
+        let mut src = SacnSource::new_v6("interface test source").unwrap();
+        src.set_multicast_interfaces(&[iface]).unwrap();
+        src.set_multicast_loop(true).unwrap();
+        src.register_universe(UNIVERSE).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
+        assert_eq!(count_received(&mut rcv), 1);
+    }
+
+    #[test]
+    #[ignore]
+    fn ipv6_source_and_receiver_on_interface_by_index() {
+        // The index of the interface that has the test addresses, as another IPv6 API would report it.
+        let test_addr: IpAddr = TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap();
+        let index = network_interfaces()
+            .unwrap()
+            .into_iter()
+            .find(|i| i.addrs.contains(&test_addr))
+            .and_then(|i| i.index)
+            .expect("test interface has an index");
+        let iface = NetworkInterface::Index(index);
+
+        let mut rcv = SacnReceiver::with_interfaces(
+            SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT),
+            None,
+            std::slice::from_ref(&iface),
+        )
+        .unwrap();
+        rcv.listen_universes(&[UNIVERSE]).unwrap();
+
+        let mut src = SacnSource::new_v6("interface test source").unwrap();
+        src.set_multicast_interfaces(&[iface]).unwrap();
+        src.set_multicast_loop(true).unwrap();
+        src.register_universe(UNIVERSE).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
+        assert_eq!(count_received(&mut rcv), 1);
     }
 }

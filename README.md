@@ -30,7 +30,7 @@ Key features:
 
 * Rust 1.88 or later (the crate uses the 2024 edition). Install Rust with [rustup](https://rustup.rs).
 
-* Linux, macOS or Windows. On Windows, IPv6 multicast isn't supported, so an IPv6 receiver there only receives unicast and broadcast.
+* Linux, macOS or Windows.
 
 * A network that carries UDP on port 5568, the sACN port. Allow it through the host firewall.
 
@@ -79,7 +79,7 @@ use sacn::receive::SacnReceiver;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-// The address of the network interface to receive on, with the sACN port.
+// Receive on all addresses, on the sACN port.
 let mut dmx_rcv = SacnReceiver::with_ip(SocketAddr::new("0.0.0.0".parse()?, ACN_SDT_MULTICAST_PORT), None)?;
 dmx_rcv.listen_universes(&[1])?;
 
@@ -92,6 +92,8 @@ loop {
     }
 }
 ```
+
+If your computer has more than one network interface (for example Wi-Fi and a USB Ethernet adapter on the lighting network), see [Choosing network interfaces](https://docs.rs/sacn/#choosing-network-interfaces).
 
 The source only sends when you call `send`, so your application must resend data to keep the stream alive, as described [in the documentation](https://docs.rs/sacn/#keeping-a-universe-alive).
 

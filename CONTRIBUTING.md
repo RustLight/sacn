@@ -52,6 +52,10 @@ The IPv4 tests need the addresses `192.168.0.6`, `192.168.0.7` and `192.168.0.8`
 cargo test --test ipv4_tests -- --ignored --test-threads=1
 ```
 
+The network interface tests (the `interface_selection` module of `tests/ipv4_tests.rs` and `sacn_ipv6_interface_test` in `tests/ipv6_tests.rs`) send on chosen interfaces. Besides the addresses above, they need multicast enabled on the loopback interface and a second interface with an IPv4 address and multicast; the IPv6 test needs the IPv6 test addresses on an interface with an IPv6 multicast route. `docker-linux/run_isolated.sh` gives each test namespace a veth interface for this.
+
+[documentation/networking.md](documentation/networking.md) describes how the library uses sockets and where Linux, macOS and Windows differ. Update it when you change socket options, binding or multicast group handling.
+
 The easiest way to get the right setup is the Docker image in `docker-linux`, which CI also uses. Docker must be running Linux containers.
 
 ```sh
