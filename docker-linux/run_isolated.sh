@@ -70,13 +70,16 @@ for addr in 192.168.0.6 192.168.0.7 192.168.0.8; do
     ip addr add "$addr/24" dev lo
 done
 ip route add 224.0.0.0/4 dev lo
+# A veth pair gives the namespace a second interface with multicast. Multicast sent out
+# of sacn0 is looped back to local members, as on a real interface. The IPv4 network
+# interface tests (interface_selection in tests/ipv4_tests.rs) use it as the interface
+# other than loopback, and IPv6 needs it because the kernel adds no IPv6 multicast route
+# (ff00::/8) for the loopback interface.
+ip link add sacn0 type veth peer name sacn1
+ip link set dev sacn1 up
+ip link set dev sacn0 up
+ip addr add 192.168.100.6/24 dev sacn0
 if [[ $family == ipv6 ]]; then
-    # The kernel adds no IPv6 multicast route (ff00::/8) for the loopback interface, so
-    # give the namespace a veth pair to carry it. Multicast sent out of sacn0 is looped
-    # back to local members, as on a real interface.
-    ip link add sacn0 type veth peer name sacn1
-    ip link set dev sacn1 up
-    ip link set dev sacn0 up
     # TEST_NETWORK_INTERFACE_IPV6 in tests/ipv6_tests.rs.
     # nodad: skip duplicate address detection so they are usable immediately.
     for addr in \

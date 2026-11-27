@@ -4052,3 +4052,171 @@ fn test_send_empty() {
         }
     }
 }
+
+
+/// Choosing the network interfaces used for multicast (`set_multicast_interfaces`).
+///
+/// The ignored tests need multicast enabled on the loopback interface and a second, non-loopback interface with an IPv4
+/// address and multicast. `docker-linux/run_isolated.sh` sets this up with a veth interface.
+pub mod interface_selection {
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+    use std::time::Duration;
+
+    use sacn::error::errors::SacnError;
+    use sacn::interface::{NetworkInterface, network_interfaces};
+    use sacn::packet::ACN_SDT_MULTICAST_PORT;
+    use sacn::receive::{DMXData, SacnReceiver};
+    use sacn::source::SacnSource;
+
+    pub const UNIVERSE: u16 = 1;
+    pub const DATA: [u8; 4] = [0, 1, 2, 3];
+    pub const TIMEOUT: Duration = Duration::from_millis(500);
+
+    fn loopback() -> NetworkInterface {
+        NetworkInterface::Addr(IpAddr::V4(Ipv4Addr::LOCALHOST))
+    }
+
+    /// An interface other than the loopback interface that has an IPv4 address, identified by name.
+    fn other_interface() -> NetworkInterface {
+        let info = network_interfaces()
+            .unwrap()
+            .into_iter()
+            .find(|i| !i.addrs.iter().any(IpAddr::is_loopback) && i.addrs.iter().any(IpAddr::is_ipv4))
+            .expect("test needs a non-loopback IPv4 interface");
+        NetworkInterface::Name(info.name)
+    }
+
+    fn receiver(interfaces: &[NetworkInterface]) -> SacnReceiver {
+        let mut rcv = SacnReceiver::with_ip(
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT),
+            None,
+        )
+        .unwrap();
+        rcv.set_multicast_interfaces(interfaces).unwrap();
+        rcv.listen_universes(&[UNIVERSE]).unwrap();
+        rcv
+    }
+
+    fn source(interfaces: &[NetworkInterface]) -> SacnSource {
+        let mut src = SacnSource::new_v4("interface test source").unwrap();
+        src.set_multicast_interfaces(interfaces).unwrap();
+        src.register_universe(UNIVERSE).unwrap();
+        src
+    }
+
+    /// Receives until the timeout, returning the number of data packets received for the test universe.
+    pub fn count_received(rcv: &mut SacnReceiver) -> usize {
+        let mut count = 0;
+        loop {
+            match rcv.recv(Some(TIMEOUT)) {
+                Ok(data) => {
+                    let data: Vec<DMXData> = data;
+                    for d in data {
+                        assert_eq!(d.universe, UNIVERSE);
+                        assert_eq!(d.values, DATA.to_vec());
+                        count += 1;
+                    }
+                }
+                Err(SacnError::Io(e))
+                    if e.kind() == std::io::ErrorKind::WouldBlock
+                        || e.kind() == std::io::ErrorKind::TimedOut =>
+                {
+                    return count;
+                }
+                Err(e) => panic!("unexpected receive error: {e:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn unknown_interface_is_rejected_and_nothing_changes() {
+        let mut src = SacnSource::new_v4("interface test source").unwrap();
+        let err = src
+            .set_multicast_interfaces(&["no-such-interface-xyz".into()])
+            .unwrap_err();
+        assert!(matches!(err, SacnError::Io(e) if e.kind() == std::io::ErrorKind::NotFound));
+
+        let mut rcv = SacnReceiver::with_ip(
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT),
+            None,
+        )
+        .unwrap();
+        let err = rcv
+            .set_multicast_interfaces(&[NetworkInterface::Addr("::1".parse().unwrap())])
+            .unwrap_err();
+        assert!(matches!(err, SacnError::IpVersionError()));
+    }
+
+    #[test]
+    fn empty_list_restores_default_interface() {
+        let mut src = SacnSource::new_v4("interface test source").unwrap();
+        src.set_multicast_interfaces(&[loopback()]).unwrap();
+        src.set_multicast_interfaces(&[]).unwrap();
+    }
+
+    #[test]
+    #[ignore]
+    fn source_and_receiver_on_chosen_interface() {
+        let mut rcv = receiver(&[loopback()]);
+        let mut src = source(&[loopback()]);
+        src.set_multicast_loop_v4(true).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
+        assert_eq!(count_received(&mut rcv), 1);
+    }
+
+    #[test]
+    #[ignore]
+    fn receiver_on_other_interface_misses_packets() {
+        let mut rcv = receiver(&[other_interface()]);
+        let mut src = source(&[loopback()]);
+        src.set_multicast_loop_v4(true).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
+        assert_eq!(count_received(&mut rcv), 0);
+    }
+
+    #[test]
+    #[ignore]
+    fn source_sends_on_every_interface() {
+        let mut rcv_lo = receiver(&[loopback()]);
+        let mut rcv_other = receiver(&[other_interface()]);
+        let mut src = source(&[loopback(), other_interface()]);
+        src.set_multicast_loop_v4(true).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
+        assert_eq!(count_received(&mut rcv_lo), 1);
+        assert_eq!(count_received(&mut rcv_other), 1);
+    }
+
+    #[test]
+    #[ignore]
+    fn receiver_on_several_interfaces_processes_each_packet_once() {
+        let mut rcv = receiver(&[loopback(), other_interface()]);
+        let mut src = source(&[loopback(), other_interface()]);
+        src.set_multicast_loop_v4(true).unwrap();
+
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+
+        assert_eq!(count_received(&mut rcv), 1);
+    }
+
+    #[test]
+    #[ignore]
+    fn receiver_moves_listened_universes_to_new_interfaces() {
+        let mut rcv = receiver(&[other_interface()]);
+        let mut src = source(&[loopback()]);
+        src.set_multicast_loop_v4(true).unwrap();
+
+        rcv.set_multicast_interfaces(&[loopback()]).unwrap();
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+        assert_eq!(count_received(&mut rcv), 1);
+
+        rcv.set_multicast_interfaces(&[other_interface()]).unwrap();
+        src.send(&[UNIVERSE], &DATA, None, None, None).unwrap();
+        assert_eq!(count_received(&mut rcv), 0);
+    }
+}
