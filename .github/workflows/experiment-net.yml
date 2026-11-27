@@ -33,12 +33,15 @@ jobs:
         dev=$SETUP
         for a in 192.168.0.6 192.168.0.7 192.168.0.8; do sudo ifconfig "$dev" alias "$a" netmask 255.255.255.255; done
         for a in 2a02:c7f:d20a:c600:a502:2dae:7716:601b 2a02:c7f:d20a:c600:a502:2dae:7716:601c 2a02:c7f:d20a:c600:a502:2dae:7716:601d; do sudo ifconfig "$dev" inet6 "$a" prefixlen 128 alias || true; done
-        ifconfig "$dev"
+        # No IPv6 multicast route by default; send ff00::/8 out of the test interface.
+        sudo route add -inet6 -net ff00:: -prefixlen 8 -interface "$dev" || true
+        ifconfig "$dev"; netstat -rn -f inet6 | head -40
     - name: Add test addresses (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $if = (Get-NetAdapter | Where-Object Status -eq Up | Select-Object -First 1).ifIndex
+        $if = (Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Select-Object -First 1).ifIndex
+        Write-Host "Using interface $if"
         foreach ($a in '192.168.0.6','192.168.0.7','192.168.0.8') { New-NetIPAddress -InterfaceIndex $if -IPAddress $a -PrefixLength 32 -SkipAsSource $true | Out-Null }
         foreach ($a in '2a02:c7f:d20a:c600:a502:2dae:7716:601b','2a02:c7f:d20a:c600:a502:2dae:7716:601c','2a02:c7f:d20a:c600:a502:2dae:7716:601d') { try { New-NetIPAddress -InterfaceIndex $if -IPAddress $a -PrefixLength 128 -SkipAsSource $true | Out-Null } catch { Write-Host $_ } }
         Start-Sleep 5
