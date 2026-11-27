@@ -93,7 +93,7 @@ loop {
 }
 ```
 
-To send or receive on particular network interfaces rather than the operating system's default, call `set_multicast_interfaces` on the source or receiver with interface names or addresses, for example `src.set_multicast_interfaces(&["eth0".into()])?`. See [Choosing network interfaces](https://docs.rs/sacn/#choosing-network-interfaces).
+To send or receive on particular network interfaces rather than the operating system's default, call `set_multicast_interfaces` on the source or receiver with interface names or addresses, or `NetworkInterface::All` for every interface, for example `src.set_multicast_interfaces(&["eth0".into()])?`. See [Choosing network interfaces](https://docs.rs/sacn/#choosing-network-interfaces).
 
 The source only sends when you call `send`, so your application must resend data to keep the stream alive, as described [in the documentation](https://docs.rs/sacn/#keeping-a-universe-alive).
 

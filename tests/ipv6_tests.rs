@@ -2037,7 +2037,8 @@ mod sacn_ipv6_interface_test {
     #[ignore]
     fn ipv6_source_and_receiver_on_chosen_interface() {
         // The interface that has the test addresses, picked by address so the library has to find its index.
-        let iface = NetworkInterface::Addr(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()));
+        let iface =
+            NetworkInterface::Addr(IpAddr::V6(TEST_NETWORK_INTERFACE_IPV6[0].parse().unwrap()));
 
         let mut rcv = SacnReceiver::with_ip(
             SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), ACN_SDT_MULTICAST_PORT),

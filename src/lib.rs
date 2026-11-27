@@ -384,7 +384,7 @@
 //! interface with that address). On a host with several networks, for example one for lighting and one for the
 //! office, call `set_multicast_interfaces` on the [source](source::SacnSource::set_multicast_interfaces) or
 //! [receiver](receive::SacnReceiver::set_multicast_interfaces) to choose one or more interfaces, by name or by one of
-//! their addresses ([`NetworkInterface`](interface::NetworkInterface)):
+//! their addresses, or every interface ([`NetworkInterface`](interface::NetworkInterface)):
 //!
 //! ```no_run
 //! use sacn::interface::{NetworkInterface, network_interfaces};
@@ -405,6 +405,9 @@
 //! let addr = SocketAddr::new("0.0.0.0".parse()?, ACN_SDT_MULTICAST_PORT);
 //! let mut dmx_rcv = SacnReceiver::with_ip(addr, None)?;
 //! dmx_rcv.set_multicast_interfaces(&[NetworkInterface::Addr("192.168.0.6".parse()?)])?;
+//!
+//! // Or every interface that is up and isn't loopback.
+//! dmx_rcv.set_multicast_interfaces(&[NetworkInterface::All])?;
 //! # Ok(())
 //! # }
 //! ```
