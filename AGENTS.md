@@ -6,6 +6,14 @@ Guidance for AI coding agents working on this repository. Read [CONTRIBUTING.md]
 
 `sacn` is a Rust implementation of ANSI E1.31 (Streaming ACN, "sACN"), a protocol for sending DMX512 data over IP networks. The crate provides a source (sender) and a receiver, with universe synchronisation and universe discovery.
 
+## Session setup
+
+Run `scripts/setup-hooks.sh` at the start of every session, before your first commit, even on throwaway branches. It installs [prek](https://prek.j178.dev) if needed and enables the Git hooks from `.pre-commit-config.yaml`, which run the same formatting, lint, test and workflow checks as CI on every commit. Claude Code runs it automatically (`.claude/settings.json`), and so does the GitHub Copilot coding agent (`.github/workflows/copilot-setup-steps.yml`). Other agents should run it themselves, or have it set as their environment's setup script.
+
+* Don't skip the hooks with `--no-verify`, and fix what they report before committing.
+* In a sandbox that limits network access, some hooks can't download their tools: actionlint needs go.dev, and lychee downloads from GitHub. The script names the hooks it couldn't install, and lychee fails on commit. Commit with `SKIP=` and only those hook ids (for example `SKIP=actionlint`), check what they cover another way (at least parse changed workflows as YAML), and say in the pull request which hooks did not run. Never skip a hook because it reported a problem.
+* If zizmor fails because it can't reach the GitHub API, run it with `ZIZMOR_OFFLINE=true` rather than skipping it.
+
 ## E1.31 compliance
 
 * Evaluate every change against the E1.31 specification. The current edition is [E1.31-2016](https://tsp.esta.org/tsp/documents/docs/E1-31-2016.pdf). If the PDF can't be fetched, `documentation/ANSI-E1.31-2018-Compliance-Check-List.pdf` paraphrases each clause (read it with `pdftotext`).
@@ -24,7 +32,7 @@ Guidance for AI coding agents working on this repository. Read [CONTRIBUTING.md]
 
 * Add or update tests with every behaviour change.
 * Tests that need real network interfaces go in `tests/ipv4_tests.rs` or `tests/ipv6_tests.rs`, marked `#[ignore]` like the existing ones, so `cargo test` keeps working without network setup. Run them in the Docker image described in [CONTRIBUTING.md](CONTRIBUTING.md#network-tests).
-* Install the Git hooks described in [CONTRIBUTING.md](CONTRIBUTING.md) with prek. They run the checks on commit and push; don't skip them with `--no-verify`. Don't add new Clippy or rustdoc warnings.
+* Don't add new Clippy or rustdoc warnings.
 
 ## Documentation
 

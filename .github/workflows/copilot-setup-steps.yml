@@ -1,0 +1,38 @@
+name: Copilot Setup Steps
+
+# Prepares the environment of the GitHub Copilot coding agent before it starts
+# work: installs prek and the Git hooks from .pre-commit-config.yaml, as
+# AGENTS.md asks every agent to. Runs here too when this file changes, to test
+# it.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+      - scripts/setup-hooks.sh
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+      - scripts/setup-hooks.sh
+
+permissions: {}
+
+jobs:
+  # Copilot only runs a job with this name.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
+
+    # Runs before Copilot's firewall is turned on, so every hook's tools can
+    # be downloaded.
+    - name: Install prek and the Git hooks
+      run: scripts/setup-hooks.sh
+      env:
+        # Avoids GitHub's rate limits when downloading the hooks' tools.
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
