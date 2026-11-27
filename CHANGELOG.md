@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1](https://github.com/RustLight/sacn/compare/v0.12.0...v0.12.1) - 2026-11-27
+
+### Added
+
+- *(socket)* Accept a caller-provided socket for sources and receivers ([#130](https://github.com/RustLight/sacn/pull/130)) by @stewartadam
+- *(interface)* Let callers choose network interfaces for multicast ([#100](https://github.com/RustLight/sacn/pull/100)) by @stewartadam
+
+### Fixed
+
+- *(receiver)* Bind Windows receivers to the unspecified address ([#133](https://github.com/RustLight/sacn/pull/133)) by @stewartadam
+
 ## [0.12.0](https://github.com/RustLight/sacn/compare/v0.11.1...v0.12.0) - 2026-11-26
 
 ### Breaking changes
