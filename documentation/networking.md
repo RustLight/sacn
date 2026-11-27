@@ -48,7 +48,7 @@ Binding the group address (for example `239.255.0.1:5568`) also works on Linux a
 Binding `0.0.0.0:5568` is recommended by the library, and causes the socket to listen for unicast on all interfaces and only receive multicast groups it joined. Sockets created by the library in this way receive:
 
 - Unicast and broadcast: anything sent to port 5568 on any of the host's addresses, on any interface.
-- Multicast: only the groups the socket joined, on the interfaces it is configured for. macOS and Windows only deliver the groups the socket joined natively, and on Linux we set `IP_MULTICAST_ALL` (or `IPV6_MULTICAST_ALL` for IPv6) to 0 to keep this behavior consistent across platforms. Linux defaults it to 1, which delivers to the socket every group joined by any socket on the host, on any interface.
+- Multicast: only the groups the socket joined, on the interfaces it is configured for. macOS and Windows only deliver the groups the socket joined natively, and on Linux we set `IP_MULTICAST_ALL` (or `IPV6_MULTICAST_ALL` for IPv6) to 0, including on sockets given to `SacnReceiver::from_socket`, to keep this behavior consistent across platforms. Linux defaults it to 1, which delivers to the socket every group joined by any socket on the host, on any interface.
 
 Ways to limit unicast to chosen interfaces, none of which the library does today:
 
@@ -56,6 +56,8 @@ Ways to limit unicast to chosen interfaces, none of which the library does today
 - macOS: `IP_BOUND_IF` / `IPV6_BOUND_IF` does the same.
 - All three: `IP_PKTINFO` (Linux, Windows) or `IP_RECVIF` (macOS) report the interface each datagram arrived on, which allows filtering in the library for several interfaces.
 - The host firewall.
+
+The single-interface options can be set by the application on a socket passed to `SacnReceiver::from_socket`.
 
 ### Port sharing
 
@@ -77,3 +79,7 @@ A receiver joined on several interfaces that are on the same network receives ea
 - Bound to an ephemeral port by default (see [Port sharing](#port-sharing)), and `SO_REUSEADDR` / `SO_REUSEPORT` (Linux only) are set.
 - With no chosen interfaces, multicast goes where the OS sends it (see the first section).
 - With chosen interfaces, the source sets `IP_MULTICAST_IF` / `IPV6_MULTICAST_IF` before each multicast send and sends the packet once per interface. Unicast is sent once and follows the routing table.
+
+## Sockets supplied by the application
+
+`SacnSource::from_socket` and `SacnReceiver::from_socket` take a bound `std::net::UdpSocket`, so applications can set options the library doesn't expose (for example DSCP, buffer sizes, `SO_BINDTODEVICE`). The library still puts the socket in blocking mode, changes the receiver's read timeout, joins and leaves groups, sets the multicast interface before each send when interfaces are chosen, and sets `IP_MULTICAST_ALL` to 0 on Linux receivers. The binding rules above still apply: on Linux and macOS a receiver socket bound to a unicast address doesn't receive multicast.

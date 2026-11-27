@@ -429,6 +429,15 @@
 //! list returns to the default. When a receiver's chosen interfaces change, it joins the new ones before leaving the
 //! old ones, so no packets are missed.
 //!
+//! ## Setting socket options
+//!
+//! To set a socket option this library doesn't expose, such as a DSCP marking, a larger receive buffer, or an
+//! operating-system-specific option, create and bind the socket yourself (for example with
+//! [`socket2`](https://docs.rs/socket2)) and pass it to
+//! [`SacnReceiver::from_socket`](receive::SacnReceiver::from_socket) or
+//! [`SacnSource::from_socket`](source::SacnSource::from_socket). Their documentation lists the options the library
+//! still changes on the socket.
+//!
 //! ## Platform notes
 //!
 //! - The crate is built and unit tested on Linux, Windows and macOS. The network integration tests run on Linux.

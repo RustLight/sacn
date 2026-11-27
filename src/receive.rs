@@ -327,13 +327,78 @@ impl SacnReceiver {
         source_limit: Option<usize>,
         multicast_interfaces: &[NetworkInterface],
     ) -> Result<SacnReceiver> {
-        if let Some(x) = source_limit
-            && x == 0
-        {
-            return Err(SacnError::SourceLimitZero());
-        };
+        check_source_limit(source_limit)?;
+        SacnReceiver::with_network_receiver(
+            SacnNetworkReceiver::new(ip)?,
+            source_limit,
+            multicast_interfaces,
+        )
+    }
+
+    /// Creates a new `SacnReceiver` on a socket the caller has created, for example to set socket options this library
+    /// doesn't expose. It is otherwise the same as [`with_interfaces`](Self::with_interfaces): the receiver joins the
+    /// universe discovery universe on the given interfaces (an empty list means the default) straight away.
+    ///
+    /// The socket must be bound, normally to the unspecified address (`0.0.0.0` or `::`) and `ACN_SDT_MULTICAST_PORT`.
+    /// Except on Windows, a socket bound to a unicast address doesn't receive multicast. Choose interfaces with the
+    /// `multicast_interfaces` argument instead.
+    /// Set `SO_REUSEADDR` (and `SO_REUSEPORT` where available) before binding if other programs on the host also
+    /// receive sACN. The socket is used as given apart from these changes:
+    /// - It is put in blocking mode, and its read timeout is changed by `recv`.
+    /// - It joins and leaves the multicast groups of the universes listened to.
+    /// - On Linux, `IP_MULTICAST_ALL` (or `IPV6_MULTICAST_ALL`) is set to 0 so the socket only receives the groups it
+    ///   joined, on the interfaces it joined them on.
+    ///
+    /// # Examples
+    /// Using [`socket2`](https://docs.rs/socket2) to set a larger receive buffer before binding, then handing the socket
+    /// over:
+    /// ```no_run
+    /// use sacn::packet::ACN_SDT_MULTICAST_PORT;
+    /// use sacn::receive::SacnReceiver;
+    /// use socket2::{Domain, Socket, Type};
+    /// use std::net::SocketAddr;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let socket = Socket::new(Domain::IPV4, Type::DGRAM, None)?;
+    /// socket.set_reuse_address(true)?;
+    /// socket.set_recv_buffer_size(4 * 1024 * 1024)?;
+    /// socket.bind(&SocketAddr::from(([0, 0, 0, 0], ACN_SDT_MULTICAST_PORT)).into())?;
+    ///
+    /// let mut dmx_rcv = SacnReceiver::from_socket(socket.into(), None, &["eth1".into()])?;
+    /// dmx_rcv.listen_universes(&[1])?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    /// `SourceLimitZero`: Returned if `source_limit` is `Some(0)`.
+    ///
+    /// `UnsupportedIpVersion`: Returned if the socket isn't bound to an IPv4 or IPv6 address.
+    ///
+    /// Io: Returned if the socket's address can't be read or one of the options above can't be set.
+    ///
+    /// The errors of `set_multicast_interfaces` for the interfaces, and of `listen_universes` for the discovery universe.
+    pub fn from_socket(
+        socket: std::net::UdpSocket,
+        source_limit: Option<usize>,
+        multicast_interfaces: &[NetworkInterface],
+    ) -> Result<SacnReceiver> {
+        check_source_limit(source_limit)?;
+        SacnReceiver::with_network_receiver(
+            SacnNetworkReceiver::from_socket(socket.into())?,
+            source_limit,
+            multicast_interfaces,
+        )
+    }
+
+    /// Wraps a network receiver in a new `SacnReceiver`, choosing its interfaces and joining the discovery universe.
+    fn with_network_receiver(
+        receiver: SacnNetworkReceiver,
+        source_limit: Option<usize>,
+        multicast_interfaces: &[NetworkInterface],
+    ) -> Result<SacnReceiver> {
         let mut sri = SacnReceiver {
-            receiver: SacnNetworkReceiver::new(ip)?,
+            receiver,
             waiting_data: HashMap::new(),
             universes: Vec::new(),
             discovered_sources: Vec::new(),
@@ -1655,6 +1720,38 @@ impl SacnNetworkReceiver {
 
 /// Multicast group membership, common to all operating systems.
 impl SacnNetworkReceiver {
+    /// Creates a new DMX receiver on a socket the caller has already created and bound. The socket is put in blocking
+    /// mode and, on Linux, `IP_MULTICAST_ALL` / `IPV6_MULTICAST_ALL` is set to 0 as for the receiver's own sockets.
+    ///
+    /// # Errors
+    /// Io: Returned if the socket's address can't be read or one of the options can't be set.
+    ///
+    /// `UnsupportedIpVersion`: Returned if the socket isn't bound to an IPv4 or IPv6 address.
+    fn from_socket(socket: Socket) -> Result<SacnNetworkReceiver> {
+        let addr = socket.local_addr()?.as_socket().ok_or_else(|| {
+            SacnError::UnsupportedIpVersion(
+                "Socket given to SacnReceiver is not bound to an IPv4 or IPv6 address".to_string(),
+            )
+        })?;
+        socket.set_nonblocking(false)?;
+
+        // Only deliver multicast for the groups this socket joined, see `create_unix_socket`.
+        #[cfg(target_os = "linux")]
+        ignore_unsupported_option(if addr.is_ipv4() {
+            socket.set_multicast_all_v4(false)
+        } else {
+            socket.set_multicast_all_v6(false)
+        })?;
+
+        Ok(SacnNetworkReceiver {
+            socket,
+            addr,
+            is_multicast_enabled: true,
+            multicast_interfaces: Vec::new(),
+            interfaces_changed_at: None,
+        })
+    }
+
     /// Returns true if this `SacnNetworkReceiver` is bound to an Ipv6 address.
     fn is_ipv6(&self) -> bool {
         self.addr.is_ipv6()
@@ -1846,6 +1943,17 @@ impl DiscoveredSacnSource {
             p.universes.retain(|x| *x != universe);
         }
     }
+}
+
+/// Checks that a receiver's source limit allows at least one source.
+///
+/// # Errors
+/// `SourceLimitZero`: Returned if the limit is `Some(0)`.
+fn check_source_limit(source_limit: Option<usize>) -> Result<()> {
+    if source_limit == Some(0) {
+        return Err(SacnError::SourceLimitZero());
+    }
+    Ok(())
 }
 
 /// Turns an error from setting a socket option that the OS doesn't support into success.
