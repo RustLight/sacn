@@ -98,7 +98,7 @@ The files in `target/` are then owned by root; take them back with `sudo chown -
 prek install
 ```
 
-Before each commit they check formatting with `cargo fmt --check`, run Clippy with warnings denied and `cargo test` (including the doctests), and build the documentation with warnings denied. They also lint changed Markdown files with rumdl (configured in `.rumdl.toml`), check their web links with lychee (configured in `lychee.toml`), and lint changed workflows with actionlint and audit them with zizmor. Run every hook on the whole repository with `prek run --all-files`.
+Before each commit they check formatting with `cargo fmt --check`, run Clippy with warnings denied and `cargo test` (including the doctests), and build the documentation with warnings denied. They also lint changed Markdown files with rumdl (configured in `.rumdl.toml`), check their web links with lychee (configured in `lychee.toml`), and lint changed workflows with actionlint and audit them with zizmor. A last hook checks that every Rust file starts with the crate's SPDX license identifier, `// SPDX-License-Identifier: MIT OR Apache-2.0` (the text is in `.license-header.txt`), and adds the line to files that lack it, so review and stage its change before committing again. Run every hook on the whole repository with `prek run --all-files`.
 
 ## Continuous integration
 
@@ -106,7 +106,7 @@ Before each commit they check formatting with `cargo fmt --check`, run Clippy wi
 
 * When code changes (`src/`, `tests/`, `examples/`, Cargo files, `docker-linux/` or the workflows): a rustfmt check, then build, Clippy with warnings denied and `cargo test` on Linux, Windows and macOS, the IPv4 and IPv6 network tests in the Docker image on Linux, a job that merges the [coverage](#coverage) recorded by the Linux test jobs, a check that the library builds with the minimum supported Rust version, and a check of the workflow lockfile. Cargo runs with `--locked`, so update `Cargo.lock` alongside `Cargo.toml`.
 * When code or Markdown changes: the documentation build with warnings denied, and the doctests.
-* When Markdown or the workflows change: the rumdl, lychee, actionlint and zizmor hooks from `.pre-commit-config.yaml`.
+* When Markdown, Rust files or the workflows change: the rumdl, lychee, actionlint, zizmor and SPDX license header hooks from `.pre-commit-config.yaml`.
 
 Every action the workflows use is pinned in `.github/workflows/actions.lock`. After changing a `uses:` line, regenerate it with [`gh actions-lock`](https://github.com/github/gh-actions-lock) (`gh extension install github/gh-actions-lock`) and commit it with the workflow change.
 

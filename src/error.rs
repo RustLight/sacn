@@ -1,10 +1,4 @@
-// Copyright 2020 sacn Developers
-//
-// Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
-// http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
-// http://opensource.org/licenses/MIT>, at your option. This file may not be
-// copied, modified, or distributed except according to those terms.
-//
+// SPDX-License-Identifier: MIT OR Apache-2.0
 // This file is based on an earlier error.rs created as part of a University of St Andrews Computer Science BSC Senior Honours Dissertation Project.
 
 //! The errors used within the SacnLibrary. The ErrorKind subsection of this within the documentation contains details of all the errors.
