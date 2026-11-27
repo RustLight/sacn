@@ -325,7 +325,7 @@ impl SacnReceiver {
     pub fn with_interfaces(
         ip: SocketAddr,
         source_limit: Option<usize>,
-        interfaces: &[NetworkInterface],
+        multicast_interfaces: &[NetworkInterface],
     ) -> Result<SacnReceiver> {
         if let Some(x) = source_limit
             && x == 0
@@ -349,7 +349,8 @@ impl SacnReceiver {
             last_sync_packets: HashMap::new(),
         };
 
-        sri.receiver.multicast_interfaces = interface::resolve(interfaces, sri.receiver.is_ipv6())?;
+        sri.receiver.multicast_interfaces =
+            interface::resolve(multicast_interfaces, sri.receiver.is_ipv6())?;
         sri.listen_universes(&[E131_DISCOVERY_UNIVERSE])?;
 
         Ok(sri)
