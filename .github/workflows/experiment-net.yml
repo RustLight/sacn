@@ -1,0 +1,58 @@
+# TEMPORARY experiment: can the network tests run on hosted Windows and macOS runners?
+name: Experiment network tests
+on:
+  push:
+    branches: [claude/project-thread-obr0ee]
+permissions:
+  contents: read
+jobs:
+  net:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, setup: lo0 }
+          - { os: macos-latest, setup: en0 }
+          - { os: windows-latest, setup: ethernet }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      SETUP: ${{ matrix.setup }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Checkout
+      run: git clone --depth 1 -b "$GITHUB_REF_NAME" "https://github.com/$GITHUB_REPOSITORY" .
+    - name: Network info (before)
+      run: |
+        if [[ $RUNNER_OS == macOS ]]; then ifconfig; netstat -rn; else ipconfig //all; powershell -c "Get-NetAdapter | Format-Table -Auto; Get-NetIPInterface | Format-Table -Auto"; fi
+    - name: Add test addresses (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        dev=$SETUP
+        for a in 192.168.0.6 192.168.0.7 192.168.0.8; do sudo ifconfig "$dev" alias "$a" netmask 255.255.255.255; done
+        for a in 2a02:c7f:d20a:c600:a502:2dae:7716:601b 2a02:c7f:d20a:c600:a502:2dae:7716:601c 2a02:c7f:d20a:c600:a502:2dae:7716:601d; do sudo ifconfig "$dev" inet6 "$a" prefixlen 128 alias || true; done
+        ifconfig "$dev"
+    - name: Add test addresses (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $if = (Get-NetAdapter | Where-Object Status -eq Up | Select-Object -First 1).ifIndex
+        foreach ($a in '192.168.0.6','192.168.0.7','192.168.0.8') { New-NetIPAddress -InterfaceIndex $if -IPAddress $a -PrefixLength 32 -SkipAsSource $true | Out-Null }
+        foreach ($a in '2a02:c7f:d20a:c600:a502:2dae:7716:601b','2a02:c7f:d20a:c600:a502:2dae:7716:601c','2a02:c7f:d20a:c600:a502:2dae:7716:601d') { try { New-NetIPAddress -InterfaceIndex $if -IPAddress $a -PrefixLength 128 -SkipAsSource $true | Out-Null } catch { Write-Host $_ } }
+        Start-Sleep 5
+        Get-NetIPAddress -InterfaceIndex $if | Format-Table -Auto
+        Get-NetFirewallProfile | Format-Table Name,Enabled -Auto
+    - name: Multicast loopback probe
+      run: python3 .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1 || python .github/experiment/mcast_probe.py 192.168.0.6 127.0.0.1
+    - name: Build tests
+      run: cargo test --locked --no-run
+    - name: Unit/integration tests (not ignored)
+      run: cargo test --locked
+    - name: IPv4 network tests, one at a time
+      run: .github/experiment/run_serial.sh ipv4_tests
+    - name: IPv6 test target, one at a time
+      run: .github/experiment/run_serial.sh ipv6_tests
+    - name: src_tests IPv6
+      run: SACN_REQUIRE_IPV6=1 cargo test --locked --test src_tests ipv6 -- --nocapture || true
