@@ -290,9 +290,10 @@ impl SacnReceiver {
     ///         On Linux and macOS the socket is always bound to the unspecified address and port 5568, whatever address
     ///         and port are given: a socket bound to a unicast address there doesn't receive multicast. On Windows the
     ///         socket is bound to the given address and port.
-    ///         For IPv4, multicast groups are joined on the interface with this address unless `set_multicast_interfaces` is
-    ///         used. That use of the address is kept for compatibility; prefer the unspecified address (`0.0.0.0`) with
-    ///         `set_multicast_interfaces` to choose interfaces.
+    ///         For IPv4, multicast groups are joined on the interface with this address unless overridden with
+    ///         `set_multicast_interfaces`. Specifying an IPv4 address is kept for compatibility; prefer the unspecified
+    ///         address (`0.0.0.0`) with `set_multicast_interfaces` to choose interfaces at runtime, or `with_interfaces`
+    ///         to create a receiver that joins multicast groups only on the specified interfaces upon its creation.
     ///     `source_limit`: The limit to the number of sources, past this limit a new source will cause a `SourcesExceededError` as per ANSI E1.31-2018 Section 6.2.3.3.
     ///                     A source limit of None means no limit to the number of sources.
     ///
