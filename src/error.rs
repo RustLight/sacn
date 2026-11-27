@@ -32,7 +32,11 @@ pub mod errors {
     /// can produce an error.
     pub type Result<T> = std::result::Result<T, SacnError>;
 
+    /// The errors returned by the sACN crate.
+    ///
+    /// New variants may be added in any release, so a `match` on this enum needs a wildcard (`_`) arm.
     #[derive(Debug, Error)]
+    #[non_exhaustive]
     pub enum SacnError {
         // Allow IO errors to be used with the error system.
         #[error("Io error occurred: {0}")]
