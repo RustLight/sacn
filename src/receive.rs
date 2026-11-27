@@ -285,8 +285,11 @@ impl SacnReceiver {
     /// is enabled or not.
     ///
     /// Arguments:
-    ///     ip: The address of the interface for this receiver to join, by default this address should use the `ACN_SDT_MULTICAST_PORT` as defined in
-    ///         ANSI E1.31-2018 Appendix A: Defined Parameters (Normative) however another address might be used in some situations.
+    ///     ip: The address of the interface for this receiver to join, with the port `ACN_SDT_MULTICAST_PORT` as defined in
+    ///         ANSI E1.31-2018 Appendix A: Defined Parameters (Normative).
+    ///         On Linux and macOS the socket is always bound to the unspecified address and port 5568, whatever address
+    ///         and port are given: a socket bound to a unicast address there doesn't receive multicast. On Windows the
+    ///         socket is bound to the given address and port.
     ///         For IPv4, multicast groups are joined on the interface with this address unless `set_multicast_interfaces` is
     ///         used. That use of the address is kept for compatibility; prefer the unspecified address (`0.0.0.0`) with
     ///         `set_multicast_interfaces` to choose interfaces.

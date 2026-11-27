@@ -33,6 +33,7 @@ Update the documentation in the same pull request as the behaviour it describes:
 * `src/lib.rs`: the crate-level getting started guide, and its compiled examples.
 * `README.md`: features, usage, and what the library leaves to the application.
 * `CONTRIBUTING.md`: building, testing and CI.
+* `documentation/networking.md`: socket options, binding and multicast group handling, and how Linux, macOS and Windows differ.
 
 ## Git and pull requests
 
