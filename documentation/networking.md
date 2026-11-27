@@ -9,7 +9,7 @@ Unicast follows the routing table: a packet to `10.0.0.20` leaves on the interfa
 - sends multicast on the interface of the default route (or a route for `224.0.0.0/4` if one exists), and only that one;
 - joins a group on the interface it picks for the default route.
 
-So on a laptop with Wi-Fi as its default route and a USB Ethernet adapter on the lighting network, sACN goes out over Wi-Fi and a receiver joins on Wi-Fi. `set_multicast_interfaces` exists for this.
+So on a laptop with Wi-Fi as its default route and a USB Ethernet adapter on the lighting network, sACN goes out over Wi-Fi and a receiver joins on Wi-Fi. `set_multicast_interfaces` exists to change this behavior.
 
 ## How an interface is named to the operating system
 
@@ -19,11 +19,12 @@ So on a laptop with Wi-Fi as its default route and a USB Ethernet adapter on the
 | Joining a group | `IP_ADD_MEMBERSHIP`, takes one of the interface's addresses | `IPV6_JOIN_GROUP`, takes the interface index |
 | "Let the OS choose" | `0.0.0.0` | index `0` |
 
-`interface::resolve` turns a `NetworkInterface` into the form above (`MulticastIf`): for IPv4 the address that was given, or the interface's first IPv4 address; for IPv6 the index, after checking the interface has an IPv6 address. Interfaces are listed with the `if-addrs` crate (getifaddrs on Unix, GetAdaptersAddresses on Windows).
+`interface::resolve` turns a `NetworkInterface` variant into the form above (`MulticastIf`): for IPv4 the address that was given, or the interface's first IPv4 address; for IPv6 the index, after checking the interface has an IPv6 address. Interfaces are listed with the `if-addrs` crate (`getifaddrs()` on Unix, `GetAdaptersAddresses()` on Windows).
 
 On Linux, an IPv4 source socket bound to `0.0.0.0` also uses the `IP_MULTICAST_IF` address as the source address of the packets it sends.
 
-Interface indexes are assigned by the operating system, differ between hosts, and can change when an adapter is removed and re-added, so names are better for anything saved in a configuration file.
+> [!WARNING]
+> Interface indexes are assigned by the operating system, differ between hosts, and can change when an adapter is removed and re-added, so names are better for anything saved in a configuration file.
 
 ## Receiver sockets
 
@@ -44,10 +45,10 @@ Binding the group address (for example `239.255.0.1:5568`) also works on Linux a
 
 ### What binding the unspecified address exposes
 
-Binding `0.0.0.0:5568` doesn't make the socket receive every multicast group on every interface:
+Binding `0.0.0.0:5568` is recommended by the library, and causes the socket to listen for unicast on all interfaces and only receive multicast groups it joined. Sockets created by the library in this way receive:
 
-- Multicast: only the groups the socket joined, on the interfaces it joined them on. On Linux this needs `IP_MULTICAST_ALL` (and `IPV6_MULTICAST_ALL`) set to 0. Linux defaults it to 1, which delivers to the socket every group joined by any socket on the host, on any interface. The library sets it to 0 on its receiver sockets, ignoring `ENOPROTOOPT` on kernels without it. macOS and Windows only deliver the groups the socket joined.
-- Unicast and broadcast: anything sent to port 5568 on any of the host's addresses, on any interface. This is the real cost of the unspecified address.
+- Unicast and broadcast: anything sent to port 5568 on any of the host's addresses, on any interface.
+- Multicast: only the groups the socket joined, on the interfaces it is configured for. macOS and Windows only deliver the groups the socket joined natively, and on Linux we set `IP_MULTICAST_ALL` (or `IPV6_MULTICAST_ALL` for IPv6) to 0 to keep this behavior consistent across platforms. Linux defaults it to 1, which delivers to the socket every group joined by any socket on the host, on any interface.
 
 Ways to limit unicast to chosen interfaces, none of which the library does today:
 
@@ -58,13 +59,14 @@ Ways to limit unicast to chosen interfaces, none of which the library does today
 
 ### Port sharing
 
-Several programs on one host may receive sACN, so receiver sockets set `SO_REUSEADDR`, and `SO_REUSEPORT` where it exists (not Windows, and ignored where the OS reports `ENOPROTOOPT`, such as ESP-IDF). Every socket bound to the port receives a copy of each multicast datagram. Unicast is different: Linux spreads unicast datagrams across the sockets in a `SO_REUSEPORT` group, so each one goes to only one of the receivers. This is why sources bind an ephemeral port by default; a source bound to 5568 would join that group and receive unicast it never reads.
+Several programs on one host may receive sACN, so receiver sockets set `SO_REUSEADDR`, and `SO_REUSEPORT` where it exists (not Windows, and ignored where the OS reports `ENOPROTOOPT`, such as ESP-IDF). Every socket bound to the port receives a copy of each multicast datagram. Unicast is different: Linux spreads unicast datagrams across the sockets in a `SO_REUSEPORT` group, so each one goes to only one of the receivers. This is why sources bind an ephemeral port by default; a source bound to 5568 would join that `SO_REUSEPORT` group and receive unicast it never reads.
 
-### Group membership
+### Multicast group membership
 
 - A receiver joins every listened universe, the synchronisation universes and the discovery universe on each chosen interface.
 - Joining a group a second time on the same interface fails with `EADDRINUSE`. Two `NetworkInterface`s that resolve to the same host interface (for example two of its addresses) are therefore joined once, and an IPv6 membership on index 0 (OS's choice) is the same as one on the interface the OS picked.
-- When the interfaces change, new memberships are joined before old ones are left, so no packets are lost. Memberships on the OS's choice are left first, because the library can't tell which interface the OS chose and joining that interface again by name could fail as above.
+- When a receiver's configured interfaces change, new memberships are joined before old ones are left, so no packets are lost.
+- The exception is a membership on the OS's choice (`0.0.0.0` / index 0), which is left first. The OS resolves the choice to a concrete interface when the group is joined, and the membership stays on that interface even if the default route changes later. Leaving with `0.0.0.0` / index 0 doesn't name an interface, so Linux removes the socket's most recently joined membership of that group. If a new membership for the group had already been joined, that is the one removed, and the old one stays. Joining first could also fail with `EADDRINUSE` when the new interface is the one the OS chose.
 - On Windows, IPv6 multicast is reported as unsupported (`is_multicast_enabled` is false for an IPv6 receiver).
 
 ### Duplicate packets
@@ -73,6 +75,6 @@ A receiver joined on several interfaces that are on the same network receives ea
 
 ## Source sockets
 
-- Bound to an ephemeral port by default (see Port sharing), and `SO_REUSEADDR` / `SO_REUSEPORT` (Linux only) are set.
+- Bound to an ephemeral port by default (see [Port sharing](#port-sharing)), and `SO_REUSEADDR` / `SO_REUSEPORT` (Linux only) are set.
 - With no chosen interfaces, multicast goes where the OS sends it (see the first section).
 - With chosen interfaces, the source sets `IP_MULTICAST_IF` / `IPV6_MULTICAST_IF` before each multicast send and sends the packet once per interface. Unicast is sent once and follows the routing table.
